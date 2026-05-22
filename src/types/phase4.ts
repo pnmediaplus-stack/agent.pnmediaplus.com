@@ -33,6 +33,9 @@ export type Phase4ExecutionTrace = {
   receiptRef: string;
   currentState: Phase4ExecutionState;
   retryState: Phase4RetryState;
+  maxAttempts: number | null;
+  nextRetryAt: string | null;
+  retryPolicyRef: string | null;
   latencyMs: number | null;
   queueState: string;
   errorSummary: string | null;
