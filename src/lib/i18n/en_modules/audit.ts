@@ -1,0 +1,20 @@
+export const audit = {
+  "audit.page.title": "Audit Logs",
+  "audit.page.purpose": "Event trail for commands, workflow state changes, and approval actions.",
+  "audit.page.statusLabel": "Audit viewer",
+  "audit.page.allowed.inspectTrail": "Inspect trail",
+  "audit.page.allowed.traceCommands": "Trace commands",
+  "audit.page.allowed.reviewDecisions": "Review decisions",
+  "audit.page.forbidden.editHistoricalEvents": "Edit historical events",
+  "audit.page.forbidden.hideApprovalTrace": "Hide approval trace",
+  "audit.page.forbidden.deleteCommandHistory": "Delete command history",
+  "audit.table.title": "Audit log",
+  "audit.table.description": "Immutable local event trace with readable details and timestamps.",
+  "audit.table.time": "Time",
+  "audit.table.entity": "Entity",
+  "audit.table.action": "Action",
+  "audit.table.actor": "Actor",
+  "audit.table.details": "Details",
+  "audit.empty.title": "No audit events",
+  "audit.empty.description": "Audit records will appear here when local commands, approvals, or mock workflow actions are captured."
+} as const;

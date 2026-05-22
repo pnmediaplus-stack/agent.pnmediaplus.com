@@ -1,0 +1,21 @@
+export const media = {
+  "media.page.title": "Media Pipeline",
+  "media.page.purpose": "Bảng trực quan cho các giai đoạn intake, editing và QA của PN MEDIA PLUS.",
+  "media.page.statusLabel": "Media pipeline",
+  "media.page.allowed.inspectStageStatus": "Xem trạng thái stage",
+  "media.page.allowed.reviewHandoffs": "Xem handoff",
+  "media.page.allowed.markForQA": "Đánh dấu cho QA",
+  "media.page.forbidden.autoPublish": "Tự động publish",
+  "media.page.forbidden.launchCampaign": "Launch campaign",
+  "media.page.forbidden.bypassReview": "Bỏ qua review",
+  "media.pipeline.title": "Media pipeline",
+  "media.pipeline.intake": "Intake",
+  "media.pipeline.editing": "Editing",
+  "media.pipeline.qa": "QA",
+  "media.pipeline.ready": "Sẵn sàng",
+  "media.pipeline.inProgress": "Đang thực hiện",
+  "media.pipeline.hold": "Tạm dừng",
+  "media.pipeline.awaiting": "Đang chờ task assignment",
+  "media.pipeline.approved": "Đang dùng asset đã được duyệt",
+  "media.pipeline.humanCheck": "Cần Human check trước khi promote"
+} as const;

@@ -1,0 +1,22 @@
+# Reference Index
+
+- `__reference/architecture/`
+  - Purpose: working architecture memory and implementation context
+  - Owner: Next.js build support
+  - Layer priority: `docs/ > __reference/ > implementation`
+- `__reference/integration/`
+  - Purpose: integration notes and contract context
+  - Owner: Next.js build support
+  - Layer priority: `docs/ > __reference/ > implementation`
+- `__reference/runtime/`
+  - Purpose: runtime references and handoff context
+  - Owner: Next.js build support
+  - Layer priority: `docs/ > __reference/ > implementation`
+- `__reference/scaffold/`
+  - Purpose: scaffold notes and local implementation memory
+  - Owner: Next.js build support
+  - Layer priority: `docs/ > __reference/ > implementation`
+- `__reference/prompts/`
+  - Purpose: prompt references and working prompt context
+  - Owner: Next.js build support
+  - Layer priority: `docs/ > __reference/ > implementation`

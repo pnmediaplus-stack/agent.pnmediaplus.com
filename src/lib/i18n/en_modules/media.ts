@@ -1,0 +1,21 @@
+export const media = {
+  "media.page.title": "Media Pipeline",
+  "media.page.purpose": "Visual board for intake, editing, and QA stages in the PN MEDIA PLUS department.",
+  "media.page.statusLabel": "Media pipeline",
+  "media.page.allowed.inspectStageStatus": "Inspect stage status",
+  "media.page.allowed.reviewHandoffs": "Review handoffs",
+  "media.page.allowed.markForQA": "Mark for QA",
+  "media.page.forbidden.autoPublish": "Auto publish",
+  "media.page.forbidden.launchCampaign": "Launch campaign",
+  "media.page.forbidden.bypassReview": "Bypass review",
+  "media.pipeline.title": "Media pipeline",
+  "media.pipeline.intake": "Intake",
+  "media.pipeline.editing": "Editing",
+  "media.pipeline.qa": "QA",
+  "media.pipeline.ready": "Ready",
+  "media.pipeline.inProgress": "In progress",
+  "media.pipeline.hold": "Hold",
+  "media.pipeline.awaiting": "Awaiting task assignment",
+  "media.pipeline.approved": "Using approved assets only",
+  "media.pipeline.humanCheck": "Needs human check before promotion"
+} as const;

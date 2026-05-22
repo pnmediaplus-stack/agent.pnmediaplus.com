@@ -1,0 +1,64 @@
+# 02_INITIAL_ACTIVE_CANDIDATE_TABLE
+
+status: DRAFT
+layer: ARTIFACT
+authority_level: CORE
+tier: TIER_2_5
+
+---
+
+# PURPOSE
+
+Initial draft table for registry population.
+
+This is NOT the final registry.
+
+---
+
+# ACTIVE CANDIDATE TABLE
+
+| artifact_id | active_candidate_file | version | layer | authority_level | status_candidate | SHA | review_status |
+|---|---|---|---|---|---|---|---|
+| PN_OS_IMMUTABLE_SYSTEM_DIRECTIVE | USER_PROMPT_DIRECTIVE_V2 | 2.0.0 | CONSTITUTION | SUPREME | ACTIVE | TBD | NEED_SHA |
+| ACTIVE_CONSTITUTION_SET | ACTIVE_CONSTITUTION_SET_STEP1.md | 1.0.0 | CONSTITUTION | SUPREME | ACTIVE_CANDIDATE | TBD | NEED_SHA |
+| CONSTITUTIONAL_FREEZE_METADATA_STANDARD | CONSTITUTIONAL_FREEZE_METADATA_STANDARD_STEP2.md | 1.0.0 | CONSTITUTION | CORE | ACTIVE_CANDIDATE | TBD | NEED_SHA |
+| STD_STATE_GATE_TAXONOMY | TBD | 1.0.0 | PROTOCOL | CORE | REVIEW_REQUIRED | TBD | CONFLICT_REVIEW |
+| STD_HANDOFF_ARTIFACT_STANDARD | 09-STD_HANDOFF_ARTIFACT_STANDARD_v1.0-9-.md | 1.0.0 | PROTOCOL | CORE | ACTIVE_CANDIDATE | TBD | NEED_SHA |
+| STD_CANONICAL_ROLE_MAP | TBD | 1.0.0 | PROTOCOL | CORE | REVIEW_REQUIRED | TBD | CONFLICT_REVIEW |
+| STD_CANONICAL_PROMPT_FRAMEWORK | TBD | 1.0.0 | PROTOCOL | CORE | REVIEW_REQUIRED | TBD | CONFLICT_REVIEW |
+| STD_CANONICAL_PACK_MANIFEST | TBD | 1.3.0 | ARTIFACT | CORE | REVIEW_REQUIRED | TBD | CONFLICT_REVIEW |
+| STD_CANONICAL_PACK_DEPENDENCY_MAP | TBD | 1.2.0 | ARTIFACT | CORE | REVIEW_REQUIRED | TBD | CONFLICT_REVIEW |
+| STD_CANONICAL_PACK_RELEASE | TBD | 1.2.0 | ARTIFACT | CORE | REVIEW_REQUIRED | TBD | CONFLICT_REVIEW |
+| EXECUTION_SPEC | 11-EXECUTION_SPEC-5-.md | TBD | RUNTIME | RUNTIME | ACTIVE_CANDIDATE | TBD | NEED_SHA |
+| BOT_PN_OS_GATEKEEPER | 01-BOT_PN_OS_GATEKEEPER_v1.0-1-.md | 1.0.0 | CAPABILITY | LOCAL | ACTIVE_CANDIDATE | TBD | NEED_SHA |
+| BOT_PN_OS_GOVERNANCE_RELAY | 02-BOT_PN_OS_GOVERNANCE_RELAY_v1.0-1-.md | 1.0.0 | CAPABILITY | LOCAL | ACTIVE_CANDIDATE | TBD | NEED_SHA |
+| BOT_PN_OS_ARCHITECT | 15-BOT_PN_OS_ARCHITECT_v1.0-3-.txt | 1.0.0 | CAPABILITY | LOCAL | ACTIVE_CANDIDATE | TBD | NEED_SHA |
+
+---
+
+# TABLE STATUS
+
+This table is intentionally conservative.
+
+Any duplicate-heavy artifact remains REVIEW_REQUIRED until SHA comparison and Gatekeeper review.
+
+---
+
+# NEXT ACTIONS
+
+## Immediate Next Step
+- Compute SHA256 for every candidate and update the SHA column.
+
+## Required Inputs
+- Actual files
+- SHA generation script or n8n SHA node
+
+## Recommended Owner
+- Governance Relay
+
+## Blocking Conditions
+- Candidate file missing
+- Multiple candidates with same artifact_id unresolved
+
+## Suggested Next Package
+- SHA Generation Workflow

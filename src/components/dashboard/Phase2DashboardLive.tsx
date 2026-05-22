@@ -1,0 +1,780 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { PageFrame } from "@/components/shared/PageFrame";
+import { StateBadge } from "@/components/shared/StateBadge";
+import { useI18n } from "@/lib/i18n/useI18n";
+import {
+  PHASE2_PIPELINE_STATES,
+  PHASE2_PERFORMANCE_METRIC_FIELDS,
+  type Phase2AgentTask,
+  type Phase2Asset,
+  type Phase2ContentItem,
+  type Phase2DashboardData,
+  type Phase2DashboardLoadState,
+  type Phase2PerformanceRecord,
+  type Phase2QaReview
+} from "@/types/phase2";
+import {
+  getPhase2LatestReview,
+  getPhase2NextState,
+  getPhase2PublishEligibility,
+  getPhase2RequiredAssets,
+  sortPhase2ContentItems
+} from "@/lib/phase2-dashboard-derivations";
+
+type SummaryCard = {
+  label: string;
+  value: string | number;
+  note: string;
+};
+
+type Phase2DashboardProps = {
+  data: Phase2DashboardData;
+  loadState: Phase2DashboardLoadState;
+  loadReason?: string;
+};
+
+function SectionFrame({
+  title,
+  description,
+  children,
+  className,
+  bodyClassName
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+  className?: string;
+  bodyClassName?: string;
+}) {
+  return (
+    <section
+      className={`overflow-hidden rounded-3xl border border-slate-700 bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.24)] ${className ?? ""}`}
+    >
+      <div className="border-b border-cyan-400/20 bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(15,23,42,0.84))] px-5 py-4">
+        <div className="inline-flex max-w-full rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold tracking-tight text-white">{title}</div>
+        </div>
+        <div className="mt-2 text-xs leading-5 text-slate-300">{description}</div>
+      </div>
+      <div className={`p-5 ${bodyClassName ?? ""}`}>{children}</div>
+    </section>
+  );
+}
+
+function CampaignControlBar() {
+  const { t } = useI18n("dashboard");
+  const tabs = [
+    t("dashboard.controls.tabs.campaigns") ?? "Campaigns",
+    t("dashboard.controls.tabs.adSets") ?? "Ad sets",
+    t("dashboard.controls.tabs.ads") ?? "Ads",
+    t("dashboard.controls.tabs.creative") ?? "Creative",
+    t("dashboard.controls.tabs.qaGate") ?? "QA gate",
+    t("dashboard.controls.tabs.performance") ?? "Performance"
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-3xl border border-slate-700 bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.24)]">
+      <div className="border-b border-cyan-400/20 bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(15,23,42,0.82))] px-4 py-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
+              <div className="text-sm font-semibold text-white">
+                {t("dashboard.controls.title") ?? "Locked campaign workspace"}
+              </div>
+            </div>
+            <div className="mt-1 max-w-3xl text-xs leading-5 text-slate-400">
+              {t("dashboard.controls.description") ??
+                "Vertical dashboard shell. No page-level horizontal mode. Wide content stays inside internal rails, tables, and snapshots."}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((tab, index) => (
+              <span
+                key={tab}
+                className={[
+                  "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.12em]",
+                  index === 0
+                    ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-100"
+                    : "border-slate-700 bg-slate-900/70 text-slate-200"
+                ].join(" ")}
+              >
+                {tab}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-2 px-4 pb-4">
+        <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-200">
+          {t("dashboard.controls.fixedSidebar") ?? "Fixed sidebar"}
+        </span>
+        <span className="rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-200">
+          {t("dashboard.controls.internalHorizontalScrollOnly") ?? "Internal horizontal scroll only"}
+        </span>
+        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-200">
+          {t("dashboard.controls.campaignManagerInspired") ?? "Campaign-manager inspired"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function SummaryGrid({ cards }: { cards: SummaryCard[] }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {cards.map((card) => (
+        <div key={card.label} className="min-w-0 overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/80">
+          <div className="border-b border-cyan-400/20 bg-slate-900/90 px-4 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-100">{card.label}</div>
+          </div>
+          <div className="p-4">
+            <div className="mt-2 text-2xl font-semibold text-white">{card.value}</div>
+            <div className="mt-1.5 text-sm leading-6 text-slate-400">{card.note}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PipelineCard({
+  item,
+  assets,
+  reviews
+}: {
+  item: Phase2ContentItem;
+  assets: Phase2Asset[];
+  reviews: Phase2QaReview[];
+}) {
+  const { t } = useI18n("dashboard");
+  const requiredAssets = getPhase2RequiredAssets(item.id, assets);
+  const review = getPhase2LatestReview(item.id, reviews);
+  const publish = getPhase2PublishEligibility(item.id, assets, reviews);
+  const nextState = getPhase2NextState(item.currentState);
+
+  const assetCompletionText = `${requiredAssets.present.length}/${requiredAssets.totalRequired} ${
+    t("dashboard.labels.requiredAssets") ?? "required assets"
+  }`;
+  const qaGateText = review
+    ? (t(`dashboard.verdict.${review.verdict}`) ?? review.verdict)
+    : (t("dashboard.labels.pending") ?? "pending");
+  const riskText = review
+    ? review.overclaimRisk > 3 || review.averageScore < 7
+      ? t("dashboard.labels.high") ?? "HIGH"
+      : t("dashboard.labels.low") ?? "LOW"
+    : (t("dashboard.labels.pendingUpper") ?? "PENDING");
+
+  return (
+    <div className="flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.16)]">
+      <div className="border-b border-slate-700 bg-slate-900/90 px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="inline-flex max-w-full rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
+              <div className="break-words whitespace-normal text-sm font-semibold leading-6 text-white">{item.title}</div>
+            </div>
+            <div className="mt-1 break-words whitespace-normal text-xs leading-5 text-slate-400">{item.contentKey}</div>
+            {item.brief ? (
+              <div className="mt-2 max-h-16 overflow-hidden break-words whitespace-normal text-xs leading-5 text-slate-300">
+                {item.brief}
+              </div>
+            ) : null}
+          </div>
+          <StateBadge label={item.currentState} displayLabel={t(`dashboard.state.${item.currentState}`) ?? item.currentState} />
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 pr-1">
+        <div className="grid gap-3 text-sm text-slate-300">
+          <InfoRow label={t("dashboard.labels.owner") ?? "Owner"} value={item.ownerRef} />
+          <InfoRow label={t("dashboard.labels.taskOwner") ?? "Task owner"} value={item.taskOwnerRef} />
+          <InfoRow label={t("dashboard.labels.nextState") ?? "Next state"} value={t(`dashboard.state.${nextState}`) ?? nextState} />
+          <InfoRow label={t("dashboard.labels.assetCompleteness") ?? "Asset completeness"} value={assetCompletionText} />
+          <InfoRow label={t("dashboard.labels.qaGate") ?? "QA gate"} value={qaGateText} />
+          <InfoRow label={t("dashboard.labels.riskState") ?? "Risk state"} value={riskText} />
+          <InfoRow
+            label={t("dashboard.labels.publishEligibility") ?? "Publish eligibility"}
+            value={publish.ready ? (t("dashboard.labels.eligible") ?? "ELIGIBLE") : (t(`dashboard.publishState.${publish.gateState}`) ?? publish.gateState)}
+          />
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <div className="text-xs uppercase tracking-[0.22em] text-slate-500">{t("dashboard.labels.requiredAssets") ?? "Required assets"}</div>
+          <div className="flex flex-wrap gap-2">
+            {requiredAssets.present.map((assetType) => (
+              <StateBadge key={assetType} label={assetType} displayLabel={t(`dashboard.assetType.${assetType}`) ?? assetType} />
+            ))}
+            {requiredAssets.missing.map((assetType) => (
+              <span
+                key={assetType}
+                className="inline-flex items-center rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-rose-200"
+              >
+                {`${t("dashboard.labels.missingPrefix") ?? "missing"}:${assetType}`}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[9.5rem_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2">
+      <span className="min-w-0 text-slate-500">{label}</span>
+      <span className="min-w-0 break-words text-right font-medium text-white">{value}</span>
+    </div>
+  );
+}
+
+function PipelineBoard({
+  contentItems,
+  assets,
+  reviews
+}: {
+  contentItems: Phase2ContentItem[];
+  assets: Phase2Asset[];
+  reviews: Phase2QaReview[];
+}) {
+  const { t } = useI18n("dashboard");
+  const orderedItems = sortPhase2ContentItems(contentItems);
+
+  if (!orderedItems.length) {
+    return (
+      <div className="flex h-full min-h-[18rem] items-center justify-center">
+        <EmptyState
+          title={t("dashboard.live.emptyTitle") ?? "No live Phase 2 records yet"}
+          description={t("dashboard.live.emptyDescription") ?? "The dashboard is connected to Supabase, but the current dataset is empty."}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden">
+      <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
+        {PHASE2_PIPELINE_STATES.map((state) => (
+          <StateBadge key={state} label={state} displayLabel={t(`dashboard.state.${state}`) ?? state} />
+        ))}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden pb-2">
+        <div className="flex h-full w-max min-w-max items-stretch gap-4 snap-x snap-mandatory">
+          {orderedItems.map((item) => {
+            const review = getPhase2LatestReview(item.id, reviews);
+            const publish = getPhase2PublishEligibility(item.id, assets, reviews);
+            const nextState = getPhase2NextState(item.currentState);
+            const requiredLabel =
+              item.currentState === "idea"
+                ? (t("dashboard.labels.start") ?? "start")
+                : item.currentState === "published"
+                  ? (t("dashboard.labels.terminal") ?? "terminal")
+                  : (t(`dashboard.state.${nextState}`) ?? nextState);
+
+            return (
+              <div key={item.id} className="min-h-0 snap-start">
+                <PipelineCard item={item} assets={assets} reviews={reviews} />
+                <div className="mt-2 flex items-center justify-between px-1 text-xs text-slate-500">
+                  <span>{requiredLabel}</span>
+                  <span>
+                    {review
+                      ? publish.ready
+                        ? (t("dashboard.labels.publishReady") ?? "publish ready")
+                        : (t("dashboard.labels.gatePending") ?? "gate pending")
+                      : (t("dashboard.labels.pendingQa") ?? "pending qa")}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type LedgerColumn = {
+  key: string;
+  label: string;
+  width: string;
+};
+
+function LedgerShell({
+  columns,
+  rows,
+  renderRow,
+  minWidth,
+  bodyMaxHeight = "max-h-[16rem]"
+}: {
+  columns: LedgerColumn[];
+  rows: unknown[];
+  renderRow: (row: any) => ReactNode[];
+  minWidth: string;
+  bodyMaxHeight?: string;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-max" style={{ minWidth }}>
+        <table className="w-full table-fixed border-separate border-spacing-0 text-left text-sm">
+          <colgroup>
+            {columns.map((column) => (
+              <col key={column.key} style={{ width: column.width }} />
+            ))}
+          </colgroup>
+          <thead className="text-xs uppercase tracking-[0.22em] text-slate-300">
+            <tr>
+              {columns.map((column) => (
+                <th key={column.key} className="border-b border-slate-800 bg-slate-900/95 px-5 py-3 backdrop-blur">
+                  {column.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+        </table>
+        <div className={`${bodyMaxHeight} overflow-y-auto overflow-x-hidden`}>
+          <table className="w-full table-fixed border-separate border-spacing-0 text-left text-sm">
+            <colgroup>
+              {columns.map((column) => (
+                <col key={column.key} style={{ width: column.width }} />
+              ))}
+            </colgroup>
+            <tbody className="divide-y divide-slate-800">
+              {rows.map((row, index) => (
+                <tr key={index} className="text-slate-300">
+                  {renderRow(row).map((cell, cellIndex) => (
+                    <td key={cellIndex} className="px-5 py-4 align-top">
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskView({
+  tasks,
+  contentItems
+}: {
+  tasks: Phase2AgentTask[];
+  contentItems: Phase2ContentItem[];
+}) {
+  const { t } = useI18n("dashboard");
+  const columns: LedgerColumn[] = [
+    { key: "content", label: t("dashboard.columns.content") ?? "Content", width: "320px" },
+    { key: "task", label: t("dashboard.columns.task") ?? "Task", width: "180px" },
+    { key: "owner", label: t("dashboard.columns.owner") ?? "Owner", width: "180px" },
+    { key: "state", label: t("dashboard.columns.state") ?? "State", width: "140px" },
+    { key: "next", label: t("dashboard.columns.next") ?? "Next", width: "160px" }
+  ];
+
+  if (!tasks.length) {
+    return (
+      <div className="rounded-2xl border border-slate-700 bg-slate-950/80 p-5">
+        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-white">
+            {t("dashboard.sections.taskLedgerTitle") ?? "Task ledger / agent_tasks"}
+          </div>
+        </div>
+        <div className="mt-1 text-xs text-slate-400">
+          {t("dashboard.sections.taskLedgerDescription") ?? "Campaign-style task rows with wide columns kept inside the panel."}
+        </div>
+        <div className="mt-4">
+          <EmptyState
+            title={t("dashboard.live.emptyTitle") ?? "No live Phase 2 records yet"}
+            description={t("dashboard.live.emptyDescription") ?? "The dashboard is connected to Supabase, but the current dataset is empty."}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/80">
+      <div className="border-b border-cyan-400/20 bg-slate-900/90 px-5 py-4">
+        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-white">
+            {t("dashboard.sections.taskLedgerTitle") ?? "Task ledger / agent_tasks"}
+          </div>
+        </div>
+        <div className="mt-1 text-xs text-slate-400">
+          {t("dashboard.sections.taskLedgerDescription") ?? "Campaign-style task rows with wide columns kept inside the panel."}
+        </div>
+      </div>
+      <div className="min-h-0 flex-1">
+        <LedgerShell
+          columns={columns}
+          rows={tasks}
+          minWidth="980px"
+          renderRow={(task) => {
+            const currentTask = task as Phase2AgentTask;
+            const content = contentItems.find((row) => row.id === currentTask.contentItemId);
+            return [
+              <>
+                <div className="font-medium text-white">{content?.title ?? (t("dashboard.labels.pending") ?? "pending")}</div>
+                <div className="text-xs text-slate-500">{content?.contentKey ?? currentTask.contentItemId}</div>
+              </>,
+              t(`dashboard.taskKind.${currentTask.taskKind}`) ?? currentTask.taskKind,
+              currentTask.ownerRef,
+              <StateBadge label={currentTask.state} displayLabel={t(`dashboard.taskState.${currentTask.state}`) ?? currentTask.state} />,
+              <span className="text-white">
+                {content
+                  ? (t(`dashboard.state.${getPhase2NextState(content.currentState)}`) ?? getPhase2NextState(content.currentState))
+                  : (t("dashboard.labels.pending") ?? "pending")}
+              </span>
+            ];
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AssetView({
+  assets,
+  contentItems
+}: {
+  assets: Phase2Asset[];
+  contentItems: Phase2ContentItem[];
+}) {
+  const { t } = useI18n("dashboard");
+  const columns: LedgerColumn[] = [
+    { key: "content", label: t("dashboard.columns.content") ?? "Content", width: "340px" },
+    { key: "asset", label: t("dashboard.columns.assetType") ?? "Asset type", width: "180px" },
+    { key: "owner", label: t("dashboard.columns.owner") ?? "Owner", width: "180px" },
+    { key: "evidence", label: t("dashboard.columns.evidence") ?? "Evidence", width: "220px" }
+  ];
+
+  if (!assets.length) {
+    return (
+      <div className="rounded-2xl border border-slate-700 bg-slate-950/80 p-5">
+        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-white">
+            {t("dashboard.sections.assetsTitle") ?? "Creative assets / assets"}
+          </div>
+        </div>
+        <div className="mt-1 text-xs text-slate-400">
+          {t("dashboard.sections.assetsDescription") ?? "Research, visual, and caption assets stay in a single horizontal ledger before QA_ready."}
+        </div>
+        <div className="mt-4">
+          <EmptyState
+            title={t("dashboard.live.emptyTitle") ?? "No live Phase 2 records yet"}
+            description={t("dashboard.live.emptyDescription") ?? "The dashboard is connected to Supabase, but the current dataset is empty."}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/80">
+      <div className="border-b border-cyan-400/20 bg-slate-900/90 px-5 py-4">
+        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-white">
+            {t("dashboard.sections.assetsTitle") ?? "Creative assets / assets"}
+          </div>
+        </div>
+        <div className="mt-1 text-xs text-slate-400">
+          {t("dashboard.sections.assetsDescription") ?? "Research, visual, and caption assets stay in a single horizontal ledger before QA_ready."}
+        </div>
+      </div>
+      <div className="min-h-0 flex-1">
+        <LedgerShell
+          columns={columns}
+          rows={assets}
+          minWidth="920px"
+          renderRow={(asset) => {
+            const currentAsset = asset as Phase2Asset;
+            const content = contentItems.find((row) => row.id === currentAsset.contentItemId);
+            return [
+              <>
+                <div className="font-medium text-white">{content?.title ?? (t("dashboard.labels.pending") ?? "pending")}</div>
+                <div className="text-xs text-slate-500">
+                  {content ? (t(`dashboard.state.${content.currentState}`) ?? content.currentState) : (t("dashboard.labels.pending") ?? "pending")}
+                </div>
+              </>,
+              <StateBadge label={currentAsset.assetType} displayLabel={t(`dashboard.assetType.${currentAsset.assetType}`) ?? currentAsset.assetType} />,
+              currentAsset.ownerRef,
+              <span className="text-xs text-slate-400">{currentAsset.evidenceRef ?? (t("dashboard.labels.pending") ?? "pending")}</span>
+            ];
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function QAView({
+  contentItems,
+  assets,
+  reviews
+}: {
+  contentItems: Phase2ContentItem[];
+  assets: Phase2Asset[];
+  reviews: Phase2QaReview[];
+}) {
+  const { t } = useI18n("dashboard");
+  const columns: LedgerColumn[] = [
+    { key: "content", label: t("dashboard.columns.content") ?? "Content", width: "280px" },
+    { key: "score", label: t("dashboard.columns.score") ?? "Score", width: "110px" },
+    { key: "risk", label: t("dashboard.columns.risk") ?? "Risk", width: "110px" },
+    { key: "missing", label: t("dashboard.columns.missingAsset") ?? "Missing asset", width: "140px" },
+    { key: "verdict", label: t("dashboard.columns.verdict") ?? "Verdict", width: "140px" },
+    { key: "evidence", label: t("dashboard.columns.evidence") ?? "Evidence", width: "220px" },
+    { key: "publish", label: t("dashboard.columns.publish") ?? "Publish", width: "140px" }
+  ];
+
+  if (!contentItems.length) {
+    return (
+      <div className="rounded-2xl border border-slate-700 bg-slate-950/80 p-5">
+        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-white">
+            {t("dashboard.sections.qaTitle") ?? "QA gate / qa_reviews"}
+          </div>
+        </div>
+        <div className="mt-1 text-xs text-slate-400">
+          {t("dashboard.sections.qaDescription") ?? "Reviews are read as approval gates, with risk and publish eligibility visible at a glance."}
+        </div>
+        <div className="mt-4">
+          <EmptyState
+            title={t("dashboard.live.emptyTitle") ?? "No live Phase 2 records yet"}
+            description={t("dashboard.live.emptyDescription") ?? "The dashboard is connected to Supabase, but the current dataset is empty."}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/80">
+      <div className="border-b border-cyan-400/20 bg-slate-900/90 px-5 py-4">
+        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-white">
+            {t("dashboard.sections.qaTitle") ?? "QA gate / qa_reviews"}
+          </div>
+        </div>
+        <div className="mt-1 text-xs text-slate-400">
+          {t("dashboard.sections.qaDescription") ?? "Reviews are read as approval gates, with risk and publish eligibility visible at a glance."}
+        </div>
+      </div>
+      <div className="min-h-0 flex-1">
+        <LedgerShell
+          columns={columns}
+          rows={contentItems}
+          minWidth="1080px"
+          renderRow={(content) => {
+            const currentContent = content as Phase2ContentItem;
+            const review = getPhase2LatestReview(currentContent.id, reviews);
+            const publish = getPhase2PublishEligibility(currentContent.id, assets, reviews);
+            return [
+              <>
+                <div className="font-medium text-white">{currentContent.title}</div>
+                <div className="text-xs text-slate-500">{t(`dashboard.state.${currentContent.currentState}`) ?? currentContent.currentState}</div>
+              </>,
+              review ? review.averageScore.toFixed(1) : (t("dashboard.labels.pending") ?? "pending"),
+              review ? review.overclaimRisk : (t("dashboard.labels.pending") ?? "pending"),
+              review
+                ? review.missingAsset
+                  ? (t("dashboard.boolean.yes") ?? "Yes")
+                  : (t("dashboard.boolean.no") ?? "No")
+                : (t("dashboard.labels.pending") ?? "pending"),
+              <StateBadge
+                label={review ? review.verdict : (t("dashboard.labels.pending") ?? "pending")}
+                displayLabel={review ? (t(`dashboard.verdict.${review.verdict}`) ?? review.verdict) : (t("dashboard.labels.pending") ?? "pending")}
+              />,
+              <span className="text-xs text-slate-400">{review?.evidenceRef ?? (t("dashboard.labels.pending") ?? "pending")}</span>,
+              <StateBadge
+                label={publish.ready ? "ELIGIBLE" : publish.gateState}
+                displayLabel={publish.ready ? (t("dashboard.labels.eligible") ?? "ELIGIBLE") : (t(`dashboard.publishState.${publish.gateState}`) ?? publish.gateState)}
+              />
+            ];
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function PerformanceView({
+  contentItems,
+  records
+}: {
+  contentItems: Phase2ContentItem[];
+  records: Phase2PerformanceRecord[];
+}) {
+  const { t } = useI18n("dashboard");
+  const columns: LedgerColumn[] = [
+    { key: "content", label: t("dashboard.columns.content") ?? "Content", width: "280px" },
+    { key: "owner", label: t("dashboard.columns.owner") ?? "Owner", width: "130px" },
+    ...PHASE2_PERFORMANCE_METRIC_FIELDS.map((metric) => ({
+      key: metric,
+      label: t(`dashboard.performanceMetric.${metric}`) ?? metric,
+      width: "120px"
+    })),
+    { key: "source", label: t("dashboard.columns.source") ?? "Source", width: "200px" },
+    { key: "captured", label: t("dashboard.columns.captured") ?? "Captured", width: "180px" }
+  ];
+
+  if (!records.length) {
+    return (
+      <div className="rounded-2xl border border-slate-700 bg-slate-950/80 p-5">
+        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-white">
+            {t("dashboard.sections.performanceTitle") ?? "Performance ledger / performance_records"}
+          </div>
+        </div>
+        <div className="mt-1 text-xs text-slate-400">
+          {t("dashboard.sections.performanceDescription") ?? "Post-publish snapshots only. Missing metrics render as pending / incomplete."}
+        </div>
+        <div className="mt-4">
+          <EmptyState
+            title={t("dashboard.live.emptyTitle") ?? "No live Phase 2 records yet"}
+            description={t("dashboard.live.emptyDescription") ?? "The dashboard is connected to Supabase, but the current dataset is empty."}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/80">
+      <div className="border-b border-cyan-400/20 bg-slate-900/90 px-5 py-4">
+        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-white">
+            {t("dashboard.sections.performanceTitle") ?? "Performance ledger / performance_records"}
+          </div>
+        </div>
+        <div className="mt-1 text-xs text-slate-400">
+          {t("dashboard.sections.performanceDescription") ?? "Post-publish snapshots only. Missing metrics render as pending / incomplete."}
+        </div>
+      </div>
+      <div className="min-h-0 flex-1">
+        <LedgerShell
+          columns={columns}
+          rows={records}
+          minWidth="1680px"
+          bodyMaxHeight="max-h-[14rem]"
+          renderRow={(record) => {
+            const currentRecord = record as Phase2PerformanceRecord;
+            const content = contentItems.find((row) => row.id === currentRecord.contentItemId);
+            return [
+              <>
+                <div className="font-medium text-white">{content?.title ?? (t("dashboard.labels.pending") ?? "pending")}</div>
+                <div className="text-xs text-slate-500">{content?.currentState ?? (t("dashboard.labels.pending") ?? "pending")}</div>
+              </>,
+              currentRecord.ownerRef,
+              ...PHASE2_PERFORMANCE_METRIC_FIELDS.map((metric) => {
+                const value = currentRecord[metric];
+                return (
+                  <span className="text-white">
+                    {typeof value === "number" ? value : (t("dashboard.labels.pendingIncomplete") ?? "pending / incomplete")}
+                  </span>
+                );
+              }),
+              <span className="text-xs text-slate-400">{currentRecord.sourceRef}</span>,
+              <span className="text-xs text-slate-400">{currentRecord.capturedAt}</span>
+            ];
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function Phase2Dashboard({
+  data,
+  loadState,
+  loadReason
+}: Phase2DashboardProps) {
+  const { t } = useI18n("dashboard");
+  const publishedCount = data.contentItems.filter((item) => item.currentState === "published").length;
+  const eligibleCount = data.contentItems.filter((item) => getPhase2PublishEligibility(item.id, data.assets, data.qaReviews).ready).length;
+  const qaReadyCount = data.contentItems.filter((item) => item.currentState === "QA_ready").length;
+
+  const summaryCards: SummaryCard[] = [
+    {
+      label: t("dashboard.metrics.contentItems.label") ?? "Content items",
+      value: data.contentItems.length,
+      note: t("dashboard.metrics.contentItems.note") ?? "Canonical Phase 2 pipeline root objects."
+    },
+    {
+      label: t("dashboard.metrics.qaReady.label") ?? "QA ready",
+      value: qaReadyCount,
+      note: t("dashboard.metrics.qaReady.note") ?? "Only items with all 3 required assets reach QA_ready."
+    },
+    {
+      label: t("dashboard.metrics.publishEligible.label") ?? "Publish eligible",
+      value: eligibleCount,
+      note: t("dashboard.metrics.publishEligible.note") ?? "QA passed and thresholds met."
+    },
+    {
+      label: t("dashboard.metrics.published.label") ?? "Published",
+      value: publishedCount,
+      note: t("dashboard.metrics.published.note") ?? "Performance snapshots are post-publish only."
+    }
+  ];
+
+  return (
+    <PageFrame
+      className="flex min-h-full min-w-0 flex-col overflow-hidden"
+      contentClassName="flex min-h-0 min-w-0 flex-1 flex-col gap-5 overflow-hidden pr-1"
+      title={t("dashboard.page.title") ?? "Dashboard"}
+      purpose={
+        t("dashboard.page.purpose") ??
+        "Canonical Phase 2 content pipeline dashboard for content_items, agent_tasks, assets, qa_reviews, and performance_records."
+      }
+      statusLabel={t("dashboard.page.statusLabel") ?? "Phase 2 live pipeline"}
+      statusValue={loadState === "ready" ? (t("dashboard.live.readyBadge") ?? "LIVE") : (t("dashboard.live.blockedBadge") ?? "BLOCKED")}
+      allowedActions={[
+        t("dashboard.page.allowed.inspectPipeline") ?? "Inspect pipeline",
+        t("dashboard.page.allowed.reviewOwnership") ?? "Review task ownership",
+        t("dashboard.page.allowed.checkEligibility") ?? "Check publish eligibility"
+      ]}
+      forbiddenActions={[
+        t("dashboard.page.forbidden.autoPublish") ?? "Auto publish",
+        t("dashboard.page.forbidden.autoApprove") ?? "Auto approve",
+        t("dashboard.page.forbidden.bypassQa") ?? "Bypass QA"
+      ]}
+    >
+      {loadState === "blocked" ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-5 py-4 text-rose-100"
+        >
+          <div className="text-sm font-semibold">
+            {t("dashboard.live.blockedTitle") ?? "Live Supabase read blocked"}
+          </div>
+          <div className="mt-1 text-xs leading-5 text-rose-100/80">
+            {loadReason ?? (t("dashboard.live.blockedDescription") ?? "Phase 2 dashboard stays fail-closed until live data is available.")}
+          </div>
+        </div>
+      ) : null}
+
+      <CampaignControlBar />
+      <SummaryGrid cards={summaryCards} />
+
+      <SectionFrame
+        className="flex min-h-0 min-w-0 flex-col"
+        bodyClassName="min-h-0 min-w-0 flex-1 overflow-hidden"
+        title={t("dashboard.sections.pipelineBoard") ?? "Pipeline board (content_items)"}
+        description={t("dashboard.sections.pipelineBoardDescription") ?? "idea → research_ready → visual_ready → caption_ready → QA_ready → QA_passed → scheduled → published"}
+      >
+        <PipelineBoard contentItems={data.contentItems} assets={data.assets} reviews={data.qaReviews} />
+      </SectionFrame>
+
+      <div className="space-y-6">
+        <TaskView tasks={data.agentTasks} contentItems={data.contentItems} />
+        <AssetView assets={data.assets} contentItems={data.contentItems} />
+        <QAView contentItems={data.contentItems} assets={data.assets} reviews={data.qaReviews} />
+        <PerformanceView contentItems={data.contentItems} records={data.performanceRecords} />
+      </div>
+    </PageFrame>
+  );
+}

@@ -1,0 +1,22 @@
+# Artifact Index
+
+- `__artifacts/tasks/`
+  - Purpose: operational task outputs
+  - Owner: implementation workflow outputs
+  - Layer priority: `docs/ > __reference/ > implementation`
+- `__artifacts/qa_reviews/`
+  - Purpose: QA review outputs
+  - Owner: QA and implementation evidence
+  - Layer priority: `docs/ > __reference/ > implementation`
+- `__artifacts/handoffs/`
+  - Purpose: handoff packages and transfer notes
+  - Owner: implementation workflow outputs
+  - Layer priority: `docs/ > __reference/ > implementation`
+- `__artifacts/workflow_exports/`
+  - Purpose: workflow export artifacts
+  - Owner: runtime-export evidence
+  - Layer priority: `docs/ > __reference/ > implementation`
+- `__artifacts/logs/`
+  - Purpose: logs and trace outputs
+  - Owner: implementation evidence
+  - Layer priority: `docs/ > __reference/ > implementation`

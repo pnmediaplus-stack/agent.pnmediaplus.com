@@ -1,0 +1,91 @@
+handoff_id: DB_SQL_DRAFT_v0.2.1_GATEKEEPER_REVIEW
+handoff_type: SQL_DRAFT_RECHECK_HANDOFF
+source_role: Runtime Automation Architect
+recommended_target_role: Gatekeeper
+mode: SQL_DRAFT_PATCH_ONLY
+status: REVIEW_READY_FOR_GATEKEEPER_SQL_RECHECK
+not_authorized:
+  - SQL apply
+  - production mutation
+  - registry mutation
+  - PASS grant
+  - n8n runtime enablement
+  - financial/billing/pricing/VAT table creation
+
+scope:
+  target: Supabase PostgreSQL Governance Runtime SQL Draft
+  patch_from: v0.2
+  patch_to: v0.2.1
+  objective: close minor blockers before controlled DB dry-run review
+
+gatekeeper_finding_to_fix_mapping:
+  protocol_snapshot_registry_authority_fields:
+    status: patched
+    changes:
+      - added registry_status
+      - added registry_validated_status
+      - added runtime_load_allowed boolean
+      - blocked REVOKED/SUPERSEDED/SHADOW/INVALID/REFERENCE_ONLY
+      - assert_protocol_snapshot_loadable enforces age, epoch, content_sha256, runtime_load_allowed
+  n8n_read_scope:
+    status: patched
+    changes:
+      - v_n8n_allowed_runtime_read scoped by current_setting request jwt sub, run_id, artifact_id headers
+      - n8n_readonly only granted scoped view select
+      - no direct table select grant to n8n_readonly
+  chain_enforcement_consistency:
+    status: patched
+    changes:
+      - finalization, lock, escalation, verification route through append_audit_event
+      - event_hash unique
+      - previous_event_hash computed from chain head
+      - chain break verification query added
+  function_ownership_enforcement:
+    status: patched
+    changes:
+      - expected owner declared as governance_runtime_owner
+      - post-migration ownership plan included as explicit dry-run step
+      - owner mismatch verification query added
+      - SECURITY DEFINER functions use governance_runtime, pg_catalog search_path only
+      - public execute revoked
+  recovery_idempotency:
+    status: patched
+    changes:
+      - recovery_idempotency_key required for stale lock recovery
+      - original idempotency key reuse rejected
+      - verification query added
+
+dry_run_readiness_statement:
+  ready_for_controlled_db_dry_run_review: true
+  production_ready: false
+  apply_authorized: false
+  required_before_apply:
+    - Gatekeeper SQL re-review
+    - controlled non-production dry-run
+    - function owner verification
+    - privilege verification
+    - chain verification seed tests
+    - protocol snapshot stale/replay tests
+
+remaining_risks:
+  - request context scoping for n8n_readonly depends on Supabase/JWT/header propagation design
+  - ownership commands may require privileged migration runner
+  - lock active view is derived and must not be treated as authority
+  - controlled dry-run must validate trigger creation idempotency in target DB
+
+next_actions:
+  immediate_next_step: Gatekeeper SQL re-review of v0.2.1 package
+  required_inputs:
+    - governance_runtime_supabase_v0_2_1.sql
+    - verification_queries_v0_2_1.sql
+    - SQL_DRAFT_v0.2.1_PATCH_NOTES.md
+  recommended_owner: Gatekeeper
+  blocking_conditions:
+    - unsafe SECURITY DEFINER search_path found
+    - function owner mismatch unresolved
+    - broad n8n SELECT remains
+    - forbidden semantic label accepted
+    - chain fork/break allowed silently
+    - stale snapshot accepted
+    - recovery idempotency reuse accepted
+  suggested_next_package: PASS_FOR_CONTROLLED_DB_DRY_RUN only if Gatekeeper authorizes separately

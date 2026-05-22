@@ -1,0 +1,40 @@
+{
+  "issue": {
+    "httpStatus": 200,
+    "envelope": {
+      "ok": true,
+      "route": "byok-reference-token",
+      "status": 200,
+      "message": "Reference token issued. Raw secret remains server-side only.",
+      "hasData": true,
+      "dataKeys": [
+        "jti",
+        "expires_at",
+        "broker_receipt_ref",
+        "request_id"
+      ],
+      "referenceTokenReturned": true,
+      "referenceTokenPreview": "3b3a…3358",
+      "brokerReceiptReturned": true,
+      "resultKeys": [],
+      "receivedAt": "2026-05-21T14:42:26.141Z"
+    }
+  },
+  "proxy": {
+    "httpStatus": 401,
+    "envelope": {
+      "ok": false,
+      "route": "byok-llm-proxy",
+      "status": 401,
+      "message": "LLM provider call failed (401).",
+      "error": "LLM_PROVIDER_CALL_FAILED",
+      "hasData": false,
+      "dataKeys": [],
+      "referenceTokenReturned": false,
+      "referenceTokenPreview": null,
+      "brokerReceiptReturned": false,
+      "resultKeys": [],
+      "receivedAt": "2026-05-21T14:42:27.602Z"
+    }
+  }
+}

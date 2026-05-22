@@ -1,0 +1,11 @@
+
+> pn-os-ai-department@1.0.0 dev
+> next dev --port 3010
+
+   ▲ Next.js 15.5.18
+   - Local:        http://localhost:3010
+   - Network:      http://192.168.1.6:3010
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1670ms

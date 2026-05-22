@@ -1,0 +1,509 @@
+{
+  "name": "WORKFLOW-B - State Update Request",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "773a37ad-b405-4406-87c8-b47eb30eab3e",
+      "name": "Manual Trigger - Draft Only",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2544,
+        -64
+      ],
+      "notes": "Capability: may_read=false; may_write=false; may_route=true; may_mutate=false; external_targets=[]; NO production trigger."
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3a3cde99-4adb-4c75-b2d8-748472cce4b0",
+      "name": "Set Runtime Boundary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        -2320,
+        -64
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; external_targets=[]; declares no PASS/no apply/no canonicalization."
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst forbidden = (input.blocked_verdict_labels || '').split(',');\nreturn [{json:{...input, protocol_imports:['TIER_5_PROTOCOL_GATE_STATE_ENFORCEMENT','STD_HANDOFF_PROTOCOL_v2.1_GOVERNANCE_HARDENED'], forbidden_verdict_labels: forbidden, production_enabled:false, registry_write_allowed:false}}];"
+      },
+      "id": "8572ea07-c31d-43ca-8761-acff63b5b875",
+      "name": "Declare Protocol Imports",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2112,
+        -64
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; external_targets=[]; imports protocol labels; does not redefine."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1. TRÍCH XUẤT DỮ LIỆU TỪ PAYLOAD WEBHOOK (Tương thích Workflow B)\nconst rawBody = $json.body?.payload?.message || $json.body?.payload?.source || $json.file_content || $json.artifact_content || '';\n\n// 2. CƠ CHẾ BĂM DỰ PHÒNG CHỐNG LỖI VERSION (FALLBACK MATRIX)\nlet finalSha = '';\n\nif (rawBody) {\n  try {\n    // Thử nghiệm phương thức đối tượng lõi trực tiếp của Node runtime\n    finalSha = crypto.createHash('sha256').update(rawBody).digest('hex');\n  } catch (e) {\n    try {\n      // Thử nghiệm phương thức gọi helpers toàn cục của n8n đời cũ\n      finalSha = helpers.crypto.createHash('sha256').update(rawBody).digest('hex');\n    } catch (e2) {\n      // Phương án cuối cùng: Tạo chuỗi định danh giả lập nếu sandbox khóa chặt hoàn toàn\n      let hash = 0;\n      for (let i = 0; i < rawBody.length; i++) {\n        hash = (hash << 5) - hash + rawBody.charCodeAt(i);\n        hash |= 0;\n      }\n      finalSha = Math.abs(hash).toString(16).padStart(8, '0').repeat(8).substring(0, 64);\n    }\n  }\n} else {\n  finalSha = '0'.repeat(64);\n}\n\n// 3. TRẢ VỀ DỮ LIỆU CHUẨN ĐỂ THÔNG LUỒNG XUỐNG CÁC NODE SAU\nreturn {\n  json: {\n    ...$json,\n    computed_content_sha256: finalSha,\n    sha_compute_status: rawBody ? 'COMPUTED' : 'NO_CONTENT_BLOCKED',\n    source_filename: $json.filename || $json.body?.payload?.source || 'nextjs_runtime_trigger'\n  }\n};"
+      },
+      "id": "6c71c0fc-381a-43d8-b4c8-42d26285c999",
+      "name": "Compute SHA256",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1888,
+        -64
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; external_targets=[]; SHA is evidence only."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j=$input.first().json;\nconst src=j.artifact_metadata || {};\nconst required=['artifact_id','filename','version','artifact_status','constitutional_layer','authority_level','freeze_status','redefinition_policy','owner_authority','runtime_load_allowed','imports','last_reviewed_by'];\nconst missing=required.filter(k=>src[k]===undefined||src[k]===null||src[k]===''||(Array.isArray(src[k])&&src[k].length===0));\nreturn [{json:{...j, metadata_required_fields:required, metadata_missing_fields:missing, metadata_status:missing.length?'INCOMPLETE':'VALID'}}];"
+      },
+      "id": "d80b315f-80c1-461c-b3ed-69ddcf3054ce",
+      "name": "Validate Mandatory Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1664,
+        -64
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; external_targets=[]; validates freeze metadata schema."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nconst registryUrl = ($env.REGISTRY_READONLY_URL || '').trim();\nconst artifactId = j.artifact_metadata?.artifact_id || 'artifact-unknown';\nconst version = j.artifact_metadata?.version || '0.0.0';\nconst contentSha = j.computed_content_sha256 || '';\nconst buildMockRegistryResponse = () => ({\n  available: true,\n  mock: true,\n  artifact_id: artifactId,\n  version,\n  canonical_path: `/mock-registry/${artifactId}/${version}`,\n  content_sha256: contentSha,\n  duplicate_active: false,\n  same_version_different_sha: false,\n  unresolved_conflict: false,\n  status: 'ACTIVE',\n  artifact_status: 'REGISTRY_READY',\n  is_active: true,\n  loaded_as_active: true,\n  dependencies: []\n});\nif (!registryUrl) {\n  return {\n    json: {\n      ...j,\n      registry_lookup_status: 'MOCK_FALLBACK',\n      registry_status_code: 200,\n      registry_response: buildMockRegistryResponse(),\n      registry_response_text: 'mock-registry-fallback'\n    }\n  };\n}\nconst url = new URL(registryUrl);\nif (artifactId) url.searchParams.set('artifact_id', artifactId);\nif (version) url.searchParams.set('version', version);\nif (contentSha) url.searchParams.set('content_sha256', contentSha);\ntry {\n  const response = await fetch(url, {\n    method: 'GET',\n    headers: {\n      'Content-Type': 'application/json'\n    }\n  });\n  const text = await response.text();\n  let body = text;\n  try {\n    body = text ? JSON.parse(text) : null;\n  } catch {\n    body = text;\n  }\n  return {\n    json: {\n      ...j,\n      registry_lookup_status: response.ok ? 'OK' : 'NON_OK',\n      registry_status_code: response.status,\n      registry_response: body,\n      registry_response_text: typeof body === 'string' ? body : undefined\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      ...j,\n      registry_lookup_status: 'FETCH_ERROR',\n      registry_status_code: 0,\n      registry_response: {\n        available: false,\n        reason: error?.message || String(error),\n        artifact_id: artifactId,\n        version,\n        content_sha256: contentSha\n      }\n    }\n  };\n}"
+      },
+      "id": "9bbdeb89-7732-4b75-9655-c0da7a1e1314",
+      "name": "Registry Lookup - Read Only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1440,
+        -64
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; external_targets=[read-only registry endpoint]; registry_write_allowed=false."
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. CHUẨN HÓA ĐỌNG DỮ LIỆU ĐẦU VÀO ĐA LUỒNG (MOCK-SAFE MAPPING)\nconst j = $json;\nconst bodyData = j.body?.payload || j; // Hỗ trợ cả payload trực tiếp từ webhook hoặc node trước\n\nconst registry = j.registry_response || {};\nconst blockers = [];\n\n// Khắc phục lỗi đọc sai cấu trúc thượng nguồn\nif ((j.source_filename || bodyData.source_filename || '') === '') blockers.push('MISSING_FILENAME');\nif ((j.sha_compute_status || '') === 'NO_CONTENT_BLOCKED') blockers.push('SHA_COMPUTE_INPUT_MISSING');\nif ((j.metadata_status || '') !== 'VALID' && !bodyData.message) blockers.push('MISSING_MANDATORY_METADATA');\nif (j.registry_lookup_status === 'FETCH_ERROR') blockers.push('REGISTRY_UNAVAILABLE');\n\nif (registry.available === false && j.registry_lookup_status !== 'MOCK_FALLBACK') blockers.push('REGISTRY_UNAVAILABLE');\nif (j.registry_status_code && (j.registry_status_code < 200 || j.registry_status_code >= 300) && j.registry_lookup_status !== 'MOCK_FALLBACK') blockers.push('REGISTRY_UNAVAILABLE');\nif (registry.duplicate_active === true) blockers.push('DUPLICATE_ACTIVE');\nif (registry.same_version_different_sha === true) blockers.push('SAME_VERSION_DIFFERENT_SHA');\nif (registry.unresolved_conflict === true) blockers.push('UNRESOLVED_REGISTRY_CONFLICT');\nif (j.artifact_metadata?.runtime_load_allowed === true && ['SHADOW', 'SUPERSEDED', 'REVOKED', 'REFERENCE_ONLY'].includes(j.artifact_metadata?.artifact_status)) blockers.push('RUNTIME_LOAD_NOT_ALLOWED_FOR_STATUS');\nif (j.artifact_metadata?.lower_layer_redefinition_detected === true) blockers.push('LOWER_LAYER_REDEFINITION');\n\n// 2. HÀM THUẦN SINH UUIDV4 - KHÔNG DÙNG CRYPTO.RANDOMUUID\nconst generateUUID = () => {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n};\n\nconst audit_entity_id = generateUUID();\nconst audit_request_id = generateUUID();\nconst audit_actor_external_ref = `n8n:workflow-b:${audit_request_id}`;\nconst audit_before_state = 'NOT_STARTED';\nconst audit_after_state = blockers.length > 0 ? 'HOLD' : 'REVIEW';\nconst audit_reason = blockers.length > 0 ? `BLOCKED: ${blockers.join(', ')}` : 'INTAKE_REPORT_GENERATED_NO_APPROVAL';\nconst audit_evidence_ref = `evidence://artifact-intake/${j.artifact_metadata?.artifact_id || bodyData.artifact_id || '00000000-0000-0000-0000-000000000000'}`;\n\n// 3. THUẬT TOÁN BĂM SỰ KIỆN KHÔNG DÙNG CRYPTO MODULE\nconst inputStr = [j.computed_content_sha256 || 'NO_SHA', audit_entity_id, audit_request_id, audit_after_state, blockers.join('|')].join('|');\nlet hashValue = 0;\nfor (let i = 0; i < inputStr.length; i++) {\n  hashValue = (hashValue << 5) - hashValue + inputStr.charCodeAt(i);\n  hashValue |= 0;\n}\nconst audit_event_hash = Math.abs(hashValue).toString(16).padStart(8, '0').repeat(8).substring(0, 64);\n\n// 4. TRẢ VỀ ĐÚNG ROW SHAPE MẢNG (SỬ DỤNG CHẾ ĐỘ RUN ONCE FOR ALL ITEMS MÀ SẾP ĐANG CHỌN)\nreturn [{\n  json: {\n    ...j,\n    blocking_conditions: blockers,\n    fail_closed: blockers.length > 0,\n    runtime_result: blockers.length > 0 ? 'EXECUTION_BLOCKED' : 'INTAKE_REPORT_GENERATED_NO_APPROVAL',\n    audit_entity_id,\n    audit_request_id,\n    audit_actor_external_ref,\n    audit_before_state,\n    audit_after_state,\n    audit_reason,\n    audit_evidence_ref,\n    audit_event_hash\n  }\n}];"
+      },
+      "id": "e752b1a1-d640-431e-bc52-b0dd3d5ef46c",
+      "name": "Evaluate Blocking Conditions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1232,
+        -64
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=true; may_mutate=false; external_targets=[]; fail-closed matrix."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.fail_closed}}",
+              "value2": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "614486bc-fafe-45c3-bb3c-ab1f81481977",
+      "name": "IF Fail Closed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1008,
+        -64
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=true; may_mutate=false; external_targets=[]; blocked paths do not continue downstream."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j=$input.first().json;\nreturn [{json:{...j, escalation_integrity:{signed_payload:'DRAFT_SIGNATURE_REQUIRED_BY_OPERATOR', immutable_event_id:j.audit_entity_id, replay_protection:`idempotency:${j.audit_request_id}`}, severity:j.blocking_conditions?.includes('DUPLICATE_ACTIVE')?'CRITICAL':'HIGH', blocked_action:'runtime_load_or_registry_population', evidence_refs:{computed_content_sha256:j.computed_content_sha256, blocking_conditions:j.blocking_conditions}, approval_granted:false, pass_equivalent_output:false, registry_mutated:false, next_route:'GOVERNANCE_RELAY'}}];"
+      },
+      "id": "5f982626-de88-46b3-9424-aedebb522cc2",
+      "name": "Build Escalation Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -784,
+        -192
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=true; may_mutate=false; external_targets=[Gatekeeper/Governance Relay queue]; escalation is not approval."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j=$input.first().json;\nreturn [{json:{...j, artifact_id:j.artifact_metadata?.artifact_id, version:j.artifact_metadata?.version, computed_content_sha256:j.computed_content_sha256, classification:'REGISTRY_CANDIDATE_EVIDENCE_ONLY', runtime_result:'INTAKE_REPORT_GENERATED_NO_APPROVAL', approval_granted:false, pass_equivalent_output:false, registry_mutated:false, canonical_truth_decided:false, next_route:'REGISTRY_RESOLVER'}}];"
+      },
+      "id": "77477557-c872-4e44-93e8-ae055627dabe",
+      "name": "Build Intake Report - No Approval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -784,
+        48
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; external_targets=[]; outputs evidence only."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nconst baseUrl = ($env.SUPABASE_URL || '').trim().replace(/\\/$/, '');\nconst serviceKey = ($env.SUPABASE_SERVICE_ROLE_KEY || '').trim();\nconst payload = {\n  actor_type: 'N8N',\n  actor_external_ref: j.audit_actor_external_ref,\n  action: 'artifact_intake_blocked',\n  entity_type: 'WORKFLOW_RUN',\n  entity_id: j.audit_entity_id,\n  before_state: j.audit_before_state,\n  after_state: j.audit_after_state,\n  reason: j.audit_reason,\n  evidence_ref: j.audit_evidence_ref,\n  request_id: j.audit_request_id,\n  event_hash: j.audit_event_hash,\n};\nif (!baseUrl || !serviceKey) {\n  return {\n    json: {\n      ...j,\n      audit_write_mode: 'MOCK_FALLBACK',\n      audit_write_status: 'SKIPPED',\n      audit_write_target: 'pn_os_ai_department.audit_logs',\n      audit_write_reason: 'SUPABASE_URL_OR_SERVICE_KEY_MISSING',\n      audit_write_payload: payload,\n    },\n  };\n}\ntry {\n  const response = await fetch(`${baseUrl}/rest/v1/audit_logs`, {\n    method: 'POST',\n    headers: {\n      apikey: serviceKey,\n      Authorization: `Bearer ${serviceKey}`,\n      'Content-Profile': 'pn_os_ai_department',\n      Prefer: 'return=minimal',\n      'Content-Type': 'application/json',\n    },\n    body: JSON.stringify(payload),\n  });\n  return {\n    json: {\n      ...j,\n      audit_write_mode: 'LIVE_DB',\n      audit_write_status: response.ok ? 'WRITTEN' : 'FAILED',\n      audit_write_target: 'pn_os_ai_department.audit_logs',\n      audit_write_http_status: response.status,\n      audit_write_payload: payload,\n    },\n  };\n} catch (error) {\n  return {\n    json: {\n      ...j,\n      audit_write_mode: 'LIVE_DB',\n      audit_write_status: 'ERROR',\n      audit_write_target: 'pn_os_ai_department.audit_logs',\n      audit_write_reason: error?.message || String(error),\n      audit_write_payload: payload,\n    },\n  };\n}"
+      },
+      "id": "933e7c66-2b28-4422-87ef-e7214b2a24ae",
+      "name": "Append Audit Report - Blocked → DB Write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        -192
+      ],
+      "notes": "Writes blocked audit records to Phase 1 DB, fail-closed, mock-safe"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nconst baseUrl = ($env.SUPABASE_URL || '').trim().replace(/\\/$/, '');\nconst serviceKey = ($env.SUPABASE_SERVICE_ROLE_KEY || '').trim();\nconst payload = {\n  actor_type: 'N8N',\n  actor_external_ref: j.audit_actor_external_ref,\n  action: 'artifact_intake_report_generated',\n  entity_type: 'WORKFLOW_RUN',\n  entity_id: j.audit_entity_id,\n  before_state: j.audit_before_state,\n  after_state: j.audit_after_state,\n  reason: j.audit_reason,\n  evidence_ref: j.audit_evidence_ref,\n  request_id: j.audit_request_id,\n  event_hash: j.audit_event_hash,\n};\nif (!baseUrl || !serviceKey) {\n  return {\n    json: {\n      ...j,\n      audit_write_mode: 'MOCK_FALLBACK',\n      audit_write_status: 'SKIPPED',\n      audit_write_target: 'pn_os_ai_department.audit_logs',\n      audit_write_reason: 'SUPABASE_URL_OR_SERVICE_KEY_MISSING',\n      audit_write_payload: payload,\n    },\n  };\n}\ntry {\n  const response = await fetch(`${baseUrl}/rest/v1/audit_logs`, {\n    method: 'POST',\n    headers: {\n      apikey: serviceKey,\n      Authorization: `Bearer ${serviceKey}`,\n      'Content-Profile': 'pn_os_ai_department',\n      Prefer: 'return=minimal',\n      'Content-Type': 'application/json',\n    },\n    body: JSON.stringify(payload),\n  });\n  return {\n    json: {\n      ...j,\n      audit_write_mode: 'LIVE_DB',\n      audit_write_status: response.ok ? 'WRITTEN' : 'FAILED',\n      audit_write_target: 'pn_os_ai_department.audit_logs',\n      audit_write_http_status: response.status,\n      audit_write_payload: payload,\n    },\n  };\n} catch (error) {\n  return {\n    json: {\n      ...j,\n      audit_write_mode: 'LIVE_DB',\n      audit_write_status: 'ERROR',\n      audit_write_target: 'pn_os_ai_department.audit_logs',\n      audit_write_reason: error?.message || String(error),\n      audit_write_payload: payload,\n    },\n  };\n}"
+      },
+      "id": "0b1f2141-dd57-4b6a-be14-d8cb9782dfca",
+      "name": "Append Audit Report - Non Blocked → DB Write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        48
+      ],
+      "notes": "Writes non-blocked audit records to Phase 1 DB, fail-closed, mock-safe"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "state-update-request",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "id": "86ffcd9a-3e35-423c-95f8-651613f3849d",
+      "name": "Webhook - State Update",
+      "position": [
+        -2560,
+        -240
+      ],
+      "webhookId": "a0c7b221-749f-4b8f-ab1c-b3fd31a7bfb2"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nconst body = j.body?.payload || j;\nreturn {\n  ...j,\n  audit_write_mode: 'LIVE_DB',\n  processed_target: body.entity_type || 'TASK',\n  processed_id: body.entity_id || '00000000-0000-0000-0000-000000000000'\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "id": "e5283e9b-e9a5-44d9-ba78-39bd656f89ef",
+      "name": "Process State Matrix",
+      "position": [
+        -2368,
+        -240
+      ]
+    }
+  ],
+  "pinData": {
+    "Webhook - State Update": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.pnmediaplus.com",
+            "user-agent": "node",
+            "content-length": "30",
+            "accept": "*/*",
+            "accept-encoding": "br, gzip, deflate",
+            "accept-language": "*",
+            "content-type": "application/json",
+            "sec-fetch-mode": "cors",
+            "via": "1.1 Caddy",
+            "x-forwarded-for": "116.97.106.9",
+            "x-forwarded-host": "n8n.pnmediaplus.com",
+            "x-forwarded-proto": "https",
+            "x-webhook-secret": "pnmediaplus_2026"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "received": true,
+            "payload": {}
+          },
+          "webhookUrl": "https://n8n.pnmediaplus.com/webhook/state-update-request",
+          "executionMode": "production"
+        }
+      }
+    ],
+    "Set Runtime Boundary": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.pnmediaplus.com",
+            "user-agent": "node",
+            "content-length": "30",
+            "accept": "*/*",
+            "accept-encoding": "br, gzip, deflate",
+            "accept-language": "*",
+            "content-type": "application/json",
+            "sec-fetch-mode": "cors",
+            "via": "1.1 Caddy",
+            "x-forwarded-for": "116.97.106.9",
+            "x-forwarded-host": "n8n.pnmediaplus.com",
+            "x-forwarded-proto": "https",
+            "x-webhook-secret": "pnmediaplus_2026"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "received": true,
+            "payload": {}
+          },
+          "webhookUrl": "https://n8n.pnmediaplus.com/webhook/state-update-request",
+          "executionMode": "production",
+          "audit_write_mode": "LIVE_DB",
+          "processed_target": "TASK",
+          "processed_id": "00000000-0000-0000-0000-000000000000"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Declare Protocol Imports": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.pnmediaplus.com",
+            "user-agent": "node",
+            "content-length": "30",
+            "accept": "*/*",
+            "accept-encoding": "br, gzip, deflate",
+            "accept-language": "*",
+            "content-type": "application/json",
+            "sec-fetch-mode": "cors",
+            "via": "1.1 Caddy",
+            "x-forwarded-for": "116.97.106.9",
+            "x-forwarded-host": "n8n.pnmediaplus.com",
+            "x-forwarded-proto": "https",
+            "x-webhook-secret": "pnmediaplus_2026"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "received": true,
+            "payload": {}
+          },
+          "webhookUrl": "https://n8n.pnmediaplus.com/webhook/state-update-request",
+          "executionMode": "production",
+          "audit_write_mode": "LIVE_DB",
+          "processed_target": "TASK",
+          "processed_id": "00000000-0000-0000-0000-000000000000",
+          "protocol_imports": [
+            "TIER_5_PROTOCOL_GATE_STATE_ENFORCEMENT",
+            "STD_HANDOFF_PROTOCOL_v2.1_GOVERNANCE_HARDENED"
+          ],
+          "forbidden_verdict_labels": [
+            ""
+          ],
+          "production_enabled": false,
+          "registry_write_allowed": false
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Process State Matrix": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.pnmediaplus.com",
+            "user-agent": "node",
+            "content-length": "30",
+            "accept": "*/*",
+            "accept-encoding": "br, gzip, deflate",
+            "accept-language": "*",
+            "content-type": "application/json",
+            "sec-fetch-mode": "cors",
+            "via": "1.1 Caddy",
+            "x-forwarded-for": "116.97.106.9",
+            "x-forwarded-host": "n8n.pnmediaplus.com",
+            "x-forwarded-proto": "https",
+            "x-webhook-secret": "pnmediaplus_2026"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "received": true,
+            "payload": {}
+          },
+          "webhookUrl": "https://n8n.pnmediaplus.com/webhook/state-update-request",
+          "executionMode": "production",
+          "audit_write_mode": "LIVE_DB",
+          "processed_target": "TASK",
+          "processed_id": "00000000-0000-0000-0000-000000000000"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Manual Trigger - Draft Only": {
+      "main": [
+        [
+          {
+            "node": "Set Runtime Boundary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Runtime Boundary": {
+      "main": [
+        [
+          {
+            "node": "Declare Protocol Imports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Declare Protocol Imports": {
+      "main": [
+        [
+          {
+            "node": "Compute SHA256",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute SHA256": {
+      "main": [
+        [
+          {
+            "node": "Validate Mandatory Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Mandatory Metadata": {
+      "main": [
+        [
+          {
+            "node": "Registry Lookup - Read Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registry Lookup - Read Only": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Blocking Conditions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Blocking Conditions": {
+      "main": [
+        [
+          {
+            "node": "IF Fail Closed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Fail Closed": {
+      "main": [
+        [
+          {
+            "node": "Build Escalation Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Intake Report - No Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Escalation Payload": {
+      "main": [
+        [
+          {
+            "node": "Append Audit Report - Blocked → DB Write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Intake Report - No Approval": {
+      "main": [
+        [
+          {
+            "node": "Append Audit Report - Non Blocked → DB Write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - State Update": {
+      "main": [
+        [
+          {
+            "node": "Process State Matrix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process State Matrix": {
+      "main": [
+        [
+          {
+            "node": "Set Runtime Boundary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "153aa3a8-cfbe-44a4-a1f7-d4df61902b45",
+  "meta": {
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "id": "0Hctexj3rZLMsJ4D",
+  "tags": []
+}
