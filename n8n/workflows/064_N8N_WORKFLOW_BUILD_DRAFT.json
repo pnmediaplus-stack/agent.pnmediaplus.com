@@ -1,0 +1,233 @@
+{
+  "name": "064 - N8N Workflow Build Draft",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "2d5f4d8e-0b5c-4cf6-9e9d-064000000001",
+      "name": "Manual Trigger - Draft Import Only",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1840,
+        0
+      ],
+      "notes": "Phase 064 draft import only. active=false. No live activation, no approval, no source-of-truth mutation."
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = String($env.NEXTJS_CONTROL_PLANE_BASE_URL || '').replace(/\\/$/, '');\nconst prior = $json;\nif (!base) {\n  return [{ json: { ...prior, phase064_load: { state: 'blocked', reason: 'NEXTJS_CONTROL_PLANE_BASE_URL_MISSING' }, governance_response: null } }];\n}\ntry {\n  const response = await fetch(`${base}/api/department-governance`, { method: 'GET', headers: { accept: 'application/json' } });\n  const data = await response.json().catch(() => null);\n  return [{ json: { ...prior, phase064_load: { state: response.ok ? 'ready' : 'blocked', reason: response.ok ? 'GOVERNANCE_API_LOADED' : `GOVERNANCE_API_HTTP_${response.status}` }, governance_response: data } }];\n} catch (error) {\n  return [{ json: { ...prior, phase064_load: { state: 'blocked', reason: `GOVERNANCE_API_FETCH_FAILED:${error?.message || String(error)}` }, governance_response: null } }];\n}"
+      },
+      "id": "2d5f4d8e-0b5c-4cf6-9e9d-064000000002",
+      "name": "Read Governance API - Read Only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        0
+      ],
+      "notes": "Reads GET /api/department-governance only. Fails closed when env/API is missing. No write path."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $json;\nconst report = j.governance_response?.data?.phase9_validation_report;\nconst blocked = j.phase064_load?.state !== 'ready' || report?.state !== 'ready';\nreturn [{ json: { ...j, workflow_064_read_only_validation: { workflow_id: '064.read_only_validation', build_order: 1, mode: 'read_only_validation', state: blocked ? 'blocked' : 'ready', reason: blocked ? (j.phase064_load?.reason || report?.reason || 'PHASE9_REPORT_NOT_READY') : 'READ_ONLY_VALIDATION_CONTRACT_READY', mutation_allowed: false, authority_granted: false, output_contract: 'PHASE9_READONLY_VALIDATION_REPORT' } } }];"
+      },
+      "id": "2d5f4d8e-0b5c-4cf6-9e9d-064000000003",
+      "name": "Contract 1 - Read Only Validation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1360,
+        0
+      ],
+      "notes": "Validates Phase 9 report readiness only. Does not apply changes."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $json;\nconst orchestration = j.governance_response?.data?.phase063_workflow_orchestration;\nconst edges = Array.isArray(orchestration?.dry_run_edges) ? orchestration.dry_run_edges : [];\nconst expected = ['Marketing->Media', 'Media->Operations', 'Operations->Customer', 'Customer->Business Truth'];\nconst edgeLabels = edges.map((edge) => `${edge.from_department}->${edge.to_department}`);\nconst missing = expected.filter((label) => !edgeLabels.includes(label));\nconst blocked = orchestration?.state !== 'ready' || missing.length > 0;\nreturn [{ json: { ...j, workflow_064_dry_run_orchestration: { workflow_id: '064.dry_run_orchestration', build_order: 2, mode: 'dry_run', state: blocked ? 'blocked' : 'ready', reason: blocked ? `DRY_RUN_BLOCKED:${missing.join(',') || orchestration?.reason || 'UNKNOWN'}` : 'DRY_RUN_MATCHES_CANONICAL_HANDOFFS', dry_run_edges: edges, mutation_allowed: false, authority_granted: false, output_contract: 'DRY_RUN_HANDOFF_MATCH_REPORT' } } }];"
+      },
+      "id": "2d5f4d8e-0b5c-4cf6-9e9d-064000000004",
+      "name": "Contract 2 - Dry Run Orchestration",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        0
+      ],
+      "notes": "Dry-run only. Verifies canonical handoff edges; no live task creation."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $json;\nconst mapping = j.governance_response?.data?.phase064_n8n_workflow_contracts?.workflow_mapping || [];\nconst live = mapping.find((item) => item.workflow_id === '064.controlled_live_observation');\nconst ready = live?.state === 'ready';\nreturn [{ json: { ...j, workflow_064_controlled_live_observation: { workflow_id: '064.controlled_live_observation', build_order: 3, mode: 'controlled_live_observation', state: ready ? 'ready' : 'blocked', reason: ready ? 'CONTROLLED_LIVE_CONTRACT_READY_BUT_NOT_ACTIVE' : 'CONTROLLED_LIVE_CONTRACT_NOT_READY', activation_status: 'BLOCKED_UNTIL_EXPLICIT_REVIEW', live_activation_allowed: false, mutation_allowed: false, authority_granted: false, input_contract: 'POST /api/runtime/execution-event', output_contract: 'PHASE4_EXECUTION_TRACE_READ_MODEL' } } }];"
+      },
+      "id": "2d5f4d8e-0b5c-4cf6-9e9d-064000000005",
+      "name": "Contract 3 - Controlled Live Observation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        0
+      ],
+      "notes": "Controlled live contract only. Activation remains blocked until explicit review."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $json;\nconst orchestration = j.governance_response?.data?.phase063_workflow_orchestration;\nconst escalations = Array.isArray(orchestration?.escalation_notices) ? orchestration.escalation_notices : [];\nconst stopConditions = Array.isArray(orchestration?.stop_conditions) ? orchestration.stop_conditions : [];\nconst triggeredStops = stopConditions.filter((condition) => condition.triggered === true);\nreturn [{ json: { ...j, workflow_064_monitoring_escalation: { workflow_id: '064.monitoring_escalation', build_order: 4, mode: 'monitoring_escalation', state: triggeredStops.length ? 'blocked' : 'ready', reason: triggeredStops.length ? 'MONITORING_ESCALATION_STOP_CONDITION_TRIGGERED' : 'MONITORING_ESCALATION_CONTRACT_READY', escalation_notices: escalations, triggered_stop_conditions: triggeredStops, mutation_allowed: false, authority_granted: false, output_contract: 'ESCALATION_NOTICE_REPORT' } } }];"
+      },
+      "id": "2d5f4d8e-0b5c-4cf6-9e9d-064000000006",
+      "name": "Contract 4 - Monitoring Escalation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        0
+      ],
+      "notes": "Reports drift/stop conditions only. Does not notify or auto-correct."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $json;\nconst workflows = [j.workflow_064_read_only_validation, j.workflow_064_dry_run_orchestration, j.workflow_064_controlled_live_observation, j.workflow_064_monitoring_escalation];\nconst blocked = workflows.filter((workflow) => workflow?.state === 'blocked');\nreturn [{ json: { ...j, phase064_import_report: { state: blocked.length ? 'blocked' : 'ready_for_review', reason: blocked.length ? 'PHASE064_IMPORT_DRAFT_BLOCKED' : 'PHASE064_IMPORT_DRAFT_READY_FOR_REVIEW', contract_version: '064.v1', active: false, mutation_allowed: false, authority_granted: false, source_of_truth_unchanged: true, live_activation_allowed: false, review_required_before_activation: true, workflows, blockers: blocked.map((workflow) => ({ workflow_id: workflow.workflow_id, reason: workflow.reason })) } } }];"
+      },
+      "id": "2d5f4d8e-0b5c-4cf6-9e9d-064000000007",
+      "name": "Build Phase 064 Import Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ],
+      "notes": "Final draft report. No approval, no mutation, no runtime activation."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $json;\nconst base = String($env.NEXTJS_CONTROL_PLANE_BASE_URL || '').replace(/\\/$/, '');\nconst secretAvailable = Boolean(String($env.RUNTIME_INGRESS_SECRET || '').trim());\nconst report = j.phase064_import_report || {};\nconst executionId = String($execution?.id || Date.now());\nconst emittedAt = new Date().toISOString();\nconst eventState = report.state === 'ready_for_review' ? 'succeeded' : 'blocked';\nconst eventType = eventState === 'succeeded' ? 'AUDIT_EVENT_RECORDED' : 'EXECUTION_BLOCKED';\nconst event = {\n  event_id: `${executionId}_phase064_emit`,\n  idempotency_key: `${executionId}_phase064_emit_once`,\n  trace_id: `phase064:${executionId}`,\n  workflow_run_id: executionId,\n  n8n_execution_id: executionId,\n  workflow_ref: $workflow?.name || '064 - N8N Workflow Build Draft',\n  request_ref: 'phase064_import_draft',\n  task_ref: 'phase064_contract_validation',\n  event_type: eventType,\n  execution_state: eventState,\n  retry_state: 'not_applicable',\n  actor_type: 'N8N',\n  actor_ref: 'n8n:phase064:draft',\n  emitted_at: emittedAt,\n  payload: {\n    phase: '064',\n    report_state: report.state || 'blocked',\n    report_reason: report.reason || 'PHASE064_REPORT_MISSING',\n    contract_version: report.contract_version || '064.v1',\n    active: false,\n    mutation_allowed: false,\n    authority_granted: false,\n    live_activation_allowed: false,\n    blockers: Array.isArray(report.blockers) ? report.blockers : []\n  }\n};\nreturn [{ json: { ...j, phase064_emit: { state: base && secretAvailable ? 'ready' : 'skipped', reason: base ? (secretAvailable ? 'CONTROL_PLANE_EMIT_READY' : 'RUNTIME_INGRESS_SECRET_MISSING') : 'NEXTJS_CONTROL_PLANE_BASE_URL_MISSING', control_plane_url: base ? `${base}/api/runtime/execution-event` : null, active: false, mutation_allowed: false, authority_granted: false }, telemetry_event: event } }];"
+      },
+      "id": "2d5f4d8e-0b5c-4cf6-9e9d-064000000008",
+      "name": "Set Telemetry Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        0
+      ],
+      "notes": "Based on [RT] ControlPlane EmitEvent payload shape. Uses env only; no hardcoded secret."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $json;\nif (j.phase064_emit?.state !== 'ready') {\n  return [{ json: { ...j, phase064_emit_result: { state: 'skipped', reason: j.phase064_emit?.reason || 'EMIT_NOT_READY', active: false, mutation_allowed: false, authority_granted: false } } }];\n}\nlet crypto;\ntry {\n  crypto = require('crypto');\n} catch (error) {\n  return [{ json: { ...j, phase064_emit_result: { state: 'blocked', reason: `CRYPTO_MODULE_UNAVAILABLE:${error?.message || String(error)}`, active: false, mutation_allowed: false, authority_granted: false } } }];\n}\nconst timestamp = Date.now().toString();\nconst body = JSON.stringify(j.telemetry_event);\nconst secret = String($env.RUNTIME_INGRESS_SECRET || '').trim();\nconst signature = crypto.createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex');\ntry {\n  const response = await fetch(j.phase064_emit.control_plane_url, {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n      'x-runtime-event-timestamp': timestamp,\n      'x-runtime-event-signature': `sha256=${signature}`\n    },\n    body\n  });\n  const responseBody = await response.json().catch(async () => ({ raw: await response.text().catch(() => '') }));\n  return [{ json: { ...j, phase064_emit_result: { state: response.ok ? 'emitted' : 'blocked', reason: response.ok ? 'CONTROL_PLANE_EVENT_ACCEPTED' : `CONTROL_PLANE_EVENT_REJECTED_${response.status}`, status: response.status, response: responseBody, active: false, mutation_allowed: false, authority_granted: false } } }];\n} catch (error) {\n  return [{ json: { ...j, phase064_emit_result: { state: 'blocked', reason: `CONTROL_PLANE_EMIT_FAILED:${error?.message || String(error)}`, active: false, mutation_allowed: false, authority_granted: false } } }];\n}"
+      },
+      "id": "2d5f4d8e-0b5c-4cf6-9e9d-064000000009",
+      "name": "Sign and Emit Control Plane Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        0
+      ],
+      "notes": "Based on [RT] HMAC timestamp.body standard. Uses $env.RUNTIME_INGRESS_SECRET. Emits only when env is present; otherwise fail-closed/skipped."
+    }
+  ],
+  "connections": {
+    "Manual Trigger - Draft Import Only": {
+      "main": [
+        [
+          {
+            "node": "Read Governance API - Read Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Governance API - Read Only": {
+      "main": [
+        [
+          {
+            "node": "Contract 1 - Read Only Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contract 1 - Read Only Validation": {
+      "main": [
+        [
+          {
+            "node": "Contract 2 - Dry Run Orchestration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contract 2 - Dry Run Orchestration": {
+      "main": [
+        [
+          {
+            "node": "Contract 3 - Controlled Live Observation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contract 3 - Controlled Live Observation": {
+      "main": [
+        [
+          {
+            "node": "Contract 4 - Monitoring Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contract 4 - Monitoring Escalation": {
+      "main": [
+        [
+          {
+            "node": "Build Phase 064 Import Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Phase 064 Import Report": {
+      "main": [
+        [
+          {
+            "node": "Set Telemetry Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Telemetry Payload": {
+      "main": [
+        [
+          {
+            "node": "Sign and Emit Control Plane Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "versionId": "06400000-0000-4000-8000-000000000065",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "phase": "064",
+    "import_mode": "draft_only",
+    "live_activation_allowed": false,
+    "control_plane_emit_standard": "[RT] - ControlPlane - EmitEvent"
+  },
+  "id": "phase064DraftWorkflow",
+  "tags": []
+}

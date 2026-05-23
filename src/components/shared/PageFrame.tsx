@@ -6,6 +6,7 @@ type PageFrameProps = {
   purpose: string;
   statusLabel: string;
   statusValue: string;
+  statusDisplayValue?: string;
   allowedActions: string[];
   forbiddenActions?: string[];
   children: ReactNode;
@@ -18,6 +19,7 @@ export function PageFrame({
   purpose,
   statusLabel,
   statusValue,
+  statusDisplayValue,
   allowedActions,
   forbiddenActions,
   children,
@@ -31,6 +33,7 @@ export function PageFrame({
         purpose={purpose}
         statusLabel={statusLabel}
         statusValue={statusValue}
+        statusDisplayValue={statusDisplayValue}
         allowedActions={allowedActions}
         forbiddenActions={forbiddenActions}
       />

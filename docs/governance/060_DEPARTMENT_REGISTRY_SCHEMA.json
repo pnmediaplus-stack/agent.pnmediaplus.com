@@ -1,0 +1,112 @@
+{
+  "registry_schema_version": "v1",
+  "registry_id": "department_registry_v1",
+  "registry_name": "PN OS Department Registry",
+  "registry_status": "DRAFT_SEED",
+  "registry_mode": "governance_only",
+  "required_top_level_fields": [
+    "registry_id",
+    "registry_name",
+    "registry_status",
+    "registry_mode",
+    "registry_version",
+    "created_at",
+    "updated_at",
+    "source_of_truth",
+    "owner_role",
+    "department_records"
+  ],
+  "department_record_schema": {
+    "department_id": "string",
+    "department_name": "string",
+    "department_pack": "string",
+    "owner_role": "string",
+    "owner_team": "string",
+    "primary_purpose": "string",
+    "canonical_truth_source": "string",
+    "allowed_actions": [
+      "string"
+    ],
+    "must_not_actions": [
+      "string"
+    ],
+    "dependencies": [
+      "string"
+    ],
+    "downstream_recipients": [
+      "string"
+    ],
+    "current_state": "string",
+    "handoff_required": "boolean",
+    "qa_required": "boolean",
+    "human_review_required": "boolean",
+    "notes": "string"
+  },
+  "valid_registry_states": [
+    "draft",
+    "seed",
+    "active_governance",
+    "partial_operational",
+    "planned",
+    "active",
+    "blocked",
+    "deprecated",
+    "archived"
+  ],
+  "department_record_example": {
+    "department_id": "dept-marketing",
+    "department_name": "Marketing",
+    "department_pack": "Marketing Pack",
+    "owner_role": "Chief Marketing Agent",
+    "owner_team": "Marketing Governance Layer",
+    "primary_purpose": "Positioning, GTM translation, campaign orchestration, claim boundary",
+    "canonical_truth_source": "Approved product/business truth, market signals, proof references",
+    "allowed_actions": [
+      "analyze",
+      "translate",
+      "brief",
+      "sequence",
+      "coordinate",
+      "escalate"
+    ],
+    "must_not_actions": [
+      "mutate billing truth",
+      "mutate auth truth",
+      "mutate runtime truth",
+      "self-launch",
+      "fabricate proof"
+    ],
+    "dependencies": [
+      "Core Governance",
+      "Business Truth"
+    ],
+    "downstream_recipients": [
+      "Media",
+      "Operations",
+      "Human"
+    ],
+    "current_state": "active-governance",
+    "handoff_required": true,
+    "qa_required": true,
+    "human_review_required": true,
+    "notes": "Marketing owns governed truth translation, not final launch authority."
+  },
+  "registry_record_schema": {
+    "department_id": "string",
+    "department_name": "string",
+    "department_pack": "string",
+    "owner_role": "string",
+    "owner_team": "string",
+    "primary_purpose": "string",
+    "canonical_truth_source": "string",
+    "allowed_actions": "array",
+    "must_not_actions": "array",
+    "dependencies": "array",
+    "downstream_recipients": "array",
+    "current_state": "string",
+    "handoff_required": "boolean",
+    "qa_required": "boolean",
+    "human_review_required": "boolean",
+    "notes": "string"
+  }
+}

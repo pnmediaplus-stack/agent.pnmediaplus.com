@@ -7,6 +7,7 @@ import { tasks } from "@/lib/mock-data";
 
 export default function TasksPage() {
   const { t } = useI18n("tasks");
+  const statusDisplayValue = t("tasks.status.draft") ?? "Draft";
 
   return (
     <PageFrame
@@ -14,6 +15,7 @@ export default function TasksPage() {
       purpose={t("tasks.page.purpose") ?? "Task inbox with safe state badges, ownership, intent types, and current workflow phase."}
       statusLabel={t("tasks.page.statusLabel") ?? "Task inbox"}
       statusValue="DRAFT"
+      statusDisplayValue={statusDisplayValue}
       allowedActions={[
         t("tasks.page.allowed.viewStatus") ?? "View task status",
         t("tasks.page.allowed.requestApproval") ?? "Request approval",

@@ -1,0 +1,166 @@
+department_pack_version: v1
+department_packs:
+  core_governance:
+    owner:
+      - Human / Executive
+      - Governance Relay
+    canonical_truth_source:
+      - constitution
+      - protocol
+      - registry
+    allowed_actions:
+      - route
+      - normalize
+      - reconcile
+      - block
+      - escalate
+    must_not_actions:
+      - implement code
+      - self-approve
+      - mutate runtime truth
+    dependencies: []
+    handoff_to:
+      - all departments
+    qa_expectation: evidence-backed and state-gated
+
+  business_truth:
+    owner:
+      - Finance / Billing
+      - Auth / Identity
+      - Product / Offer Governance
+    canonical_truth_source:
+      - billing services
+      - auth services
+      - product truth
+      - package truth
+    allowed_actions:
+      - validate truth
+      - expose sanitized read models
+      - enforce ownership boundaries
+      - emit canonical package records
+    must_not_actions:
+      - let marketing set price
+      - let UI compute money truth
+      - let marketing infer identity
+      - let runtime decide financial truth
+    dependencies:
+      - Core Governance
+    handoff_to:
+      - Marketing
+      - Media
+      - Operations
+      - Customer
+    qa_expectation: explicit truth source and ownership
+
+  marketing:
+    owner:
+      - Chief Marketing Agent
+    canonical_truth_source:
+      - approved product/business truth
+      - market signals
+      - proof references
+    allowed_actions:
+      - analyze
+      - position
+      - translate
+      - sequence
+      - brief
+      - coordinate
+      - escalate
+    must_not_actions:
+      - mutate billing/auth/runtime truth
+      - self-launch
+      - fabricate proof
+      - widen claim boundaries
+    dependencies:
+      - Core Governance
+      - Business Truth
+    handoff_to:
+      - Media
+      - Operations
+      - Human review when required
+    qa_expectation: GTM packet has claim boundary, proof direction, and approval state
+
+  media:
+    owner:
+      - Media Lead
+    canonical_truth_source:
+      - marketing brief
+      - QA-approved boundary
+      - asset references
+    allowed_actions:
+      - produce
+      - adapt
+      - package
+      - QA
+      - prepare publish-ready assets
+      - capture performance after publish
+    must_not_actions:
+      - change offer truth
+      - widen claims
+      - publish without QA
+      - rewrite strategy
+    dependencies:
+      - Marketing
+      - Core Governance
+    handoff_to:
+      - QA
+      - Distribution
+      - Performance Memory
+    qa_expectation: assets remain inside the approved claim boundary
+
+  operations:
+    owner:
+      - Runtime / N8N
+      - Ops Lead
+    canonical_truth_source:
+      - approved handoffs
+      - runtime registry
+      - execution logs
+    allowed_actions:
+      - execute approved flows
+      - monitor queues
+      - report status
+      - route escalation
+    must_not_actions:
+      - decide canonical truth
+      - self-approve
+      - mutate policy
+      - bypass registry
+    dependencies:
+      - Core Governance
+      - Business Truth
+    handoff_to:
+      - Human
+      - Governance Relay
+      - department owners
+    qa_expectation: traceable and fail-closed runs
+
+  customer:
+    owner:
+      - CS / Support Lead
+    canonical_truth_source:
+      - customer tickets
+      - resolved issue logs
+      - approved product truth
+    allowed_actions:
+      - intake
+      - triage
+      - escalate
+      - summarize feedback
+    must_not_actions:
+      - rewrite offer truth
+      - invent resolutions
+      - bypass escalation
+      - mutate pricing or identity
+    dependencies:
+      - Core Governance
+      - Business Truth
+      - Marketing
+    handoff_to:
+      - Marketing
+      - Product
+      - Operations
+      - Human
+    qa_expectation: sensitive incidents escalated with complete evidence
+

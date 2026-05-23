@@ -1,0 +1,103 @@
+{
+  "handoff_schema_version": "v1",
+  "handoff_id": "",
+  "handoff_type": "briefing_handoff",
+  "source_department": "",
+  "source_owner": "",
+  "target_department": "",
+  "target_owner": "",
+  "current_state": "draft",
+  "requested_next_state": "reviewing",
+  "source_artifacts": [],
+  "source_truth": "",
+  "evidence_refs": [],
+  "verified_facts": [],
+  "assumptions": [],
+  "risks": [],
+  "blocked_conditions": [],
+  "approval_required": false,
+  "approval_status": "not_requested",
+  "qa_required": false,
+  "qa_status": "not_applicable",
+  "public_safe": false,
+  "handoff_allowed": false,
+  "requested_decision": "",
+  "next_actions": [],
+  "next_owner_action": "",
+  "timestamp_created": "",
+  "timestamp_updated": "",
+  "required_handoff_fields": [
+    "handoff_id",
+    "source_department",
+    "source_owner",
+    "target_department",
+    "target_owner",
+    "current_state",
+    "requested_next_state",
+    "handoff_type",
+    "source_artifacts",
+    "source_truth",
+    "evidence_refs",
+    "verified_facts",
+    "assumptions",
+    "risks",
+    "blocked_conditions",
+    "approval_required",
+    "approval_status",
+    "qa_required",
+    "qa_status",
+    "public_safe",
+    "handoff_allowed",
+    "requested_decision",
+    "next_actions",
+    "next_owner_action",
+    "timestamp_created",
+    "timestamp_updated"
+  ],
+  "ui_sections": [
+    "source",
+    "target",
+    "current state",
+    "requested next state",
+    "source artifacts",
+    "evidence",
+    "assumptions",
+    "risks",
+    "approvals",
+    "QA",
+    "public safety",
+    "next actions"
+  ],
+  "integration_targets": {
+    "n8n": {
+      "transport": "json",
+      "required_fields": [
+        "handoff_id",
+        "handoff_type",
+        "source_department",
+        "target_department",
+        "requested_decision",
+        "next_actions"
+      ]
+    },
+    "db": {
+      "storage": "relational + jsonb",
+      "record_key": "handoff_id",
+      "audit_fields": [
+        "timestamp_created",
+        "timestamp_updated",
+        "source_artifacts",
+        "evidence_refs"
+      ]
+    },
+    "ui": {
+      "rendering": "governed form",
+      "required_validation": [
+        "required fields must be visible",
+        "invalid fields must block submit",
+        "approval and QA states must be explicit"
+      ]
+    }
+  }
+}
+

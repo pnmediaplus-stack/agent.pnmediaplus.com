@@ -18,13 +18,25 @@ import {
   Gavel,
   MonitorPlay,
   ScrollText,
-  Clapperboard
+  Clapperboard,
+  Network,
+  Megaphone,
+  Workflow as WorkflowIcon,
+  LifeBuoy,
+  ShieldAlert,
+  Scale
 } from "lucide-react";
 
 const navItems: { href: Route; labelKey: string; fallbackLabel: string; icon: ComponentType<{ className?: string }> }[] = [
   { href: "/dashboard", labelKey: "nav.dashboard", fallbackLabel: "Dashboard", icon: LayoutDashboard },
   { href: "/phase3", labelKey: "nav.phase3", fallbackLabel: "Phase 3", icon: Workflow },
   { href: "/phase4", labelKey: "nav.phase4", fallbackLabel: "Phase 4", icon: MonitorPlay },
+  { href: "/department-governance", labelKey: "nav.departmentGovernance", fallbackLabel: "Department Governance", icon: Network },
+  { href: "/marketing", labelKey: "nav.marketing", fallbackLabel: "Marketing", icon: Megaphone },
+  { href: "/operations", labelKey: "nav.operations", fallbackLabel: "Operations", icon: WorkflowIcon },
+  { href: "/customer", labelKey: "nav.customer", fallbackLabel: "Customer", icon: LifeBuoy },
+  { href: "/business-truth", labelKey: "nav.businessTruth", fallbackLabel: "Business Truth", icon: ShieldAlert },
+  { href: "/core-governance", labelKey: "nav.coreGovernance", fallbackLabel: "Core Governance", icon: Scale },
   { href: "/chat", labelKey: "nav.chat", fallbackLabel: "Chat", icon: MessagesSquare },
   { href: "/departments", labelKey: "nav.departments", fallbackLabel: "Departments", icon: Building2 },
   { href: "/agents", labelKey: "nav.agents", fallbackLabel: "Agents", icon: Bot },

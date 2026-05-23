@@ -15,6 +15,12 @@ import { media } from "@/lib/i18n/vi_modules/media";
 import { n8n } from "@/lib/i18n/vi_modules/n8n";
 import { phase3 } from "@/lib/i18n/vi_modules/phase3";
 import { phase4 } from "@/lib/i18n/vi_modules/phase4";
+import { marketing } from "@/lib/i18n/vi_modules/marketing";
+import { operations } from "@/lib/i18n/vi_modules/operations";
+import { customer } from "@/lib/i18n/vi_modules/customer";
+import { businessTruth } from "@/lib/i18n/vi_modules/businessTruth";
+import { coreGovernance } from "@/lib/i18n/vi_modules/coreGovernance";
+import { departmentGovernance } from "@/lib/i18n/vi_modules/departmentGovernance";
 
 export const vi = {
   ...shared,
@@ -33,5 +39,11 @@ export const vi = {
   ...media,
   ...n8n,
   ...phase3,
-  ...phase4
+  ...phase4,
+  ...marketing,
+  ...operations,
+  ...customer,
+  ...businessTruth,
+  ...coreGovernance,
+  ...departmentGovernance
 } as const;

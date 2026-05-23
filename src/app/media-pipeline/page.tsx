@@ -1,31 +1,31 @@
 "use client";
 
 import { PageFrame } from "@/components/shared/PageFrame";
-import { MediaPipelineBoard } from "@/components/media/MediaPipelineBoard";
+import { MediaExecutionSurface } from "@/components/media/MediaExecutionSurface";
 import { useI18n } from "@/lib/i18n/useI18n";
-import { mediaPipeline } from "@/lib/mock-data";
 
 export default function MediaPipelinePage() {
   const { t } = useI18n("media");
 
   return (
     <PageFrame
-      title={t("media.page.title") ?? "Media Pipeline"}
-      purpose={t("media.page.purpose") ?? "Visual board for intake, editing, and QA stages in the PN MEDIA PLUS department."}
-      statusLabel={t("media.page.statusLabel") ?? "Media pipeline"}
+      title={t("media.page.title") ?? "Media execution"}
+      purpose={t("media.page.purpose") ?? "Read-only media surface for asset production, prompt architecture, motion, caption packaging, and publish readiness."}
+      statusLabel={t("media.page.statusLabel") ?? "Media surface"}
       statusValue="PARTIAL"
+      statusDisplayValue={t("media.page.statusValue") ?? "Read-only"}
       allowedActions={[
-        t("media.page.allowed.inspectStageStatus") ?? "Inspect stage status",
-        t("media.page.allowed.reviewHandoffs") ?? "Review handoffs",
-        t("media.page.allowed.markForQA") ?? "Mark for QA"
+        t("media.page.allowed.inspectProduction") ?? "Inspect production",
+        t("media.page.allowed.reviewHandoffs") ?? "Review handoff from Marketing",
+        t("media.page.allowed.previewQABoundary") ?? "Preview QA boundary"
       ]}
       forbiddenActions={[
         t("media.page.forbidden.autoPublish") ?? "Auto publish",
         t("media.page.forbidden.launchCampaign") ?? "Launch campaign",
-        t("media.page.forbidden.bypassReview") ?? "Bypass review"
+        t("media.page.forbidden.editClaims") ?? "Edit claims"
       ]}
     >
-      <MediaPipelineBoard stages={mediaPipeline} />
+      <MediaExecutionSurface />
     </PageFrame>
   );
 }

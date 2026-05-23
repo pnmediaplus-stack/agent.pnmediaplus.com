@@ -6,6 +6,7 @@ import type { LifecycleState } from "@/types/state";
 import { TaskStatusBadge } from "@/components/tasks/TaskStatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useI18n } from "@/lib/i18n/useI18n";
+import { departments as departmentRecords } from "@/lib/mock-data";
 
 type TaskAction = {
   key: string;
@@ -108,6 +109,78 @@ function actionButtonClasses(tone: TaskAction["tone"], disabled: boolean) {
     variant,
     disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
   ].join(" ");
+}
+
+function getTaskStatusLabel(status: Task["status"], t: ReturnType<typeof useI18n>["t"]) {
+  switch (status) {
+    case "NOT_STARTED":
+      return t("tasks.status.notStarted") ?? "Not started";
+    case "DRAFT":
+      return t("tasks.status.draft") ?? "Draft";
+    case "PARTIAL":
+      return t("tasks.status.partial") ?? "Partially complete";
+    case "REVIEW":
+      return t("tasks.status.review") ?? "Under review";
+    case "HOLD":
+      return t("tasks.status.hold") ?? "On hold";
+    case "READY_FOR_RECHECK":
+      return t("tasks.status.readyForRecheck") ?? "Ready for recheck";
+    case "PASS":
+      return t("tasks.status.pass") ?? "Passed";
+    case "BLOCKED":
+      return t("tasks.status.blocked") ?? "Blocked";
+    case "APPROVED":
+      return t("tasks.status.approved") ?? "Approved";
+    case "DEPRECATED":
+      return t("tasks.status.deprecated") ?? "Deprecated";
+    case "OPEN":
+      return t("tasks.status.open") ?? "Open";
+    case "IN_PROGRESS":
+      return t("tasks.status.inProgress") ?? "In progress";
+    case "DONE":
+      return t("tasks.status.done") ?? "Done";
+    default:
+      return status;
+  }
+}
+
+function getTaskIntentLabel(intentType: Task["intentType"], t: ReturnType<typeof useI18n>["t"]) {
+  switch (intentType) {
+    case "create_content":
+      return t("tasks.intent.createContent") ?? "Create content";
+    case "review_artifact":
+      return t("tasks.intent.reviewArtifact") ?? "Review artifact";
+    case "check_governance":
+      return t("tasks.intent.checkGovernance") ?? "Check governance";
+    case "request_status":
+      return t("tasks.intent.requestStatus") ?? "Request status";
+    case "approve_or_reject":
+      return t("tasks.intent.approveOrReject") ?? "Approve or reject";
+    case "unknown":
+    default:
+      return t("tasks.intent.unknown") ?? "Unknown";
+  }
+}
+
+function getTaskPriorityLabel(priority: Task["priority"], t: ReturnType<typeof useI18n>["t"]) {
+  switch (priority) {
+    case "Low":
+      return t("tasks.priority.low") ?? "Low";
+    case "Medium":
+      return t("tasks.priority.medium") ?? "Medium";
+    case "High":
+      return t("tasks.priority.high") ?? "High";
+    default:
+      return priority;
+  }
+}
+
+function getDepartmentDisplay(departmentId: Task["departmentId"]) {
+  const department = departmentRecords.find((item) => item.id === departmentId);
+  return {
+    name: department?.name ?? departmentId,
+    id: department?.id ?? departmentId
+  };
 }
 
 export function TaskTable({ tasks }: { tasks: Task[] }) {
@@ -261,6 +334,7 @@ export function TaskTable({ tasks }: { tasks: Task[] }) {
           <tbody className="divide-y divide-slate-800">
             {rows.map((task) => {
               const actions = getActionPlan(task.status, t);
+              const department = getDepartmentDisplay(task.departmentId);
 
               return (
                 <tr key={task.id} className="text-slate-300">
@@ -269,12 +343,15 @@ export function TaskTable({ tasks }: { tasks: Task[] }) {
                     <div className="text-xs text-slate-500">{task.id}</div>
                   </td>
                   <td className="px-5 py-4">{task.owner}</td>
-                  <td className="px-5 py-4">{task.departmentId}</td>
-                  <td className="px-5 py-4">{task.intentType}</td>
                   <td className="px-5 py-4">
-                    <TaskStatusBadge status={task.status} />
+                    <div className="font-medium text-white">{department.name}</div>
+                    <div className="text-xs text-slate-500">{department.id}</div>
                   </td>
-                  <td className="px-5 py-4">{task.priority}</td>
+                  <td className="px-5 py-4">{getTaskIntentLabel(task.intentType, t)}</td>
+                  <td className="px-5 py-4">
+                    <TaskStatusBadge status={task.status} displayLabel={getTaskStatusLabel(task.status, t)} />
+                  </td>
+                  <td className="px-5 py-4">{getTaskPriorityLabel(task.priority, t)}</td>
                   <td className="px-5 py-4">
                     {actions.length ? (
                       <div className="flex flex-wrap gap-2">

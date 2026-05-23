@@ -1,0 +1,177 @@
+{
+  "name": "[HỆ THỐNG] Bắn Log về Next.js (Có mã hóa)",
+  "nodes": [
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "event_id",
+              "value": "={{ $execution.id }}_evt"
+            },
+            {
+              "name": "idempotency_key",
+              "value": "={{ $execution.id }}_telemetry"
+            },
+            {
+              "name": "trace_id",
+              "value": "={{ $execution.id }}"
+            },
+            {
+              "name": "workflow_run_id",
+              "value": "={{ $execution.id }}"
+            },
+            {
+              "name": "n8n_execution_id",
+              "value": "={{ $execution.id }}"
+            },
+            {
+              "name": "workflow_ref",
+              "value": "={{ $workflow.name }}"
+            },
+            {
+              "name": "event_type",
+              "value": "EXECUTION_STARTED"
+            },
+            {
+              "name": "execution_state",
+              "value": "running"
+            },
+            {
+              "name": "actor_type",
+              "value": "N8N"
+            },
+            {
+              "name": "actor_ref",
+              "value": "n8n:system"
+            },
+            {
+              "name": "emitted_at",
+              "value": "={{ new Date().toISOString() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "be37d830-5a10-46cc-8138-a6de460064a8",
+      "name": "Set Telemetry Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent.pnmediaplus.com/api/runtime/execution-event",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-runtime-event-timestamp",
+              "value": "={{ $json.current_timestamp }}"
+            },
+            {
+              "name": "x-runtime-event-signature",
+              "value": "=sha256={{ $json.generated_signature }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "id": "f0b39b39-158c-4156-b00b-23e2bc8645fe",
+      "name": "Emit to Control Plane",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        608,
+        -128
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -128
+      ],
+      "id": "89bf18f4-e797-4483-ad6e-911cba5545da",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Lấy thời gian thực\nconst timestamp = Date.now().toString();\n\n// 2. Secret Key từ .env của Next.js\nconst secret = \"pn_media_os_super_secret_key_2026_xyz\";\n\n// 3. Chuẩn bị payload lấy từ node Set phía trước\nconst payload = $input.item.json;\nconst raw_json_body = JSON.stringify(payload);\n\n// 4. Tạo chữ ký theo format chuẩn Next.js đang cần: timestamp.body\nconst dataToSign = timestamp + '.' + raw_json_body;\nconst crypto = require('crypto');\nconst signature = crypto.createHmac('sha256', secret).update(dataToSign).digest('hex');\n\n// 5. Xuất kết quả dọn cỗ cho node HTTP Request\nreturn [{\n  json: {\n    body: payload,\n    current_timestamp: timestamp,\n    generated_signature: signature\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -128
+      ],
+      "id": "bc72ca9b-6dd3-4de8-8a21-1dd7944821e9",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Execute workflow’": [
+      {
+        "json": {},
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Set Telemetry Payload": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Telemetry Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Emit to Control Plane",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2c1349b3-4c4a-4b1f-a7d4-6357929c70ed",
+  "meta": {
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "id": "86qGybydqKjnG5wC",
+  "tags": []
+}

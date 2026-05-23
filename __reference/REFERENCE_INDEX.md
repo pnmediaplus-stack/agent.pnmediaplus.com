@@ -8,6 +8,8 @@
   - Purpose: integration notes and contract context
   - Owner: Next.js build support
   - Layer priority: `docs/ > __reference/ > implementation`
+  - Department governance bundle:
+    - `department-governance/`
 - `__reference/runtime/`
   - Purpose: runtime references and handoff context
   - Owner: Next.js build support

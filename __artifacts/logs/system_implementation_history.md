@@ -387,6 +387,14 @@ Start here when reloading context:
 - `PHASE4_EXECUTION_METRICS_EMPTY` remains a valid blocked state until upstream emits snapshot rows
 - No runtime mutation, retry action, publish authority, BYOK change, or n8n change was introduced
 
+### Phase 5 live reflection verified and accepted
+
+- PHASE 5 LIVE REFLECTION VERIFIED AND ACCEPTED.
+- Signed runtime ingress passed through Next.js canonical control plane and append-only RPC
+- Phase 4 now reflects real runtime execution facts from the governance runtime read model
+- Duplicate idempotency remained correctly blocked as part of the append-only guard rail
+- No raw secret egress, no BYOK boundary drift, and no UI mutation path were introduced
+
 ## What A New Chatbot Should Do First
 
 1. Read this file.

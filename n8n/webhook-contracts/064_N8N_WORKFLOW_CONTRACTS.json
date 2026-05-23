@@ -1,0 +1,137 @@
+{
+  "contract_version": "064.v1",
+  "roadmap_ref": "docs/governance/064_N8N_WORKFLOW_BUILD_ROADMAP_v1.md",
+  "contract_status": "DRAFT_CONTRACT_READY",
+  "source_of_truth": "public.department_governance_snapshot + public.phase4_* read models + approved Next.js API contracts",
+  "runtime_boundary": {
+    "n8n_may": [
+      "inspect read-only governance data",
+      "run dry-run validation against canonical handoff contracts",
+      "emit runtime facts through approved ingress contracts",
+      "emit reports and escalation notices"
+    ],
+    "n8n_must": [
+      "fail closed on missing fields, blocked states, or unknown ownership",
+      "preserve canonical handoff contracts",
+      "stay observable through Phase 4 read models",
+      "wait for explicit review before controlled live activation"
+    ],
+    "n8n_must_not": [
+      "decide canonical truth",
+      "approve itself",
+      "mutate source of truth",
+      "bypass handoff contract",
+      "auto-correct drift"
+    ]
+  },
+  "default_flow": [
+    "Marketing",
+    "Media",
+    "Operations",
+    "Customer",
+    "Business Truth"
+  ],
+  "core_governance_boundary": "Core Governance remains the escalation and reconciliation boundary.",
+  "workflows": [
+    {
+      "workflow_id": "064.read_only_validation",
+      "build_order": 1,
+      "mode": "read_only_validation",
+      "trigger": "manual_or_schedule",
+      "input_contract": "GET /api/department-governance",
+      "output_contract": "PHASE9_READONLY_VALIDATION_REPORT",
+      "allowed_actions": [
+        "read governance snapshot",
+        "read Phase 4 runtime views",
+        "emit validation report"
+      ],
+      "forbidden_actions": [
+        "apply changes",
+        "approve transitions",
+        "write source of truth"
+      ],
+      "fail_closed_when": [
+        "API state is blocked",
+        "Phase 8 handoff flow is blocked",
+        "Phase 4 runtime read model is blocked"
+      ]
+    },
+    {
+      "workflow_id": "064.dry_run_orchestration",
+      "build_order": 2,
+      "mode": "dry_run",
+      "trigger": "manual_test_only",
+      "input_contract": "data.phase063_workflow_orchestration.dry_run_edges",
+      "output_contract": "DRY_RUN_HANDOFF_MATCH_REPORT",
+      "allowed_actions": [
+        "validate Marketing -> Media",
+        "validate Media -> Operations",
+        "validate Operations -> Customer",
+        "validate Customer -> Business Truth",
+        "emit dry-run report"
+      ],
+      "forbidden_actions": [
+        "create live task",
+        "mutate handoff graph",
+        "route production payload"
+      ],
+      "fail_closed_when": [
+        "canonical edge missing",
+        "source handoff id missing",
+        "unknown department owner"
+      ]
+    },
+    {
+      "workflow_id": "064.controlled_live_observation",
+      "build_order": 3,
+      "mode": "controlled_live_observation",
+      "trigger": "approved_runtime_event_only",
+      "input_contract": "POST /api/runtime/execution-event",
+      "output_contract": "PHASE4_EXECUTION_TRACE_READ_MODEL",
+      "allowed_actions": [
+        "emit signed runtime execution facts",
+        "emit receipts through approved ingress",
+        "remain visible in Phase 4 dashboard"
+      ],
+      "forbidden_actions": [
+        "direct DB writes",
+        "approval decisions",
+        "source-of-truth mutation",
+        "raw BYOK secret handling"
+      ],
+      "fail_closed_when": [
+        "signature invalid",
+        "timestamp stale",
+        "idempotency duplicate",
+        "missing workflow_run_id",
+        "missing actor envelope"
+      ],
+      "activation_status": "BLOCKED_UNTIL_EXPLICIT_REVIEW"
+    },
+    {
+      "workflow_id": "064.monitoring_escalation",
+      "build_order": 4,
+      "mode": "monitoring_escalation",
+      "trigger": "manual_or_schedule",
+      "input_contract": "data.phase063_workflow_orchestration + public.phase4_execution_audit_events",
+      "output_contract": "ESCALATION_NOTICE_REPORT",
+      "allowed_actions": [
+        "detect drift",
+        "detect blocked traces",
+        "detect routing failures",
+        "emit escalation notice"
+      ],
+      "forbidden_actions": [
+        "self-correct truth",
+        "auto-retry outside contract",
+        "auto-approve"
+      ],
+      "fail_closed_when": [
+        "read model unavailable",
+        "runtime self-approval signal detected",
+        "handoff contract bypass detected"
+      ]
+    }
+  ],
+  "review_required_before_activation": true
+}

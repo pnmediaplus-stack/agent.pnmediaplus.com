@@ -4,10 +4,37 @@
   - Purpose: constitutional and Human-approved governance source materials
   - Owner: Human authority, governance layer
   - Layer priority: `docs/ > __reference/ > implementation`
+  - Marketing constitution:
+    - `049_MARKETING_AGENT_CONSTITUTION_v1.md`
 - `docs/governance/`
   - Purpose: governance contracts, authority maps, and policy references
   - Owner: Human authority, governance layer
   - Layer priority: `docs/ > __reference/ > implementation`
+  - Marketing governance set:
+    - `050_MARKETING_AGENT_OPERATING_MANUAL_v1.md`
+    - `051_MARKETING_AGENT_QUICK_RULES_v1.md`
+    - `052_MARKETING_ROOM_5_PHASE_ROADMAP_v1.md`
+    - `053_DEPARTMENT_AUTHORITY_MATRIX_v1.md`
+    - `054_MARKETING_ROOM_CHARTER_v1.md`
+    - `055_DEPARTMENT_PACK_MASTER_PLAN_v1.md`
+    - `056_MARKETING_MEDIA_FLOW_v1.md`
+    - `057_DEPARTMENT_REGISTRY_v1.md`
+    - `058_CROSS_DEPARTMENT_HANDOFF_CONTRACT_v1.md`
+    - `059_DEPARTMENT_PACKS_v1.md`
+    - `060_DEPARTMENT_REGISTRY_SCHEMA.yaml`
+    - `060_DEPARTMENT_REGISTRY_SCHEMA.json`
+    - `061_MASTER_ROADMAP_v1.md`
+    - `061_MASTER_ROADMAP_v1.md`: Master Roadmap v1 complete (phases 1-10 closed)
+    - `062_DEPARTMENT_EXECUTION_ROADMAP_v1.md`
+    - `062_DEPARTMENT_EXECUTION_ROADMAP_v1.md`: Department Execution Roadmap v1 complete
+    - `063_WORKFLOW_ORCHESTRATION_ROADMAP_v1.md`
+    - `063_WORKFLOW_ORCHESTRATION_ROADMAP_v1.md`: Workflow Orchestration Roadmap v1 complete
+    - `064_N8N_WORKFLOW_BUILD_ROADMAP_v1.md`
+    - `064_N8N_WORKFLOW_BUILD_ROADMAP_v1.md`: n8n Workflow Build Roadmap v1 complete
+  - Canonical machine-readable bundle:
+    - `__reference/integration/department-governance/`
+    - `__reference/database/department_governance_additive_migration.sql`
+    - `__reference/database/department_governance_verification_queries.sql`
 - `docs/architecture/`
   - Purpose: architectural doctrine and structural guidance
   - Owner: Human authority, governance layer

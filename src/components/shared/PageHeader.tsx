@@ -8,6 +8,7 @@ type PageHeaderProps = {
   purpose: string;
   statusLabel: string;
   statusValue: string;
+  statusDisplayValue?: string;
   allowedActions: string[];
   forbiddenActions?: string[];
 };
@@ -17,6 +18,7 @@ export function PageHeader({
   purpose,
   statusLabel,
   statusValue,
+  statusDisplayValue,
   allowedActions,
   forbiddenActions = []
 }: PageHeaderProps) {
@@ -35,7 +37,7 @@ export function PageHeader({
         <div className="shrink-0 rounded-xl border border-slate-700 bg-slate-900/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
           <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{t("shared.page.currentStatus") ?? "Current Status"}</div>
           <div className="mt-2">
-            <StateBadge label={statusValue} />
+            <StateBadge label={statusValue} displayLabel={statusDisplayValue} />
           </div>
         </div>
       </div>

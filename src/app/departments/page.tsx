@@ -7,6 +7,7 @@ import { departments } from "@/lib/mock-data";
 
 export default function DepartmentsPage() {
   const { t } = useI18n("departments");
+  const statusDisplayValue = t("departments.state.review") ?? "Reviewing";
 
   return (
     <PageFrame
@@ -14,6 +15,7 @@ export default function DepartmentsPage() {
       purpose={t("departments.page.purpose") ?? "Internal department directory with ownership, purpose, and active task counts."}
       statusLabel={t("departments.page.statusLabel") ?? "Department registry"}
       statusValue="PARTIAL"
+      statusDisplayValue={statusDisplayValue}
       allowedActions={[
         t("departments.page.allowed.inspectOwnership") ?? "Inspect department ownership",
         t("departments.page.allowed.viewOpenTasks") ?? "View open tasks",
