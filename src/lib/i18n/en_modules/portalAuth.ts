@@ -1,0 +1,22 @@
+export const portalAuth = {
+  "portalAuth.login.kicker": "PN OS Portal",
+  "portalAuth.login.title": "Internal access only",
+  "portalAuth.login.description": "Sign in with an approved Supabase Auth user. Self-signup is disabled and sensitive routes fail closed without a valid session.",
+  "portalAuth.login.guardrail.0": "Supabase Auth is the portal identity layer.",
+  "portalAuth.login.guardrail.1": "Admin and mutation routes require a valid session.",
+  "portalAuth.login.guardrail.2": "Read-only public surfaces remain allowlisted.",
+  "portalAuth.login.form.title": "Sign in",
+  "portalAuth.login.form.description": "No self-signup. Use an approved internal account.",
+  "portalAuth.login.field.email": "Email",
+  "portalAuth.login.field.password": "Password",
+  "portalAuth.login.placeholder.email": "you@example.com",
+  "portalAuth.login.placeholder.password": "Password",
+  "portalAuth.login.password.show": "Show password",
+  "portalAuth.login.password.hide": "Hide password",
+  "portalAuth.login.rememberEmail": "Remember email on this device",
+  "portalAuth.login.action.submit": "Sign in",
+  "portalAuth.login.action.loading": "Signing in",
+  "portalAuth.login.error.generic": "Login failed.",
+  "portalAuth.login.error.membershipMissing": "PORTAL_ORGANIZATION_MEMBERSHIP_MISSING",
+  "portalAuth.login.error.sessionVerification": "Portal session verification failed."
+} as const;

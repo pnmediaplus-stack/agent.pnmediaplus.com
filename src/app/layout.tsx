@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
-import { AppShell } from "@/components/layout/AppShell";
+import { AppFrame } from "@/components/layout/AppFrame";
 import { defaultLocale, dictionaries } from "@/lib/i18n";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
 
@@ -17,7 +17,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     <html lang={defaultLocale} suppressHydrationWarning>
       <body suppressHydrationWarning>
         <I18nProvider initialLocale={defaultLocale}>
-          <AppShell>{children}</AppShell>
+          <AppFrame>{children}</AppFrame>
         </I18nProvider>
       </body>
     </html>

@@ -1,0 +1,187 @@
+{
+  "contract_version": "065.v1",
+  "roadmap_ref": "docs/governance/065_MARKETING_AUTOMATION_ROADMAP_v1.md",
+  "contract_status": "DRAFT_CONTRACT_READY",
+  "source_of_truth": "public.department_governance_snapshot + public.phase2_* + public.phase4_* read models + Phase 064 workflow contracts",
+  "automation_boundary": {
+    "automation_may": [
+      "inventory queueable marketing actions",
+      "map bounded auto-post candidates",
+      "map lead funnel stages",
+      "run dry-run automation checks",
+      "prepare controlled queued execution contracts",
+      "emit monitoring and escalation reports"
+    ],
+    "automation_must": [
+      "fail closed on missing fields, blocked states, or unknown ownership",
+      "preserve canonical governance and handoff contracts",
+      "keep publish eligibility read-only",
+      "wait for explicit review before controlled queued execution"
+    ],
+    "automation_must_not": [
+      "approve itself",
+      "publish automatically",
+      "mutate source of truth",
+      "bypass QA gate",
+      "bypass Human final authority",
+      "invent lead or performance truth"
+    ]
+  },
+  "default_flow": [
+    "Marketing",
+    "Media",
+    "Operations",
+    "Customer",
+    "Business Truth"
+  ],
+  "queueable_actions": [
+    {
+      "action_id": "065.queue.content_research_ready",
+      "action_kind": "content_pipeline_handoff",
+      "source_state": "idea",
+      "target_state": "research_ready",
+      "owner_boundary": "Marketing",
+      "required_evidence": [
+        "content_item_id",
+        "owner_ref",
+        "brief",
+        "handoff_contract"
+      ],
+      "activation_status": "DRY_RUN_ONLY"
+    },
+    {
+      "action_id": "065.queue.media_asset_ready",
+      "action_kind": "media_execution_handoff",
+      "source_state": "research_ready",
+      "target_state": "visual_ready",
+      "owner_boundary": "Media",
+      "required_evidence": [
+        "content_item_id",
+        "asset_evidence_ref",
+        "claim_boundary",
+        "handoff_contract"
+      ],
+      "activation_status": "DRY_RUN_ONLY"
+    },
+    {
+      "action_id": "065.queue.qa_submit",
+      "action_kind": "qa_gate_handoff",
+      "source_state": "caption_ready",
+      "target_state": "QA_ready",
+      "owner_boundary": "Operations",
+      "required_evidence": [
+        "content_item_id",
+        "caption_output",
+        "asset_completeness",
+        "qa_required"
+      ],
+      "activation_status": "DRY_RUN_ONLY"
+    },
+    {
+      "action_id": "065.queue.schedule_candidate",
+      "action_kind": "publish_readiness_handoff",
+      "source_state": "QA_passed",
+      "target_state": "scheduled",
+      "owner_boundary": "Human + Operations",
+      "required_evidence": [
+        "content_item_id",
+        "qa_passed",
+        "human_review_required",
+        "publish_eligibility"
+      ],
+      "activation_status": "BLOCKED_UNTIL_EXPLICIT_REVIEW"
+    }
+  ],
+  "auto_post_contracts": [
+    {
+      "contract_id": "065.autopost.candidate_only",
+      "scope": "candidate_mapping_only",
+      "allowed_actions": [
+        "identify QA_passed scheduled candidates",
+        "prepare read-only publish readiness report",
+        "emit escalation if review is missing"
+      ],
+      "forbidden_actions": [
+        "publish content",
+        "approve content",
+        "schedule content without Human approval",
+        "write platform credentials"
+      ],
+      "activation_status": "BLOCKED_UNTIL_EXPLICIT_REVIEW"
+    }
+  ],
+  "lead_funnel_mappings": [
+    {
+      "mapping_id": "065.lead.awareness",
+      "stage": "awareness",
+      "source_signal": "published_content_performance",
+      "allowed_output": "read_only_interest_summary",
+      "must_not": "create lead record without approved write contract"
+    },
+    {
+      "mapping_id": "065.lead.consideration",
+      "stage": "consideration",
+      "source_signal": "engagement_or_click_snapshot",
+      "allowed_output": "read_only_follow_up_candidate_report",
+      "must_not": "contact customer automatically"
+    },
+    {
+      "mapping_id": "065.lead.conversion_review",
+      "stage": "conversion_review",
+      "source_signal": "qualified_handoff_request",
+      "allowed_output": "operations_review_notice",
+      "must_not": "claim revenue truth or customer state"
+    }
+  ],
+  "automation_paths": [
+    {
+      "path_id": "065.path.read_only_inventory",
+      "order": 1,
+      "mode": "read_only_inventory",
+      "input_contract": "data.phase2_content_items + data.phase10_operational_expansion",
+      "output_contract": "QUEUEABLE_ACTION_INVENTORY",
+      "activation_status": "READ_ONLY_READY"
+    },
+    {
+      "path_id": "065.path.auto_post_mapping",
+      "order": 2,
+      "mode": "contract_mapping",
+      "input_contract": "data.phase2_content_items where current_state in [QA_passed, scheduled]",
+      "output_contract": "AUTO_POST_CANDIDATE_REPORT",
+      "activation_status": "DRY_RUN_ONLY"
+    },
+    {
+      "path_id": "065.path.lead_funnel_mapping",
+      "order": 3,
+      "mode": "read_only_mapping",
+      "input_contract": "data.phase2_performance_records",
+      "output_contract": "LEAD_FUNNEL_MAPPING_REPORT",
+      "activation_status": "READ_ONLY_READY"
+    },
+    {
+      "path_id": "065.path.dry_run_automation",
+      "order": 4,
+      "mode": "dry_run",
+      "input_contract": "QUEUEABLE_ACTION_INVENTORY + canonical handoff graph",
+      "output_contract": "DRY_RUN_AUTOMATION_REPORT",
+      "activation_status": "DRY_RUN_READY"
+    },
+    {
+      "path_id": "065.path.controlled_queued_execution",
+      "order": 5,
+      "mode": "controlled_queued_execution",
+      "input_contract": "approved queue item + Human review evidence",
+      "output_contract": "CONTROLLED_QUEUE_OBSERVATION_RECEIPT",
+      "activation_status": "BLOCKED_UNTIL_EXPLICIT_REVIEW"
+    },
+    {
+      "path_id": "065.path.monitoring_escalation",
+      "order": 6,
+      "mode": "monitoring_escalation",
+      "input_contract": "Phase 4 execution read model + dry-run report",
+      "output_contract": "MARKETING_AUTOMATION_ESCALATION_REPORT",
+      "activation_status": "READ_ONLY_READY"
+    }
+  ],
+  "review_required_before_activation": true
+}

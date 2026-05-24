@@ -7,6 +7,9 @@ import { loadPhase2DashboardData } from "@/lib/phase2-dashboard-loader";
 import { createPhase10OperationalExpansion } from "@/lib/phase10-operational-expansion";
 import { createPhase063WorkflowOrchestration } from "@/lib/phase063-workflow-orchestration";
 import { createPhase064N8nWorkflowContracts } from "@/lib/phase064-n8n-workflow-contracts";
+import { createPhase065MarketingAutomation } from "@/lib/phase065-marketing-automation";
+import { createPhase066MarketingMediaOperationsWorkflow } from "@/lib/phase066-marketing-media-operations-workflow";
+import { loadPhase066Snapshot } from "@/lib/phase066-snapshot-loader";
 
 export const dynamic = "force-dynamic";
 
@@ -44,9 +47,10 @@ export async function GET() {
 
   const bundle = loaded.data;
   const phase8HandoffFlow = createPhase8HandoffFlow(bundle.snapshot.handoffs);
-  const [runtimeReadModel, phase2ReadModel] = await Promise.all([
+  const [runtimeReadModel, phase2ReadModel, phase066Snapshot] = await Promise.all([
     loadPhase4ObservabilityData(),
-    loadPhase2DashboardData()
+    loadPhase2DashboardData(),
+    loadPhase066Snapshot()
   ]);
   const phase9ValidationReport = createPhase9ReadonlyValidationReport(phase8HandoffFlow, runtimeReadModel);
   const phase063WorkflowOrchestration = createPhase063WorkflowOrchestration({
@@ -64,6 +68,17 @@ export async function GET() {
     runtime: runtimeReadModel,
     phase2: phase2ReadModel
   });
+  const phase065MarketingAutomation = createPhase065MarketingAutomation({
+    phase064: phase064N8nWorkflowContracts,
+    phase10: phase10OperationalExpansion,
+    phase2: phase2ReadModel
+  });
+  const phase066MarketingMediaOperationsWorkflow = createPhase066MarketingMediaOperationsWorkflow({
+    phase8Flow: phase8HandoffFlow,
+    phase065: phase065MarketingAutomation,
+    phase2: phase2ReadModel,
+    phase066Snapshot
+  });
   const payload = {
     registry: bundle.snapshot.registry,
     packs: bundle.snapshot.packs,
@@ -74,7 +89,9 @@ export async function GET() {
     phase9_validation_report: phase9ValidationReport,
     phase063_workflow_orchestration: phase063WorkflowOrchestration,
     phase064_n8n_workflow_contracts: phase064N8nWorkflowContracts,
-    phase10_operational_expansion: phase10OperationalExpansion
+    phase10_operational_expansion: phase10OperationalExpansion,
+    phase065_marketing_automation: phase065MarketingAutomation,
+    phase066_marketing_media_operations_workflow: phase066MarketingMediaOperationsWorkflow
   };
 
   return Response.json(

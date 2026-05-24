@@ -4,5 +4,18 @@ export const layout = {
   "layout.brand.tagline": "Thin-shell UI for commands, registry state, approvals, and workflow monitoring.",
   "layout.header.title": "Localhost build",
   "layout.header.description": "Next.js shell with mock-first data and safe server routes.",
+  "layout.sidebar.userCard.titleReady": "Signed in",
+  "layout.sidebar.userCard.titleBlocked": "Portal blocked",
+  "layout.sidebar.userCard.subtitleBlocked": "Login required to access the portal",
+  "layout.sidebar.accountMenu.action": "Setting",
+  "layout.sidebar.logout.action": "Logout",
+  "layout.sidebar.logout.loading": "Logging out",
+  "layout.sidebar.logout.error": "Logout failed.",
+  "layout.sidebar.integrations.title": "Future integrations",
+  "layout.sidebar.integrations.description": "Disabled placeholders for future provider settings. No API keys are exposed here.",
+  "layout.sidebar.integrations.openai": "OpenAI",
+  "layout.sidebar.integrations.gemini": "Gemini",
+  "layout.sidebar.integrations.apiSettings": "API settings",
+  "layout.sidebar.integrations.disabled": "Disabled",
   "layout.sidebar.noPublishLaunch": "No publish or launch actions are wired in Phase 1."
 } as const;

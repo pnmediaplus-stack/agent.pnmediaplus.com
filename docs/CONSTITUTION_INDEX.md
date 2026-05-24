@@ -31,6 +31,24 @@
     - `063_WORKFLOW_ORCHESTRATION_ROADMAP_v1.md`: Workflow Orchestration Roadmap v1 complete
     - `064_N8N_WORKFLOW_BUILD_ROADMAP_v1.md`
     - `064_N8N_WORKFLOW_BUILD_ROADMAP_v1.md`: n8n Workflow Build Roadmap v1 complete
+    - `065_MARKETING_AUTOMATION_ROADMAP_v1.md`
+    - `065_MARKETING_AUTOMATION_ROADMAP_v1.md`: Marketing Automation Roadmap v1 scaffold complete
+    - `066_MARKETING_MEDIA_OPERATIONS_WORKFLOW_ROADMAP_v1.md`
+    - `066_MARKETING_MEDIA_OPERATIONS_WORKFLOW_ROADMAP_v1.md`: Marketing-Media-Operations Workflow Roadmap v1 closed
+    - `066_MARKETING_MEDIA_OPERATIONS_WORKFLOW_ROADMAP_v1.md`: Phase 066 Final Status (2026-05-23) complete
+    - `067_LEAD_FUNNEL_PERFORMANCE_MEMORY_ROADMAP_v1.md`
+    - `067_LEAD_FUNNEL_PERFORMANCE_MEMORY_ROADMAP_v1.md`: Phase 067 Final Status (2026-05-23) complete
+    - `067_LEAD_FUNNEL_PERFORMANCE_MEMORY_ROADMAP_v1.md`: Portal Auth multi-tenant gate connected
+    - `068_PRODUCT_PORTAL_COMMERCIAL_PACKAGING_ROADMAP_v1.md`
+    - `069_GOLIVE_READINESS_ROADMAP_v1.md`
+    - `069_GOLIVE_READINESS_ROADMAP_v1.md`: Phase 069 closed on 2026-05-24 with Gatekeeper PASS; Human launch command pending
+    - `070_TENANT_INTEGRATION_VAULT_ROADMAP_v1.md`
+    - `070_TENANT_INTEGRATION_VAULT_ROADMAP_v1.md`: Phase 070 scaffold complete; live secret operations remain blocked pending authority sign-off
+    - `071_TENANT_INTEGRATION_RUNTIME_ROADMAP_v1.md`
+    - `071_TENANT_INTEGRATION_RUNTIME_ROADMAP_v1.md`: Phase 071 scaffold complete; live broker execution remains blocked pending authority sign-off
+    - `072_TENANT_INTEGRATION_LIVE_BROKER_ROADMAP_v1.md`
+    - `072_TENANT_INTEGRATION_LIVE_BROKER_ROADMAP_v1.md`: Phase 072 scaffold complete; live broker execution remains blocked pending authority sign-off
+    - `073_TENANT_INTEGRATION_LIVE_BROKER_HARDENING_ROADMAP_v1.md`
   - Canonical machine-readable bundle:
     - `__reference/integration/department-governance/`
     - `__reference/database/department_governance_additive_migration.sql`

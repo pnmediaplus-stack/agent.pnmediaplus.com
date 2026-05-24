@@ -1,0 +1,22 @@
+export const portalAuth = {
+  "portalAuth.login.kicker": "PN OS Portal",
+  "portalAuth.login.title": "Chỉ dành cho nội bộ",
+  "portalAuth.login.description": "Đăng nhập bằng tài khoản Supabase Auth đã được duyệt. Không mở self-signup và route nhạy cảm fail-closed nếu thiếu session hợp lệ.",
+  "portalAuth.login.guardrail.0": "Supabase Auth là lớp định danh portal.",
+  "portalAuth.login.guardrail.1": "Route admin và mutation cần session hợp lệ.",
+  "portalAuth.login.guardrail.2": "Các public surface chỉ đọc vẫn nằm trong allowlist.",
+  "portalAuth.login.form.title": "Đăng nhập",
+  "portalAuth.login.form.description": "Không có self-signup. Dùng tài khoản nội bộ đã được duyệt.",
+  "portalAuth.login.field.email": "Email",
+  "portalAuth.login.field.password": "Mật khẩu",
+  "portalAuth.login.placeholder.email": "you@example.com",
+  "portalAuth.login.placeholder.password": "Mật khẩu",
+  "portalAuth.login.password.show": "Hiện mật khẩu",
+  "portalAuth.login.password.hide": "Ẩn mật khẩu",
+  "portalAuth.login.rememberEmail": "Ghi nhớ email trên thiết bị này",
+  "portalAuth.login.action.submit": "Đăng nhập",
+  "portalAuth.login.action.loading": "Đang đăng nhập",
+  "portalAuth.login.error.generic": "Đăng nhập thất bại.",
+  "portalAuth.login.error.membershipMissing": "PORTAL_ORGANIZATION_MEMBERSHIP_MISSING",
+  "portalAuth.login.error.sessionVerification": "Không thể xác minh session portal."
+} as const;

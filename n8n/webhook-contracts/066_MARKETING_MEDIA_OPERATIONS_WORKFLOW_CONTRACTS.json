@@ -1,0 +1,142 @@
+{
+  "contract_version": "066.v1",
+  "roadmap_ref": "docs/governance/066_MARKETING_MEDIA_OPERATIONS_WORKFLOW_ROADMAP_v1.md",
+  "contract_status": "DRAFT_CONTRACT_READY",
+  "source_of_truth": "public.department_governance_snapshot + public.phase2_* read models + Phase 065 marketing automation contracts",
+  "workflow_boundary": {
+    "workflow_may": [
+      "prepare Marketing -> Media handoff packet",
+      "prepare Media -> Operations handoff packet",
+      "prepare Operations intake visibility packet",
+      "run dry-run packet validation",
+      "emit blocked packet and escalation reports"
+    ],
+    "workflow_must": [
+      "carry owner and target owner",
+      "carry source of truth",
+      "carry current state and requested next state",
+      "carry evidence refs",
+      "carry blocked conditions",
+      "carry escalation path",
+      "fail closed on missing ownership or evidence"
+    ],
+    "workflow_must_not": [
+      "self-launch",
+      "widen claims",
+      "decide canonical truth",
+      "self-approve",
+      "mutate source of truth",
+      "bypass handoff contract"
+    ]
+  },
+  "workflow_steps": [
+    {
+      "step_id": "066.step.marketing_to_media",
+      "order": 1,
+      "source_department": "Marketing",
+      "target_department": "Media",
+      "owner": "Marketing",
+      "target_owner": "Media",
+      "current_state": "idea",
+      "requested_next_state": "research_ready",
+      "source_of_truth": "public.phase2_content_items + public.department_governance_snapshot",
+      "required_evidence": [
+        "content_item_id",
+        "owner_ref",
+        "brief",
+        "claim_boundary",
+        "source_handoff_id"
+      ],
+      "blocked_conditions": [
+        "owner_missing",
+        "target_owner_missing",
+        "brief_missing",
+        "claim_boundary_missing",
+        "canonical_handoff_missing"
+      ],
+      "escalation_path": [
+        "Core Governance",
+        "Human"
+      ],
+      "activation_status": "DRY_RUN_READY"
+    },
+    {
+      "step_id": "066.step.media_to_operations",
+      "order": 2,
+      "source_department": "Media",
+      "target_department": "Operations",
+      "owner": "Media",
+      "target_owner": "Operations",
+      "current_state": "visual_ready",
+      "requested_next_state": "caption_ready",
+      "source_of_truth": "public.phase2_assets + public.department_governance_snapshot",
+      "required_evidence": [
+        "content_item_id",
+        "asset_evidence_ref",
+        "claim_boundary",
+        "qa_boundary",
+        "source_handoff_id"
+      ],
+      "blocked_conditions": [
+        "owner_missing",
+        "target_owner_missing",
+        "asset_evidence_missing",
+        "claim_boundary_missing",
+        "qa_boundary_missing",
+        "canonical_handoff_missing"
+      ],
+      "escalation_path": [
+        "Core Governance",
+        "Human"
+      ],
+      "activation_status": "DRY_RUN_READY"
+    },
+    {
+      "step_id": "066.step.operations_intake_visibility",
+      "order": 3,
+      "source_department": "Operations",
+      "target_department": "Operations",
+      "owner": "Operations",
+      "target_owner": "Operations",
+      "current_state": "caption_ready",
+      "requested_next_state": "QA_ready",
+      "source_of_truth": "public.phase2_agent_tasks + public.phase4_* read models",
+      "required_evidence": [
+        "content_item_id",
+        "task_owner_ref",
+        "routing_status",
+        "monitoring_trace_ref"
+      ],
+      "blocked_conditions": [
+        "owner_missing",
+        "target_owner_missing",
+        "routing_status_missing",
+        "monitoring_trace_missing"
+      ],
+      "escalation_path": [
+        "Core Governance",
+        "Human"
+      ],
+      "activation_status": "READ_ONLY_READY"
+    }
+  ],
+  "dry_run_paths": [
+    {
+      "path_id": "066.path.packet_validation",
+      "order": 1,
+      "mode": "dry_run",
+      "input_contract": "workflow_steps + canonical handoff edges",
+      "output_contract": "HANDOFF_PACKET_VALIDATION_REPORT",
+      "activation_status": "DRY_RUN_READY"
+    },
+    {
+      "path_id": "066.path.controlled_execution_observation",
+      "order": 2,
+      "mode": "controlled_observation",
+      "input_contract": "validated handoff packet + explicit review evidence",
+      "output_contract": "CONTROLLED_WORKFLOW_OBSERVATION_REPORT",
+      "activation_status": "BLOCKED_UNTIL_EXPLICIT_REVIEW"
+    }
+  ],
+  "review_required_before_activation": true
+}

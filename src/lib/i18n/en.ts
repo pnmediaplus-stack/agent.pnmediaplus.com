@@ -15,12 +15,17 @@ import { media } from "@/lib/i18n/en_modules/media";
 import { n8n } from "@/lib/i18n/en_modules/n8n";
 import { phase3 } from "@/lib/i18n/en_modules/phase3";
 import { phase4 } from "@/lib/i18n/en_modules/phase4";
+import { phase066 } from "@/lib/i18n/en_modules/phase066";
+import { phase067 } from "@/lib/i18n/en_modules/phase067";
+import { phase068 } from "@/lib/i18n/en_modules/phase068";
+import { phase070 } from "@/lib/i18n/en_modules/phase070";
 import { marketing } from "@/lib/i18n/en_modules/marketing";
 import { operations } from "@/lib/i18n/en_modules/operations";
 import { customer } from "@/lib/i18n/en_modules/customer";
 import { businessTruth } from "@/lib/i18n/en_modules/businessTruth";
 import { coreGovernance } from "@/lib/i18n/en_modules/coreGovernance";
 import { departmentGovernance } from "@/lib/i18n/en_modules/departmentGovernance";
+import { portalAuth } from "@/lib/i18n/en_modules/portalAuth";
 
 export const en = {
   ...shared,
@@ -40,10 +45,15 @@ export const en = {
   ...n8n,
   ...phase3,
   ...phase4,
+  ...phase066,
+  ...phase067,
+  ...phase068,
+  ...phase070,
   ...marketing,
   ...operations,
   ...customer,
   ...businessTruth,
   ...coreGovernance,
-  ...departmentGovernance
+  ...departmentGovernance,
+  ...portalAuth
 } as const;
