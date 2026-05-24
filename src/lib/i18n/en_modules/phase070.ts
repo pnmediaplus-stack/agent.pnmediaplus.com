@@ -37,6 +37,18 @@ export const phase070 = {
   "phase070.writeOnly.key": "integration_key",
   "phase070.writeOnly.name": "Integration name",
   "phase070.writeOnly.secret": "Write-only secret",
-  "phase070.writeOnly.submit": "Submit blocked receipt",
-  "phase070.writeOnly.blockedReceipt": "Blocked receipt"
+  "phase070.writeOnly.submit": "Submit secret",
+  "phase070.writeOnly.submitting": "Submitting",
+  "phase070.writeOnly.readyReceipt": "Opaque receipt",
+  "phase070.writeOnly.blockedReceipt": "Blocked receipt",
+  "phase070.writeOnly.redacted": "NO_SECRET_MATERIAL_RETURNED",
+  "phase070.actions.rotateTitle": "Rotate secret",
+  "phase070.actions.rotate": "Rotate",
+  "phase070.actions.rotating": "Rotating",
+  "phase070.actions.revokeTitle": "Revoke integration",
+  "phase070.actions.revoke": "Revoke",
+  "phase070.actions.revoking": "Revoking",
+  "phase070.actions.brokerTitle": "Broker call",
+  "phase070.actions.broker": "Broker call",
+  "phase070.actions.brokering": "Calling"
 } as const;

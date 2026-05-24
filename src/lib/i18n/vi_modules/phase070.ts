@@ -37,6 +37,18 @@ export const phase070 = {
   "phase070.writeOnly.key": "integration_key",
   "phase070.writeOnly.name": "Tên integration",
   "phase070.writeOnly.secret": "Secret write-only",
-  "phase070.writeOnly.submit": "Gửi blocked receipt",
-  "phase070.writeOnly.blockedReceipt": "Blocked receipt"
+  "phase070.writeOnly.submit": "Gửi secret",
+  "phase070.writeOnly.submitting": "Đang gửi",
+  "phase070.writeOnly.readyReceipt": "Opaque receipt",
+  "phase070.writeOnly.blockedReceipt": "Blocked receipt",
+  "phase070.writeOnly.redacted": "NO_SECRET_MATERIAL_RETURNED",
+  "phase070.actions.rotateTitle": "Rotate secret",
+  "phase070.actions.rotate": "Rotate",
+  "phase070.actions.rotating": "Đang rotate",
+  "phase070.actions.revokeTitle": "Revoke integration",
+  "phase070.actions.revoke": "Revoke",
+  "phase070.actions.revoking": "Đang revoke",
+  "phase070.actions.brokerTitle": "Broker call",
+  "phase070.actions.broker": "Broker call",
+  "phase070.actions.brokering": "Đang gọi"
 } as const;
