@@ -1,0 +1,333 @@
+{
+  "name": "WORKFLOW-C - Audit Log Append",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "47644e96-3a6c-495e-b6d5-f4a756dee01b",
+      "name": "Manual Trigger - Draft Only (C)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        -112
+      ],
+      "notes": "Capability: may_read=false; may_write=false; may_route=true; may_mutate=false; external_targets=[]; no production trigger."
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "ac42687c-fcb7-40c0-aa0c-c7dfb190556b",
+      "name": "Set Runtime Boundary (C)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        -48,
+        -112
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; no approval, no canonicalization, no runtime mutation."
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst requiredFiles = ['MANIFEST.md', 'DEPENDENCY_MAP.md', 'VALIDATION_CHECKLIST.md', 'CHANGELOG.md', 'GATEKEEPER_HANDOFF.md', 'NEXT_ACTIONS.md'];\nconst packageFiles = Array.isArray(input.package_files) ? input.package_files : Array.isArray(input.files) ? input.files : [];\nreturn [{\n  json: {\n    ...input,\n    package_id: input.package_id || input.package_name || '',\n    package_path: input.package_path || '',\n    release_type: input.release_type || '',\n    package_files: packageFiles,\n    required_files: requiredFiles,\n    blockers: [],\n    warnings: [],\n    parsed_manifest: null,\n    parsed_dependency_map: null,\n    registry_results: Array.isArray(input.registry_results) ? input.registry_results : [],\n    validation_checklist: Array.isArray(input.validation_checklist) ? input.validation_checklist : [],\n    package_status: 'PACKAGE_NEEDS_REVIEW'\n  }\n}];"
+      },
+      "id": "42dbc120-f615-4bee-8f63-c34a9be3c91b",
+      "name": "Load Release Package (C)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -112
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; normalizes package input for validation."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst missingFiles = j.required_files.filter((file) => !j.package_files.includes(file));\nconst blockers = [...j.blockers];\nif (missingFiles.length) blockers.push(`MISSING_FILES:${missingFiles.join(',')}`);\nif (!j.package_id) blockers.push('PACKAGE_ID_MISSING');\nif (!j.package_path) blockers.push('PACKAGE_PATH_MISSING');\nif (!j.release_type) blockers.push('RELEASE_TYPE_MISSING');\nreturn [{\n  json: {\n    ...j,\n    missing_files: missingFiles,\n    blockers: Array.from(new Set(blockers)),\n    required_files_status: missingFiles.length ? 'MISSING' : 'COMPLETE'\n  }\n}];"
+      },
+      "id": "83bf63d4-e665-4289-a24a-a3618f4fe185",
+      "name": "Check Required Files (C)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -112
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; detects missing package files."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst rawManifest = j.package_manifest ?? j.manifest ?? j.manifest_content ?? null;\nconst blockers = [...j.blockers];\nlet parsedManifest = null;\nlet manifestStatus = 'MISSING';\nif (rawManifest) {\n  try {\n    parsedManifest = typeof rawManifest === 'string' ? JSON.parse(rawManifest) : rawManifest;\n    manifestStatus = 'PARSED';\n  } catch (error) {\n    blockers.push('MANIFEST_PARSE_FAILED');\n    manifestStatus = 'FAILED';\n  }\n} else {\n  blockers.push('MANIFEST_MISSING');\n}\nreturn [{\n  json: {\n    ...j,\n    parsed_manifest: parsedManifest,\n    manifest_status: manifestStatus,\n    blockers: Array.from(new Set(blockers))\n  }\n}];"
+      },
+      "id": "d9708766-201c-447c-9f18-39c45e169f74",
+      "name": "Parse Manifest (C)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        -112
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; parses manifest input."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst rawDependencyMap = j.package_dependency_map ?? j.dependency_map ?? j.dependency_map_content ?? null;\nconst blockers = [...j.blockers];\nlet parsedDependencyMap = null;\nlet dependencyMapStatus = 'MISSING';\nif (rawDependencyMap) {\n  try {\n    parsedDependencyMap = typeof rawDependencyMap === 'string' ? JSON.parse(rawDependencyMap) : rawDependencyMap;\n    dependencyMapStatus = 'PARSED';\n  } catch (error) {\n    blockers.push('DEPENDENCY_MAP_PARSE_FAILED');\n    dependencyMapStatus = 'FAILED';\n  }\n} else {\n  blockers.push('DEPENDENCY_MAP_MISSING');\n}\nreturn [{\n  json: {\n    ...j,\n    parsed_dependency_map: parsedDependencyMap,\n    dependency_map_status: dependencyMapStatus,\n    blockers: Array.from(new Set(blockers))\n  }\n}];"
+      },
+      "id": "ad926ab8-3bbf-4bc4-9ca3-3946bb5f30d8",
+      "name": "Parse Dependency Map (C)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        -112
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; parses dependency map input."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst manifestArtifacts = Array.isArray(j.parsed_manifest?.artifacts) ? j.parsed_manifest.artifacts : [];\nconst dependencyArtifacts = Array.isArray(j.parsed_dependency_map?.artifacts) ? j.parsed_dependency_map.artifacts : [];\nconst registryResults = Array.isArray(j.registry_results) ? j.registry_results : [];\nconst blockers = [...j.blockers];\nconst unresolvedArtifacts = manifestArtifacts.filter((artifact) => {\n  const id = artifact.artifact_id || artifact.artifact_key || artifact.id;\n  return !registryResults.some((row) => row.artifact_id === id || row.artifact_key === id);\n});\nif (!registryResults.length) blockers.push('REGISTRY_LOOKUP_REQUIRED');\nif (unresolvedArtifacts.length) blockers.push('UNRESOLVED_ARTIFACTS');\nif (dependencyArtifacts.length && !j.parsed_dependency_map) blockers.push('DEPENDENCY_MAP_UNAVAILABLE');\nreturn [{\n  json: {\n    ...j,\n    manifest_artifacts: manifestArtifacts,\n    dependency_artifacts: dependencyArtifacts,\n    unresolved_artifacts: unresolvedArtifacts,\n    registry_resolution_status: unresolvedArtifacts.length ? 'UNRESOLVED' : 'RESOLVED',\n    blockers: Array.from(new Set(blockers))\n  }\n}];"
+      },
+      "id": "e5e428ef-fe99-42ac-8e64-3d172c973f02",
+      "name": "Resolve Every Artifact Through Registry (C)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        -112
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=true; may_mutate=false; registry lookup stage."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst manifestArtifacts = Array.isArray(j.manifest_artifacts) ? j.manifest_artifacts : [];\nconst registryResults = Array.isArray(j.registry_results) ? j.registry_results : [];\nconst shaMismatches = [];\nfor (const artifact of manifestArtifacts) {\n  const id = artifact.artifact_id || artifact.artifact_key || artifact.id;\n  const expectedSha = artifact.sha256 || artifact.content_sha256 || artifact.contentSha256;\n  if (!id || !expectedSha) continue;\n  const registryRow = registryResults.find((row) => row.artifact_id === id || row.artifact_key === id);\n  const actualSha = registryRow?.sha256 || registryRow?.content_sha256 || registryRow?.contentSha256;\n  if (!registryRow || (actualSha && actualSha !== expectedSha)) {\n    shaMismatches.push({ artifact_id: id, expected_sha256: expectedSha, actual_sha256: actualSha || null });\n  }\n}\nconst blockers = [...j.blockers];\nif (shaMismatches.length) blockers.push('SHA_MISMATCH');\nreturn [{\n  json: {\n    ...j,\n    sha_mismatches: shaMismatches,\n    sha_check_status: shaMismatches.length ? 'MISMATCH' : 'MATCHED',\n    blockers: Array.from(new Set(blockers))\n  }\n}];"
+      },
+      "id": "8c7099d7-0d0e-497f-a63f-e2e13b2dce2c",
+      "name": "Check SHA Match (C)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        -112
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; checks SHA alignment."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst registryResults = Array.isArray(j.registry_results) ? j.registry_results : [];\nconst unsafeStatuses = ['SHADOW', 'SUPERSEDED', 'REVOKED', 'REFERENCE_ONLY'];\nconst statusViolations = registryResults.filter((row) => {\n  const status = String(row.status || row.artifact_status || '').toUpperCase();\n  const isActive = row.is_active === true || row.active === true || row.loaded_as_active === true;\n  return unsafeStatuses.includes(status) && isActive;\n});\nconst blockers = [...j.blockers];\nif (statusViolations.length) blockers.push('STATUS_NOT_SAFE');\nreturn [{\n  json: {\n    ...j,\n    status_violations: statusViolations,\n    status_safety: statusViolations.length ? 'BLOCKED' : 'SAFE',\n    blockers: Array.from(new Set(blockers))\n  }\n}];"
+      },
+      "id": "21c2fac5-adbe-4a89-9394-ecfc9697c58b",
+      "name": "Check Status Safety (C)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        -112
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; checks active use of shadow/superseded artifacts."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst checklist = Array.isArray(j.validation_checklist) ? j.validation_checklist : [];\nconst requiredChecklistItems = ['manifest_parsed', 'dependency_map_parsed', 'registry_resolved', 'sha_match_verified', 'status_safe'];\nconst completedItems = checklist.filter((item) => item?.passed === true || item?.status === 'PASS').map((item) => item?.key || item?.name || item?.item).filter(Boolean);\nconst missingChecklistItems = requiredChecklistItems.filter((item) => !completedItems.includes(item));\nconst blockers = [...j.blockers];\nif (!checklist.length) blockers.push('CHECKLIST_MISSING');\nif (missingChecklistItems.length) blockers.push(`CHECKLIST_INCOMPLETE:${missingChecklistItems.join(',')}`);\nreturn [{\n  json: {\n    ...j,\n    validation_checklist: checklist,\n    missing_checklist_items: missingChecklistItems,\n    checklist_status: missingChecklistItems.length ? 'INCOMPLETE' : 'COMPLETE',\n    blockers: Array.from(new Set(blockers))\n  }\n}];"
+      },
+      "id": "88fa6fa2-fda4-46cf-b810-a25f6c7f4044",
+      "name": "Check Validation Checklist (C)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        -112
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; checks checklist completeness."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst blockers = Array.from(new Set(j.blockers || []));\nconst invalidBlockers = blockers.filter((item) => item.startsWith('MISSING_') || item.endsWith('_MISSING') || item.includes('PARSE_FAILED'));\nconst blockedBlockers = blockers.filter((item) => ['REGISTRY_LOOKUP_REQUIRED', 'UNRESOLVED_ARTIFACTS', 'SHA_MISMATCH', 'STATUS_NOT_SAFE'].includes(item));\nconst reviewBlockers = blockers.filter((item) => item.startsWith('CHECKLIST_INCOMPLETE'));\nlet packageStatus = 'PACKAGE_VALID';\nif (invalidBlockers.length) {\n  packageStatus = 'PACKAGE_INVALID';\n} else if (blockedBlockers.length) {\n  packageStatus = 'PACKAGE_BLOCKED';\n} else if (reviewBlockers.length) {\n  packageStatus = 'PACKAGE_NEEDS_REVIEW';\n}\nconst nextActions = packageStatus === 'PACKAGE_VALID'\n  ? ['Proceed to release gate review']\n  : packageStatus === 'PACKAGE_BLOCKED'\n    ? ['Return package to registry owner', 'Fix SHA/status mismatches', 'Re-run validator']\n    : packageStatus === 'PACKAGE_NEEDS_REVIEW'\n      ? ['Send to human review', 'Confirm checklist completion', 'Re-run validator']\n      : ['Fix manifest/dependency structure', 'Rebuild package metadata', 'Re-run validator'];\nreturn [{\n  json: {\n    package_id: j.package_id,\n    package_path: j.package_path,\n    release_type: j.release_type,\n    package_status: packageStatus,\n    required_files: j.required_files,\n    missing_files: j.missing_files,\n    manifest_status: j.manifest_status,\n    dependency_map_status: j.dependency_map_status,\n    registry_resolution_status: j.registry_resolution_status,\n    sha_check_status: j.sha_check_status,\n    status_safety: j.status_safety,\n    checklist_status: j.checklist_status,\n    blockers,\n    unresolved_artifacts: j.unresolved_artifacts,\n    sha_mismatches: j.sha_mismatches,\n    status_violations: j.status_violations,\n    missing_checklist_items: j.missing_checklist_items,\n    next_actions: nextActions,\n    approval_required: packageStatus !== 'PACKAGE_VALID'\n  }\n}];"
+      },
+      "id": "1fb3ef16-6037-4f4f-bbfa-9cba85ddb705",
+      "name": "Emit Package Validation Report (C)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        -112
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=true; may_mutate=false; emits final package validation report."
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "audit-log-append",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "id": "9bccd5eb-c688-4c85-b7a0-91c8a40020f2",
+      "name": "Webhook - Audit Append",
+      "position": [
+        -288,
+        -288
+      ],
+      "webhookId": "f56a5b10-5fcb-4fb5-b423-5757b7e63b10"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nconst body = j.body?.payload || j;\nreturn {\n  ...j,\n  audit_write_mode: 'LIVE_DB',\n  log_action: body.action || 'system_event'\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "id": "ee85df92-6323-4dc6-ac06-6e84cabf4d3b",
+      "name": "Format Audit Payload",
+      "position": [
+        -80,
+        -288
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger - Draft Only (C)": {
+      "main": [
+        [
+          {
+            "node": "Set Runtime Boundary (C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Runtime Boundary (C)": {
+      "main": [
+        [
+          {
+            "node": "Load Release Package (C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Release Package (C)": {
+      "main": [
+        [
+          {
+            "node": "Check Required Files (C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Required Files (C)": {
+      "main": [
+        [
+          {
+            "node": "Parse Manifest (C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Manifest (C)": {
+      "main": [
+        [
+          {
+            "node": "Parse Dependency Map (C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Dependency Map (C)": {
+      "main": [
+        [
+          {
+            "node": "Resolve Every Artifact Through Registry (C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Every Artifact Through Registry (C)": {
+      "main": [
+        [
+          {
+            "node": "Check SHA Match (C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check SHA Match (C)": {
+      "main": [
+        [
+          {
+            "node": "Check Status Safety (C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Status Safety (C)": {
+      "main": [
+        [
+          {
+            "node": "Check Validation Checklist (C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Validation Checklist (C)": {
+      "main": [
+        [
+          {
+            "node": "Emit Package Validation Report (C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Audit Append": {
+      "main": [
+        [
+          {
+            "node": "Format Audit Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Audit Payload": {
+      "main": [
+        [
+          {
+            "node": "Set Runtime Boundary (C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c659ae95-208d-4fd8-a9a4-42809041f42f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "id": "yrMskIdcpM6x3mz2",
+  "tags": []
+}

@@ -90,4 +90,5 @@ Stop and review if:
 - `074_TENANT_INTEGRATION_SECRET_CAPTURE_UI_ROADMAP_v1.md` opens the tenant admin UI path for governed secret capture after Phase 073 closure.
 - This roadmap does not weaken Phases 070-073 controls; it only defines the approved UI entrypoint for the existing secret runtime contract.
 - Phase 074 scaffold is complete at the UI boundary.
+- Phase 074 runtime contract is complete at the RPC boundary.
 - Live secret write/broker behavior remains blocked until runtime authority is explicitly approved.

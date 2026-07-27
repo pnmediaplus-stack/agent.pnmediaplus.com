@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n/useI18n";
 import { StateBadge } from "@/components/shared/StateBadge";
-import { workflowRuns } from "@/lib/mock-data";
+import type { WorkflowRun } from "@/types/workflow";
 
 type Stat = {
   label: string;
@@ -15,7 +15,7 @@ type BoundaryGroup = {
   items: string[];
 };
 
-export function OperationsExecutionSurface() {
+export function OperationsExecutionSurface({ workflowRuns }: { workflowRuns: WorkflowRun[] }) {
   const { t } = useI18n("operations");
 
   const summary: Stat[] = [

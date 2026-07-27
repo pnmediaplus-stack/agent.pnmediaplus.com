@@ -82,6 +82,10 @@ const PHASE072_ENCRYPTION_KEY_AUTHORITY = (process.env.PHASE072_TENANT_INTEGRATI
 const PHASE072_DOWNSTREAM_CONTRACT = (process.env.PHASE072_BROKER_DOWNSTREAM_CONTRACT || PHASE071_DOWNSTREAM_CONTRACT).trim();
 const PHASE072_DOWNSTREAM_URL = (process.env.PHASE072_BROKER_DOWNSTREAM_URL || PHASE071_DOWNSTREAM_URL).trim();
 const PHASE072_DOWNSTREAM_SECRET = (process.env.PHASE072_BROKER_DOWNSTREAM_SECRET || PHASE071_DOWNSTREAM_SECRET).trim();
+const PHASE074_RUNTIME_RPC_CONTRACT = (process.env.PHASE074_TENANT_INTEGRATION_RUNTIME_RPC_CONTRACT || "").trim();
+const PHASE074_CREATE_RPC = (process.env.PHASE074_TENANT_INTEGRATION_CREATE_RPC || "").trim();
+const PHASE074_ROTATE_RPC = (process.env.PHASE074_TENANT_INTEGRATION_ROTATE_RPC || "").trim();
+const PHASE074_REVOKE_RPC = (process.env.PHASE074_TENANT_INTEGRATION_REVOKE_RPC || "").trim();
 const TENANT_SECRET_CONTRACT_REF = "phase071_tenant_integration_secret_aes_256_gcm_v1";
 const SECRET_MATERIAL_KEY_PATTERN = /(^|_)(secret|password|token|api_key|client_secret|access_token|refresh_token|ciphertext|auth_tag|iv_base64|encrypted_secret_payload)($|_)/i;
 const SECRET_MATERIAL_VALUE_PATTERN = /\b(sk-[a-z0-9_-]{12,}|pk_[a-z0-9_-]{12,}|eyJ[a-z0-9_-]{20,})\b/i;
@@ -410,6 +414,88 @@ async function serviceRestRequest<T>(path: string, init: RequestInit & { profile
     state: "ready" as const,
     reason: "PHASE071_SERVICE_REST_OK",
     data: (await response.json().catch(() => null)) as T | null
+  };
+}
+
+async function serviceRpcRequest<T>(rpcName: string, payload: Record<string, unknown>) {
+  const serviceConfig = getRequiredServiceConfig();
+
+  if (serviceConfig.state === "blocked") {
+    return {
+      state: "blocked" as const,
+      reason: serviceConfig.reason,
+      data: null as T | null
+    };
+  }
+
+  const response = await fetch(`${serviceConfig.config.url}/rest/v1/rpc/${rpcName}`, {
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      apikey: serviceConfig.config.serviceRoleKey,
+      Authorization: `Bearer ${serviceConfig.config.serviceRoleKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "Accept-Profile": "public",
+      "Content-Profile": "public"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    return {
+      state: "blocked" as const,
+      reason: `PHASE074_RUNTIME_RPC_FAILED:${rpcName}:${response.status}:${body || response.statusText}`,
+      data: null as T | null
+    };
+  }
+
+  return {
+    state: "ready" as const,
+    reason: "PHASE074_RUNTIME_RPC_OK",
+    data: (await response.json().catch(() => null)) as T | null
+  };
+}
+
+function getApprovedRuntimeRpc(operation: Exclude<RuntimeOperation, "broker_call">) {
+  if (PHASE074_RUNTIME_RPC_CONTRACT !== "APPROVED") {
+    return {
+      state: "blocked" as const,
+      reason: "PHASE074_TENANT_INTEGRATION_RUNTIME_RPC_CONTRACT_NOT_APPROVED"
+    };
+  }
+
+  const rpcNameByOperation = {
+    create: PHASE074_CREATE_RPC,
+    rotate: PHASE074_ROTATE_RPC,
+    revoke: PHASE074_REVOKE_RPC
+  } satisfies Record<Exclude<RuntimeOperation, "broker_call">, string>;
+  const rpcName = rpcNameByOperation[operation];
+
+  if (!rpcName) {
+    return {
+      state: "blocked" as const,
+      reason: `PHASE074_TENANT_INTEGRATION_${operation.toUpperCase()}_RPC_MISSING`
+    };
+  }
+
+  return {
+    state: "ready" as const,
+    rpcName
+  };
+}
+
+function normalizeRuntimeRpcReceipt(data: unknown, operation: RuntimeOperation) {
+  const row = Array.isArray(data) ? data[0] : data;
+  const object = objectField(row);
+  const receiptRef = stringField(object.receipt_ref) || `phase074:${operation}:opaque:${Date.now()}`;
+  const receiptState = stringField(object.receipt_state);
+
+  return {
+    receipt_ref: receiptRef,
+    receipt_state: operation === "revoke" ? ("revoked" as const) : receiptState === "revoked" ? ("revoked" as const) : ("issued" as const),
+    redaction_status: "NO_SECRET_MATERIAL_RETURNED" as const
   };
 }
 
@@ -877,76 +963,35 @@ export async function createTenantIntegrationRuntime(headers: Headers | HeadersI
   const allowed = await ensureRuntimeAllowed(headers, "create");
   if (allowed.state === "blocked") return allowed;
 
-  const providerResult = await findProviderByCode(providerCode);
-  if (providerResult.state === "blocked") return blockedReceipt("create", providerResult.reason);
+  const rpc = getApprovedRuntimeRpc("create");
+  if (rpc.state === "blocked") return blockedReceipt("create", rpc.reason);
 
-  const provider = Array.isArray(providerResult.data) ? providerResult.data[0] : null;
-  const providerId = provider ? stringField(provider.id) : "";
+  const encrypted = encryptSecretMaterial(secretMaterial);
+  if (encrypted.state === "blocked") return blockedReceipt("create", encrypted.reason);
 
-  if (!providerId) {
-    return blockedReceipt("create", "PHASE071_PROVIDER_NOT_FOUND");
-  }
-
-  const existing = await findTenantIntegration(allowed.tenant.organization.organization_id, integrationKey);
-  if (existing.state === "blocked") return blockedReceipt("create", existing.reason);
-
-  if (Array.isArray(existing.data) && existing.data.length > 0) {
-    return blockedReceipt("create", "PHASE071_TENANT_INTEGRATION_ALREADY_EXISTS");
-  }
-
-  const integrationResult = await serviceRestRequest<Record<string, unknown>[]>("tenant_integrations", {
-    method: "POST",
-    body: JSON.stringify({
+  const rpcResult = await serviceRpcRequest<Record<string, unknown>>(rpc.rpcName, {
+    payload: {
       organization_id: allowed.tenant.organization.organization_id,
-      provider_id: providerId,
+      provider_code: providerCode,
       integration_key: integrationKey,
       integration_name: integrationName,
-      status: "needs_secret",
-      connection_state: "unverified",
-      public_metadata: {}
-    })
+      encryption_contract_ref: TENANT_SECRET_CONTRACT_REF,
+      encryption_algorithm: "byok_envelope_v1",
+      key_ref: encrypted.keyRef,
+      key_version: encrypted.keyVersion,
+      encrypted_secret_payload: encrypted.encryptedPayload,
+      ciphertext_sha256: encrypted.ciphertextSha256,
+      actor_type: "SERVICE",
+      actor_ref: "nextjs:tenant-integration-runtime"
+    }
   });
 
-  if (integrationResult.state === "blocked" || !Array.isArray(integrationResult.data) || !integrationResult.data[0]) {
-    return blockedReceipt("create", integrationResult.state === "blocked" ? integrationResult.reason : "PHASE071_INTEGRATION_INSERT_FAILED");
-  }
-
-  const integrationId = stringField(integrationResult.data[0].id);
-  const secretWrite = await writeEncryptedSecret({
-    integrationId,
-    secretMaterial,
-    operation: "create"
-  });
-
-  if (secretWrite.state === "blocked") {
-    await insertAuditEvent({
-      organizationId: allowed.tenant.organization.organization_id,
-      tenantIntegrationId: integrationId,
-      action: "ACCESS_BLOCKED",
-      result: "BLOCK",
-      reason: secretWrite.reason
-    });
-    return blockedReceipt("create", secretWrite.reason);
-  }
-
-  await insertAuditEvent({
-    organizationId: allowed.tenant.organization.organization_id,
-    tenantIntegrationId: integrationId,
-    secretBlobId: secretWrite.secretBlobId,
-    receiptId: secretWrite.receiptId,
-    action: "SECRET_STORED",
-    result: "PASS",
-    reason: "PHASE071_SECRET_WRITE_COMPLETE"
-  });
+  if (rpcResult.state === "blocked") return blockedReceipt("create", rpcResult.reason);
 
   return {
     state: "ready",
-    reason: "PHASE071_TENANT_INTEGRATION_CREATED",
-    receipt: {
-      receipt_ref: secretWrite.receiptRef,
-      receipt_state: "issued",
-      redaction_status: "NO_SECRET_MATERIAL_RETURNED"
-    }
+    reason: "PHASE074_TENANT_INTEGRATION_CREATED_VIA_RPC",
+    receipt: normalizeRuntimeRpcReceipt(rpcResult.data, "create")
   };
 }
 
@@ -960,42 +1005,33 @@ export async function rotateTenantIntegrationRuntime(headers: Headers | HeadersI
   const allowed = await ensureRuntimeAllowed(headers, "rotate", integrationKey);
   if (allowed.state === "blocked") return allowed;
 
-  const integration = await findTenantIntegration(allowed.tenant.organization.organization_id, integrationKey);
-  if (integration.state === "blocked") return blockedReceipt("rotate", integration.reason);
+  const rpc = getApprovedRuntimeRpc("rotate");
+  if (rpc.state === "blocked") return blockedReceipt("rotate", rpc.reason);
 
-  const row = Array.isArray(integration.data) ? integration.data[0] : null;
-  const integrationId = row ? stringField(row.id) : "";
+  const encrypted = encryptSecretMaterial(secretMaterial);
+  if (encrypted.state === "blocked") return blockedReceipt("rotate", encrypted.reason);
 
-  if (!integrationId) {
-    return blockedReceipt("rotate", "PHASE071_TENANT_INTEGRATION_NOT_FOUND");
-  }
-
-  const secretWrite = await writeEncryptedSecret({
-    integrationId,
-    secretMaterial,
-    operation: "rotate"
+  const rpcResult = await serviceRpcRequest<Record<string, unknown>>(rpc.rpcName, {
+    payload: {
+      organization_id: allowed.tenant.organization.organization_id,
+      integration_key: integrationKey,
+      encryption_contract_ref: TENANT_SECRET_CONTRACT_REF,
+      encryption_algorithm: "byok_envelope_v1",
+      key_ref: encrypted.keyRef,
+      key_version: encrypted.keyVersion,
+      encrypted_secret_payload: encrypted.encryptedPayload,
+      ciphertext_sha256: encrypted.ciphertextSha256,
+      actor_type: "SERVICE",
+      actor_ref: "nextjs:tenant-integration-runtime"
+    }
   });
 
-  if (secretWrite.state === "blocked") return blockedReceipt("rotate", secretWrite.reason);
-
-  await insertAuditEvent({
-    organizationId: allowed.tenant.organization.organization_id,
-    tenantIntegrationId: integrationId,
-    secretBlobId: secretWrite.secretBlobId,
-    receiptId: secretWrite.receiptId,
-    action: "SECRET_STORED",
-    result: "PASS",
-    reason: "PHASE071_SECRET_ROTATE_COMPLETE"
-  });
+  if (rpcResult.state === "blocked") return blockedReceipt("rotate", rpcResult.reason);
 
   return {
     state: "ready",
-    reason: "PHASE071_TENANT_INTEGRATION_ROTATED",
-    receipt: {
-      receipt_ref: secretWrite.receiptRef,
-      receipt_state: "issued",
-      redaction_status: "NO_SECRET_MATERIAL_RETURNED"
-    }
+    reason: "PHASE074_TENANT_INTEGRATION_ROTATED_VIA_RPC",
+    receipt: normalizeRuntimeRpcReceipt(rpcResult.data, "rotate")
   };
 }
 
@@ -1003,46 +1039,24 @@ export async function revokeTenantIntegrationRuntime(headers: Headers | HeadersI
   const allowed = await ensureRuntimeAllowed(headers, "revoke", integrationKey);
   if (allowed.state === "blocked") return allowed;
 
-  const integration = await findTenantIntegration(allowed.tenant.organization.organization_id, integrationKey);
-  if (integration.state === "blocked") return blockedReceipt("revoke", integration.reason);
+  const rpc = getApprovedRuntimeRpc("revoke");
+  if (rpc.state === "blocked") return blockedReceipt("revoke", rpc.reason);
 
-  const row = Array.isArray(integration.data) ? integration.data[0] : null;
-  const integrationId = row ? stringField(row.id) : "";
-
-  if (!integrationId) {
-    return blockedReceipt("revoke", "PHASE071_TENANT_INTEGRATION_NOT_FOUND");
-  }
-
-  const patchResult = await serviceRestRequest<Record<string, unknown>[]>(
-    `tenant_integrations?id=${eq(integrationId)}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({
-        status: "revoked",
-        connection_state: "blocked",
-        disabled_at: new Date().toISOString()
-      })
+  const rpcResult = await serviceRpcRequest<Record<string, unknown>>(rpc.rpcName, {
+    payload: {
+      organization_id: allowed.tenant.organization.organization_id,
+      integration_key: integrationKey,
+      actor_type: "SERVICE",
+      actor_ref: "nextjs:tenant-integration-runtime"
     }
-  );
-
-  if (patchResult.state === "blocked") return blockedReceipt("revoke", patchResult.reason);
-
-  await insertAuditEvent({
-    organizationId: allowed.tenant.organization.organization_id,
-    tenantIntegrationId: integrationId,
-    action: "INTEGRATION_STATUS_CHANGED",
-    result: "PASS",
-    reason: "PHASE071_TENANT_INTEGRATION_REVOKED"
   });
+
+  if (rpcResult.state === "blocked") return blockedReceipt("revoke", rpcResult.reason);
 
   return {
     state: "ready",
-    reason: "PHASE071_TENANT_INTEGRATION_REVOKED",
-    receipt: {
-      receipt_ref: `phase071:revoke:${integrationId}:${Date.now()}`,
-      receipt_state: "revoked",
-      redaction_status: "NO_SECRET_MATERIAL_RETURNED"
-    }
+    reason: "PHASE074_TENANT_INTEGRATION_REVOKED_VIA_RPC",
+    receipt: normalizeRuntimeRpcReceipt(rpcResult.data, "revoke")
   };
 }
 

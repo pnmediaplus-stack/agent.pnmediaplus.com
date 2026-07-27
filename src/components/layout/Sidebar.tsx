@@ -35,32 +35,48 @@ import {
   PlugZap
 } from "lucide-react";
 
-const navItems: { href: Route; labelKey: string; fallbackLabel: string; icon: ComponentType<{ className?: string }> }[] = [
-  { href: "/dashboard", labelKey: "nav.dashboard", fallbackLabel: "Dashboard", icon: LayoutDashboard },
-  { href: "/phase3", labelKey: "nav.phase3", fallbackLabel: "Phase 3", icon: Workflow },
-  { href: "/phase4", labelKey: "nav.phase4", fallbackLabel: "Phase 4", icon: MonitorPlay },
-  { href: "/phase066/evidence", labelKey: "nav.phase066Evidence", fallbackLabel: "Phase 066 Evidence", icon: ClipboardCheck },
-  { href: "/phase067/leads", labelKey: "nav.phase067Leads", fallbackLabel: "Phase 067 Leads", icon: UsersRound },
-  { href: "/phase068/portal", labelKey: "nav.phase068Portal", fallbackLabel: "Phase 068 Portal", icon: Boxes },
-  { href: "/tenant-integrations", labelKey: "nav.tenantIntegrations", fallbackLabel: "Tenant Integrations", icon: KeyRound },
-  { href: "/department-governance", labelKey: "nav.departmentGovernance", fallbackLabel: "Department Governance", icon: Network },
-  { href: "/marketing", labelKey: "nav.marketing", fallbackLabel: "Marketing", icon: Megaphone },
-  { href: "/operations", labelKey: "nav.operations", fallbackLabel: "Operations", icon: WorkflowIcon },
-  { href: "/customer", labelKey: "nav.customer", fallbackLabel: "Customer", icon: LifeBuoy },
-  { href: "/business-truth", labelKey: "nav.businessTruth", fallbackLabel: "Business Truth", icon: ShieldAlert },
-  { href: "/core-governance", labelKey: "nav.coreGovernance", fallbackLabel: "Core Governance", icon: Scale },
-  { href: "/chat", labelKey: "nav.chat", fallbackLabel: "Chat", icon: MessagesSquare },
-  { href: "/departments", labelKey: "nav.departments", fallbackLabel: "Departments", icon: Building2 },
-  { href: "/agents", labelKey: "nav.agents", fallbackLabel: "Agents", icon: Bot },
-  { href: "/tasks", labelKey: "nav.tasks", fallbackLabel: "Tasks", icon: ListTodo },
-  { href: "/artifacts", labelKey: "nav.artifacts", fallbackLabel: "Artifacts", icon: FolderKanban },
-  { href: "/workflows", labelKey: "nav.workflows", fallbackLabel: "Workflows", icon: Workflow },
-  { href: "/qa-reviews", labelKey: "nav.qaReviews", fallbackLabel: "QA Reviews", icon: ShieldCheck },
-  { href: "/gates", labelKey: "nav.gates", fallbackLabel: "Gates", icon: Gavel },
-  { href: "/approvals", labelKey: "nav.approvals", fallbackLabel: "Approvals", icon: BadgeCheck },
-  { href: "/n8n-runs", labelKey: "nav.n8nRuns", fallbackLabel: "n8n Runs", icon: MonitorPlay },
-  { href: "/audit-logs", labelKey: "nav.auditLogs", fallbackLabel: "Audit Logs", icon: ScrollText },
-  { href: "/media-pipeline", labelKey: "nav.mediaPipeline", fallbackLabel: "Media Pipeline", icon: Clapperboard }
+type NavItem = { href: Route; labelKey: string; fallbackLabel: string; icon: ComponentType<{ className?: string }> };
+type NavGroup = { title: string; items: NavItem[] };
+
+const navGroups: NavGroup[] = [
+  {
+    title: "Main",
+    items: [
+      { href: "/dashboard", labelKey: "nav.dashboard", fallbackLabel: "Dashboard", icon: LayoutDashboard },
+      { href: "/chat", labelKey: "nav.chat", fallbackLabel: "Chat", icon: MessagesSquare },
+      { href: "/media-pipeline", labelKey: "nav.mediaPipeline", fallbackLabel: "Media Pipeline", icon: Clapperboard }
+    ]
+  },
+  {
+    title: "Organization",
+    items: [
+      { href: "/departments", labelKey: "nav.departments", fallbackLabel: "Departments", icon: Building2 },
+      { href: "/agents", labelKey: "nav.agents", fallbackLabel: "Agents", icon: Bot }
+    ]
+  },
+  {
+    title: "Execution",
+    items: [
+      { href: "/tasks", labelKey: "nav.tasks", fallbackLabel: "Tasks", icon: ListTodo },
+      { href: "/artifacts", labelKey: "nav.artifacts", fallbackLabel: "Artifacts", icon: FolderKanban },
+      { href: "/workflows", labelKey: "nav.workflows", fallbackLabel: "Workflows", icon: Workflow }
+    ]
+  },
+  {
+    title: "Governance",
+    items: [
+      { href: "/qa-reviews", labelKey: "nav.qaReviews", fallbackLabel: "QA Reviews", icon: ShieldCheck },
+      { href: "/gates", labelKey: "nav.gates", fallbackLabel: "Gates", icon: Gavel },
+      { href: "/approvals", labelKey: "nav.approvals", fallbackLabel: "Approvals", icon: BadgeCheck }
+    ]
+  },
+  {
+    title: "Observability",
+    items: [
+      { href: "/n8n-runs", labelKey: "nav.n8nRuns", fallbackLabel: "n8n Runs", icon: MonitorPlay },
+      { href: "/audit-logs", labelKey: "nav.auditLogs", fallbackLabel: "Audit Logs", icon: ScrollText }
+    ]
+  }
 ];
 
 const futureIntegrations: { labelKey: string; fallbackLabel: string }[] = [
@@ -102,24 +118,33 @@ export function Sidebar() {
         <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400 lg:max-w-none">{tLayout("layout.brand.tagline") ?? "Thin-shell UI for commands, registry state, approvals, and workflow monitoring."}</p>
       </div>
       <nav className="flex flex-1 gap-1 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
-        {navItems.map((item) => {
-          const active = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex min-w-max items-center gap-3 rounded-xl px-3 py-2 text-sm transition lg:min-w-0 ${
-                active
-                  ? "bg-cyan-500/10 text-cyan-200 ring-1 ring-cyan-500/30"
-                  : "text-slate-300 hover:bg-slate-900 hover:text-white"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {tShared(`shared.${item.labelKey}`) ?? item.fallbackLabel}
-            </Link>
-          );
-        })}
+        <div className="flex flex-col gap-6 w-full">
+          {navGroups.map((group) => (
+            <div key={group.title} className="flex flex-col gap-1 w-full">
+              <div className="px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-500 mb-1 lg:block hidden">
+                {group.title}
+              </div>
+              {group.items.map((item) => {
+                const active = pathname === item.href;
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex min-w-max items-center gap-3 rounded-xl px-3 py-2 text-sm transition lg:min-w-0 ${
+                      active
+                        ? "bg-cyan-500/10 text-cyan-200 ring-1 ring-cyan-500/30"
+                        : "text-slate-300 hover:bg-slate-900 hover:text-white"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {tShared(`shared.${item.labelKey}`) ?? item.fallbackLabel}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </nav>
       <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-xs leading-5 text-slate-400">
         {tLayout("layout.sidebar.noPublishLaunch") ?? "No publish or launch actions are wired in Phase 1."}

@@ -1,0 +1,432 @@
+{
+  "name": "WORKFLOW-A",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "57039460-c895-4cf7-b633-765fa3721738",
+      "name": "Manual Trigger - Draft Only",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3552,
+        -464
+      ],
+      "notes": "Capability: may_read=false; may_write=false; may_route=true; may_mutate=false; external_targets=[]; no production trigger."
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "human-task-intake",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3552,
+        -272
+      ],
+      "id": "64372c40-8957-449e-ba6d-77df80dae0c4",
+      "name": "Webhook",
+      "webhookId": "104faacd-c7c2-4655-a3a0-b8ccf29cefe6"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "05963eea-c0c6-45c4-a81b-9efdf3b14ca9",
+      "name": "Set Runtime Boundary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        -3312,
+        -368
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; external_targets=[]; declares no PASS/no apply/no canonicalization."
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst forbidden = String(input.blocked_verdict_labels || '').split(',').filter(Boolean);\nreturn [{\n  json: {\n    ...input,\n    protocol_imports: ['TIER_5_PROTOCOL_GATE_STATE_ENFORCEMENT', 'STD_HANDOFF_PROTOCOL_v2.1_GOVERNANCE_HARDENED'],\n    forbidden_verdict_labels: forbidden,\n    production_enabled: false,\n    registry_write_allowed: false\n  }\n}];"
+      },
+      "id": "c1ab7147-b129-4c2c-9817-c6e53cd1f723",
+      "name": "Declare Protocol Imports",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3072,
+        -368
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; external_targets=[]; imports protocol labels; does not redefine."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1. TRÍCH XUẤT DỮ LIỆU\nconst rawBody = $json.payload?.message || $json.payload?.source || $json.file_content || $json.artifact_content || $json.sample_artifact_content || '';\n\n// 2. THUẬT TOÁN BĂM THUẦN (PURE JS - SAFE SANDBOX)\nlet finalSha = '0'.repeat(64);\nif (rawBody) {\n  const text = String(rawBody);\n  let hash = 0;\n  for (let i = 0; i < text.length; i++) {\n    hash = (hash << 5) - hash + text.charCodeAt(i);\n    hash |= 0;\n  }\n  finalSha = Math.abs(hash).toString(16).padStart(8, '0').repeat(8).substring(0, 64);\n}\n\n// 3. TRẢ VỀ ĐỐI TƯỢNG ĐƠN LẺ (Đã tháo bỏ cặp ngoặc vuông gây lỗi)\nreturn {\n  json: {\n    ...$json,\n    computed_content_sha256: finalSha,\n    sha_compute_status: rawBody ? 'COMPUTED' : 'NO_CONTENT_BLOCKED',\n    source_filename: $json.filename || $json.payload?.source || $json.artifact_metadata?.filename || 'nextjs_runtime_trigger'\n  }\n};"
+      },
+      "id": "9ad60758-52e5-4c63-bfe1-f13499247ba1",
+      "name": "Compute SHA256",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2832,
+        -368
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; external_targets=[]; SHA is evidence only."
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $json;\nconst src = j.artifact_metadata || {};\nconst required = ['artifact_id', 'filename', 'version', 'artifact_status', 'constitutional_layer', 'authority_level', 'freeze_status', 'redefinition_policy', 'owner_authority', 'runtime_load_allowed', 'imports', 'last_reviewed_by'];\nconst missing = required.filter((key) => src[key] === undefined || src[key] === null || src[key] === '' || (Array.isArray(src[key]) && src[key].length === 0));\nreturn [{\n  json: {\n    ...j,\n    metadata_required_fields: required,\n    metadata_missing_fields: missing,\n    metadata_status: missing.length ? 'INCOMPLETE' : 'VALID'\n  }\n}];"
+      },
+      "id": "beab6d06-2ed5-4321-8e20-24289dfeacd4",
+      "name": "Validate Mandatory Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2592,
+        -368
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; external_targets=[]; validates freeze metadata schema."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nconst registryUrl = ($env.REGISTRY_READONLY_URL || '').trim();\nconst readKey = ($env.SUPABASE_ANON_KEY || $env.SUPABASE_SERVICE_ROLE_KEY || '').trim();\nconst artifactId = j.artifact_metadata?.artifact_id || j.payload?.artifact_id || 'artifact-unknown';\nconst version = j.artifact_metadata?.version || j.payload?.version || '0.0.0';\nconst versionNumber = Number.parseInt(String(version).match(/\\d+/)?.[0] || '1', 10);\nconst contentSha = j.computed_content_sha256 || '';\n\nconst buildMockRegistryResponse = () => ({\n  available: true,\n  mock: true,\n  artifact_id: artifactId,\n  version,\n  version_number: versionNumber,\n  canonical_path: `/mock-registry/${artifactId}/${version}`,\n  content_sha256: contentSha,\n  duplicate_active: false,\n  same_version_different_sha: false,\n  unresolved_conflict: false,\n  status: 'ACTIVE',\n  artifact_status: 'REGISTRY_READY',\n  is_active: true,\n  loaded_as_active: true,\n  dependencies: []\n});\n\nif (!registryUrl) {\n  // Đã gỡ bỏ dấu [ ]\n  return {\n    json: {\n      ...j,\n      registry_lookup_status: 'MOCK_FALLBACK',\n      registry_status_code: 200,\n      registry_response: buildMockRegistryResponse(),\n      registry_response_text: 'mock-registry-fallback'\n    }\n  };\n}\n\nconst url = new URL(registryUrl);\nconst isSupabaseArtifactVersions = /\\/rest\\/v1\\/artifact_versions(\\?|$)/.test(registryUrl);\n\nif (isSupabaseArtifactVersions) {\n  url.searchParams.set('artifact_id', `eq.${artifactId}`);\n  url.searchParams.set('version_number', `eq.${versionNumber}`);\n  url.searchParams.set('select', 'id,artifact_id,version_number,state,content_ref,content_sha256,created_at,updated_at');\n} else {\n  if (artifactId) url.searchParams.set('artifact_id', artifactId);\n  if (version) url.searchParams.set('version', version);\n  if (contentSha) url.searchParams.set('content_sha256', contentSha);\n}\n\ntry {\n  const response = await fetch(url, {\n    method: 'GET',\n    headers: {\n      'Content-Type': 'application/json',\n      ...(readKey ? { apikey: readKey, Authorization: `Bearer ${readKey}` } : {})\n    }\n  });\n  \n  const text = await response.text();\n  let body = text;\n  try {\n    body = text ? JSON.parse(text) : null;\n  } catch {\n    body = text;\n  }\n  \n  // Đã gỡ bỏ dấu [ ]\n  return {\n    json: {\n      ...j,\n      registry_lookup_status: response.ok ? 'OK' : 'NON_OK',\n      registry_status_code: response.status,\n      registry_response: body,\n      registry_response_text: typeof body === 'string' ? body : undefined,\n      registry_read_mode: isSupabaseArtifactVersions ? 'SUPABASE_POSTGREST' : 'GENERIC_HTTP'\n    }\n  };\n} catch (error) {\n  // Đã gỡ bỏ dấu [ ]\n  return {\n    json: {\n      ...j,\n      registry_lookup_status: 'FETCH_ERROR',\n      registry_status_code: 0,\n      registry_response: {\n        available: false,\n        reason: error?.message || String(error),\n        artifact_id: artifactId,\n        version,\n        content_sha256: contentSha\n      }\n    }\n  };\n}"
+      },
+      "id": "7d1f2d9d-bd42-440d-b8f8-3ecff8520010",
+      "name": "Registry Lookup - Read Only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2368,
+        -368
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; external_targets=[read-only registry endpoint]; registry_write_allowed=false."
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. TRÍCH XUẤT VÀ KIỂM TRA ĐIỀU KIỆN (Giữ nguyên logic nghiệp vụ của sếp)\nconst j = $json;\nconst bodyData = j.payload || j;\n\nconst registryPayload = j.registry_response || {};\nconst registryRows = Array.isArray(registryPayload) ? registryPayload : Array.isArray(registryPayload?.data) ? registryPayload.data : (registryPayload ? [registryPayload] : []);\nconst registryRow = registryRows[0] || null;\nconst blockers = [];\n\nif (j.source_filename === '') blockers.push('MISSING_FILENAME');\nif (j.sha_compute_status === 'NO_CONTENT_BLOCKED') blockers.push('SHA_COMPUTE_INPUT_MISSING');\nif (j.metadata_status !== 'VALID') blockers.push('MISSING_MANDATORY_METADATA');\nif (j.registry_lookup_status === 'FETCH_ERROR') blockers.push('REGISTRY_UNAVAILABLE');\nif (j.registry_lookup_status === 'NON_OK' && j.registry_status_code >= 400) blockers.push('REGISTRY_UNAVAILABLE');\n\nif (j.registry_lookup_status === 'MOCK_FALLBACK') {\n  if (registryRow?.available === false) blockers.push('REGISTRY_UNAVAILABLE');\n} else if (!registryRow) {\n  blockers.push('REGISTRY_UNAVAILABLE');\n}\n\nif (registryRows.length > 1) blockers.push('DUPLICATE_ACTIVE');\nif (registryRow?.duplicate_active === true) blockers.push('DUPLICATE_ACTIVE');\nif (registryRow?.same_version_different_sha === true) blockers.push('SAME_VERSION_DIFFERENT_SHA');\nif (registryRow?.unresolved_conflict === true) blockers.push('UNRESOLVED_REGISTRY_CONFLICT');\n\nconst registrySha = registryRow?.content_sha256 || registryRow?.sha256 || registryRow?.contentSha256 || null;\nif (registrySha && j.computed_content_sha256 && registrySha !== j.computed_content_sha256) blockers.push('SAME_VERSION_DIFFERENT_SHA');\nif (j.artifact_metadata?.runtime_load_allowed === true && ['SHADOW', 'SUPERSEDED', 'REVOKED', 'REFERENCE_ONLY'].includes(j.artifact_metadata?.artifact_status)) blockers.push('RUNTIME_LOAD_NOT_ALLOWED_FOR_STATUS');\nif (j.artifact_metadata?.lower_layer_redefinition_detected === true) blockers.push('LOWER_LAYER_REDEFINITION');\n\n// 2. HÀM THUẦN SINH UUIDV4 - KHÔNG DÙNG CRYPTO (Sandbox-safe)\nconst generateUUID = () => {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n};\n\nconst audit_entity_id = generateUUID();\nconst audit_request_id = generateUUID();\nconst audit_actor_external_ref = `n8n:workflow-a:${audit_request_id}`;\nconst audit_before_state = 'NOT_STARTED';\nconst audit_after_state = blockers.length > 0 ? 'HOLD' : 'REVIEW';\nconst audit_reason = blockers.length > 0 ? `BLOCKED: ${blockers.join(', ')}` : 'INTAKE_REPORT_GENERATED_NO_APPROVAL';\nconst audit_evidence_ref = `evidence://artifact-intake/${j.artifact_metadata?.artifact_id || bodyData.artifact_id || 'unknown'}`;\n\n// 3. THUẬT TOÁN BĂM SỰ KIỆN KHÔNG DÙNG CRYPTO MODULE (Sandbox-safe)\nconst inputStr = [j.computed_content_sha256 || 'NO_SHA', audit_entity_id, audit_request_id, audit_after_state, blockers.join('|')].join('|');\nlet hashValue = 0;\nfor (let i = 0; i < inputStr.length; i++) {\n  hashValue = (hashValue << 5) - hashValue + inputStr.charCodeAt(i);\n  hashValue |= 0;\n}\nconst audit_event_hash = Math.abs(hashValue).toString(16).padStart(8, '0').repeat(8).substring(0, 64);\n\n// 4. TRẢ VỀ ĐÚNG ROW SHAPE OBJECT ĐƠN LẺ (Đã gỡ bỏ dấu [ ])\nreturn {\n  json: {\n    ...j,\n    registry_row: registryRow,\n    blocking_conditions: blockers,\n    fail_closed: blockers.length > 0,\n    runtime_result: blockers.length > 0 ? 'EXECUTION_BLOCKED' : 'INTAKE_REPORT_GENERATED_NO_APPROVAL',\n    audit_entity_id,\n    audit_request_id,\n    audit_actor_external_ref,\n    audit_before_state,\n    audit_after_state,\n    audit_reason,\n    audit_evidence_ref,\n    audit_event_hash\n  }\n};"
+      },
+      "id": "7ef72409-cfe4-4755-87e4-c448c221244d",
+      "name": "Evaluate Blocking Conditions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2128,
+        -368
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=true; may_mutate=false; external_targets=[]; fail-closed matrix."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.fail_closed}}",
+              "value2": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "eede3f88-fc51-4898-9993-0e59d5b0e4b8",
+      "name": "IF Fail Closed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1872,
+        -368
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=true; may_mutate=false; external_targets=[]; blocked paths do not continue downstream."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\n\n// Đã gỡ bỏ dấu [ ]\nreturn {\n  json: {\n    ...j,\n    escalation_integrity: {\n      signed_payload: 'DRAFT_SIGNATURE_REQUIRED_BY_OPERATOR',\n      immutable_event_id: j.audit_entity_id,\n      replay_protection: `idempotency:${j.audit_request_id}`\n    },\n    severity: j.blocking_conditions?.includes('DUPLICATE_ACTIVE') ? 'CRITICAL' : 'HIGH',\n    blocked_action: 'runtime_load_or_registry_population',\n    evidence_refs: {\n      computed_content_sha256: j.computed_content_sha256,\n      blocking_conditions: j.blocking_conditions\n    },\n    approval_granted: false,\n    pass_equivalent_output: false,\n    registry_mutated: false,\n    next_route: 'GOVERNANCE_RELAY'\n  }\n};"
+      },
+      "id": "c039f43c-dcca-4082-9380-22951fa1ae60",
+      "name": "Build Escalation Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1616,
+        -560
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=true; may_mutate=false; external_targets=[Gatekeeper/Governance Relay queue]; escalation is not approval."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nreturn [{\n  json: {\n    ...j,\n    artifact_id: j.artifact_metadata?.artifact_id,\n    version: j.artifact_metadata?.version,\n    computed_content_sha256: j.computed_content_sha256,\n    classification: 'REGISTRY_CANDIDATE_EVIDENCE_ONLY',\n    runtime_result: 'INTAKE_REPORT_GENERATED_NO_APPROVAL',\n    approval_granted: false,\n    pass_equivalent_output: false,\n    registry_mutated: false,\n    canonical_truth_decided: false,\n    next_route: 'REGISTRY_RESOLVER'\n  }\n}];"
+      },
+      "id": "36bb354e-e0a8-4d6f-acde-af532eb73dc1",
+      "name": "Build Intake Report - No Approval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1616,
+        -176
+      ],
+      "notes": "Capability: may_read=true; may_write=false; may_route=false; may_mutate=false; external_targets=[]; outputs evidence only."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nconst baseUrl = ($env.SUPABASE_URL || '').trim().replace(/\\/$/, '');\nconst serviceKey = ($env.SUPABASE_SERVICE_ROLE_KEY || '').trim();\nconst payload = {\n  actor_type: 'N8N',\n  actor_external_ref: j.audit_actor_external_ref,\n  action: 'artifact_intake_blocked',\n  entity_type: 'WORKFLOW_RUN',\n  entity_id: j.audit_entity_id,\n  before_state: j.audit_before_state,\n  after_state: j.audit_after_state,\n  reason: j.audit_reason,\n  evidence_ref: j.audit_evidence_ref,\n  request_id: j.audit_request_id,\n  event_hash: j.audit_event_hash\n};\n\nif (!baseUrl || !serviceKey) {\n  // 1. Đã gỡ bỏ dấu [ ] ở khối Fallback\n  return {\n    json: {\n      ...j,\n      audit_write_mode: 'MOCK_FALLBACK',\n      audit_write_status: 'SKIPPED',\n      audit_write_target: 'pn_os_ai_department.audit_logs',\n      audit_write_reason: 'SUPABASE_URL_OR_SERVICE_ROLE_KEY_MISSING',\n      audit_write_payload: payload\n    }\n  };\n}\n\ntry {\n  const response = await fetch(`${baseUrl}/rest/v1/audit_logs`, {\n    method: 'POST',\n    headers: {\n      apikey: serviceKey,\n      Authorization: `Bearer ${serviceKey}`,\n      'Content-Profile': 'pn_os_ai_department',\n      Prefer: 'return=minimal',\n      'Content-Type': 'application/json'\n    },\n    body: JSON.stringify(payload)\n  });\n  \n  // 2. Đã gỡ bỏ dấu [ ] ở khối Success\n  return {\n    json: {\n      ...j,\n      audit_write_mode: 'LIVE_DB',\n      audit_write_status: response.ok ? 'WRITTEN' : 'FAILED',\n      audit_write_target: 'pn_os_ai_department.audit_logs',\n      audit_write_http_status: response.status,\n      audit_write_payload: payload\n    }\n  };\n} catch (error) {\n  // 3. Đã gỡ bỏ dấu [ ] ở khối Error\n  return {\n    json: {\n      ...j,\n      audit_write_mode: 'LIVE_DB',\n      audit_write_status: 'ERROR',\n      audit_write_target: 'pn_os_ai_department.audit_logs',\n      audit_write_reason: error?.message || String(error),\n      audit_write_payload: payload\n    }\n  };\n}"
+      },
+      "id": "f570cef1-3c29-45b7-8bfa-7e1da250fc7c",
+      "name": "Append Audit Report - Blocked -> DB Write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1376,
+        -560
+      ],
+      "notes": "Writes blocked audit records to Phase 1 DB, fail-closed, mock-safe"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nconst baseUrl = ($env.SUPABASE_URL || '').trim().replace(/\\/$/, '');\nconst serviceKey = ($env.SUPABASE_SERVICE_ROLE_KEY || '').trim();\nconst payload = {\n  actor_type: 'N8N',\n  actor_external_ref: j.audit_actor_external_ref,\n  action: 'artifact_intake_report_generated',\n  entity_type: 'WORKFLOW_RUN',\n  entity_id: j.audit_entity_id,\n  before_state: j.audit_before_state,\n  after_state: j.audit_after_state,\n  reason: j.audit_reason,\n  evidence_ref: j.audit_evidence_ref,\n  request_id: j.audit_request_id,\n  event_hash: j.audit_event_hash\n};\nif (!baseUrl || !serviceKey) {\n  return [{\n    json: {\n      ...j,\n      audit_write_mode: 'MOCK_FALLBACK',\n      audit_write_status: 'SKIPPED',\n      audit_write_target: 'pn_os_ai_department.audit_logs',\n      audit_write_reason: 'SUPABASE_URL_OR_SERVICE_ROLE_KEY_MISSING',\n      audit_write_payload: payload\n    }\n  }];\n}\ntry {\n  const response = await fetch(`${baseUrl}/rest/v1/audit_logs`, {\n    method: 'POST',\n    headers: {\n      apikey: serviceKey,\n      Authorization: `Bearer ${serviceKey}`,\n      'Content-Profile': 'pn_os_ai_department',\n      Prefer: 'return=minimal',\n      'Content-Type': 'application/json'\n    },\n    body: JSON.stringify(payload)\n  });\n  return [{\n    json: {\n      ...j,\n      audit_write_mode: 'LIVE_DB',\n      audit_write_status: response.ok ? 'WRITTEN' : 'FAILED',\n      audit_write_target: 'pn_os_ai_department.audit_logs',\n      audit_write_http_status: response.status,\n      audit_write_payload: payload\n    }\n  }];\n} catch (error) {\n  return [{\n    json: {\n      ...j,\n      audit_write_mode: 'LIVE_DB',\n      audit_write_status: 'ERROR',\n      audit_write_target: 'pn_os_ai_department.audit_logs',\n      audit_write_reason: error?.message || String(error),\n      audit_write_payload: payload\n    }\n  }];\n}"
+      },
+      "id": "c6ff5bd6-1150-413d-9741-e6ac2871e269",
+      "name": "Append Audit Report - Non Blocked -> DB Write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1376,
+        -176
+      ],
+      "notes": "Writes non-blocked audit records to Phase 1 DB, fail-closed, mock-safe"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.pnmediaplus.com",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Microsoft Windows 10.0.26100; vi-VN) PowerShell/7.0.1",
+            "content-length": "52",
+            "content-type": "application/json",
+            "via": "1.1 Caddy",
+            "x-forwarded-for": "116.97.106.9",
+            "x-forwarded-host": "n8n.pnmediaplus.com",
+            "x-forwarded-proto": "https",
+            "accept-encoding": "gzip"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "source": "retest",
+            "message": "direct webhook probe"
+          },
+          "webhookUrl": "https://n8n.pnmediaplus.com/webhook/human-task-intake",
+          "executionMode": "production"
+        }
+      }
+    ],
+    "Set Runtime Boundary": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.pnmediaplus.com",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Microsoft Windows 10.0.26100; vi-VN) PowerShell/7.0.1",
+            "content-length": "52",
+            "content-type": "application/json",
+            "via": "1.1 Caddy",
+            "x-forwarded-for": "116.97.106.9",
+            "x-forwarded-host": "n8n.pnmediaplus.com",
+            "x-forwarded-proto": "https",
+            "accept-encoding": "gzip"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "source": "retest",
+            "message": "direct webhook probe"
+          },
+          "webhookUrl": "https://n8n.pnmediaplus.com/webhook/human-task-intake",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Declare Protocol Imports": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.pnmediaplus.com",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Microsoft Windows 10.0.26100; vi-VN) PowerShell/7.0.1",
+            "content-length": "52",
+            "content-type": "application/json",
+            "via": "1.1 Caddy",
+            "x-forwarded-for": "116.97.106.9",
+            "x-forwarded-host": "n8n.pnmediaplus.com",
+            "x-forwarded-proto": "https",
+            "accept-encoding": "gzip"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "source": "retest",
+            "message": "direct webhook probe"
+          },
+          "webhookUrl": "https://n8n.pnmediaplus.com/webhook/human-task-intake",
+          "executionMode": "production",
+          "protocol_imports": [
+            "TIER_5_PROTOCOL_GATE_STATE_ENFORCEMENT",
+            "STD_HANDOFF_PROTOCOL_v2.1_GOVERNANCE_HARDENED"
+          ],
+          "forbidden_verdict_labels": [],
+          "production_enabled": false,
+          "registry_write_allowed": false
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Manual Trigger - Draft Only": {
+      "main": [
+        [
+          {
+            "node": "Set Runtime Boundary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Runtime Boundary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Runtime Boundary": {
+      "main": [
+        [
+          {
+            "node": "Declare Protocol Imports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Declare Protocol Imports": {
+      "main": [
+        [
+          {
+            "node": "Compute SHA256",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute SHA256": {
+      "main": [
+        [
+          {
+            "node": "Validate Mandatory Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Mandatory Metadata": {
+      "main": [
+        [
+          {
+            "node": "Registry Lookup - Read Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registry Lookup - Read Only": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Blocking Conditions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Blocking Conditions": {
+      "main": [
+        [
+          {
+            "node": "IF Fail Closed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Fail Closed": {
+      "main": [
+        [
+          {
+            "node": "Build Escalation Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Intake Report - No Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Escalation Payload": {
+      "main": [
+        [
+          {
+            "node": "Append Audit Report - Blocked -> DB Write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Intake Report - No Approval": {
+      "main": [
+        [
+          {
+            "node": "Append Audit Report - Non Blocked -> DB Write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fc2a54ba-9cd9-48c7-9e0d-5134a009f2cc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "id": "zibqAxk27wQYMUKJ",
+  "tags": []
+}

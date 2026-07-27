@@ -81,6 +81,19 @@ export async function middleware(request: NextRequest) {
   const isApiPath = pathname.startsWith("/api/");
   const isLoginPage = pathname === "/login";
 
+  // --- TEMPORARY AUTH BYPASS FOR LOCAL DEV ---
+  const BYPASS_AUTH = true; // Always bypass for now based on user request
+  if (BYPASS_AUTH) {
+    if (isLoginPage) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.next();
+    }
+    return ensureControlPlaneCookie(request, NextResponse.next());
+  }
+  // -------------------------------------------
+
   if (!isApiPath && !isLoginPage) {
     if (!portalUser || !portalAccessToken) {
       return unauthorizedResponse(request);

@@ -38,13 +38,14 @@ export default function LoginPage() {
   const PasswordToggleIcon = showPassword ? Eye : EyeOff;
 
   useEffect(() => {
+
     const rememberedEmail = window.localStorage.getItem(REMEMBERED_EMAIL_KEY);
 
     if (rememberedEmail) {
-      setEmail(rememberedEmail);
+      setEmail(rememberedEmail as string);
       setRememberEmail(true);
     }
-  }, []);
+  }, [router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

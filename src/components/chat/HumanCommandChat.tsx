@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
-import { createAuditLog } from "@/lib/audit";
 import { useI18n } from "@/lib/i18n/useI18n";
-import { inferChatIntent, requiresHumanApproval } from "@/lib/validators";
+import { inferChatIntent } from "@/lib/validators";
+import { sendChatMessage, pollChatMessages, pollAuditLogs } from "@/app/actions/chat-actions";
 import type { ChatMessage, ChatThread } from "@/types/chat";
 import type { AuditLog } from "@/types/audit";
 
@@ -19,21 +19,53 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState(initialMessages);
   const [auditLogs, setAuditLogs] = useState(initialAuditLogs);
+  const [isSending, setIsSending] = useState(false);
   const { t: tChat } = useI18n("chat");
   const { t: tShared } = useI18n("shared");
+
+  useEffect(() => {
+    let mounted = true;
+    let inFlight = false;
+    const interval = setInterval(async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const [latestMessages, latestLogs] = await Promise.all([
+          pollChatMessages(thread.id),
+          pollAuditLogs(thread.id)
+        ]);
+        if (mounted) {
+          setMessages(latestMessages);
+          setAuditLogs(latestLogs);
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+      } finally {
+        inFlight = false;
+      }
+    }, 3000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [thread.id]);
 
   const summary = useMemo(() => {
     const latest = messages[messages.length - 1];
     return latest?.body ?? (tChat("chat.summary.latestFallback") ?? "No messages yet");
   }, [messages, tChat]);
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const trimmed = draft.trim();
-    if (!trimmed) return;
+    if (!trimmed || isSending) return;
+
+    setIsSending(true);
+    setDraft("");
 
     const intentType = inferChatIntent(trimmed);
-    const baseMessage: ChatMessage = {
-      id: `msg-${Date.now()}`,
+    const optimisticMessage: ChatMessage = {
+      id: `optimistic-${Date.now()}`,
       threadId: thread.id,
       sender: "human",
       body: trimmed,
@@ -41,41 +73,36 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
       createdAt: new Date().toISOString()
     };
 
-    const nextMessages = [...messages, baseMessage];
-    const nextAudit = [
-      ...auditLogs,
-      createAuditLog("chat", thread.id, "message_received", "Human", `intent=${intentType}`)
-    ];
+    setMessages((prev) => [...prev, optimisticMessage]);
 
-    if (requiresHumanApproval(trimmed)) {
-      nextMessages.push({
-        id: `msg-${Date.now()}-system`,
-        threadId: thread.id,
-        sender: "system",
-        body: tChat("chat.system.publishLaunch") ?? "This command implies publish or launch. Please use the approval console and confirm human authority before any release action.",
-        intentType: "check_governance",
-        createdAt: new Date().toISOString()
-      });
-    } else {
-      nextMessages.push({
-        id: `msg-${Date.now()}-agent`,
-        threadId: thread.id,
-        sender: "agent",
-        body: tChat("chat.agent.mockTaskCreated") ?? "Mock task created and routed to the correct department. In Phase 1 this stays local and reviewable.",
-        intentType,
-        createdAt: new Date().toISOString()
-      });
+    try {
+      await sendChatMessage(thread.id, trimmed, intentType);
+      
+      // Force a poll immediately after send
+      const [latestMessages, latestLogs] = await Promise.all([
+        pollChatMessages(thread.id),
+        pollAuditLogs(thread.id)
+      ]);
+      setMessages(latestMessages);
+      setAuditLogs(latestLogs);
+    } catch (err) {
+      console.error("Failed to send message", err);
+      // Rollback optimistic update
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
+    } finally {
+      setIsSending(false);
     }
-
-    setMessages(nextMessages);
-    setAuditLogs(nextAudit);
-    setDraft("");
   }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
       <div className="space-y-4">
         <ChatComposer value={draft} onChange={setDraft} onSubmit={handleSubmit} />
+        {isSending && (
+          <div className="text-xs text-slate-400 animate-pulse px-4">
+            Sending message...
+          </div>
+        )}
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
           <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{tShared("shared.thread.summary") ?? "Thread summary"}</div>
           <div className="mt-2 text-sm text-slate-200">{summary}</div>

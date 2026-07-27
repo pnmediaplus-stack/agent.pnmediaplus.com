@@ -449,7 +449,7 @@ export function getPhase2NextState(state: Phase2PipelineState): Phase2PipelineSt
     : "terminal";
 }
 
-export function getPhase2RequiredAssets(contentItemId: string) {
+export function getPhase2RequiredAssets(contentItemId: string, phase2Assets: Phase2Asset[]) {
   const contentAssets = phase2Assets.filter((asset) => asset.contentItemId === contentItemId);
   const present = PHASE2_REQUIRED_ASSET_TYPES.filter((type) =>
     contentAssets.some((asset) => asset.assetType === type)
@@ -464,15 +464,15 @@ export function getPhase2RequiredAssets(contentItemId: string) {
   };
 }
 
-export function getPhase2LatestReview(contentItemId: string) {
+export function getPhase2LatestReview(contentItemId: string, phase2QaReviews: Phase2QaReview[]) {
   return [...phase2QaReviews]
     .filter((review) => review.contentItemId === contentItemId)
     .sort((a, b) => b.reviewedAt.localeCompare(a.reviewedAt))[0];
 }
 
-export function getPhase2PublishEligibility(contentItemId: string) {
-  const review = getPhase2LatestReview(contentItemId);
-  const assets = getPhase2RequiredAssets(contentItemId);
+export function getPhase2PublishEligibility(contentItemId: string, phase2QaReviews: Phase2QaReview[], phase2Assets: Phase2Asset[]) {
+  const review = getPhase2LatestReview(contentItemId, phase2QaReviews);
+  const assets = getPhase2RequiredAssets(contentItemId, phase2Assets);
   const ready =
     !!review &&
     review.verdict === "pass" &&

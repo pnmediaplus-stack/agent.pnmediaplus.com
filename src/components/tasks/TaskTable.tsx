@@ -6,7 +6,7 @@ import type { LifecycleState } from "@/types/state";
 import { TaskStatusBadge } from "@/components/tasks/TaskStatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useI18n } from "@/lib/i18n/useI18n";
-import { departments as departmentRecords } from "@/lib/mock-data";
+import type { Department } from "@/types/department";
 
 type TaskAction = {
   key: string;
@@ -175,7 +175,7 @@ function getTaskPriorityLabel(priority: Task["priority"], t: ReturnType<typeof u
   }
 }
 
-function getDepartmentDisplay(departmentId: Task["departmentId"]) {
+function getDepartmentDisplay(departmentId: Task["departmentId"], departmentRecords: Department[]) {
   const department = departmentRecords.find((item) => item.id === departmentId);
   return {
     name: department?.name ?? departmentId,
@@ -183,7 +183,7 @@ function getDepartmentDisplay(departmentId: Task["departmentId"]) {
   };
 }
 
-export function TaskTable({ tasks }: { tasks: Task[] }) {
+export function TaskTable({ tasks, departments }: { tasks: Task[], departments: Department[] }) {
   const { t } = useI18n("tasks");
   const [rows, setRows] = useState(tasks);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
@@ -334,7 +334,7 @@ export function TaskTable({ tasks }: { tasks: Task[] }) {
           <tbody className="divide-y divide-slate-800">
             {rows.map((task) => {
               const actions = getActionPlan(task.status, t);
-              const department = getDepartmentDisplay(task.departmentId);
+              const department = getDepartmentDisplay(task.departmentId, departments);
 
               return (
                 <tr key={task.id} className="text-slate-300">

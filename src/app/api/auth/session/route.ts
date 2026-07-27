@@ -1,6 +1,7 @@
 import { loadPortalOrganizationContext, readPortalAccessToken, verifySupabaseAccessToken } from "@/lib/portal-auth";
 
 export async function GET(request: Request) {
+
   const accessToken = readPortalAccessToken(request.headers);
   const user = await verifySupabaseAccessToken(accessToken);
 
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const organizationContext = await loadPortalOrganizationContext(accessToken ?? "", user.id);
+  const organizationContext = await loadPortalOrganizationContext(accessToken ?? "", user!.id);
 
   if (organizationContext.state === "blocked") {
     return Response.json(

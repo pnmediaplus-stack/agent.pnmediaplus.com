@@ -1,31 +1,10 @@
-"use client";
+import { loadWorkflowRuns } from "@/lib/phase1-loader";
+import { WorkflowsPageClient } from "./WorkflowsPageClient";
 
-import { PageFrame } from "@/components/shared/PageFrame";
-import { WorkflowRunTable } from "@/components/workflows/WorkflowRunTable";
-import { useI18n } from "@/lib/i18n/useI18n";
-import { workflowRuns } from "@/lib/mock-data";
+export const dynamic = "force-dynamic";
 
-export default function WorkflowsPage() {
-  const { t } = useI18n("workflows");
+export default async function WorkflowsPage() {
+  const res = await loadWorkflowRuns();
 
-  return (
-    <PageFrame
-      title={t("workflows.page.title") ?? "Workflows"}
-      purpose={t("workflows.page.purpose") ?? "Workflow board for state transitions, run status, and safe handoff checkpoints."}
-      statusLabel={t("workflows.page.statusLabel") ?? "Workflow board"}
-      statusValue="WAITING_ON_HUMAN"
-      allowedActions={[
-        t("workflows.page.allowed.inspectRunStatus") ?? "Inspect run status",
-        t("workflows.page.allowed.reviewCheckpoints") ?? "Review checkpoints",
-        t("workflows.page.allowed.holdForHumanReview") ?? "Hold for human review"
-      ]}
-      forbiddenActions={[
-        t("workflows.page.forbidden.automaticLaunch") ?? "Automatic launch",
-        t("workflows.page.forbidden.productionDeploy") ?? "Production deploy",
-        t("workflows.page.forbidden.stateBypass") ?? "State bypass"
-      ]}
-    >
-      <WorkflowRunTable runs={workflowRuns} />
-    </PageFrame>
-  );
+  return <WorkflowsPageClient runs={res.data} />;
 }
