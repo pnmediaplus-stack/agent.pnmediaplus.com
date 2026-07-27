@@ -155,7 +155,7 @@ export async function loadChatMessages(threadId: string) {
 }
 
 export async function loadAuditLogs() {
-  return fetchTable<AuditLog>("phase1_audit_logs");
+  return fetchTable<AuditLog>("phase1_audit_logs", "*", "createdAt.desc");
 }
 
 export async function loadThreadAuditLogs(threadId: string) {
