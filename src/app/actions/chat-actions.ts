@@ -29,21 +29,32 @@ export async function sendChatMessage(threadId: string, body: string, intentType
   // 3. Trigger webhook to n8n for agent processing
   // Gatekeeper requires using the human-task-intake boundary, so we call postN8nWebhook directly
   // like the API route does, to keep it server-side without absolute URL headaches.
-  const webhookResult = await postN8nWebhook("human-task-intake", {
-    received: true,
-    payload: {
-      threadId,
-      body,
-      intentType,
-      sender: "human"
-    }
-  });
-
-  if (!webhookResult.ok) {
-    throw new Error(`Webhook trigger failed: ${webhookResult.status} ${webhookResult.message}`);
+  let webhookResult = null;
+  try {
+    webhookResult = await postN8nWebhook("human-task-intake", {
+      received: true,
+      payload: {
+        threadId,
+        body,
+        intentType,
+        sender: "human"
+      }
+    });
+  } catch (error) {
+    webhookResult = {
+      ok: false,
+      mocked: false,
+      route: "human-task-intake",
+      status: 502,
+      message: error instanceof Error ? error.message : String(error)
+    };
   }
 
-  return { success: true, message: messageResult.data };
+  return {
+    success: true,
+    message: messageResult.data,
+    webhook: webhookResult
+  };
 }
 
 export async function pollChatMessages(threadId: string) {
