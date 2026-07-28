@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPhase2Idea } from "@/app/actions/phase2-actions";
 
 export function CreateIdeaModal({
   isOpen,
@@ -25,20 +26,11 @@ export function CreateIdeaModal({
     setError(null);
 
     try {
-      const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL ?? "http://localhost:5678";
-      const res = await fetch(`${webhookUrl}/webhook/phase2-content-pipeline-intake`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          brief,
-          owner_ref: ownerRef
-        })
+      await createPhase2Idea({
+        title,
+        brief,
+        owner_ref: ownerRef
       });
-
-      if (!res.ok) {
-        throw new Error(`Webhook failed with status: ${res.status}`);
-      }
 
       onSuccess();
       onClose();
