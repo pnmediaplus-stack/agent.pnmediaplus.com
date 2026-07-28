@@ -17,7 +17,7 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
         value={value}
         onChange={(event) => onChange(event.target.value)}
         rows={4}
-        placeholder={t("chat.composer.placeholder") ?? "Type a command, ask for status, or request a task..."}
+        placeholder={t("chat.composer.placeholder") ?? "Type a command, ask for status, or request a task."}
         className="mt-3 w-full rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-500/50"
       />
       <div className="mt-3 flex justify-end">

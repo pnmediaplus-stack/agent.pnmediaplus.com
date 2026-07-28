@@ -694,7 +694,7 @@ select
   now()
 from (
   values
-    ('thread_001', 1, 'SYSTEM', 'SYSTEM', 'SYSTEM', 'Phase 1 is running in SSOT compatibility mode until the production chat tables are promoted.', 'markdown', null),
+    ('thread_001', 1, 'SYSTEM', 'SYSTEM', 'SYSTEM', 'Phase 1 chat is ready and compatibility views are active.', 'markdown', null),
     ('thread_001', 2, 'HUMAN', 'Human Founder', 'COMMAND', 'Please prepare the governance summary and route it to the right department.', 'markdown', 'create_content')
 ) as v(thread_key, message_seq, actor_type, actor_external_ref, message_kind, content, content_format, intent_type)
 join pn_os_ai_department.chat_threads th
@@ -727,7 +727,7 @@ select
   th.id,
   'NOT_STARTED'::pn_os_ai_department.lifecycle_state,
   'PARTIAL'::pn_os_ai_department.lifecycle_state,
-  'Command intake created a draft task request.',
+  'Command intake created a review-ready task request.',
   gen_random_uuid(),
   encode(digest(concat('phase1-chat-seed-', th.id::text), 'sha256'), 'hex'),
   now()

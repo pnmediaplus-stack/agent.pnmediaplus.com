@@ -91,4 +91,6 @@ Stop and review if:
 - This roadmap does not weaken Phases 070-073 controls; it only defines the approved UI entrypoint for the existing secret runtime contract.
 - Phase 074 scaffold is complete at the UI boundary.
 - Phase 074 runtime contract is complete at the RPC boundary.
+- Control-plane smoke evidence PASS on 2026-07-28: `state-update-request` accepted a valid HUMAN session, blocked no-op `DRAFT -> DRAFT` with `409 FORBIDDEN_TRANSITION`, and blocked `BOT` actor with `403 FORBIDDEN_ACTOR`.
 - Live secret write/broker behavior remains blocked until runtime authority is explicitly approved.
+- UI scaffold complete; runtime remains blocked by authority design.

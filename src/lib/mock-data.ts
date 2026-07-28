@@ -255,7 +255,7 @@ export const chatMessages: ChatMessage[] = [
     id: "msg-001",
     threadId: "thread-001",
     sender: "system",
-    body: "Phase 1 is running in mock-data mode until Supabase and n8n env are provided.",
+    body: "Phase 1 chat is live and compatibility views are active.",
     createdAt: now
   },
   {
@@ -271,7 +271,7 @@ export const chatMessages: ChatMessage[] = [
     id: "msg-003",
     threadId: "thread-001",
     sender: "agent",
-    body: "Task created in draft state. Waiting on human review if you want a promotion.",
+    body: "Task created and awaiting human review for promotion.",
     createdAt: now
   }
 ];
@@ -283,7 +283,7 @@ export const auditLogs: AuditLog[] = [
     entityId: "thread-001",
     action: "message_received",
     actor: "Human Founder",
-    details: "Command intake created a draft task request.",
+    details: "Command intake created a review-ready task request.",
     createdAt: now
   },
   {

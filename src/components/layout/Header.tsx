@@ -14,7 +14,7 @@ export function Header() {
     <header className="flex items-center justify-between border-b border-slate-800 bg-slate-950/70 px-5 py-4 backdrop-blur">
       <div>
         <div className="text-sm font-medium text-white">{tLayout("layout.header.title") ?? "Localhost build"}</div>
-        <p className="text-xs text-slate-400">{tLayout("layout.header.description") ?? "Next.js shell with mock-first data and safe server routes."}</p>
+        <p className="text-xs text-slate-400">{tLayout("layout.header.description") ?? "Next.js shell with live data surfaces and safe server routes."}</p>
       </div>
       <div className="flex items-center gap-3">
         <span

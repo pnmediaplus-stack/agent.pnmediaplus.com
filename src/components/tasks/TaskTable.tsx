@@ -204,7 +204,7 @@ export function TaskTable({ tasks, departments }: { tasks: Task[], departments: 
     title: t("tasks.empty.title") ?? "No tasks yet",
       description:
         t("tasks.empty.description") ?? 
-        "The task inbox is empty. New commands from chat will appear here in mock-safe form."
+        "The task inbox is empty. New commands from chat will appear here."
     }),
     [t]
   );

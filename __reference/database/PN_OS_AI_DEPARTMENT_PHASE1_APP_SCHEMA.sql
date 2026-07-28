@@ -1139,9 +1139,9 @@ select
 from (
   values
     -- Bổ sung giá trị message_kind (cột thứ 6) cho mỗi dòng
-    ('thread_001', 1, 'SYSTEM', null, 'SYSTEM', 'SYSTEM', 'Phase 1 is running in mock-data mode until Supabase and n8n env are provided.', 'markdown', null, null, null),
+    ('thread_001', 1, 'SYSTEM', null, 'SYSTEM', 'SYSTEM', 'Phase 1 chat is ready and compatibility views are active.', 'markdown', null, null, null),
     ('thread_001', 2, 'HUMAN', null, 'Human Founder', 'COMMAND', 'Please prepare the governance summary and route it to the right department.', 'markdown', 'create_content', 'governance_core', null),
-    ('thread_001', 3, 'AGENT', 'governance_core_seed_registry_observer', null, 'RESPONSE', 'Task created in draft state. Waiting on human review if you want a promotion.', 'markdown', null, null, null)
+    ('thread_001', 3, 'AGENT', 'governance_core_seed_registry_observer', null, 'RESPONSE', 'Task created and awaiting human review for promotion.', 'markdown', null, null, null)
 ) as v(thread_key, message_seq, actor_type, actor_agent_key, actor_external_ref, message_kind, content, content_format, intent_type, target_department_key, target_agent_key) -- ĐÃ BỔ SUNG ALIAS message_kind
 join pn_os_ai_department.chat_threads th
   on th.thread_key = v.thread_key
@@ -1194,7 +1194,7 @@ select
   v.event_hash
 from (
   values
-    ('HUMAN', null, 'Human Founder', 'message_received', 'CHAT_THREAD', 'thread_001', null, 'DRAFT', 'Command intake created a draft task request.', null, gen_random_uuid(), repeat('a', 64)),
+    ('HUMAN', null, 'Human Founder', 'message_received', 'CHAT_THREAD', 'thread_001', null, 'DRAFT', 'Command intake created a review-ready task request.', null, gen_random_uuid(), repeat('a', 64)),
     ('AGENT', 'governance_core_seed_registry_observer', null, 'approval_requested', 'TASK', 'task_003', 'DRAFT', 'HOLD', 'Task moved to approval request status.', null, gen_random_uuid(), repeat('b', 64)),
     ('AGENT', 'pn_media_plus_seed_registry_observer', null, 'waiting_on_human', 'WORKFLOW_RUN', 'state_update_request', 'NOT_STARTED', 'HOLD', 'State update request is parked at the human gate.', null, gen_random_uuid(), repeat('c', 64))
 ) as v(actor_type, actor_agent_key, actor_external_ref, action, entity_type, entity_key, before_state, after_state, reason, evidence_ref, request_id, event_hash)

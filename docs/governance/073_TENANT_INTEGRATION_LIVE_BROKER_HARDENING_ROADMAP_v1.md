@@ -90,3 +90,4 @@ Stop and review if:
 - `073_TENANT_INTEGRATION_LIVE_BROKER_HARDENING_ROADMAP_v1.md` opens the production hardening layer for tenant integration live broker operations.
 - This roadmap does not weaken Phases 070-072 controls; it only defines the approved path from live broker capability to production-hard-ready state.
 - Phase 073 closed on 2026-05-24 by Human Final Authority directive `CLOSE_PHASE073_PROD_SMOKE_2026_05_24` after production smoke evidence and zero-trust verification.
+- Smoke evidence remains fail-closed as designed: `state-update-request` accepted HUMAN authority, blocked no-op transitions with `409 FORBIDDEN_TRANSITION`, and blocked non-human actors with `403 FORBIDDEN_ACTOR` on 2026-07-28.

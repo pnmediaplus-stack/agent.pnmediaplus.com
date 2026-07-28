@@ -53,7 +53,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
 
   const summary = useMemo(() => {
     const latest = messages[messages.length - 1];
-    return latest?.body ?? (tChat("chat.summary.latestFallback") ?? "No messages yet");
+    return latest?.body ?? (tChat("chat.summary.latestFallback") ?? "Latest message will appear here.");
   }, [messages, tChat]);
 
   async function handleSubmit() {
@@ -100,7 +100,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         <ChatComposer value={draft} onChange={setDraft} onSubmit={handleSubmit} />
         {isSending && (
           <div className="text-xs text-slate-400 animate-pulse px-4">
-            Sending message...
+            Sending command...
           </div>
         )}
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">

@@ -199,7 +199,7 @@ export function Sidebar() {
                 {tLayout("layout.sidebar.integrations.title") ?? "Future integrations"}
               </div>
               <div className="mt-2 text-[11px] text-slate-500">
-                {tLayout("layout.sidebar.integrations.description") ?? "Disabled placeholders for future provider settings."}
+                {tLayout("layout.sidebar.integrations.description") ?? "Disabled slots for future provider settings."}
               </div>
               <div className="mt-3 grid gap-1.5">
                 {futureIntegrations.map((item) => (

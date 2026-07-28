@@ -21,7 +21,7 @@ export function ChatPageClient({
     return (
       <PageFrame
         title={t("chat.page.title") ?? "Human Command Chat"}
-        purpose={t("chat.page.purpose") ?? "Capture commands, create mock tasks, request clarification, and route safe actions to the right department."}
+        purpose={t("chat.page.purpose") ?? "Capture commands, create tasks, request clarification, and route safe actions to the right department."}
         statusLabel={t("chat.page.statusLabel") ?? "Command intake"}
         statusValue="NO_THREAD"
         allowedActions={[]}
@@ -35,7 +35,7 @@ export function ChatPageClient({
   return (
     <PageFrame
       title={t("chat.page.title") ?? "Human Command Chat"}
-      purpose={t("chat.page.purpose") ?? "Capture commands, create mock tasks, request clarification, and route safe actions to the right department."}
+      purpose={t("chat.page.purpose") ?? "Capture commands, create tasks, request clarification, and route safe actions to the right department."}
       statusLabel={t("chat.page.statusLabel") ?? "Command intake"}
       statusValue={thread.status}
       allowedActions={[

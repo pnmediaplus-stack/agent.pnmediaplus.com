@@ -49,9 +49,10 @@
     - `072_TENANT_INTEGRATION_LIVE_BROKER_ROADMAP_v1.md`
     - `072_TENANT_INTEGRATION_LIVE_BROKER_ROADMAP_v1.md`: Phase 072 scaffold complete; live broker execution remains blocked pending authority sign-off
     - `073_TENANT_INTEGRATION_LIVE_BROKER_HARDENING_ROADMAP_v1.md`
-    - `073_TENANT_INTEGRATION_LIVE_BROKER_HARDENING_ROADMAP_v1.md`: Phase 073 closed on 2026-05-24 by Human Final Authority directive `CLOSE_PHASE073_PROD_SMOKE_2026_05_24`
+    - `073_TENANT_INTEGRATION_LIVE_BROKER_HARDENING_ROADMAP_v1.md`: Phase 073 closed on 2026-05-24 by Human Final Authority directive `CLOSE_PHASE073_PROD_SMOKE_2026_05_24`; smoke evidence on 2026-07-28 remained fail-closed (`409 FORBIDDEN_TRANSITION`, `403 FORBIDDEN_ACTOR`)
     - `074_TENANT_INTEGRATION_SECRET_CAPTURE_UI_ROADMAP_v1.md`
-    - `074_TENANT_INTEGRATION_SECRET_CAPTURE_UI_ROADMAP_v1.md`: Phase 074 scaffold and runtime contract complete; live secret write/broker remains blocked pending runtime authority sign-off
+    - `074_TENANT_INTEGRATION_SECRET_CAPTURE_UI_ROADMAP_v1.md`: Phase 074 scaffold and runtime contract complete; control-plane smoke evidence PASS on 2026-07-28; UI scaffold complete and runtime remains blocked by authority design
+    - `070-074` chain: tenant vault, runtime, live-broker hardening, and secret-capture UI are scaffolded end-to-end; live secret operations remain authority-gated and fail-closed by design
   - Canonical machine-readable bundle:
     - `__reference/integration/department-governance/`
     - `__reference/database/department_governance_additive_migration.sql`
