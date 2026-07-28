@@ -49,7 +49,7 @@ export function CreateIdeaModal({
       <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
         <h3 className="text-lg font-semibold text-white">Create Content Idea</h3>
         <p className="mt-1 text-sm text-slate-400">
-          This will trigger the N8N Phase 2 Pipeline directly.
+          This will trigger the N8N Phase 2 Pipeline via a secure server proxy.
         </p>
 
         {error ? (

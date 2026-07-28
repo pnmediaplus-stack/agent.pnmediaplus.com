@@ -13,11 +13,11 @@ export async function postN8nWebhook(route: string, payload: unknown): Promise<N
 
   if (!baseUrl) {
     return {
-      ok: true,
-      mocked: true,
+      ok: false,
+      mocked: false,
       route,
-      status: 200,
-      message: "Mock n8n response: webhook base URL is not configured."
+      status: 500,
+      message: "BLOCKED: N8N_WEBHOOK_BASE_URL is missing. Failsafe activated."
     };
   }
 
