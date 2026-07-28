@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createPhase2Idea } from "@/app/actions/phase2-actions";
 
 export function CreateIdeaModal({
   isOpen,
@@ -26,11 +25,21 @@ export function CreateIdeaModal({
     setError(null);
 
     try {
-      await createPhase2Idea({
-        title,
-        brief,
-        owner_ref: ownerRef
+      const res = await fetch("/api/phase2/intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          brief,
+          owner_ref: ownerRef
+        })
       });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || `Request failed with status ${res.status}`);
+      }
 
       onSuccess();
       onClose();
@@ -49,7 +58,7 @@ export function CreateIdeaModal({
       <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
         <h3 className="text-lg font-semibold text-white">Create Content Idea</h3>
         <p className="mt-1 text-sm text-slate-400">
-          This will trigger the N8N Phase 2 Pipeline via a secure server proxy.
+          This will trigger the N8N Phase 2 Pipeline via a standard REST API proxy.
         </p>
 
         {error ? (
