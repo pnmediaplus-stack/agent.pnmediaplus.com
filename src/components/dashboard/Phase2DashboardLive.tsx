@@ -64,8 +64,13 @@ function SectionFrame({
   );
 }
 
+import { useState } from "react";
+import { CreateIdeaModal } from "./CreateIdeaModal";
+
 function CampaignControlBar() {
   const { t } = useI18n("dashboard");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const tabs = [
     t("dashboard.controls.tabs.campaigns") ?? "Campaigns",
     t("dashboard.controls.tabs.adSets") ?? "Ad sets",
@@ -76,49 +81,68 @@ function CampaignControlBar() {
   ];
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-700 bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.24)]">
-      <div className="border-b border-cyan-400/20 bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(15,23,42,0.82))] px-4 py-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
-              <div className="text-sm font-semibold text-white">
-                {t("dashboard.controls.title") ?? "Locked campaign workspace"}
+    <>
+      <div className="overflow-hidden rounded-3xl border border-slate-700 bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.24)]">
+        <div className="border-b border-cyan-400/20 bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(15,23,42,0.82))] px-4 py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
+                <div className="text-sm font-semibold text-white">
+                  {t("dashboard.controls.title") ?? "Locked campaign workspace"}
+                </div>
+              </div>
+              <div className="mt-1 max-w-3xl text-xs leading-5 text-slate-400">
+                {t("dashboard.controls.description") ??
+                  "Vertical dashboard shell. No page-level horizontal mode. Wide content stays inside internal rails, tables, and snapshots."}
               </div>
             </div>
-            <div className="mt-1 max-w-3xl text-xs leading-5 text-slate-400">
-              {t("dashboard.controls.description") ??
-                "Vertical dashboard shell. No page-level horizontal mode. Wide content stays inside internal rails, tables, and snapshots."}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex gap-2">
+                {tabs.map((tab, index) => (
+                  <span
+                    key={tab}
+                    className={[
+                      "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.12em]",
+                      index === 0
+                        ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-100"
+                        : "border-slate-700 bg-slate-900/70 text-slate-200"
+                    ].join(" ")}
+                  >
+                    {tab}
+                  </span>
+                ))}
+              </div>
+              <div className="h-6 w-px bg-slate-800"></div>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="inline-flex items-center rounded-full bg-cyan-500 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-cyan-950 hover:bg-cyan-400"
+              >
+                + Create Idea
+              </button>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {tabs.map((tab, index) => (
-              <span
-                key={tab}
-                className={[
-                  "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.12em]",
-                  index === 0
-                    ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-100"
-                    : "border-slate-700 bg-slate-900/70 text-slate-200"
-                ].join(" ")}
-              >
-                {tab}
-              </span>
-            ))}
-          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2 px-4 pb-4">
+          <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-200">
+            {t("dashboard.controls.fixedSidebar") ?? "Fixed sidebar"}
+          </span>
+          <span className="rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-200">
+            {t("dashboard.controls.internalHorizontalScrollOnly") ?? "Internal horizontal scroll only"}
+          </span>
+          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-200">
+            {t("dashboard.controls.campaignManagerInspired") ?? "Campaign-manager inspired"}
+          </span>
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-2 px-4 pb-4">
-        <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-200">
-          {t("dashboard.controls.fixedSidebar") ?? "Fixed sidebar"}
-        </span>
-        <span className="rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-200">
-          {t("dashboard.controls.internalHorizontalScrollOnly") ?? "Internal horizontal scroll only"}
-        </span>
-        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-200">
-          {t("dashboard.controls.campaignManagerInspired") ?? "Campaign-manager inspired"}
-        </span>
-      </div>
-    </div>
+      <CreateIdeaModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          // Trigger a hard reload or router refresh to fetch new dashboard data
+          window.location.reload();
+        }}
+      />
+    </>
   );
 }
 

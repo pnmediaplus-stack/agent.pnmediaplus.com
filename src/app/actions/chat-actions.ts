@@ -36,6 +36,7 @@ export async function sendChatMessage(threadId: string, body: string, intentType
       payload: {
         threadId,
         body,
+        message: body,
         intentType,
         sender: "human"
       }

@@ -1,0 +1,76 @@
+{
+  "name": "PHASE2-WORKFLOW-ERROR-HANDLER",
+  "nodes": [
+    {
+      "id": "webhook-err",
+      "name": "Webhook Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "phase2-error-handler",
+        "options": {}
+      }
+    },
+    {
+      "id": "format-err",
+      "name": "Format Error Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst j = $json.body || $json;\nreturn {\n  json: {\n    status: 'BLOCKED',\n    reason: j.error || 'SUPABASE_GUARD_ERROR',\n    failed_node: j.node,\n    timestamp: new Date().toISOString()\n  }\n};\n  "
+      }
+    },
+    {
+      "id": "audit-err",
+      "name": "DB: Append Audit Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst baseUrl = ($env.SUPABASE_URL || '').trim().replace(/\\/$/, '');\nconst serviceKey = ($env.SUPABASE_SERVICE_ROLE_KEY || '').trim();\nconst payload = {\n  actor_type: 'SYSTEM',\n  actor_external_ref: 'n8n:phase2-error-handler',\n  action: 'pipeline_blocked_by_guard',\n  entity_type: 'CONTENT_ITEM',\n  reason: $json.reason,\n  after_state: 'BLOCKED',\n  metadata: { cross_phase_audit: true, intent: 'Phase 2 Error Logging via Centralized Phase 1 Audit Surface' }\n};\ntry {\n  await this.helpers.httpRequest({\n    url: `${baseUrl}/rest/v1/phase1_audit_logs`,\n    method: 'POST',\n    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },\n    body: payload, json: true\n  });\n  return { json: { ...$json, audit_status: 'LOGGED' } };\n} catch (e) {\n  return { json: { ...$json, audit_status: 'FAILED', audit_error: e.message } };\n}\n  "
+      }
+    }
+  ],
+  "connections": {
+    "webhook-err": {
+      "main": [
+        [
+          {
+            "node": "format-err",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format-err": {
+      "main": [
+        [
+          {
+            "node": "audit-err",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
