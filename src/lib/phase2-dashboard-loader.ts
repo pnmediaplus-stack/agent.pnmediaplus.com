@@ -236,6 +236,7 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
         agentTasks: [],
         assets: [],
         qaReviews: [],
+        publishRecords: [],
         performanceRecords: [],
         lessonsLearned: []
       }
