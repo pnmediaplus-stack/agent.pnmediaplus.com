@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PageFrame } from "@/components/shared/PageFrame";
 import { StateBadge } from "@/components/shared/StateBadge";
