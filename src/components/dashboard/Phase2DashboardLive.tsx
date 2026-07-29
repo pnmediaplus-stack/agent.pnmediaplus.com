@@ -613,7 +613,7 @@ function QAView({
                 label={review ? review.verdict : (t("dashboard.labels.pending") ?? "pending")}
                 displayLabel={review ? (t(`dashboard.verdict.${review.verdict}`) ?? review.verdict) : (t("dashboard.labels.pending") ?? "pending")}
               />,
-              <span className="text-xs text-slate-400">{review?.evidenceRef ?? (t("dashboard.labels.pending") ?? "pending")}</span>,
+              <div className="text-xs text-slate-400 break-all max-w-[200px] max-h-20 overflow-y-auto">{review?.evidenceRef ?? (t("dashboard.labels.pending") ?? "pending")}</div>,
               <StateBadge
                 label={publish.ready ? "ELIGIBLE" : publish.gateState}
                 displayLabel={publish.ready ? (t("dashboard.labels.eligible") ?? "ELIGIBLE") : (t(`dashboard.publishState.${publish.gateState}`) ?? publish.gateState)}
