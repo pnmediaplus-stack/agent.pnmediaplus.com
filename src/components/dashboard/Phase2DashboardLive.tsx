@@ -178,6 +178,25 @@ function PipelineCard({
   const review = getPhase2LatestReview(item.id, reviews);
   const publish = getPhase2PublishEligibility(item.id, assets, reviews);
   const nextState = getPhase2NextState(item.currentState);
+  const [isPublishing, setIsPublishing] = useState(false);
+
+  const handlePublish = async () => {
+    try {
+      setIsPublishing(true);
+      const res = await fetch('/api/phase2/approve-publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content_item_id: item.id })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Publish failed');
+      alert('🚀 Xuất bản thành công: ' + data.publish_url);
+      window.location.reload();
+    } catch (e: any) {
+      alert('❌ Lỗi xuất bản: ' + e.message);
+      setIsPublishing(false);
+    }
+  };
 
   const assetCompletionText = `${requiredAssets.present.length}/${requiredAssets.totalRequired} ${
     t("dashboard.labels.requiredAssets") ?? "required assets"
@@ -240,6 +259,27 @@ function PipelineCard({
             ))}
           </div>
         </div>
+
+        {item.currentState === 'QA_passed' && (
+          <div className="mt-4 border-t border-slate-700/50 pt-4">
+            <button
+              onClick={handlePublish}
+              disabled={isPublishing || !publish.ready}
+              className={`w-full rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors ${
+                isPublishing || !publish.ready
+                  ? "cursor-not-allowed bg-slate-700 text-slate-400"
+                  : "bg-cyan-600 hover:bg-cyan-500"
+              }`}
+            >
+              {isPublishing ? "Đang xuất bản..." : "🚀 Phê duyệt & Xuất bản"}
+            </button>
+            {!publish.ready && (
+              <p className="mt-2 text-center text-[10px] text-rose-400">
+                Chưa đủ điều kiện publish
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
