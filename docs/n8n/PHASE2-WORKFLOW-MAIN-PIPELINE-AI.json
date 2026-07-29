@@ -130,7 +130,7 @@
     },
     {
       "id": "agent-visual",
-      "name": "Agent: Visual Director (Pluggable Mock)",
+      "name": "Agent: Visual Director (Next.js Broker)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -139,7 +139,7 @@
       ],
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "\n// Tạm thời trả về Mock Image để Plug-and-play sau khi chốt công cụ DALL-E/Midjourney\nreturn { \n  json: { \n    ...$json, \n    visual_uri: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000',\n    agent_status: 'OK' \n  } \n};\n  "
+        "jsCode": "\nconst baseUrl = ($env.NEXTJS_CONTROL_PLANE_BASE_URL || '').trim().replace(new RegExp('/$'), '');\nconst brokerSecret = ($env.CONTROL_PLANE_SECRET || '').trim();\n\nif (!brokerSecret || !baseUrl) throw new Error('Missing CONTROL_PLANE_SECRET or NEXTJS_CONTROL_PLANE_BASE_URL');\n\nconst promptText = \"Visual concept for: \" + ($json.content_item.title || \"Social Media Post\");\n\ntry {\n  const res = await this.helpers.httpRequest({\n    url: `${baseUrl}/api/phase2/generate-image`,\n    method: 'POST',\n    headers: { 'Authorization': `Bearer ${brokerSecret}`, 'Content-Type': 'application/json' },\n    body: { prompt: promptText },\n    json: true\n  });\n  \n  return { \n    json: { \n      ...$json, \n      visual_uri: res.visual_uri,\n      agent_status: 'OK' \n    } \n  };\n} catch (e) {\n  return { json: { ...$json, agent_status: 'ERROR', agent_error: e.message } };\n}\n  "
       }
     },
     {
