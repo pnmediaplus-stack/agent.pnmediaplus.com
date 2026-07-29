@@ -102,6 +102,18 @@ export type Phase2PerformanceRecord = {
   notes?: string;
 } & Partial<Record<Phase2PerformanceMetricField, number>>;
 
+export type Phase2PublishRecord = {
+  id: string;
+  contentItemId: string;
+  assetId?: string;
+  channel: string;
+  externalId?: string;
+  externalUrl?: string;
+  status: string;
+  publishedAt?: string;
+  errorMessage?: string;
+};
+
 export type Phase2LessonLearned = {
   id: string;
   contentItemId: string;

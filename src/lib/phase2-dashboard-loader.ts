@@ -8,6 +8,8 @@ import type {
   Phase2DashboardLoadResult,
   Phase2PerformanceRecord,
   Phase2QaReview,
+  Phase2PublishRecord,
+  Phase2LessonLearned,
   Phase2PipelineState,
   Phase2PerformanceMetricField
 } from "@/types/phase2";
@@ -177,6 +179,20 @@ type LessonLearnedRow = {
   createdAt: string;
 };
 
+type PublishRecordRow = {
+  id: string;
+  content_item_id: string;
+  asset_id: string | null;
+  channel: string;
+  external_id: string | null;
+  external_url: string | null;
+  status: string;
+  published_at: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResult> {
   const [
     contentItemsResult,
@@ -184,7 +200,8 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
     assetsResult,
     reviewsResult,
     performanceResult,
-    lessonsResult
+    lessonsResult,
+    publishRecordsResult
   ] = await Promise.all([
     fetchPhase2Table<ContentItemRow>(
       "phase2_content_items",
@@ -215,6 +232,11 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
       "phase2_lessons_learned",
       "id,contentItemId,lessonText,metricHighlight,createdAt",
       "createdAt.desc"
+    ),
+    fetchPhase2Table<PublishRecordRow>(
+      "phase2_publish_records",
+      "id,content_item_id,asset_id,channel,external_id,external_url,status,published_at,error_message,created_at,updated_at",
+      "created_at.asc"
     )
   ]);
 
@@ -335,6 +357,26 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
     return record;
   });
 
+  const publishRecords: Phase2PublishRecord[] = publishRecordsResult.data.map((row) => ({
+    id: row.id,
+    contentItemId: row.content_item_id,
+    assetId: row.asset_id ?? undefined,
+    channel: row.channel,
+    externalId: row.external_id ?? undefined,
+    externalUrl: row.external_url ?? undefined,
+    status: row.status as any,
+    publishedAt: row.published_at ?? undefined,
+    errorMessage: row.error_message ?? undefined
+  }));
+
+  const lessonsLearned: Phase2LessonLearned[] = lessonsResult.data.map((row) => ({
+    id: row.id,
+    contentItemId: row.contentItemId,
+    lessonText: row.lessonText,
+    metricHighlight: row.metricHighlight,
+    createdAt: row.createdAt
+  }));
+
   return {
     state: "ready",
     data: {
@@ -342,7 +384,9 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
       agentTasks,
       assets,
       qaReviews,
-      performanceRecords
+      publishRecords,
+      performanceRecords,
+      lessonsLearned
     }
   };
 }
