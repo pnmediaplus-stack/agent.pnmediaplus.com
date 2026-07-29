@@ -303,7 +303,7 @@ function PipelineCard({
                   </div>
                   <div className="rounded-lg bg-slate-900/50 p-2 text-center border border-slate-800">
                     <div className="text-[10px] text-slate-400 uppercase">CTR</div>
-                    <div className="text-sm font-bold text-white">{perf.ctr ? perf.ctr.toFixed(2) + '%' : '0%'}</div>
+                    <div className="text-sm font-bold text-white">{perf.CTR ? perf.CTR.toFixed(2) + '%' : '0%'}</div>
                   </div>
                 </React.Fragment>
               ))}
