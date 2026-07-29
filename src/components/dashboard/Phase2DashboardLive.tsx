@@ -167,11 +167,13 @@ function SummaryGrid({ cards }: { cards: SummaryCard[] }) {
 function PipelineCard({
   item,
   assets,
-  reviews
+  reviews,
+  performanceRecords
 }: {
   item: Phase2ContentItem;
   assets: Phase2Asset[];
   reviews: Phase2QaReview[];
+  performanceRecords?: Phase2PerformanceRecord[];
 }) {
   const { t } = useI18n("dashboard");
   const requiredAssets = getPhase2RequiredAssets(item.id, assets);
@@ -280,6 +282,34 @@ function PipelineCard({
             )}
           </div>
         )}
+
+        {item.currentState === 'published' && performanceRecords && performanceRecords.some(p => p.contentItemId === item.id) && (
+          <div className="mt-4 border-t border-slate-700/50 pt-4">
+            <div className="text-xs uppercase tracking-[0.22em] text-cyan-400 mb-2">Performance Metrics</div>
+            <div className="grid grid-cols-2 gap-2">
+              {performanceRecords.filter(p => p.contentItemId === item.id).slice(0, 1).map((perf, idx) => (
+                <React.Fragment key={idx}>
+                  <div className="rounded-lg bg-slate-900/50 p-2 text-center border border-slate-800">
+                    <div className="text-[10px] text-slate-400 uppercase">Views</div>
+                    <div className="text-sm font-bold text-white">{perf.views?.toLocaleString() || 0}</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-900/50 p-2 text-center border border-slate-800">
+                    <div className="text-[10px] text-slate-400 uppercase">Likes</div>
+                    <div className="text-sm font-bold text-white">{perf.likes?.toLocaleString() || 0}</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-900/50 p-2 text-center border border-slate-800">
+                    <div className="text-[10px] text-slate-400 uppercase">Comments</div>
+                    <div className="text-sm font-bold text-white">{perf.comments?.toLocaleString() || 0}</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-900/50 p-2 text-center border border-slate-800">
+                    <div className="text-[10px] text-slate-400 uppercase">CTR</div>
+                    <div className="text-sm font-bold text-white">{perf.ctr ? perf.ctr.toFixed(2) + '%' : '0%'}</div>
+                  </div>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -297,11 +327,13 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 function PipelineBoard({
   contentItems,
   assets,
-  reviews
+  reviews,
+  performanceRecords
 }: {
   contentItems: Phase2ContentItem[];
   assets: Phase2Asset[];
   reviews: Phase2QaReview[];
+  performanceRecords?: Phase2PerformanceRecord[];
 }) {
   const { t } = useI18n("dashboard");
   const orderedItems = sortPhase2ContentItems(contentItems);
@@ -340,7 +372,13 @@ function PipelineBoard({
 
             return (
               <div key={item.id} className="min-h-0 snap-start">
-                <PipelineCard item={item} assets={assets} reviews={reviews} />
+                      <PipelineCard 
+                        key={item.id} 
+                        item={item} 
+                        assets={assets} 
+                        reviews={reviews} 
+                        performanceRecords={performanceRecords}
+                      />
                 <div className="mt-2 flex items-center justify-between px-1 text-xs text-slate-500">
                   <span>{requiredLabel}</span>
                   <span>
@@ -830,7 +868,12 @@ export function Phase2Dashboard({
         title={t("dashboard.sections.pipelineBoard") ?? "Pipeline board (content_items)"}
         description={t("dashboard.sections.pipelineBoardDescription") ?? "idea → research_ready → visual_ready → caption_ready → QA_ready → QA_passed → scheduled → published"}
       >
-        <PipelineBoard contentItems={data.contentItems} assets={data.assets} reviews={data.qaReviews} />
+        <PipelineBoard
+            contentItems={data.contentItems}
+            assets={data.assets}
+            reviews={data.qaReviews}
+            performanceRecords={data.performanceRecords}
+          />
       </SectionFrame>
 
       <div className="space-y-6">

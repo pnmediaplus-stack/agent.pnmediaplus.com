@@ -1,0 +1,117 @@
+{
+  "name": "PHASE2-WORKFLOW-PERFORMANCE-SCRAPER",
+  "nodes": [
+    {
+      "id": "cron-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "call-scraper",
+      "name": "Call Performance Scraper API",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "\nconst baseUrl = ($env.NEXTJS_CONTROL_PLANE_BASE_URL || '').trim().replace(new RegExp('/$'), '');\nconst brokerSecret = ($env.CONTROL_PLANE_SECRET || '').trim();\n\ntry {\n  const res = await this.helpers.httpRequest({\n    url: `${baseUrl}/api/phase2/performance-scraper`,\n    method: 'POST',\n    headers: { 'Authorization': `Bearer ${brokerSecret}`, 'Content-Type': 'application/json' },\n    body: {},\n    json: true\n  });\n  \n  return {\n    json: {\n      ...$json,\n      scraper_status: 'OK',\n      records_processed: res.recordsProcessed\n    }\n  };\n} catch (e) {\n  return { json: { ...$json, scraper_status: 'ERROR', scraper_error: e.message } };\n}\n  "
+      }
+    },
+    {
+      "id": "check-scraper",
+      "name": "Check Scraper Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "if ($json.scraper_status === 'ERROR') throw new Error($json.scraper_error); return $json;"
+      }
+    },
+    {
+      "id": "error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "id": "route-error",
+      "name": "Route to Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        200
+      ],
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "\nconst baseUrl = ($env.WEBHOOK_URL || 'http://localhost:5678').trim().replace(new RegExp('/$'), '');\nawait this.helpers.httpRequest({\n  url: `${baseUrl}/webhook/phase2-error-handler`,\n  method: 'POST',\n  body: {\n    error: $json.error?.message || 'Unknown Error',\n    node: $json.execution?.lastNodeExecuted,\n    data: $json\n  },\n  json: true\n});\nreturn $json;\n  "
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "call-scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "call-scraper": {
+      "main": [
+        [
+          {
+            "node": "check-scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "route-error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1.0"
+}
