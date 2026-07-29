@@ -861,4 +861,4 @@ select
 from pn_content_phase2.lessons_learned;
 
 -- Phân quyền cho view
-grant select on public.phase2_lessons_learned to anon, authenticated;
+grant select on public.phase2_lessons_learned to anon, authenticated, service_role;
