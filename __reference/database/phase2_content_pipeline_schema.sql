@@ -821,3 +821,44 @@ where n.nspname = 'pn_content_phase2'
     'performance_records_append_only'
   )
 order by c.relname, t.tgname;
+-- Tạo bảng lessons_learned
+create table if not exists pn_content_phase2.lessons_learned (
+  id uuid primary key default gen_random_uuid(),
+  content_item_id uuid not null references pn_content_phase2.content_items(id) on delete restrict,
+  lesson_text text not null,
+  metric_highlight text not null,
+  created_at timestamptz not null default now()
+);
+
+-- Index cho content_item_id
+create index if not exists lessons_learned_content_item_id_idx
+  on pn_content_phase2.lessons_learned (content_item_id);
+
+-- Gắn RLS policies
+alter table pn_content_phase2.lessons_learned enable row level security;
+
+create policy "Allow read for all on lessons_learned"
+  on pn_content_phase2.lessons_learned
+  for select
+  to anon, authenticated
+  using (true);
+
+create policy "Allow all for service_role on lessons_learned"
+  on pn_content_phase2.lessons_learned
+  for all
+  to service_role
+  using (true)
+  with check (true);
+
+-- Tạo View public
+create or replace view public.phase2_lessons_learned as
+select
+  id,
+  content_item_id as "contentItemId",
+  lesson_text as "lessonText",
+  metric_highlight as "metricHighlight",
+  created_at as "createdAt"
+from pn_content_phase2.lessons_learned;
+
+-- Phân quyền cho view
+grant select on public.phase2_lessons_learned to anon, authenticated;

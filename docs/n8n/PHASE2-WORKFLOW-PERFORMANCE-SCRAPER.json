@@ -50,6 +50,20 @@
       }
     },
     {
+      "id": "call-lessons",
+      "name": "Agent: Data Analyst (Generate Lessons)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "\nconst baseUrl = ($env.NEXTJS_CONTROL_PLANE_BASE_URL || '').trim().replace(new RegExp('/$'), '');\nconst brokerSecret = ($env.CONTROL_PLANE_SECRET || '').trim();\n\ntry {\n  const res = await this.helpers.httpRequest({\n    url: `${baseUrl}/api/phase2/generate-lessons`,\n    method: 'POST',\n    headers: { 'Authorization': `Bearer ${brokerSecret}`, 'Content-Type': 'application/json' },\n    body: {},\n    json: true\n  });\n  \n  return {\n    json: {\n      ...$json,\n      lessons_generated: res.generated_count\n    }\n  };\n} catch (e) {\n  // We don't want to fail the whole workflow if lesson generation fails\n  return { json: { ...$json, lessons_error: e.message } };\n}\n  "
+      }
+    },
+    {
       "id": "error-trigger",
       "name": "Error Trigger",
       "type": "n8n-nodes-base.errorTrigger",
@@ -91,6 +105,17 @@
         [
           {
             "node": "check-scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check-scraper": {
+      "main": [
+        [
+          {
+            "node": "call-lessons",
             "type": "main",
             "index": 0
           }

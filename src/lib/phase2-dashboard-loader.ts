@@ -169,13 +169,22 @@ async function fetchPhase2Table<T>(table: string, select: string, orderBy: strin
   }
 }
 
+type LessonLearnedRow = {
+  id: string;
+  contentItemId: string;
+  lessonText: string;
+  metricHighlight: string;
+  createdAt: string;
+};
+
 export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResult> {
   const [
     contentItemsResult,
     tasksResult,
     assetsResult,
     reviewsResult,
-    performanceResult
+    performanceResult,
+    lessonsResult
   ] = await Promise.all([
     fetchPhase2Table<ContentItemRow>(
       "phase2_content_items",
@@ -201,6 +210,11 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
       "phase2_performance_records",
       "id,content_item_id,asset_id,owner_ref,impressions,reach,views,likes,comments,shares,saves,clicks,CTR,watch_time,retention_rate,completion_rate,follower_growth,performance_score,source_ref,captured_at,notes,created_at,updated_at",
       "captured_at.asc"
+    ),
+    fetchPhase2Table<LessonLearnedRow>(
+      "phase2_lessons_learned",
+      "id,contentItemId,lessonText,metricHighlight,createdAt",
+      "createdAt.desc"
     )
   ]);
 
@@ -209,7 +223,8 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
     tasksResult.error,
     assetsResult.error,
     reviewsResult.error,
-    performanceResult.error
+    performanceResult.error,
+    lessonsResult.error
   ].filter(Boolean) as string[];
 
   if (errors.length) {
@@ -221,7 +236,8 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
         agentTasks: [],
         assets: [],
         qaReviews: [],
-        performanceRecords: []
+        performanceRecords: [],
+        lessonsLearned: []
       }
     };
   }

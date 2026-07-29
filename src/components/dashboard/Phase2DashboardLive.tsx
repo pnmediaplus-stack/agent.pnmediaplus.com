@@ -881,6 +881,33 @@ export function Phase2Dashboard({
         <AssetView assets={data.assets} contentItems={data.contentItems} />
         <QAView contentItems={data.contentItems} assets={data.assets} reviews={data.qaReviews} />
         <PerformanceView contentItems={data.contentItems} records={data.performanceRecords} />
+        
+        <SectionFrame
+          title="🧠 AI Knowledge Base (Lessons Learned)"
+          description="Những đúc kết thành công được AI tự động phân tích từ dữ liệu thật"
+        >
+          <div className="p-5">
+            {(!data.lessonsLearned || data.lessonsLearned.length === 0) ? (
+              <div className="text-center text-sm text-slate-500 py-4">
+                Chưa có dữ liệu bài học nào được tạo ra.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {data.lessonsLearned.map((lesson) => (
+                  <div key={lesson.id} className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-2 opacity-50 text-emerald-400 group-hover:opacity-100 transition-opacity">
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div className="text-xs font-semibold text-emerald-400 mb-2">{lesson.metricHighlight}</div>
+                    <div className="text-sm text-slate-300 whitespace-pre-wrap">{lesson.lessonText}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </SectionFrame>
       </div>
     </PageFrame>
   );

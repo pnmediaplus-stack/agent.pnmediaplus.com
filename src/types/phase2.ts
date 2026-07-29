@@ -102,12 +102,22 @@ export type Phase2PerformanceRecord = {
   notes?: string;
 } & Partial<Record<Phase2PerformanceMetricField, number>>;
 
+export type Phase2LessonLearned = {
+  id: string;
+  contentItemId: string;
+  lessonText: string;
+  metricHighlight: string;
+  createdAt: string;
+};
+
 export type Phase2DashboardData = {
   contentItems: Phase2ContentItem[];
   agentTasks: Phase2AgentTask[];
   assets: Phase2Asset[];
   qaReviews: Phase2QaReview[];
+  publishRecords: Phase2PublishRecord[];
   performanceRecords: Phase2PerformanceRecord[];
+  lessonsLearned: Phase2LessonLearned[];
 };
 
 export type Phase2DashboardLoadState = "ready" | "blocked";
