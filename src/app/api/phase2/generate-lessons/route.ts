@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get('authorization');
@@ -19,7 +21,7 @@ export async function POST(req: Request) {
 
     // 1. Fetch top performing records (e.g. CTR > 1 or views > 10)
     const perfRes = await fetch(`${supabaseUrl}/rest/v1/phase2_performance_records?or=(CTR.gt.1,views.gt.10)&order=performance_score.desc&limit=5`, {
-      headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+      cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
     });
     const topPerformers = await perfRes.json();
 
@@ -29,7 +31,7 @@ export async function POST(req: Request) {
 
     // 2. Fetch existing lessons to avoid duplicates
     const existingLessonsRes = await fetch(`${supabaseUrl}/rest/v1/phase2_lessons_learned?select=contentItemId`, {
-      headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+      cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
     });
     const existingLessons = await existingLessonsRes.json() || [];
     const existingIds = existingLessons.map((l: any) => l.contentItemId);
@@ -45,14 +47,14 @@ export async function POST(req: Request) {
     for (const record of recordsToProcess) {
       // 3. Fetch Content Item & Assets
       const itemRes = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${record.content_item_id}`, {
-        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+        cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
       });
       const items = await itemRes.json();
       if (!items || items.length === 0) continue;
       const item = items[0];
 
       const assetsRes = await fetch(`${supabaseUrl}/rest/v1/phase2_assets?content_item_id=eq.${record.content_item_id}`, {
-        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+        cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
       });
       const assets = await assetsRes.json() || [];
       

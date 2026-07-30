@@ -63,6 +63,8 @@ function getAdapter(channel: string): PerformanceAdapter {
 // ----------------------------------------------------------------------
 // API ROUTE
 // ----------------------------------------------------------------------
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     // 1. Kiểm tra Authority (Yêu cầu cronjob phải gọi bằng CONTROL_PLANE_SECRET)
@@ -82,7 +84,7 @@ export async function POST(req: Request) {
 
     // 2. Lấy danh sách các bài viết đang được xuất bản (để cào data)
     const publishedRes = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?state=eq.published`, {
-      headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+      cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
     });
     const publishedItems = await publishedRes.json();
 
@@ -95,7 +97,7 @@ export async function POST(req: Request) {
 
     // 3. Lấy Publish Records tương ứng
     const prRes = await fetch(`${supabaseUrl}/rest/v1/phase2_publish_records?content_item_id=in.(${inQuery})`, {
-      headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+      cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
     });
     const publishRecords = await prRes.json();
 
@@ -131,7 +133,7 @@ export async function POST(req: Request) {
       // 5. Insert vào Supabase
       const insertRes = await fetch(`${supabaseUrl}/rest/v1/phase2_performance_records`, {
         method: 'POST',
-        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+        cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(newPerformanceRecord)
       });
 
