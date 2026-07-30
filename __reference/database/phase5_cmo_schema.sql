@@ -105,6 +105,7 @@ from pn_content_phase2.pivot_proposals;
 grant select on public.phase5_pivot_proposals to anon, authenticated, service_role;
 grant all privileges on public.phase5_pivot_proposals to service_role;
 
+drop view if exists public.phase4_campaigns;
 create or replace view public.phase4_campaigns as
 select c.id, c.title, c.goal_description, c.target_audience, c.status, c.created_at, c.updated_at, c.strategy_id,
   (select count(*) from pn_content_phase2.content_items i where i.campaign_id = c.id) as item_count
