@@ -32,7 +32,12 @@ export async function POST(req: Request) {
     // 1. Fetch the proposal
     const propRes = await fetch(`${supabaseUrl}/rest/v1/phase5_pivot_proposals?id=eq.${proposal_id}`, { headers });
     const proposals = await propRes.json();
-    if (!proposals || proposals.length === 0) {
+    
+    if (!Array.isArray(proposals)) {
+      return NextResponse.json({ error: 'DB_ERROR', message: proposals.message || 'Unknown database error' }, { status: 500 });
+    }
+    
+    if (proposals.length === 0) {
       return NextResponse.json({ error: 'NOT_FOUND', message: 'Proposal not found' }, { status: 404 });
     }
     const proposal = proposals[0];

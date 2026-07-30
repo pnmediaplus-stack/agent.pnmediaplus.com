@@ -117,16 +117,18 @@ If we should stay the course, respond with STRICT JSON:
 
       const insertRes = await fetch(`${supabaseUrl}/rest/v1/phase5_pivot_proposals`, {
         method: 'POST',
-        headers,
+        headers: { ...headers, 'Prefer': 'return=representation' },
         body: JSON.stringify(proposalPayload)
       });
 
       if (!insertRes.ok) throw new Error(`Proposal Insert Error: ${await insertRes.text()}`);
       
+      const insertData = await insertRes.json();
+      
       return NextResponse.json({
         status: 'PIVOT_PROPOSED',
         message: 'CMO AI has proposed a pivot.',
-        proposal: proposalPayload
+        proposal: insertData[0]
       });
     }
 
