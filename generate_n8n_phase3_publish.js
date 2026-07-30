@@ -59,7 +59,7 @@ const workflowJSON = {
     },
     {
       "parameters": {
-        "jsCode": "const assets = $input.item.json.data;\nconst caption = assets.find(a => a.asset_type === 'caption_output')?.asset_uri || 'No caption';\nconst image = assets.find(a => a.asset_type === 'visual_asset')?.asset_uri || '';\nconst contentItemId = assets[0]?.content_item_id || '';\n\nreturn {\n  caption: caption,\n  image: image,\n  contentItemId: contentItemId\n};"
+        "jsCode": "const assets = $input.all().map(item => item.json);\nconst caption = assets.find(a => a.asset_type === 'caption_output')?.asset_uri || 'No caption';\nconst image = assets.find(a => a.asset_type === 'visual_asset')?.asset_uri || '';\nconst contentItemId = assets[0]?.content_item_id || '';\n\nreturn {\n  caption: caption,\n  image: image,\n  contentItemId: contentItemId\n};"
       },
       "name": "Extract Assets",
       "type": "n8n-nodes-base.code",
