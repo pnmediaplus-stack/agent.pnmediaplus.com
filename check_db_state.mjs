@@ -24,10 +24,13 @@ async function checkDB() {
     console.log("Latest record:", JSON.stringify(pData[pData.length - 1], null, 2));
   }
 
-  console.log("\Checking lessons learned...");
+  console.log("Checking lessons learned...");
   const lRes = await fetch(`${supabaseUrl}/rest/v1/phase2_lessons_learned?select=*`, { headers });
   const lData = await lRes.json();
   console.log(`Found ${lData.length} lessons learned`);
+  if (lData.length > 0) {
+    console.log("Latest lesson:", JSON.stringify(lData[0], null, 2));
+  }
 }
 
 checkDB();

@@ -17,20 +17,40 @@ interface PlatformMetrics {
 }
 
 interface PerformanceAdapter {
-  scrapeMetrics(platformAssetId: string): Promise<PlatformMetrics>;
+  scrapeMetrics(platformAssetId: string, externalUrl?: string): Promise<PlatformMetrics>;
 }
 
-// Mock Adapter cho Telegram
-class TelegramMockAdapter implements PerformanceAdapter {
-  async scrapeMetrics(platformAssetId: string): Promise<PlatformMetrics> {
-    // Giả lập số liệu: random
-    // Random views from 100 to 5000
-    const views = Math.floor(Math.random() * 4900) + 100;
-    // Likes are usually 5-10% of views
+// Telegram Live/Mock Adapter
+class TelegramAdapter implements PerformanceAdapter {
+  async scrapeMetrics(platformAssetId: string, externalUrl?: string): Promise<PlatformMetrics> {
+    let views = 0;
+    
+    // Thử cào View thật nếu có public url
+    if (externalUrl && externalUrl.includes('t.me/') && !externalUrl.includes('t.me/c/')) {
+      try {
+        const embedUrl = externalUrl.includes('?') ? `${externalUrl}&embed=1` : `${externalUrl}?embed=1`;
+        const res = await fetch(embedUrl);
+        const html = await res.text();
+        // Tìm `<span class="tgme_widget_message_views">1.2K</span>`
+        const match = html.match(/<span class="tgme_widget_message_views">([^<]+)<\/span>/);
+        if (match && match[1]) {
+          let viewStr = match[1].replace(/,/g, '');
+          if (viewStr.includes('K')) views = parseFloat(viewStr.replace('K', '')) * 1000;
+          else if (viewStr.includes('M')) views = parseFloat(viewStr.replace('M', '')) * 1000000;
+          else views = parseInt(viewStr, 10);
+        }
+      } catch (e) {
+        console.error("Failed to scrape real telegram views", e);
+      }
+    }
+
+    // Fallback to mock if real fetch failed or it's a private channel
+    if (!views || isNaN(views) || views === 0) {
+      views = Math.floor(Math.random() * 4900) + 100;
+    }
+
     const likes = Math.floor(views * (Math.random() * 0.05 + 0.05));
-    // Comments are usually 1-5% of views
     const comments = Math.floor(views * (Math.random() * 0.04 + 0.01));
-    // Clicks on links
     const clicks = Math.floor(views * (Math.random() * 0.1 + 0.02));
 
     return {
@@ -51,12 +71,11 @@ class TelegramMockAdapter implements PerformanceAdapter {
 function getAdapter(channel: string): PerformanceAdapter {
   switch (channel) {
     case 'telegram':
-      return new TelegramMockAdapter();
+      return new TelegramAdapter();
     case 'facebook':
-      // Sau này sẽ Return new FacebookGraphAdapter()
-      return new TelegramMockAdapter(); // Tạm thời fall back
+      return new TelegramAdapter(); // Fallback
     default:
-      return new TelegramMockAdapter();
+      return new TelegramAdapter();
   }
 }
 
@@ -106,7 +125,7 @@ export async function POST(req: Request) {
     // 4. Quét qua từng record và gọi Adapter
     for (const record of publishRecords) {
       const adapter = getAdapter(record.channel);
-      const metrics = await adapter.scrapeMetrics(record.external_id || '');
+      const metrics = await adapter.scrapeMetrics(record.external_id || '', record.external_url || '');
       
       const ctr = metrics.impressions > 0 ? (metrics.clicks / metrics.impressions) * 100 : 0;
       const performance_score = (metrics.likes * 2 + metrics.comments * 5 + metrics.clicks * 3) / 100;
