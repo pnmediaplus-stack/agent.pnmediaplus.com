@@ -104,7 +104,7 @@ export async function POST(req: Request) {
     // 4. Quét qua từng record và gọi Adapter
     for (const record of publishRecords) {
       const adapter = getAdapter(record.channel);
-      const metrics = await adapter.scrapeMetrics(record.platform_asset_id);
+      const metrics = await adapter.scrapeMetrics(record.external_id || '');
       
       const ctr = metrics.impressions > 0 ? (metrics.clicks / metrics.impressions) * 100 : 0;
       const performance_score = (metrics.likes * 2 + metrics.comments * 5 + metrics.clicks * 3) / 100;
