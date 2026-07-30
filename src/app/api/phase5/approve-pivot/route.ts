@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     // 2. Fail-Closed Pause: Pause all active campaigns under the old strategy FIRST
     // We update status to 'paused'
     const oldStrategyId = proposal.strategy_id;
-    const pauseRes = await fetch(`${supabaseUrl}/rest/v1/phase4_campaigns?strategy_id=eq.${oldStrategyId}&status=eq.active`, {
+    const pauseRes = await fetch(`${supabaseUrl}/rest/v1/phase5_campaigns_updatable?strategy_id=eq.${oldStrategyId}&status=eq.active`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ status: 'paused' })
