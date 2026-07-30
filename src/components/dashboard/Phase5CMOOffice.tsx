@@ -10,21 +10,23 @@ export function Phase5CMOOffice() {
   const [proposal, setProposal] = useState<any>(null);
   const [actionMsg, setActionMsg] = useState("");
 
-  // Simulated fetch data (in real app, this should be passed from server-side or fetched via SWR)
   useEffect(() => {
     const fetchCMOData = async () => {
       try {
-        const res = await fetch('https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/phase5_strategies?status=eq.active&limit=1', {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/phase5_strategies?status=eq.active&limit=1`, {
           headers: {
-             'apikey': 'YOUR_PUBLIC_ANON_KEY' // Hardcoding is bad but this is just MVP thin-shell display logic
+             'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
           }
         });
-        // For MVP, since we don't have anon key injected here, we will just use dummy data if fetch fails
-        // Actually, let's just make an internal API route if we wanted to be clean, but for thin-shell MVP
-        // we'll just mock the state if we can't fetch it, or assume it's passed down.
+        const data = await res.json();
+        if (data && data.length > 0) {
+          setStrategy(data[0]);
+        } else {
+          setStrategy(null);
+        }
       } catch (e) {}
     };
-    // fetchCMOData();
+    fetchCMOData();
   }, []);
 
   const handleRunAnalysis = async () => {
@@ -93,8 +95,12 @@ export function Phase5CMOOffice() {
       <div className="space-y-4">
         {/* Active Strategy Info */}
         <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
-          <div className="text-sm font-semibold text-white">Chiến Lược Hiện Tại: Định hướng kinh doanh Q3</div>
-          <div className="mt-1 text-xs text-slate-400">Vision: Tăng trưởng thị phần giới trẻ thông qua nội dung giải trí và giáo dục...</div>
+          <div className="text-sm font-semibold text-white">
+            Chiến Lược Hiện Tại: {strategy ? strategy.name : "Không tìm thấy chiến lược"}
+          </div>
+          <div className="mt-1 text-xs text-slate-400">
+            Vision: {strategy ? strategy.vision : "Vui lòng cấu hình chiến lược trong Database..."}
+          </div>
         </div>
 
         {/* Action Bar */}
