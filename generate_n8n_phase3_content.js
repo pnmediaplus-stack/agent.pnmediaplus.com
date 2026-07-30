@@ -49,19 +49,7 @@ const workflowJSON = {
         300,
         300
       ]
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "data",
-        "options": {}
-      },
-      "name": "Split Items",
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [
-        500,
-        300
-      ]
+
     },
     {
       "parameters": {
@@ -113,17 +101,6 @@ const workflowJSON = {
       ]
     },
     "Fetch Ideas": {
-      "main": [
-        [
-          {
-            "node": "Split Items",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Split Items": {
       "main": [
         [
           {

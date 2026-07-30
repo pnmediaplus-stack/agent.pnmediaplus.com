@@ -37,16 +37,7 @@ const workflowJSON = {
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [300, 300]
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "data",
-        "options": {}
-      },
-      "name": "Split Items",
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [500, 300]
+
     },
     {
       "parameters": {
@@ -132,13 +123,6 @@ const workflowJSON = {
       ]
     },
     "Fetch Scheduled Items": {
-      "main": [
-        [
-          { "node": "Split Items", "type": "main", "index": 0 }
-        ]
-      ]
-    },
-    "Split Items": {
       "main": [
         [
           { "node": "Fetch Assets", "type": "main", "index": 0 }

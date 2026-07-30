@@ -49,19 +49,6 @@
     },
     {
       "parameters": {
-        "fieldToSplitOut": "data",
-        "options": {}
-      },
-      "name": "Split Items",
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [
-        500,
-        300
-      ]
-    },
-    {
-      "parameters": {
         "method": "GET",
         "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/phase2_assets?content_item_id=eq.{{ $json.id }}",
         "sendHeaders": true,
@@ -184,17 +171,6 @@
       ]
     },
     "Fetch Scheduled Items": {
-      "main": [
-        [
-          {
-            "node": "Split Items",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Split Items": {
       "main": [
         [
           {
