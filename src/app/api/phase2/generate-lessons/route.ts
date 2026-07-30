@@ -17,8 +17,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: 'Credentials missing' }, { status: 500 });
     }
 
-    // 1. Fetch top performing records (e.g. CTR > 1 or views > 500)
-    const perfRes = await fetch(`${supabaseUrl}/rest/v1/phase2_performance_records?or=(CTR.gt.1,views.gt.500)&order=performance_score.desc&limit=5`, {
+    // 1. Fetch top performing records (e.g. CTR > 1 or views > 10)
+    const perfRes = await fetch(`${supabaseUrl}/rest/v1/phase2_performance_records?or=(CTR.gt.1,views.gt.10)&order=performance_score.desc&limit=5`, {
       headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
     });
     const topPerformers = await perfRes.json();
