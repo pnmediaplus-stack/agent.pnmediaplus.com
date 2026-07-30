@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/useI18n";
 
 export function Phase5CMOOffice() {
-  const { t } = useI18n("dashboard");
+  const { t, locale } = useI18n("dashboard");
   const [loading, setLoading] = useState(false);
   const [strategy, setStrategy] = useState<any>(null);
   const [proposal, setProposal] = useState<any>(null);
@@ -33,7 +33,11 @@ export function Phase5CMOOffice() {
     try {
       const res = await fetch('/api/phase5/analyze-strategy', {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer pn_media_os_super_secret_key_2026_xyz' }
+        headers: { 
+          'Authorization': 'Bearer pn_media_os_super_secret_key_2026_xyz',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ locale })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);

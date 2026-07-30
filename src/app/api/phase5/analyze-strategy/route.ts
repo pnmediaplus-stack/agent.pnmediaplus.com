@@ -57,7 +57,14 @@ export async function POST(req: Request) {
     }
 
     // 4. Prompt CMO AI to analyze
+    const body = await req.json().catch(() => ({}));
+    const locale = body.locale || 'vi';
+    const isVi = locale === 'vi';
+    
     const lessonsText = lessons.map((l: any) => `- ${l.lesson_text || JSON.stringify(l)}`).join('\n');
+    const langInstruction = isVi 
+      ? "IMPORTANT: Your reasoning and proposed_direction MUST be written entirely in Vietnamese (Tiếng Việt)."
+      : "IMPORTANT: Your reasoning and proposed_direction MUST be written entirely in English.";
     
     const prompt = `You are a ruthless, data-driven Chief Marketing Officer AI.
 Your current ACTIVE STRATEGY is: "${currentStrategy.name}"
@@ -68,13 +75,13 @@ ${lessonsText}
 
 Your task: Evaluate if we should PIVOT (change direction) or STAY THE COURSE.
 If the lessons indicate failure or a mismatch, you MUST pivot. 
-IMPORTANT: Your reasoning and proposed_direction MUST be written entirely in Vietnamese (Tiếng Việt).
+${langInstruction}
 
 If we should pivot, respond with STRICT JSON:
 {
   "should_pivot": true,
-  "reasoning": "Giải thích chi tiết lý do tại sao chiến lược hiện tại đang thất bại (Bằng tiếng Việt).",
-  "proposed_direction": "Hướng đi mới rõ ràng, khả thi để thay thế chiến lược cũ (Bằng tiếng Việt)."
+  "reasoning": "${isVi ? 'Giải thích chi tiết lý do tại sao chiến lược hiện tại đang thất bại (Bằng tiếng Việt).' : 'Detailed explanation of why the current strategy is failing based on the lessons (In English).'}",
+  "proposed_direction": "${isVi ? 'Hướng đi mới rõ ràng, khả thi để thay thế chiến lược cũ (Bằng tiếng Việt).' : 'A clear, actionable new strategy vision (In English).'}"
 }
 If we should stay the course, respond with STRICT JSON:
 {
