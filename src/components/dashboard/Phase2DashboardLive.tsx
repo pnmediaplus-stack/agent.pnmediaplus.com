@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { PageFrame } from "@/components/shared/PageFrame";
 import { StateBadge } from "@/components/shared/StateBadge";
 import { Phase4CampaignBuilder } from "./Phase4CampaignBuilder";
+import { Phase5CMOOffice } from "./Phase5CMOOffice";
 import { useI18n } from "@/lib/i18n/useI18n";
 import {
   PHASE2_PIPELINE_STATES,
@@ -860,6 +861,7 @@ export function Phase2Dashboard({
         </div>
       ) : null}
 
+      <Phase5CMOOffice />
       <CampaignControlBar />
       <Phase4CampaignBuilder />
       <SummaryGrid cards={summaryCards} />
