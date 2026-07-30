@@ -130,7 +130,7 @@ function toNumeric(value: unknown) {
   return null;
 }
 
-async function fetchPhase2Table<T>(table: string, select: string, orderBy: string): Promise<SupabaseTableResult<T>> {
+async function fetchPhase2Table<T>(table: string, select: string, orderBy: string, extraFilters?: Record<string, string>): Promise<SupabaseTableResult<T>> {
   const config = getSupabaseConfig();
 
   if (!config) {
@@ -141,6 +141,12 @@ async function fetchPhase2Table<T>(table: string, select: string, orderBy: strin
     const endpoint = new URL(`${config.url.replace(/\/$/, "")}/rest/v1/${table}`);
     endpoint.searchParams.set("select", select);
     endpoint.searchParams.set("order", orderBy);
+    
+    if (extraFilters) {
+      for (const [key, value] of Object.entries(extraFilters)) {
+        endpoint.searchParams.set(key, value);
+      }
+    }
 
     const response = await fetch(endpoint, {
       cache: "no-store",
@@ -193,9 +199,35 @@ type PublishRecordRow = {
   updated_at: string;
 };
 
-export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResult> {
+export async function loadPhase2DashboardData(page = 1, limit = 20): Promise<Phase2DashboardLoadResult> {
+  const offset = (page - 1) * limit;
+
+  // 1. Fetch paginated content items first (fetch limit + 1 to check if there is a next page without a count query)
+  const fetchLimit = limit + 1;
+  const contentItemsResult = await fetchPhase2Table<ContentItemRow>(
+    "phase2_content_items",
+    "id,content_key,owner_ref,title,brief,state,scheduled_at,published_at,created_at,updated_at",
+    "created_at.desc",
+    { limit: fetchLimit.toString(), offset: offset.toString() }
+  );
+
+  if (contentItemsResult.error) {
+    return {
+      state: "blocked",
+      reason: contentItemsResult.error,
+      data: { contentItems: [], agentTasks: [], assets: [], qaReviews: [], performanceRecords: [], lessonsLearned: [], publishRecords: [], hasNextPage: false, page }
+    };
+  }
+
+  const hasNextPage = contentItemsResult.data.length > limit;
+  const actualItems = hasNextPage ? contentItemsResult.data.slice(0, limit) : contentItemsResult.data;
+
+  const contentItemIds = actualItems.map(item => item.id);
+  // PostgREST "in" operator syntax: in.(val1,val2)
+  const inFilter = contentItemIds.length > 0 ? `in.(${contentItemIds.join(',')})` : 'in.()';
+  
+  // 2. Fetch related data using the IN filter
   const [
-    contentItemsResult,
     tasksResult,
     assetsResult,
     reviewsResult,
@@ -203,41 +235,42 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
     lessonsResult,
     publishRecordsResult
   ] = await Promise.all([
-    fetchPhase2Table<ContentItemRow>(
-      "phase2_content_items",
-      "id,content_key,owner_ref,title,brief,state,scheduled_at,published_at,created_at,updated_at",
-      "created_at.asc"
-    ),
-    fetchPhase2Table<AgentTaskRow>(
+    contentItemIds.length > 0 ? fetchPhase2Table<AgentTaskRow>(
       "phase2_agent_tasks",
       "id,content_item_id,task_key,owner_ref,task_kind,state,title,instructions,result_ref,started_at,completed_at,created_at,updated_at",
-      "created_at.asc"
-    ),
-    fetchPhase2Table<AssetRow>(
+      "created_at.asc",
+      { content_item_id: inFilter }
+    ) : Promise.resolve({ data: [], error: undefined }),
+    contentItemIds.length > 0 ? fetchPhase2Table<AssetRow>(
       "phase2_assets",
       "id,content_item_id,agent_task_id,asset_key,owner_ref,asset_type,asset_uri,mime_type,content_hash,evidence_ref,created_at,updated_at",
-      "created_at.asc"
-    ),
-    fetchPhase2Table<QaReviewRow>(
+      "created_at.asc",
+      { content_item_id: inFilter }
+    ) : Promise.resolve({ data: [], error: undefined }),
+    contentItemIds.length > 0 ? fetchPhase2Table<QaReviewRow>(
       "phase2_qa_reviews",
       "id,content_item_id,agent_task_id,reviewer_ref,verdict,average_score,overclaim_risk,missing_asset,evidence_ref,notes,reviewed_at,created_at,updated_at",
-      "reviewed_at.asc"
-    ),
-    fetchPhase2Table<PerformanceRecordRow>(
+      "reviewed_at.asc",
+      { content_item_id: inFilter }
+    ) : Promise.resolve({ data: [], error: undefined }),
+    contentItemIds.length > 0 ? fetchPhase2Table<PerformanceRecordRow>(
       "phase2_performance_records",
       "id,content_item_id,asset_id,owner_ref,impressions,reach,views,likes,comments,shares,saves,clicks,CTR,watch_time,retention_rate,completion_rate,follower_growth,performance_score,source_ref,captured_at,notes,created_at,updated_at",
-      "captured_at.asc"
-    ),
+      "captured_at.asc",
+      { content_item_id: inFilter }
+    ) : Promise.resolve({ data: [], error: undefined }),
     fetchPhase2Table<LessonLearnedRow>(
       "phase2_lessons_learned",
       "id,contentItemId,lessonText,metricHighlight,createdAt",
-      "createdAt.desc"
+      "createdAt.desc",
+      { limit: "10" } // Only show top 10 lessons overall on dashboard
     ),
-    fetchPhase2Table<PublishRecordRow>(
+    contentItemIds.length > 0 ? fetchPhase2Table<PublishRecordRow>(
       "phase2_publish_records",
       "id,content_item_id,asset_id,channel,external_id,external_url,status,published_at,error_message,created_at,updated_at",
-      "created_at.asc"
-    )
+      "created_at.asc",
+      { content_item_id: inFilter }
+    ) : Promise.resolve({ data: [], error: undefined })
   ]);
 
   const errors = [
@@ -246,7 +279,8 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
     assetsResult.error,
     reviewsResult.error,
     performanceResult.error,
-    lessonsResult.error
+    lessonsResult.error,
+    publishRecordsResult.error
   ].filter(Boolean) as string[];
 
   if (errors.length) {
@@ -265,7 +299,7 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
     };
   }
 
-  const contentItems: Phase2ContentItem[] = contentItemsResult.data.map((row) => {
+  const contentItems: Phase2ContentItem[] = actualItems.map((row) => {
     const ownedTaskRows = tasksResult.data.filter((task) => task.content_item_id === row.id);
     return {
       id: row.id,
@@ -348,7 +382,7 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
     };
 
     for (const metric of metricFields) {
-      const value = toNumeric(row[metric]);
+      const value = toNumeric(row[metric as keyof PerformanceRecordRow]);
       if (typeof value === "number") {
         record[metric] = value;
       }
@@ -386,7 +420,9 @@ export async function loadPhase2DashboardData(): Promise<Phase2DashboardLoadResu
       qaReviews,
       publishRecords,
       performanceRecords,
-      lessonsLearned
+      lessonsLearned,
+      hasNextPage,
+      page
     }
   };
 }

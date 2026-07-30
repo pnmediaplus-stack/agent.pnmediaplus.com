@@ -130,6 +130,8 @@ export type Phase2DashboardData = {
   publishRecords: Phase2PublishRecord[];
   performanceRecords: Phase2PerformanceRecord[];
   lessonsLearned: Phase2LessonLearned[];
+  hasNextPage?: boolean;
+  page?: number;
 };
 
 export type Phase2DashboardLoadState = "ready" | "blocked";

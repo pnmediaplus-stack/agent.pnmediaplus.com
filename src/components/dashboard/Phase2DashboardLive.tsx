@@ -7,6 +7,7 @@ import { StateBadge } from "@/components/shared/StateBadge";
 import { Phase4CampaignBuilder } from "./Phase4CampaignBuilder";
 import { Phase5CMOOffice } from "./Phase5CMOOffice";
 import { useI18n } from "@/lib/i18n/useI18n";
+import { useRouter } from "next/navigation";
 import {
   PHASE2_PIPELINE_STATES,
   PHASE2_PERFORMANCE_METRIC_FIELDS,
@@ -798,6 +799,7 @@ export function Phase2Dashboard({
   loadReason
 }: Phase2DashboardProps) {
   const { t } = useI18n("dashboard");
+  const router = useRouter();
   const publishedCount = data.contentItems.filter((item) => item.currentState === "published").length;
   const eligibleCount = data.contentItems.filter((item) => getPhase2PublishEligibility(item.id, data.assets, data.qaReviews).ready).length;
   const qaReadyCount = data.contentItems.filter((item) => item.currentState === "QA_ready").length;
@@ -878,6 +880,32 @@ export function Phase2Dashboard({
             reviews={data.qaReviews}
             performanceRecords={data.performanceRecords}
           />
+        
+        <div className="mt-4 flex items-center justify-between border-t border-slate-700/50 pt-4 px-2">
+          <button
+            onClick={() => {
+              if (data.page && data.page > 1) {
+                router.push(`?page=${data.page - 1}`);
+              }
+            }}
+            disabled={!data.page || data.page === 1}
+            className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            ← Previous
+          </button>
+          <div className="text-sm font-medium text-cyan-400">
+            Page {data.page || 1}
+          </div>
+          <button
+            onClick={() => {
+              router.push(`?page=${(data.page || 1) + 1}`);
+            }}
+            disabled={!data.hasNextPage}
+            className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next →
+          </button>
+        </div>
       </SectionFrame>
 
       <div className="space-y-6">
