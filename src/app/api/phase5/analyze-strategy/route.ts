@@ -68,11 +68,13 @@ ${lessonsText}
 
 Your task: Evaluate if we should PIVOT (change direction) or STAY THE COURSE.
 If the lessons indicate failure or a mismatch, you MUST pivot. 
+IMPORTANT: Your reasoning and proposed_direction MUST be written entirely in Vietnamese (Tiếng Việt).
+
 If we should pivot, respond with STRICT JSON:
 {
   "should_pivot": true,
-  "reasoning": "Detailed explanation of why the current strategy is failing based on the lessons.",
-  "proposed_direction": "A clear, actionable new strategy vision."
+  "reasoning": "Giải thích chi tiết lý do tại sao chiến lược hiện tại đang thất bại (Bằng tiếng Việt).",
+  "proposed_direction": "Hướng đi mới rõ ràng, khả thi để thay thế chiến lược cũ (Bằng tiếng Việt)."
 }
 If we should stay the course, respond with STRICT JSON:
 {
