@@ -94,18 +94,17 @@ Return ONLY the 3 bullet points, concise and insightful.
       // 5. Insert into lessons_learned (bypass PostgREST view mapping issues by inserting into raw table via service role)
       // Actually, since we created a public view phase2_lessons_learned, let's insert into the underlying table using the correct schema
       const insertPayload = {
-        content_item_id: record.content_item_id,
-        lesson_text: lessonText,
-        metric_highlight: metricHighlight
+        contentItemId: record.content_item_id,
+        lessonText: lessonText,
+        metricHighlight: metricHighlight
       };
 
-      const insertRes = await fetch(`${supabaseUrl}/rest/v1/lessons_learned`, {
+      const insertRes = await fetch(`${supabaseUrl}/rest/v1/phase2_lessons_learned`, {
         method: 'POST',
         headers: { 
           apikey: supabaseKey, 
           Authorization: `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          'Content-Profile': 'pn_content_phase2'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(insertPayload)
       });
