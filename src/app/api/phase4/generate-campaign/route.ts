@@ -1,25 +1,24 @@
 import { NextResponse } from 'next/server';
 import { invokeLlm } from '@/lib/llm-client';
+import { z } from 'zod';
+import { verifyUiAuth } from '@/lib/ui-auth-guard';
+
+const GenerateCampaignSchema = z.object({
+  title: z.string().min(1),
+  goal: z.string().min(1),
+  target_audience: z.string().optional(),
+  num_ideas: z.number().optional().default(3),
+  tenant_id: z.string().min(1)
+});
+
 export async function POST(req: Request) {
+  const guard = await verifyUiAuth(req, GenerateCampaignSchema);
+  if (!guard.ok) return guard.response;
+  
+  const { payload, logAudit } = guard;
+  const { title, goal, target_audience, num_ideas, tenant_id } = payload;
+
   try {
-    const authHeader = req.headers.get('authorization');
-    const expectedSecret = process.env.CONTROL_PLANE_SECRET;
-
-    // TODO: Require authentication or opt-in token for OpenAI billing
-    if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
-      return NextResponse.json({ error: 'FORBIDDEN', message: 'Invalid or missing CONTROL_PLANE_SECRET' }, { status: 403 });
-    }
-
-    const body = await req.json();
-    const { title, goal, target_audience, num_ideas = 3 } = body;
-
-    if (!title || !goal) {
-      return NextResponse.json({ error: 'BAD_REQUEST', message: 'Missing title or goal' }, { status: 400 });
-    }
-
-    if (!body.tenant_id) {
-      return NextResponse.json({ error: 'BAD_REQUEST', message: 'Missing tenant_id for billing' }, { status: 400 });
-    }
 
     const openAiKey = process.env.OPENAI_API_KEY;
     if (!openAiKey) {
@@ -84,7 +83,7 @@ Respond in STRICT JSON format like this:
       temperature: 0.7
     }, {
       actorId: 'n8n_generate_campaign',
-      tenantId: body.tenant_id, // STRICT TENANT SCOPE
+      tenantId: tenant_id, // STRICT TENANT SCOPE
       requestId: req.headers.get('x-request-id') || 'unknown'
     });
 
@@ -109,6 +108,7 @@ Respond in STRICT JSON format like this:
 
     if (!contentRes.ok) throw new Error(`Content Items Insert Error: ${await contentRes.text()}`);
 
+    await logAudit('GENERATE_CAMPAIGN_SUCCESS', `Campaign planned and ${ideas.length} ideas generated successfully`, { campaignId });
     return NextResponse.json({ 
       status: 'OK', 
       message: 'Campaign planned and ideas generated successfully',
@@ -117,7 +117,7 @@ Respond in STRICT JSON format like this:
     });
 
   } catch (error: any) {
-    console.error("Generate Campaign Error:", error);
+    await logAudit('GENERATE_CAMPAIGN_ERROR', error.message || 'Unknown error');
     return NextResponse.json({ error: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
   }
 }

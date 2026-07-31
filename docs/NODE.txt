@@ -1,0 +1,37 @@
+# Tích hợp hạng mục "Kịch bản lô video" vào luồng Tạo Bù (Auto-fill)
+
+Cảm ơn sếp đã nhắc nhở! Tôi đã đọc kỹ lại bộ Hiến pháp (`JOB_DELIVERABLE_TASK_CONSTITUTION.md`) và Bản đồ trạng thái (`02_system_implementation_status_map.md`). Tôi đã nhìn thấy trúng "cái rốn" của vấn đề (đã được ghi nhận là `FAIL STRUCTURAL` ở Gate B).
+
+Theo đúng Hiến pháp, luồng chảy dữ liệu bất biến là:
+`Job Cycle` -> `Deliverables` -> `Approval/Readiness` -> `Assignment Proposal` -> `Tasks` -> `Schedule Board (Booking)`.
+
+Luồng Auto-fill hiện tại đang vi phạm gián tiếp hiến pháp này: Nó tự tiện tạo ra `shooting_sessions` (buổi quay dự kiến), nhưng lại **không tạo ra Deliverable (hạng mục 'Kịch bản')** tương ứng. 
+Hậu quả: Vì không có Deliverable gốc -> Không thể xin duyệt (Approval) -> Không thể lên đề xuất (Proposal) -> Không sinh ra Task giao việc -> Dẫn đến hệ thống không có ID Task để book thiết bị ở cuối nguồn!
+
+## Đề xuất thay đổi
+
+### 1. Nâng cấp RPC `rpc_auto_fill_job_debt`
+Tôi sẽ tạo bản vá **`db/migrations/063_rpc_auto_fill_debt_with_scripts.sql`**:
+- Trong vòng lặp tính toán `v_missing_sessions` (số lượng buổi quay cần bù), hệ thống sẽ:
+  - Vẫn tạo `shooting_sessions` (dự kiến) như hiến pháp cho phép.
+  - **THÊM MỚI:** Tự động sinh ra một `Deliverable` với:
+    - `category` = 'script'
+    - `title` = 'Kịch bản lô video' (Tên cố định, không đánh số thứ tự như video, để dùng chung cho lô 1 buổi quay).
+    - `current_state` = 'planned'
+    - `assignment_readiness_state` = 'not_ready'
+- Như vậy, mỗi 1 buổi quay được bù -> Sẽ có 1 Deliverable "Kịch bản" ra đời, đúng chuẩn Hiến pháp làm điểm neo (anchor) để chạy dọc quy trình xin duyệt -> proposal -> task.
+
+### 2. Backfill (Truy thu) dữ liệu kịch bản cho các Job hiện tại
+Các Job hiện tại đã lỡ bấm "Tạo Bù" rồi, nên đã nhận đủ Video nhưng lại thiếu Script Deliverable. 
+- Tôi sẽ viết script **`scripts/backfill/backfill_missing_script_deliverables.ts`**.
+- Quét toàn bộ Job đang `in_progress`.
+- Tính toán: `Số kịch bản cần tạo = quota_sessions - số kịch bản (category='script') hiện có`.
+- Tự động chèn thêm đủ số lượng "Kịch bản lô video" (trạng thái planned) vào DB để chắp nối lại luồng gãy cho AM/Ops sử dụng ngay!
+
+## User Review Required
+
+> [!IMPORTANT]
+> - Tên của hạng mục Script được tạo tự động sẽ mặc định là **"Kịch bản lô video"** (không đánh số thứ tự 1, 2... như Video). Sếp có đồng ý với logic này không?
+> - Các thay đổi này hoàn toàn tuân thủ Hiến pháp: "Auto-fill tạo Deliverable, không tạo Task".
+
+Sếp duyệt plan để tôi tiến hành sửa code và backfill nhé!

@@ -1,13 +1,21 @@
 import { NextResponse } from 'next/server';
 import { invokeLlm } from '@/lib/llm-client';
-export async function POST(req: Request) {
-  try {
-    const authHeader = req.headers.get('authorization');
-    const expectedSecret = process.env.CONTROL_PLANE_SECRET;
+import { z } from 'zod';
+import { verifyUiAuth } from '@/lib/ui-auth-guard';
 
-    if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
-      return NextResponse.json({ error: 'FORBIDDEN', message: 'Invalid or missing CONTROL_PLANE_SECRET' }, { status: 403 });
-    }
+const AnalyzeStrategySchema = z.object({
+  locale: z.string().optional(),
+  tenant_id: z.string().min(1)
+});
+
+export async function POST(req: Request) {
+  const guard = await verifyUiAuth(req, AnalyzeStrategySchema);
+  if (!guard.ok) return guard.response;
+  
+  const { payload, logAudit } = guard;
+  const { locale, tenant_id } = payload;
+
+  try {
 
     const openAiKey = process.env.OPENAI_API_KEY;
     if (!openAiKey) {
@@ -57,13 +65,6 @@ export async function POST(req: Request) {
     }
 
     // 4. Prompt CMO AI to analyze
-    const body = await req.json().catch(() => ({}));
-
-    if (!body.tenant_id) {
-      return NextResponse.json({ error: 'BAD_REQUEST', message: 'Missing tenant_id for billing' }, { status: 400 });
-    }
-
-    const locale = body.locale || 'vi';
     const isVi = locale === 'vi';
     
     const lessonsText = lessons.map((l: any) => `- ${l.lesson_text || JSON.stringify(l)}`).join('\n');
@@ -100,7 +101,7 @@ If we should stay the course, respond with STRICT JSON:
       temperature: 0.2
     }, {
       actorId: 'n8n_analyze_strategy',
-      tenantId: body.tenant_id, // STRICT TENANT SCOPE
+      tenantId: tenant_id, // STRICT TENANT SCOPE
       requestId: req.headers.get('x-request-id') || 'unknown'
     });
 
@@ -125,6 +126,7 @@ If we should stay the course, respond with STRICT JSON:
       
       const insertData = await insertRes.json();
       
+      await logAudit('ANALYZE_STRATEGY_PIVOT', 'CMO AI has proposed a pivot', { proposalId: insertData[0].id });
       return NextResponse.json({
         status: 'PIVOT_PROPOSED',
         message: 'CMO AI has proposed a pivot.',
@@ -132,13 +134,14 @@ If we should stay the course, respond with STRICT JSON:
       });
     }
 
+    await logAudit('ANALYZE_STRATEGY_STAY_COURSE', 'CMO AI evaluated the strategy and decided to stay the course');
     return NextResponse.json({ 
       status: 'STAY_COURSE', 
       message: 'CMO AI evaluated the strategy and decided to stay the course.'
     });
 
   } catch (error: any) {
-    console.error("CMO Analyze Error:", error);
+    await logAudit('ANALYZE_STRATEGY_ERROR', error.message || 'Unknown error');
     return NextResponse.json({ error: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
   }
 }

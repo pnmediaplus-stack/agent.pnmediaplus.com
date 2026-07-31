@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { verifyUiAuth } from '@/lib/ui-auth-guard';
+
+const ApprovePivotSchema = z.object({
+  proposal_id: z.string().min(1)
+});
 
 export async function POST(req: Request) {
+  const guard = await verifyUiAuth(req, ApprovePivotSchema);
+  if (!guard.ok) return guard.response;
+  
+  const { payload, logAudit } = guard;
+  const { proposal_id } = payload;
+
   try {
-    const authHeader = req.headers.get('authorization');
-    const expectedSecret = process.env.CONTROL_PLANE_SECRET;
-
-    if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
-      return NextResponse.json({ error: 'FORBIDDEN', message: 'Invalid or missing CONTROL_PLANE_SECRET' }, { status: 403 });
-    }
-
-    const body = await req.json();
-    const { proposal_id } = body;
-
-    if (!proposal_id) {
-      return NextResponse.json({ error: 'BAD_REQUEST', message: 'Missing proposal_id' }, { status: 400 });
-    }
 
     const supabaseUrl = process.env.SUPABASE_URL || '';
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -92,6 +91,7 @@ export async function POST(req: Request) {
     }
     const newStrategyData = await newStratRes.json();
 
+    await logAudit('APPROVE_PIVOT_SUCCESS', 'Pivot approved and new strategy activated', { newStrategyId: newStrategyData[0].id });
     return NextResponse.json({ 
       status: 'OK', 
       message: 'Pivot approved. Old strategy abandoned, campaigns paused, and new strategy activated.',
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error("Approve Pivot Error:", error);
+    await logAudit('APPROVE_PIVOT_ERROR', error.message || 'Unknown error');
     return NextResponse.json({ error: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
   }
 }

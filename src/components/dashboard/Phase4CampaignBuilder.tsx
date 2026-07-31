@@ -45,9 +45,9 @@ export function Phase4CampaignBuilder() {
 
       const res = await fetch('/api/phase4/generate-campaign', {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer pn_media_os_super_secret_key_2026_xyz' // For MVP MVP MVP
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           title,
