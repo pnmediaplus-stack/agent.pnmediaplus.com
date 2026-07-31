@@ -3,112 +3,270 @@
   "nodes": [
     {
       "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-content",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [100, 100],
+      "webhookId": "generate-content-webhook-id"
+    },
+    {
+      "parameters": {
         "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "*/5 * * * *"
-            }
-          ]
+          "interval": [{ "field": "cronExpression", "expression": "*/5 * * * *" }]
         }
       },
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [
-        100,
-        300
-      ]
+      "position": [100, 300]
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/phase2_content_items?state=eq.idea",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
-            },
-            {
-              "name": "Authorization",
-              "value": "Bearer sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
-            }
-          ]
-        },
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?id=eq.{{$json.body.contentItemId}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "options": {}
       },
-      "name": "Fetch Ideas",
+      "name": "Get Item (Webhook)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        300,
-        300
-      ]
+      "position": [300, 100],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?state=eq.idea",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "Get Ideas (Cron)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [300, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "name": "Item Lists",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3.0,
+      "position": [500, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\nif ($('Get Item (Webhook)').item) {\n  items.push(...$('Get Item (Webhook)').item.json);\n}\nif ($('Get Ideas (Cron)').item) {\n  items.push(...$('Get Ideas (Cron)').item.json);\n}\nreturn { json: { data: items.filter(i => i.state === 'idea') } };"
+      },
+      "name": "Merge Streams",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [400, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nconst prompt = `You are an expert Social Media Content Creator.\\nBased on the following idea, generate a short, engaging social media post caption and a 3-point research summary.\\n\\nIdea Title: ${item.title}\\nBrief: ${item.brief || 'No brief provided.'}\\n\\nRespond in STRICT JSON format:\\n{\\n  \"research_packet\": \"- Point 1\\\\n- Point 2\\\\n- Point 3\",\\n  \"caption_output\": \"The engaging caption text here with emojis... #hashtag\",\\n  \"image_prompt\": \"A highly detailed, aesthetic midjourney style image prompt describing what the image should look like to accompany this post.\"\\n}`;\n\nreturn { json: { prompt, item, tenant_id: $('Webhook Trigger').item?.json?.body?.tenant_id || 'default' } };"
+      },
+      "name": "Format Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [700, 200]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://agent.pnmediaplus.com/api/phase3/generate-content",
+        "url": "http://host.docker.internal:3000/api/phase2/ai-broker",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.prompt}}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" },\n  \"tenant_id\": \"{{$json.tenant_id}}\"\n}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
-              "name": "Authorization",
-              "value": "Bearer pn_media_os_super_secret_key_2026_xyz"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "contentItemId",
-              "value": "={{ $json.id }}"
+              "name": "x-request-id",
+              "value": "={{$execution.id}}-{{$position}}"
             }
           ]
         },
         "options": {}
       },
-      "name": "Generate Content API",
+      "name": "AI Broker (Text)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        700,
-        300
-      ]
+      "position": [900, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ControlPlaneAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResult = JSON.parse($input.item.json.choices[0].message.content);\nreturn { json: { textContent: aiResult, item: $('Format Prompt').item.json.item, tenant_id: $('Format Prompt').item.json.tenant_id } };"
+      },
+      "name": "Parse Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/phase2/ai-broker",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"dall-e-3\",\n  \"prompt\": \"{{$json.textContent.image_prompt}}\",\n  \"n\": 1,\n  \"size\": \"1024x1024\",\n  \"tenant_id\": \"{{$json.tenant_id}}\",\n  \"endpointUrl\": \"https://api.openai.com/v1/images/generations\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-request-id",
+              "value": "={{$execution.id}}-img-{{$position}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "AI Broker (Image)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1300, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ControlPlaneAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const textContent = $('Parse Text').item.json.textContent;\nconst item = $('Parse Text').item.json.item;\nlet imageUrl = \"https://placehold.co/1024x1024?text=Image+Generation+Failed\";\nif ($input.item.json.data && $input.item.json.data[0] && $input.item.json.data[0].url) {\n  imageUrl = $input.item.json.data[0].url;\n}\n\nconst contentItemId = item.id;\nconst assetsBody = [\n  { content_item_id: contentItemId, owner_ref: 'agent_content_creator', asset_type: 'viral_research_packet', asset_key: 'res_' + Date.now(), asset_uri: textContent.research_packet },\n  { content_item_id: contentItemId, owner_ref: 'agent_content_creator', asset_type: 'visual_asset', asset_key: 'vis_' + Date.now(), asset_uri: imageUrl },\n  { content_item_id: contentItemId, owner_ref: 'agent_content_creator', asset_type: 'caption_output', asset_key: 'cap_' + Date.now(), asset_uri: textContent.caption_output }\n];\n\nreturn { json: { assetsBody, contentItemId } };"
+      },
+      "name": "Format Assets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [1500, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_assets",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json.assetsBody)}}",
+        "options": {}
+      },
+      "name": "Insert Assets",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1700, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?id=eq.{{$('Format Assets').item.json.contentItemId}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"state\": \"QA_ready\" }",
+        "options": {}
+      },
+      "name": "Update State",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1900, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { status: 'OK', message: 'Content generated successfully' } };"
+      },
+      "name": "Format Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [2100, 200]
     }
   ],
   "connections": {
-    "Schedule Trigger": {
-      "main": [
-        [
-          {
-            "node": "Fetch Ideas",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Webhook Trigger": {
+      "main": [ [ { "node": "Get Item (Webhook)", "type": "main", "index": 0 } ] ]
     },
-    "Fetch Ideas": {
-      "main": [
-        [
-          {
-            "node": "Generate Content API",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Schedule Trigger": {
+      "main": [ [ { "node": "Get Ideas (Cron)", "type": "main", "index": 0 } ] ]
+    },
+    "Get Item (Webhook)": {
+      "main": [ [ { "node": "Merge Streams", "type": "main", "index": 0 } ] ]
+    },
+    "Get Ideas (Cron)": {
+      "main": [ [ { "node": "Merge Streams", "type": "main", "index": 0 } ] ]
+    },
+    "Merge Streams": {
+      "main": [ [ { "node": "Item Lists", "type": "main", "index": 0 } ] ]
+    },
+    "Item Lists": {
+      "main": [ [ { "node": "Format Prompt", "type": "main", "index": 0 } ] ]
+    },
+    "Format Prompt": {
+      "main": [ [ { "node": "AI Broker (Text)", "type": "main", "index": 0 } ] ]
+    },
+    "AI Broker (Text)": {
+      "main": [ [ { "node": "Parse Text", "type": "main", "index": 0 } ] ]
+    },
+    "Parse Text": {
+      "main": [ [ { "node": "AI Broker (Image)", "type": "main", "index": 0 } ] ]
+    },
+    "AI Broker (Image)": {
+      "main": [ [ { "node": "Format Assets", "type": "main", "index": 0 } ] ]
+    },
+    "Format Assets": {
+      "main": [ [ { "node": "Insert Assets", "type": "main", "index": 0 } ] ]
+    },
+    "Insert Assets": {
+      "main": [ [ { "node": "Update State", "type": "main", "index": 0 } ] ]
+    },
+    "Update State": {
+      "main": [ [ { "node": "Format Output", "type": "main", "index": 0 } ] ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   }

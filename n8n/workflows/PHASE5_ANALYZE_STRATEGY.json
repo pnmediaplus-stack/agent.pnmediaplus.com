@@ -1,0 +1,287 @@
+{
+  "name": "Phase 5 - CMO Analyze Strategy",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "analyze-strategy",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [100, 300],
+      "webhookId": "analyze-strategy-webhook-id"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase5_strategies?status=eq.active&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "Get Strategy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [300, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.length > 0}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Has Strategy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1.0,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase5_pivot_proposals?strategy_id=eq.{{$json[0].id}}&status=eq.pending_approval",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "Check Proposals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [700, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.length === 0}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "No Pending Proposals?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1.0,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase1_lessons_learned?order=created_at.desc&limit=20",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "Get Lessons",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1100, 100],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const strategy = $('Get Strategy').item.json[0];\nconst lessons = $input.item.json || [];\nif (lessons.length === 0) {\n  lessons.push({ lesson_text: \"Our recent campaigns received very low engagement. The target audience (Gen Z) seems unresponsive to long-form text. They prefer short, punchy visual hooks.\" });\n}\n\nconst isVi = $('Webhook Trigger').item.json.body.locale === 'vi';\nconst lessonsText = lessons.map(l => `- ${l.lesson_text}`).join('\\n');\nconst langInstruction = isVi \n  ? \"IMPORTANT: Your reasoning and proposed_direction MUST be written entirely in Vietnamese (Tiếng Việt).\" \n  : \"IMPORTANT: Your reasoning and proposed_direction MUST be written entirely in English.\";\n\nconst prompt = `You are a ruthless, data-driven Chief Marketing Officer AI.\\nYour current ACTIVE STRATEGY is: \"${strategy.name}\"\\nVision: \"${strategy.vision}\"\\n\\nHere are the recent lessons learned from the field:\\n${lessonsText}\\n\\nYour task: Evaluate if we should PIVOT (change direction) or STAY THE COURSE.\\nIf the lessons indicate failure or a mismatch, you MUST pivot. \\n${langInstruction}\\n\\nIf we should pivot, respond with STRICT JSON:\\n{\\n  \"should_pivot\": true,\\n  \"reasoning\": \"${isVi ? 'Giải thích lý do' : 'Detailed reasoning'}\",\\n  \"proposed_direction\": \"${isVi ? 'Hướng đi mới' : 'New direction'}\"\\n}\\nIf we should stay the course, respond with STRICT JSON:\\n{\\n  \"should_pivot\": false\\n}`;\n\nreturn { json: { prompt, tenant_id: $('Webhook Trigger').item.json.body.tenant_id, strategy_id: strategy.id } };"
+      },
+      "name": "Format Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [1300, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/phase2/ai-broker",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.prompt}}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" },\n  \"tenant_id\": \"{{$json.tenant_id}}\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-request-id",
+              "value": "={{$execution.id}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "AI Broker LLM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1500, 100],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ControlPlaneAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResult = JSON.parse($input.item.json.choices[0].message.content);\nreturn { json: { aiResult, strategy_id: $('Format Prompt').item.json.strategy_id } };"
+      },
+      "name": "Parse Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [1700, 100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.aiResult.should_pivot}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Should Pivot?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1.0,
+      "position": [1900, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase5_pivot_proposals",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"strategy_id\": \"{{$json.strategy_id}}\",\n  \"reasoning\": \"{{$json.aiResult.reasoning}}\",\n  \"proposed_direction\": \"{{$json.aiResult.proposed_direction}}\",\n  \"status\": \"pending_approval\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Insert Proposal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2100, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { status: 'PIVOT_PROPOSED', message: 'CMO AI has proposed a pivot.', proposal: $input.item.json[0] } };"
+      },
+      "name": "Output Pivot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [2300, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { status: 'STAY_COURSE', message: 'CMO AI evaluated the strategy and decided to stay the course.' } };"
+      },
+      "name": "Output Stay",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [2100, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { status: 'OK', message: 'No active strategy found to analyze.' } };"
+      },
+      "name": "Output No Strategy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [700, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { status: 'OK', message: 'A pivot proposal is already pending approval. Cannot analyze further.' } };"
+      },
+      "name": "Output Pending",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [1100, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [ [ { "node": "Get Strategy", "type": "main", "index": 0 } ] ]
+    },
+    "Get Strategy": {
+      "main": [ [ { "node": "Has Strategy?", "type": "main", "index": 0 } ] ]
+    },
+    "Has Strategy?": {
+      "main": [
+        [ { "node": "Check Proposals", "type": "main", "index": 0 } ],
+        [ { "node": "Output No Strategy", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Check Proposals": {
+      "main": [ [ { "node": "No Pending Proposals?", "type": "main", "index": 0 } ] ]
+    },
+    "No Pending Proposals?": {
+      "main": [
+        [ { "node": "Get Lessons", "type": "main", "index": 0 } ],
+        [ { "node": "Output Pending", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Get Lessons": {
+      "main": [ [ { "node": "Format Prompt", "type": "main", "index": 0 } ] ]
+    },
+    "Format Prompt": {
+      "main": [ [ { "node": "AI Broker LLM", "type": "main", "index": 0 } ] ]
+    },
+    "AI Broker LLM": {
+      "main": [ [ { "node": "Parse Result", "type": "main", "index": 0 } ] ]
+    },
+    "Parse Result": {
+      "main": [ [ { "node": "Should Pivot?", "type": "main", "index": 0 } ] ]
+    },
+    "Should Pivot?": {
+      "main": [
+        [ { "node": "Insert Proposal", "type": "main", "index": 0 } ],
+        [ { "node": "Output Stay", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Insert Proposal": {
+      "main": [ [ { "node": "Output Pivot", "type": "main", "index": 0 } ] ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

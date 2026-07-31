@@ -1,134 +1,45 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
-import { invokeLlm } from '@/lib/llm-client';
 
 export const dynamic = 'force-dynamic';
 
 const GenerateLessonsPayloadSchema = z.object({
   tenant_id: z.string(), // REQUIRED FOR BILLING
-}).passthrough(); // Allow any other payload for this cron-like task
+}).passthrough();
 
 export async function POST(req: Request) {
   // 1. Central Guard
   const guard = await verifyN8nWebhook(req, 'generate_lessons_call', GenerateLessonsPayloadSchema);
-  
-  if (!guard.ok) {
-    return guard.response;
-  }
-  
-  if (guard.duplicate) {
-    return guard.response;
-  }
+  if (!guard.ok) return guard.response;
+  if (guard.duplicate) return guard.response;
 
   const { logCompletion, payload } = guard;
 
-  const supabaseUrl = process.env.SUPABASE_URL?.trim();
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  const openAiKey = process.env.OPENAI_API_KEY?.trim();
-
-  if (!supabaseUrl || !supabaseKey || !openAiKey) {
-    const errorMsg = 'Missing Supabase or OpenAI credentials';
-    await logCompletion('FAILED', errorMsg);
-    return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: errorMsg }, { status: 500 });
-  }
-
   try {
-    // 2. Fetch top performing records (e.g. CTR > 1 or views > 10)
-    const perfRes = await fetch(`${supabaseUrl}/rest/v1/phase2_performance_records?or=(CTR.gt.1,views.gt.10)&order=performance_score.desc&limit=5`, {
-      cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
-    });
-    const topPerformers = await perfRes.json();
-
-    if (!topPerformers || topPerformers.length === 0) {
-      await logCompletion('ACCEPTED', 'No top performing posts found');
-      return NextResponse.json({ status: 'OK', message: 'No top performing posts found', generated_count: 0 });
+    const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
+    if (!n8nWebhookUrl) {
+      return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: 'N8N Webhook URL missing' }, { status: 500 });
     }
 
-    // 3. Fetch existing lessons to avoid duplicates
-    const existingLessonsRes = await fetch(`${supabaseUrl}/rest/v1/phase2_lessons_learned?select=contentItemId`, {
-      cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+    // Forward payload to N8N Orchestrator
+    const n8nRes = await fetch(`${n8nWebhookUrl}/generate-lessons`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-request-id': req.headers.get('x-request-id') || 'unknown'
+      },
+      body: JSON.stringify(payload)
     });
-    const existingLessons = await existingLessonsRes.json() || [];
-    const existingIds = existingLessons.map((l: any) => l.contentItemId);
 
-    const recordsToProcess = topPerformers.filter((p: any) => !existingIds.includes(p.content_item_id));
-
-    if (recordsToProcess.length === 0) {
-      await logCompletion('ACCEPTED', 'All top performing posts already have lessons');
-      return NextResponse.json({ status: 'OK', message: 'All top performing posts already have lessons', generated_count: 0 });
+    if (!n8nRes.ok) {
+      const errorText = await n8nRes.text();
+      throw new Error(`N8N Orchestrator failed: ${n8nRes.status} - ${errorText}`);
     }
 
-    let generatedCount = 0;
-
-    for (const record of recordsToProcess) {
-      // 4. Fetch Content Item & Assets
-      const itemRes = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${record.content_item_id}`, {
-        cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
-      });
-      const items = await itemRes.json();
-      if (!items || items.length === 0) continue;
-      const item = items[0];
-
-      const assetsRes = await fetch(`${supabaseUrl}/rest/v1/phase2_assets?content_item_id=eq.${record.content_item_id}`, {
-        cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
-      });
-      const assets = await assetsRes.json() || [];
-      
-      const captionAsset = assets.find((a: any) => a.asset_type === 'caption_text');
-      const captionText = captionAsset ? captionAsset.asset_uri : '';
-
-      // 5. Analyze with OpenAI
-      const prompt = `
-You are an expert Social Media Data Analyst.
-Analyze the following successful social media post and extract 3 short, actionable lessons learned (marketing insights) for future campaigns.
-
-Topic: ${item.title}
-Performance: ${record.views} views, ${record.likes} likes, CTR: ${record.CTR}%
-Caption Used:
-${captionText.substring(0, 500)}...
-
-Return ONLY the 3 bullet points, concise and insightful.
-      `;
-
-      const llmResponse = await invokeLlm({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7
-      }, {
-        actorId: 'n8n_generate_lessons',
-        tenantId: payload.tenant_id, // STRICT TENANT SCOPE
-        requestId: req.headers.get('x-request-id') || 'unknown'
-      });
-
-      const generatedLessons = llmResponse.choices?.[0]?.message?.content || 'No lessons generated.';
-
-      // 6. Save to database
-      const metricHighlight = `${record.views} Views | ${record.CTR}% CTR`;
-      const insertPayload = {
-        contentItemId: record.content_item_id,
-        lessonText: generatedLessons,
-        metricHighlight: metricHighlight
-      };
-
-      const insertRes = await fetch(`${supabaseUrl}/rest/v1/phase2_lessons_learned`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-        body: JSON.stringify(insertPayload)
-      });
-
-      if (insertRes.ok) {
-        generatedCount++;
-      } else {
-        console.error("Failed to insert lesson:", await insertRes.text());
-      }
-    }
-
-    await logCompletion('ACCEPTED', `Generated ${generatedCount} new lessons`);
-    return NextResponse.json({ 
-      status: 'OK', 
-      generated_count: generatedCount 
-    });
+    const n8nData = await n8nRes.json();
+    await logCompletion('ACCEPTED', `Lessons generated via N8N Orchestrator`);
+    return NextResponse.json(n8nData);
 
   } catch (error: any) {
     const errorMsg = error.message || 'Unknown error occurred during generation';

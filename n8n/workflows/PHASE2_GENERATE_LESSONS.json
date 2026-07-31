@@ -1,0 +1,207 @@
+{
+  "name": "Phase 2 - Data Analyst AI (Generate Lessons)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-lessons",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [100, 300],
+      "webhookId": "generate-lessons-webhook-id"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_performance_records?or=(CTR.gt.1,views.gt.10)&order=performance_score.desc&limit=5",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "Get Top Performers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [300, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_lessons_learned?select=contentItemId",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "Get Existing Lessons",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const performers = $('Get Top Performers').item.json || [];\nconst existingLessons = $input.item.json || [];\nconst existingIds = existingLessons.map(l => l.contentItemId);\nconst recordsToProcess = performers.filter(p => !existingIds.includes(p.content_item_id));\n\nif (recordsToProcess.length === 0) {\n  return []; // Stops execution if empty\n}\n\nreturn recordsToProcess.map(r => ({ json: r }));"
+      },
+      "name": "Filter and Split",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?id=eq.{{$json.content_item_id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "Get Content Item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_assets?content_item_id=eq.{{$('Filter and Split').item.json.content_item_id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "Get Assets",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1100, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const record = $('Filter and Split').item.json;\nconst itemData = $('Get Content Item').item.json[0] || { title: 'Unknown' };\nconst assets = $input.item.json || [];\nconst captionAsset = assets.find(a => a.asset_type === 'caption_text');\nconst captionText = captionAsset ? captionAsset.asset_uri : '';\n\nconst prompt = `You are an expert Social Media Data Analyst.\\nAnalyze the following successful social media post and extract 3 short, actionable lessons learned (marketing insights) for future campaigns.\\n\\nTopic: ${itemData.title}\\nPerformance: ${record.views} views, ${record.likes} likes, CTR: ${record.CTR}%\\nCaption Used:\\n${captionText.substring(0, 500)}...\\n\\nReturn ONLY the 3 bullet points, concise and insightful.`;\n\nreturn { json: { prompt, record, tenant_id: $('Webhook Trigger').item.json.body.tenant_id } };"
+      },
+      "name": "Format Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/phase2/ai-broker",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.prompt}}\"\n    }\n  ],\n  \"tenant_id\": \"{{$json.tenant_id}}\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-request-id",
+              "value": "={{$execution.id}}-{{$position}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "AI Broker LLM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1500, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ControlPlaneAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_lessons_learned",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contentItemId\": \"{{$('Format Prompt').item.json.record.content_item_id}}\",\n  \"lessonText\": \"{{$json.choices[0].message.content}}\",\n  \"metricHighlight\": \"{{$('Format Prompt').item.json.record.views}} Views | {{$('Format Prompt').item.json.record.CTR}}% CTR\"\n}",
+        "options": {}
+      },
+      "name": "Insert Lesson",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1700, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { status: 'OK', message: 'Lessons generated successfully' } };"
+      },
+      "name": "Format Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [1900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [ [ { "node": "Get Top Performers", "type": "main", "index": 0 } ] ]
+    },
+    "Get Top Performers": {
+      "main": [ [ { "node": "Get Existing Lessons", "type": "main", "index": 0 } ] ]
+    },
+    "Get Existing Lessons": {
+      "main": [ [ { "node": "Filter and Split", "type": "main", "index": 0 } ] ]
+    },
+    "Filter and Split": {
+      "main": [ [ { "node": "Get Content Item", "type": "main", "index": 0 } ] ]
+    },
+    "Get Content Item": {
+      "main": [ [ { "node": "Get Assets", "type": "main", "index": 0 } ] ]
+    },
+    "Get Assets": {
+      "main": [ [ { "node": "Format Prompt", "type": "main", "index": 0 } ] ]
+    },
+    "Format Prompt": {
+      "main": [ [ { "node": "AI Broker LLM", "type": "main", "index": 0 } ] ]
+    },
+    "AI Broker LLM": {
+      "main": [ [ { "node": "Insert Lesson", "type": "main", "index": 0 } ] ]
+    },
+    "Insert Lesson": {
+      "main": [ [ { "node": "Format Output", "type": "main", "index": 0 } ] ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

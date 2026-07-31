@@ -1,0 +1,141 @@
+{
+  "name": "Phase 4 - Campaign Planner AI",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "campaign-planner",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [100, 300],
+      "webhookId": "campaign-planner-webhook-id"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase4_campaigns",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"{{$json.body.title}}\",\n  \"goal_description\": \"{{$json.body.goal}}\",\n  \"target_audience\": \"{{$json.body.target_audience || 'General audience'}}\",\n  \"status\": \"active\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Create Campaign",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [300, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/phase2/ai-broker",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You are an expert Marketing Campaign Planner AI.\\nGoal: {{$node['Webhook Trigger'].json.body.goal}}\\nTarget Audience: {{$node['Webhook Trigger'].json.body.target_audience || 'General'}}\\n\\nGenerate {{$node['Webhook Trigger'].json.body.num_ideas || 3}} distinct content ideas for this campaign.\\nRespond in STRICT JSON format like this:\\n{\\n  \\\"ideas\\\": [\\n    {\\n      \\\"title\\\": \\\"A catchy title\\\",\\n      \\\"brief\\\": \\\"A short brief\\\"\\n    }\\n  ]\\n}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" },\n  \"tenant_id\": \"{{$node['Webhook Trigger'].json.body.tenant_id}}\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-request-id",
+              "value": "={{$execution.id}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "AI Broker LLM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ControlPlaneAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResult = JSON.parse($input.item.json.choices[0].message.content);\nconst ideas = aiResult.ideas || [];\nconst campaignId = $('Create Campaign').item.json[0].id;\n\nconst contentItems = ideas.map(idea => ({\n  content_key: `camp_${Date.now()}_${Math.floor(Math.random() * 10000)}`,\n  owner_ref: 'agent_campaign_planner',\n  title: idea.title,\n  brief: idea.brief,\n  state: 'idea',\n  campaign_id: campaignId\n}));\n\nreturn { json: { contentItems, campaignId, ideasGenerated: ideas.length } };"
+      },
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json.contentItems)}}",
+        "options": {}
+      },
+      "name": "Insert Ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  status: 'OK',\n  message: 'Campaign planned and ideas generated successfully via N8N',\n  campaignId: $('Parse JSON').item.json.campaignId,\n  ideasGenerated: $('Parse JSON').item.json.ideasGenerated\n};"
+      },
+      "name": "Format Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [1100, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [ [ { "node": "Create Campaign", "type": "main", "index": 0 } ] ]
+    },
+    "Create Campaign": {
+      "main": [ [ { "node": "AI Broker LLM", "type": "main", "index": 0 } ] ]
+    },
+    "AI Broker LLM": {
+      "main": [ [ { "node": "Parse JSON", "type": "main", "index": 0 } ] ]
+    },
+    "Parse JSON": {
+      "main": [ [ { "node": "Insert Ideas", "type": "main", "index": 0 } ] ]
+    },
+    "Insert Ideas": {
+      "main": [ [ { "node": "Format Output", "type": "main", "index": 0 } ] ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
