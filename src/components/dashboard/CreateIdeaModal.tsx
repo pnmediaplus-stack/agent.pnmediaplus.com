@@ -27,6 +27,7 @@ export function CreateIdeaModal({
     try {
       const res = await fetch("/api/phase2/intake", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,

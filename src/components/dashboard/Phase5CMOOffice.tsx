@@ -11,12 +11,11 @@ export function Phase5CMOOffice() {
   const [actionMsg, setActionMsg] = useState("");
 
   useEffect(() => {
-    const fetchCMOData = async () => {
+    const fetchCMOData = async (tenantId: string) => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/phase5_strategies?status=eq.active&limit=1`, {
-          headers: {
-             'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-          }
+        const res = await fetch(`/api/phase5/strategies?tenant_id=${tenantId}`, {
+          method: "GET",
+          credentials: "include"
         });
         const data = await res.json();
         if (data && data.length > 0) {
@@ -26,7 +25,21 @@ export function Phase5CMOOffice() {
         }
       } catch (e) {}
     };
-    fetchCMOData();
+    const init = async () => {
+      try {
+        const portalRes = await fetch("/api/phase068/portal-core", {
+          method: "GET",
+          cache: "no-store",
+          credentials: "include"
+        });
+        const portalPayload = await portalRes.json().catch(() => null);
+        const tenantId = portalPayload?.data?.tenant_shell?.active_organization_id;
+        if (tenantId) {
+          fetchCMOData(tenantId);
+        }
+      } catch (e) {}
+    };
+    init();
   }, []);
 
   const handleRunAnalysis = async () => {

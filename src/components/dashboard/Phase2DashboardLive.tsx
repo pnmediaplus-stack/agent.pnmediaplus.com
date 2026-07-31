@@ -190,6 +190,7 @@ function PipelineCard({
       setIsPublishing(true);
       const res = await fetch('/api/phase2/approve-publish', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content_item_id: item.id })
       });
@@ -820,6 +821,7 @@ export function Phase2Dashboard({
         const page = parseInt(searchParams.get("page") || "1", 10) || 1;
         const res = await fetch("/api/phase2/sync", {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             page,
