@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-
+import { invokeLlm } from '@/lib/llm-client';
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get('authorization');
@@ -88,23 +88,18 @@ If we should stay the course, respond with STRICT JSON:
   "should_pivot": false
 }`;
 
-    const openAiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openAiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.2
-      })
+    const llmResponse = await invokeLlm({
+      model: 'gpt-4o',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      temperature: 0.2
+    }, {
+      actorId: 'n8n_analyze_strategy',
+      tenantId: 'default',
+      requestId: req.headers.get('x-request-id') || 'unknown'
     });
 
-    if (!openAiRes.ok) throw new Error(`OpenAI API Error: ${await openAiRes.text()}`);
-    const aiData = await openAiRes.json();
-    const aiResult = JSON.parse(aiData.choices[0].message.content);
+    const aiResult = JSON.parse(llmResponse.choices[0].message.content);
 
     // 5. Create Pivot Proposal if needed
     if (aiResult.should_pivot) {

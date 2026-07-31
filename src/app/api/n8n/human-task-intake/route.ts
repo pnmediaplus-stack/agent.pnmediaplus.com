@@ -3,7 +3,7 @@ import { verifyUiAuth } from '@/lib/ui-auth-guard';
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 
-const IntakePayloadSchema = z.record(z.any()); // Must be an object, not a raw string/array
+const IntakePayloadSchema = z.record(z.string(), z.any()); // Must be an object, not a raw string/array
 
 export async function POST(request: Request) {
   // 1. Check UI Auth (Requires valid Portal Session)

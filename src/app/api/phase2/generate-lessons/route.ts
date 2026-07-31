@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
+import { invokeLlm } from '@/lib/llm-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,37 +89,29 @@ ${captionText.substring(0, 500)}...
 Return ONLY the 3 bullet points, concise and insightful.
       `;
 
-      const openAiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openAiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.7
-        })
+      const llmResponse = await invokeLlm({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7
+      }, {
+        actorId: 'n8n_generate_lessons',
+        tenantId: 'default',
+        requestId: req.headers.get('x-request-id') || 'unknown'
       });
 
-      const aiData = await openAiRes.json();
-      const lessonText = aiData.choices?.[0]?.message?.content || 'Lesson extraction failed.';
-      const metricHighlight = `${record.views} Views | ${record.CTR}% CTR`;
+      const generatedLessons = llmResponse.choices?.[0]?.message?.content || 'No lessons generated.';
 
-      // 6. Insert into lessons_learned
+      // 6. Save to database
+      const metricHighlight = `${record.views} Views | ${record.CTR}% CTR`;
       const insertPayload = {
         contentItemId: record.content_item_id,
-        lessonText: lessonText,
+        lessonText: generatedLessons,
         metricHighlight: metricHighlight
       };
 
       const insertRes = await fetch(`${supabaseUrl}/rest/v1/phase2_lessons_learned`, {
         method: 'POST',
-        headers: { 
-          apikey: supabaseKey, 
-          Authorization: `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
         body: JSON.stringify(insertPayload)
       });
 

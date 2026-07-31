@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-
+import { invokeLlm } from '@/lib/llm-client';
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get('authorization');
@@ -72,23 +72,19 @@ Respond in STRICT JSON format like this:
 }`;
 
     console.log(`[Campaign Planner] Calling OpenAI to generate ${num_ideas} ideas...`);
-    const openAiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openAiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o', // using gpt-4o for high-level planning
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.7
-      })
+    
+    const llmResponse = await invokeLlm({
+      model: 'gpt-4o', // using gpt-4o for high-level planning
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      temperature: 0.7
+    }, {
+      actorId: 'n8n_generate_campaign',
+      tenantId: 'default',
+      requestId: req.headers.get('x-request-id') || 'unknown'
     });
 
-    if (!openAiRes.ok) throw new Error(`OpenAI Text Error: ${await openAiRes.text()}`);
-    const aiData = await openAiRes.json();
-    const aiResult = JSON.parse(aiData.choices[0].message.content);
+    const aiResult = JSON.parse(llmResponse.choices[0].message.content);
     const ideas = aiResult.ideas || [];
 
     // 3. Insert Ideas into content_items

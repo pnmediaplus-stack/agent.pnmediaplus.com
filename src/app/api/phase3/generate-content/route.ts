@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
+import { invokeLlm } from '@/lib/llm-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,46 +86,38 @@ Respond in STRICT JSON format:
 }`;
 
     console.log(`[Content Generator] Calling OpenAI for text...`);
-    const openAiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openAiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.7
-      })
+    const llmResponse = await invokeLlm({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      temperature: 0.7
+    }, {
+      actorId: 'n8n_generate_content',
+      tenantId: 'default',
+      requestId: req.headers.get('x-request-id') || 'unknown'
     });
 
-    if (!openAiRes.ok) throw new Error(`OpenAI Text Error: ${await openAiRes.text()}`);
-    const aiData = await openAiRes.json();
-    const content = JSON.parse(aiData.choices[0].message.content);
+    const content = JSON.parse(llmResponse.choices[0].message.content);
 
     // 4. Generate Image via DALL-E 3
     console.log(`[Content Generator] Calling DALL-E for image...`);
-    const imageRes = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openAiKey}`
-      },
-      body: JSON.stringify({
+    let imageUrl = "https://placehold.co/1024x1024?text=Image+Generation+Failed";
+    
+    try {
+      const imageResponse = await invokeLlm({
         model: 'dall-e-3',
         prompt: content.image_prompt,
         n: 1,
         size: '1024x1024'
-      })
-    });
-
-    let imageUrl = "https://placehold.co/1024x1024?text=Image+Generation+Failed";
-    if (imageRes.ok) {
-      const imgData = await imageRes.json();
-      imageUrl = imgData.data[0].url;
-    } else {
-      console.error("DALL-E generation failed:", await imageRes.text());
+      }, {
+        actorId: 'n8n_generate_content',
+        tenantId: 'default',
+        requestId: req.headers.get('x-request-id') || 'unknown',
+        endpointUrl: 'https://api.openai.com/v1/images/generations'
+      });
+      imageUrl = imageResponse.data[0].url;
+    } catch (imageErr) {
+      console.error("DALL-E generation failed:", imageErr);
       // Continue anyway with placeholder
     }
 
