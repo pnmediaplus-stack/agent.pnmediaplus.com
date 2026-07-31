@@ -39,7 +39,7 @@ export function Phase5CMOOffice() {
           'Authorization': 'Bearer pn_media_os_super_secret_key_2026_xyz',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ locale })
+        body: JSON.stringify({ locale, tenant_id: 'default' })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);

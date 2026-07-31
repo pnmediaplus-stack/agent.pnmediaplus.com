@@ -37,7 +37,8 @@ export function Phase4CampaignBuilder() {
           title,
           goal,
           target_audience: audience,
-          num_ideas: numIdeas
+          num_ideas: numIdeas,
+          tenant_id: 'default' // added to comply with new strict billing boundary
         })
       });
 
