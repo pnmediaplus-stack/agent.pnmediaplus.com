@@ -27,6 +27,22 @@ export function Phase4CampaignBuilder() {
     }
 
     try {
+      // Fetch tenant context safely from portal core
+      const portalRes = await fetch("/api/phase068/portal-core", {
+        method: "GET",
+        cache: "no-store",
+        credentials: "include"
+      });
+      const portalPayload = await portalRes.json().catch(() => null);
+      
+      const tenantId = portalPayload?.data?.tenant_shell?.active_organization_id;
+
+      if (!tenantId) {
+        setLoading(false);
+        setError("Không thể xác định ngữ cảnh Tenant (Organization). Vui lòng đảm bảo bạn đang ở trong một Tenant hợp lệ.");
+        return;
+      }
+
       const res = await fetch('/api/phase4/generate-campaign', {
         method: 'POST',
         headers: {
@@ -38,7 +54,7 @@ export function Phase4CampaignBuilder() {
           goal,
           target_audience: audience,
           num_ideas: numIdeas,
-          tenant_id: 'default' // added to comply with new strict billing boundary
+          tenant_id: tenantId
         })
       });
 

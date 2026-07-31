@@ -33,13 +33,29 @@ export function Phase5CMOOffice() {
     setLoading(true);
     setActionMsg("");
     try {
+      // Fetch tenant context safely from portal core
+      const portalRes = await fetch("/api/phase068/portal-core", {
+        method: "GET",
+        cache: "no-store",
+        credentials: "include"
+      });
+      const portalPayload = await portalRes.json().catch(() => null);
+      
+      const tenantId = portalPayload?.data?.tenant_shell?.active_organization_id;
+
+      if (!tenantId) {
+        setLoading(false);
+        setActionMsg("Không thể xác định ngữ cảnh Tenant (Organization). Vui lòng đảm bảo bạn đang ở trong một Tenant hợp lệ.");
+        return;
+      }
+
       const res = await fetch('/api/phase5/analyze-strategy', {
         method: 'POST',
         headers: { 
           'Authorization': 'Bearer pn_media_os_super_secret_key_2026_xyz',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ locale, tenant_id: 'default' })
+        body: JSON.stringify({ locale, tenant_id: tenantId })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
