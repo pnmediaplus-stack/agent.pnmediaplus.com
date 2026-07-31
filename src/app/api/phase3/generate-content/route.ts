@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 const GenerateContentPayloadSchema = z.object({
   contentItemId: z.string().uuid('Must be a valid UUID'),
+  tenant_id: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -93,7 +94,7 @@ Respond in STRICT JSON format:
       temperature: 0.7
     }, {
       actorId: 'n8n_generate_content',
-      tenantId: 'default',
+      tenantId: payload.tenant_id || 'system',
       requestId: req.headers.get('x-request-id') || 'unknown'
     });
 
@@ -111,7 +112,7 @@ Respond in STRICT JSON format:
         size: '1024x1024'
       }, {
         actorId: 'n8n_generate_content',
-        tenantId: 'default',
+        tenantId: payload.tenant_id || 'system',
         requestId: req.headers.get('x-request-id') || 'unknown',
         endpointUrl: 'https://api.openai.com/v1/images/generations'
       });

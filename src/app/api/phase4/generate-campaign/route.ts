@@ -80,7 +80,7 @@ Respond in STRICT JSON format like this:
       temperature: 0.7
     }, {
       actorId: 'n8n_generate_campaign',
-      tenantId: 'default',
+      tenantId: body.tenant_id || 'system',
       requestId: req.headers.get('x-request-id') || 'unknown'
     });
 

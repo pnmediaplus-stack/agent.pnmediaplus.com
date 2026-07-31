@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export type LlmClientOptions = {
   actorId: string;
-  tenantId?: string;
+  tenantId: string;
   requestId?: string;
   endpointUrl?: string; // e.g. https://api.openai.com/v1/images/generations
 };
@@ -29,7 +29,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     throw new Error('OPENAI_API_KEY is missing');
   }
 
-  const { actorId, tenantId = 'default_tenant', requestId = 'unknown' } = options;
+  const { actorId, tenantId, requestId = 'unknown' } = options;
 
   const headers = {
     'apikey': supabaseKey,
@@ -38,9 +38,9 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
   };
 
   // 1. Rate Limit Check (Pre-execution)
-  // We query the daily usage view
+  // We query the daily usage view by tenant_id
   try {
-    const usageRes = await fetch(`${supabaseUrl}/rest/v1/phase2_llm_usage_daily?actor_id=eq.${encodeURIComponent(actorId)}&select=daily_tokens`, {
+    const usageRes = await fetch(`${supabaseUrl}/rest/v1/phase2_llm_usage_daily?tenant_id=eq.${encodeURIComponent(tenantId)}&select=daily_tokens`, {
       headers
     });
     
@@ -57,7 +57,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
           promptTokens: 0, completionTokens: 0, totalTokens: 0,
           status: 'BLOCKED'
         });
-        throw new Error(`LLM_QUOTA_EXCEEDED: Actor ${actorId} exceeded daily quota of ${quota} tokens`);
+        throw new Error(`LLM_QUOTA_EXCEEDED: Tenant ${tenantId} exceeded daily quota of ${quota} tokens`);
       }
     } else {
       // If the table/view doesn't exist yet, we still fail-closed!

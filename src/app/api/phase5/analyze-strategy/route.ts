@@ -95,7 +95,7 @@ If we should stay the course, respond with STRICT JSON:
       temperature: 0.2
     }, {
       actorId: 'n8n_analyze_strategy',
-      tenantId: 'default',
+      tenantId: body.tenant_id || 'system',
       requestId: req.headers.get('x-request-id') || 'unknown'
     });
 

@@ -5,7 +5,9 @@ import { invokeLlm } from '@/lib/llm-client';
 
 export const dynamic = 'force-dynamic';
 
-const GenerateLessonsPayloadSchema = z.any(); // No specific payload required for this cron-like task
+const GenerateLessonsPayloadSchema = z.object({
+  tenant_id: z.string().optional(),
+}).passthrough(); // Allow any other payload for this cron-like task
 
 export async function POST(req: Request) {
   // 1. Central Guard
@@ -95,7 +97,7 @@ Return ONLY the 3 bullet points, concise and insightful.
         temperature: 0.7
       }, {
         actorId: 'n8n_generate_lessons',
-        tenantId: 'default',
+        tenantId: guard.payload?.tenant_id || 'system',
         requestId: req.headers.get('x-request-id') || 'unknown'
       });
 

@@ -7,6 +7,7 @@ const AiBrokerPayloadSchema = z.object({
   model: z.string(),
   messages: z.array(z.any()).min(1),
   temperature: z.number().optional(),
+  tenant_id: z.string().optional(),
 }).passthrough();
 
 export async function POST(request: Request) {
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
   try {
     const responseData = await invokeLlm(payload, {
       actorId: 'n8n_ai_broker',
-      tenantId: 'default',
+      tenantId: payload.tenant_id || 'system',
       requestId: request.headers.get('x-request-id') || 'unknown'
     });
 

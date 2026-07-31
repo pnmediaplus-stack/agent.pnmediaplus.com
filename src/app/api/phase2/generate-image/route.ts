@@ -5,6 +5,7 @@ import { invokeLlm } from '@/lib/llm-client';
 
 const GenerateImagePayloadSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty'),
+  tenant_id: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
       quality: "standard"
     }, {
       actorId: 'n8n_image_generator',
-      tenantId: 'default',
+      tenantId: payload.tenant_id || 'system',
       requestId: req.headers.get('x-request-id') || 'unknown',
       endpointUrl: 'https://api.openai.com/v1/images/generations'
     });
