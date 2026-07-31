@@ -7,12 +7,12 @@ const AiBrokerPayloadSchema = z.object({
   model: z.string(),
   messages: z.array(z.any()).min(1),
   temperature: z.number().optional(),
-  tenant_id: z.string().optional(),
+  tenant_id: z.string(),
 }).passthrough();
 
 export async function POST(request: Request) {
   // 1. Central Guard: Auth, Boundary, Idempotency, Audit
-  const guard = await verifyN8nWebhook(request, 'broker_llm_call', AiBrokerPayloadSchema);
+  const guard = await verifyN8nWebhook(request, 'ai_broker_call', AiBrokerPayloadSchema);
   
   if (!guard.ok) {
     return guard.response;
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   try {
     const responseData = await invokeLlm(payload, {
       actorId: 'n8n_ai_broker',
-      tenantId: payload.tenant_id || 'system',
+      tenantId: payload.tenant_id,
       requestId: request.headers.get('x-request-id') || 'unknown'
     });
 

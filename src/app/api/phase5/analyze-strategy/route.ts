@@ -58,6 +58,11 @@ export async function POST(req: Request) {
 
     // 4. Prompt CMO AI to analyze
     const body = await req.json().catch(() => ({}));
+
+    if (!body.tenant_id) {
+      return NextResponse.json({ error: 'BAD_REQUEST', message: 'Missing tenant_id for billing' }, { status: 400 });
+    }
+
     const locale = body.locale || 'vi';
     const isVi = locale === 'vi';
     
@@ -95,7 +100,7 @@ If we should stay the course, respond with STRICT JSON:
       temperature: 0.2
     }, {
       actorId: 'n8n_analyze_strategy',
-      tenantId: body.tenant_id || 'system',
+      tenantId: body.tenant_id, // STRICT TENANT SCOPE
       requestId: req.headers.get('x-request-id') || 'unknown'
     });
 

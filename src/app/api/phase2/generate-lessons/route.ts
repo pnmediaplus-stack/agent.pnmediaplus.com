@@ -6,7 +6,7 @@ import { invokeLlm } from '@/lib/llm-client';
 export const dynamic = 'force-dynamic';
 
 const GenerateLessonsPayloadSchema = z.object({
-  tenant_id: z.string().optional(),
+  tenant_id: z.string(), // REQUIRED FOR BILLING
 }).passthrough(); // Allow any other payload for this cron-like task
 
 export async function POST(req: Request) {
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     return guard.response;
   }
 
-  const { logCompletion } = guard;
+  const { logCompletion, payload } = guard;
 
   const supabaseUrl = process.env.SUPABASE_URL?.trim();
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
@@ -97,7 +97,7 @@ Return ONLY the 3 bullet points, concise and insightful.
         temperature: 0.7
       }, {
         actorId: 'n8n_generate_lessons',
-        tenantId: guard.payload?.tenant_id || 'system',
+        tenantId: payload.tenant_id, // STRICT TENANT SCOPE
         requestId: req.headers.get('x-request-id') || 'unknown'
       });
 

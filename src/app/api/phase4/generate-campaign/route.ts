@@ -17,6 +17,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'BAD_REQUEST', message: 'Missing title or goal' }, { status: 400 });
     }
 
+    if (!body.tenant_id) {
+      return NextResponse.json({ error: 'BAD_REQUEST', message: 'Missing tenant_id for billing' }, { status: 400 });
+    }
+
     const openAiKey = process.env.OPENAI_API_KEY;
     if (!openAiKey) {
       return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: 'OpenAI API Key missing. Opt-in required for Phase 4.' }, { status: 500 });
@@ -80,7 +84,7 @@ Respond in STRICT JSON format like this:
       temperature: 0.7
     }, {
       actorId: 'n8n_generate_campaign',
-      tenantId: body.tenant_id || 'system',
+      tenantId: body.tenant_id, // STRICT TENANT SCOPE
       requestId: req.headers.get('x-request-id') || 'unknown'
     });
 
