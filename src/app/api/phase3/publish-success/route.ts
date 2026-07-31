@@ -1,37 +1,47 @@
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
+
 export const dynamic = 'force-dynamic';
 
-import { NextResponse } from 'next/server';
+const PublishSuccessPayloadSchema = z.object({
+  contentItemId: z.string().uuid(),
+  channel: z.string().min(1),
+  externalId: z.string().min(1),
+  externalUrl: z.string().url().optional().or(z.literal('')),
+});
 
 export async function POST(req: Request) {
+  // 1. Central Guard
+  const guard = await verifyN8nWebhook(req, 'publish_success_call', PublishSuccessPayloadSchema);
+  
+  if (!guard.ok) {
+    return guard.response;
+  }
+  
+  if (guard.duplicate) {
+    return guard.response;
+  }
+
+  const { payload, logCompletion } = guard;
+  const { contentItemId, channel, externalId, externalUrl } = payload;
+
+  const supabaseUrl = process.env.SUPABASE_URL?.trim();
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+
+  if (!supabaseUrl || !supabaseKey) {
+    await logCompletion('FAILED', 'Credentials missing');
+    return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: 'Credentials missing' }, { status: 500 });
+  }
+
+  const headers = {
+    'apikey': supabaseKey,
+    'Authorization': `Bearer ${supabaseKey}`,
+    'Content-Type': 'application/json'
+  };
+
   try {
-    const authHeader = req.headers.get('authorization');
-    const expectedSecret = process.env.CONTROL_PLANE_SECRET;
-
-    if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
-      return NextResponse.json({ error: 'FORBIDDEN_ACTOR', message: 'Invalid or missing CONTROL_PLANE_SECRET' }, { status: 403 });
-    }
-
-    const body = await req.json();
-    const { contentItemId, channel, externalId, externalUrl } = body;
-
-    if (!contentItemId || !channel || !externalId) {
-      return NextResponse.json({ error: 'BAD_REQUEST', message: 'Missing required fields' }, { status: 400 });
-    }
-
-    const supabaseUrl = process.env.SUPABASE_URL || '';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-    if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: 'Credentials missing' }, { status: 500 });
-    }
-
-    const headers = {
-      'apikey': supabaseKey,
-      'Authorization': `Bearer ${supabaseKey}`,
-      'Content-Type': 'application/json'
-    };
-
-    // 1. Update State to published
+    // 2. Update State to published
     const updateRes = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${contentItemId}`, {
       method: 'PATCH',
       headers,
@@ -39,10 +49,12 @@ export async function POST(req: Request) {
     });
 
     if (!updateRes.ok) {
-      return NextResponse.json({ error: 'DB_ERROR', message: `Update state failed: ${await updateRes.text()}` }, { status: 500 });
+      const errorMsg = await updateRes.text();
+      await logCompletion('FAILED', `Update state failed: ${errorMsg}`);
+      return NextResponse.json({ error: 'DB_ERROR', message: `Update state failed: ${errorMsg}` }, { status: 500 });
     }
 
-    // 2. Create Publish Record via public view
+    // 3. Create Publish Record via public view
     const publishPayload = {
       content_item_id: contentItemId,
       channel: channel,
@@ -59,13 +71,20 @@ export async function POST(req: Request) {
     });
 
     if (!publishRes.ok) {
-      return NextResponse.json({ error: 'DB_ERROR', message: `Insert publish record failed: ${await publishRes.text()}` }, { status: 500 });
+      const errorMsg = await publishRes.text();
+      await logCompletion('FAILED', `Insert publish record failed: ${errorMsg}`);
+      return NextResponse.json({ error: 'DB_ERROR', message: `Insert publish record failed: ${errorMsg}` }, { status: 500 });
     }
 
-    return NextResponse.json({ status: 'OK', message: 'Publish success recorded' });
+    await logCompletion('ACCEPTED', 'Successfully recorded publish', { contentItemId, externalId });
+    return NextResponse.json({ 
+      status: 'OK', 
+      message: 'Publish success recorded' 
+    });
 
   } catch (error: any) {
-    console.error("Publish Success Error:", error);
-    return NextResponse.json({ error: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
+    const errorMsg = error.message || 'Unknown error';
+    await logCompletion('FAILED', errorMsg);
+    return NextResponse.json({ error: 'INTERNAL_ERROR', message: errorMsg }, { status: 500 });
   }
 }

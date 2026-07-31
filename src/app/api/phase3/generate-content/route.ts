@@ -1,38 +1,46 @@
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
+
 export const dynamic = 'force-dynamic';
 
-import { NextResponse } from 'next/server';
+const GenerateContentPayloadSchema = z.object({
+  contentItemId: z.string().uuid('Must be a valid UUID'),
+});
 
 export async function POST(req: Request) {
+  // 1. Central Guard
+  const guard = await verifyN8nWebhook(req, 'generate_content_call', GenerateContentPayloadSchema);
+  
+  if (!guard.ok) {
+    return guard.response;
+  }
+  
+  if (guard.duplicate) {
+    return guard.response;
+  }
+
+  const { payload, logCompletion } = guard;
+  const { contentItemId } = payload;
+
+  const supabaseUrl = process.env.SUPABASE_URL?.trim();
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const openAiKey = process.env.OPENAI_API_KEY?.trim();
+
+  if (!supabaseUrl || !supabaseKey || !openAiKey) {
+    const errorMsg = 'Credentials missing';
+    await logCompletion('FAILED', errorMsg);
+    return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: errorMsg }, { status: 500 });
+  }
+
+  const headers = {
+    'apikey': supabaseKey,
+    'Authorization': `Bearer ${supabaseKey}`,
+    'Content-Type': 'application/json'
+  };
+
   try {
-    const authHeader = req.headers.get('authorization');
-    const expectedSecret = process.env.CONTROL_PLANE_SECRET;
-
-    if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
-      return NextResponse.json({ error: 'FORBIDDEN_ACTOR', message: 'Invalid or missing CONTROL_PLANE_SECRET' }, { status: 403 });
-    }
-
-    const body = await req.json();
-    const { contentItemId } = body;
-
-    if (!contentItemId) {
-      return NextResponse.json({ error: 'BAD_REQUEST', message: 'Missing contentItemId' }, { status: 400 });
-    }
-
-    const supabaseUrl = process.env.SUPABASE_URL || '';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-    const openAiKey = process.env.OPENAI_API_KEY;
-
-    if (!supabaseUrl || !supabaseKey || !openAiKey) {
-      return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: 'Credentials missing' }, { status: 500 });
-    }
-
-    const headers = {
-      'apikey': supabaseKey,
-      'Authorization': `Bearer ${supabaseKey}`,
-      'Content-Type': 'application/json'
-    };
-
-    // 1. Fetch Content Item
+    // 2. Fetch Content Item
     const itemRes = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${contentItemId}`, {
       cache: 'no-store',
       headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
@@ -40,11 +48,13 @@ export async function POST(req: Request) {
     
     const items = await itemRes.json();
     if (!items || items.length === 0) {
+      await logCompletion('FAILED', 'Content item not found');
       return NextResponse.json({ error: 'NOT_FOUND', message: 'Content item not found' }, { status: 404 });
     }
     const item = items[0];
 
     if (item.state !== 'idea') {
+      await logCompletion('FAILED', `Invalid state. Expected 'idea', got '${item.state}'`);
       return NextResponse.json({ error: 'INVALID_STATE', message: `Expected state 'idea', got '${item.state}'` }, { status: 400 });
     }
 
@@ -60,7 +70,7 @@ export async function POST(req: Request) {
       if (!res.ok) throw new Error(`State transition to ${newState} failed: ${await res.text()}`);
     };
 
-    // 2. Generate Content via OpenAI (GPT-4o-mini for speed and cost)
+    // 3. Generate Content via OpenAI (GPT-4o-mini for speed and cost)
     const prompt = `You are an expert Social Media Content Creator.
 Based on the following idea, generate a short, engaging social media post caption and a 3-point research summary.
 
@@ -93,7 +103,7 @@ Respond in STRICT JSON format:
     const aiData = await openAiRes.json();
     const content = JSON.parse(aiData.choices[0].message.content);
 
-    // 3. Generate Image via DALL-E 3
+    // 4. Generate Image via DALL-E 3
     console.log(`[Content Generator] Calling DALL-E for image...`);
     const imageRes = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -118,7 +128,7 @@ Respond in STRICT JSON format:
       // Continue anyway with placeholder
     }
 
-    // 4. Update States & Insert Assets
+    // 5. Update States & Insert Assets
     console.log(`[Content Generator] Saving assets...`);
     await updateState('research_ready');
     await updateState('visual_ready');
@@ -136,6 +146,7 @@ Respond in STRICT JSON format:
     // Move to QA Ready!
     await updateState('QA_ready');
 
+    await logCompletion('ACCEPTED', 'Content generated successfully', { contentItemId });
     return NextResponse.json({ 
       status: 'OK', 
       message: 'Content generated successfully',
@@ -143,7 +154,8 @@ Respond in STRICT JSON format:
     });
 
   } catch (error: any) {
-    console.error("Generate Content Error:", error);
-    return NextResponse.json({ error: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
+    const errorMsg = error.message || 'Unknown error';
+    await logCompletion('FAILED', errorMsg);
+    return NextResponse.json({ error: 'INTERNAL_ERROR', message: errorMsg }, { status: 500 });
   }
 }

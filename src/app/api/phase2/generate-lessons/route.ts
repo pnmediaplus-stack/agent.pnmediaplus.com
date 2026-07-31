@@ -1,35 +1,48 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
 
 export const dynamic = 'force-dynamic';
 
+const GenerateLessonsPayloadSchema = z.any(); // No specific payload required for this cron-like task
+
 export async function POST(req: Request) {
+  // 1. Central Guard
+  const guard = await verifyN8nWebhook(req, 'generate_lessons_call', GenerateLessonsPayloadSchema);
+  
+  if (!guard.ok) {
+    return guard.response;
+  }
+  
+  if (guard.duplicate) {
+    return guard.response;
+  }
+
+  const { logCompletion } = guard;
+
+  const supabaseUrl = process.env.SUPABASE_URL?.trim();
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const openAiKey = process.env.OPENAI_API_KEY?.trim();
+
+  if (!supabaseUrl || !supabaseKey || !openAiKey) {
+    const errorMsg = 'Missing Supabase or OpenAI credentials';
+    await logCompletion('FAILED', errorMsg);
+    return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: errorMsg }, { status: 500 });
+  }
+
   try {
-    const authHeader = req.headers.get('authorization');
-    const expectedSecret = process.env.CONTROL_PLANE_SECRET;
-
-    if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
-      return NextResponse.json({ error: 'FORBIDDEN_ACTOR', message: 'Invalid or missing CONTROL_PLANE_SECRET' }, { status: 403 });
-    }
-
-    const supabaseUrl = process.env.SUPABASE_URL || '';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-    const openAiKey = process.env.OPENAI_API_KEY;
-
-    if (!supabaseUrl || !supabaseKey || !openAiKey) {
-      return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: 'Credentials missing' }, { status: 500 });
-    }
-
-    // 1. Fetch top performing records (e.g. CTR > 1 or views > 10)
+    // 2. Fetch top performing records (e.g. CTR > 1 or views > 10)
     const perfRes = await fetch(`${supabaseUrl}/rest/v1/phase2_performance_records?or=(CTR.gt.1,views.gt.10)&order=performance_score.desc&limit=5`, {
       cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
     });
     const topPerformers = await perfRes.json();
 
     if (!topPerformers || topPerformers.length === 0) {
+      await logCompletion('ACCEPTED', 'No top performing posts found');
       return NextResponse.json({ status: 'OK', message: 'No top performing posts found', generated_count: 0 });
     }
 
-    // 2. Fetch existing lessons to avoid duplicates
+    // 3. Fetch existing lessons to avoid duplicates
     const existingLessonsRes = await fetch(`${supabaseUrl}/rest/v1/phase2_lessons_learned?select=contentItemId`, {
       cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
     });
@@ -39,13 +52,14 @@ export async function POST(req: Request) {
     const recordsToProcess = topPerformers.filter((p: any) => !existingIds.includes(p.content_item_id));
 
     if (recordsToProcess.length === 0) {
+      await logCompletion('ACCEPTED', 'All top performing posts already have lessons');
       return NextResponse.json({ status: 'OK', message: 'All top performing posts already have lessons', generated_count: 0 });
     }
 
     let generatedCount = 0;
 
     for (const record of recordsToProcess) {
-      // 3. Fetch Content Item & Assets
+      // 4. Fetch Content Item & Assets
       const itemRes = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${record.content_item_id}`, {
         cache: 'no-store', headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
       });
@@ -61,7 +75,7 @@ export async function POST(req: Request) {
       const captionAsset = assets.find((a: any) => a.asset_type === 'caption_text');
       const captionText = captionAsset ? captionAsset.asset_uri : '';
 
-      // 4. Analyze with OpenAI
+      // 5. Analyze with OpenAI
       const prompt = `
 You are an expert Social Media Data Analyst.
 Analyze the following successful social media post and extract 3 short, actionable lessons learned (marketing insights) for future campaigns.
@@ -91,8 +105,7 @@ Return ONLY the 3 bullet points, concise and insightful.
       const lessonText = aiData.choices?.[0]?.message?.content || 'Lesson extraction failed.';
       const metricHighlight = `${record.views} Views | ${record.CTR}% CTR`;
 
-      // 5. Insert into lessons_learned (bypass PostgREST view mapping issues by inserting into raw table via service role)
-      // Actually, since we created a public view phase2_lessons_learned, let's insert into the underlying table using the correct schema
+      // 6. Insert into lessons_learned
       const insertPayload = {
         contentItemId: record.content_item_id,
         lessonText: lessonText,
@@ -116,13 +129,15 @@ Return ONLY the 3 bullet points, concise and insightful.
       }
     }
 
+    await logCompletion('ACCEPTED', `Generated ${generatedCount} new lessons`);
     return NextResponse.json({ 
       status: 'OK', 
       generated_count: generatedCount 
     });
 
   } catch (error: any) {
-    console.error("Generate Lessons Error:", error);
-    return NextResponse.json({ error: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
+    const errorMsg = error.message || 'Unknown error occurred during generation';
+    await logCompletion('FAILED', errorMsg);
+    return NextResponse.json({ error: 'INTERNAL_ERROR', message: errorMsg }, { status: 500 });
   }
 }

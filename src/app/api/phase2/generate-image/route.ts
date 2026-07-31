@@ -1,38 +1,43 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
+
+const GenerateImagePayloadSchema = z.object({
+  prompt: z.string().min(1, 'Prompt cannot be empty'),
+});
 
 export async function POST(req: Request) {
+  // 1. Central Guard
+  const guard = await verifyN8nWebhook(req, 'generate_image_call', GenerateImagePayloadSchema);
+  
+  if (!guard.ok) {
+    return guard.response;
+  }
+  
+  if (guard.duplicate) {
+    return guard.response;
+  }
+
+  const { payload, logCompletion } = guard;
+  const { prompt } = payload;
+
+  // 2. Read Configuration
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const model = process.env.IMAGE_GENERATOR_MODEL?.trim() || 'dall-e-3';
+
+  if (!apiKey) {
+    const errorMsg = 'OPENAI_API_KEY must be set in .env.local';
+    await logCompletion('FAILED', errorMsg);
+    return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: errorMsg }, { status: 500 });
+  }
+
+  // 3. AI Prompt System (Optimize for DALL-E)
+  const enhancedPrompt = `Professional high-quality promotional image for social media marketing. Style: Modern, vibrant, professional. Subject: ${prompt}. No text in the image.`;
+
+  // 4. Call OpenAI API
+  const openAiUrl = 'https://api.openai.com/v1/images/generations';
+  
   try {
-    // 1. Gated Access (Bắt buộc phải có CONTROL_PLANE_SECRET)
-    const authHeader = req.headers.get('authorization');
-    const expectedSecret = process.env.CONTROL_PLANE_SECRET;
-
-    if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
-      return NextResponse.json({ error: 'FORBIDDEN_ACTOR', message: 'Invalid or missing CONTROL_PLANE_SECRET' }, { status: 403 });
-    }
-
-    // 2. Parse payload từ N8N
-    const body = await req.json();
-    const { prompt } = body;
-
-    if (!prompt) {
-      return NextResponse.json({ error: 'INVALID_PAYLOAD', message: 'Missing required field: prompt' }, { status: 400 });
-    }
-
-    // 3. Đọc cấu hình Nền tảng (Fail-Closed)
-    const apiKey = process.env.OPENAI_API_KEY;
-    // Dùng biến môi trường để dễ cấu hình model (ví dụ: dall-e-3, dall-e-2)
-    const model = process.env.IMAGE_GENERATOR_MODEL || 'dall-e-3';
-
-    if (!apiKey) {
-      return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: 'OPENAI_API_KEY must be set in .env.local' }, { status: 500 });
-    }
-
-    // 4. Gắn AI Prompt System (Tối ưu Prompt)
-    // DALL-E 3 hoạt động tốt nhất với prompt chi tiết, ta có thể tự động thêm một số từ khoá chất lượng.
-    const enhancedPrompt = `Professional high-quality promotional image for social media marketing. Style: Modern, vibrant, professional. Subject: ${prompt}. No text in the image.`;
-
-    // 5. Gửi yêu cầu lên OpenAI API
-    const openAiUrl = 'https://api.openai.com/v1/images/generations';
     const response = await fetch(openAiUrl, {
       method: 'POST',
       headers: { 
@@ -44,27 +49,32 @@ export async function POST(req: Request) {
         prompt: enhancedPrompt,
         n: 1,
         size: "1024x1024",
-        quality: "standard" // Dùng hd nếu cần chất lượng cực cao nhưng tốn kém hơn
+        quality: "standard"
       })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("OpenAI API Error:", data);
-      return NextResponse.json({ error: 'GENERATION_FAILED', message: data.error?.message || 'Unknown OpenAI error' }, { status: response.status });
+      const errorMsg = data.error?.message || 'OpenAI generation failed';
+      await logCompletion('FAILED', errorMsg, { upstream_status: response.status });
+      return NextResponse.json({ error: 'GENERATION_FAILED', message: errorMsg }, { status: 502 });
     }
 
-    // 6. Trả URL ảnh về cho N8N
-    const imageUrl = data.data[0].url;
+    if (!data.data || !data.data[0] || !data.data[0].url) {
+      const errorMsg = 'No image URL returned from OpenAI';
+      await logCompletion('FAILED', errorMsg);
+      return NextResponse.json({ error: 'INVALID_UPSTREAM_RESPONSE', message: errorMsg }, { status: 502 });
+    }
 
-    return NextResponse.json({ 
-      status: 'OK', 
-      visual_uri: imageUrl
-    });
+    // Success
+    const imageUrl = data.data[0].url;
+    await logCompletion('ACCEPTED', 'Image successfully generated', { model });
+    return NextResponse.json({ success: true, url: imageUrl }, { status: 200 });
 
   } catch (error: any) {
-    console.error("Visual Broker Error:", error);
-    return NextResponse.json({ error: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
+    const errorMsg = error.message || 'Network error connecting to OpenAI';
+    await logCompletion('FAILED', errorMsg);
+    return NextResponse.json({ error: 'NETWORK_ERROR', message: errorMsg }, { status: 500 });
   }
 }
