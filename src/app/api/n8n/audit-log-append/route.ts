@@ -1,11 +1,16 @@
 import { postN8nWebhook } from "@/lib/n8n-client";
+import { verifyUiAuth } from "@/lib/ui-auth-guard";
 
 export async function POST(request: Request) {
+  const guard = await verifyUiAuth(request);
+  if (!guard.ok) return guard.response;
+
   const payload = await request.json().catch(() => ({}));
 
   try {
     const result = await postN8nWebhook("audit-log-append", {
       received: true,
+      actor_id: guard.user.id,
       payload
     });
 

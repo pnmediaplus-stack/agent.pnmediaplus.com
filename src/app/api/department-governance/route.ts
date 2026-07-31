@@ -10,6 +10,7 @@ import { createPhase064N8nWorkflowContracts } from "@/lib/phase064-n8n-workflow-
 import { createPhase065MarketingAutomation } from "@/lib/phase065-marketing-automation";
 import { createPhase066MarketingMediaOperationsWorkflow } from "@/lib/phase066-marketing-media-operations-workflow";
 import { loadPhase066Snapshot } from "@/lib/phase066-snapshot-loader";
+import { verifyUiAuth } from "@/lib/ui-auth-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,10 @@ function createBundleFingerprint(value: unknown) {
   return createHash("sha256").update(stableJson(value)).digest("hex");
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const guard = await verifyUiAuth(req);
+  if (!guard.ok) return guard.response;
+
   const loaded = await loadDepartmentGovernanceDbBundle();
 
   if (loaded.state === "blocked") {

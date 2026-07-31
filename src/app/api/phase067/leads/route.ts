@@ -1,8 +1,12 @@
 import { loadPhase067LeadSnapshot } from "@/lib/phase067-lead-loader";
+import { verifyUiAuth } from "@/lib/ui-auth-guard";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const guard = await verifyUiAuth(req);
+  if (!guard.ok) return guard.response;
+
   const result = await loadPhase067LeadSnapshot();
 
   if (result.state === "blocked") {
