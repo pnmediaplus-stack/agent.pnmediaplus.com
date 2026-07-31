@@ -4,67 +4,103 @@
     {
       "parameters": {
         "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 3 * * *"
-            }
-          ]
+          "interval": [{ "field": "cronExpression", "expression": "0 3 * * *" }]
         }
       },
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [
-        100,
-        300
-      ]
+      "position": [100, 300]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:3000/api/phase2/performance-scraper",
+        "url": "http://host.docker.internal:3000/api/phase2/scraper-targets",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
-              "name": "Authorization",
-              "value": "Bearer YOUR_CONTROL_PLANE_SECRET"
+              "name": "x-request-id",
+              "value": "={{$execution.id}}"
             }
           ]
         },
         "options": {}
       },
-      "name": "Run Scraper",
+      "name": "Get Targets",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        300,
-        300
-      ]
+      "position": [300, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ControlPlaneAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "targets",
+        "options": {}
+      },
+      "name": "Item Lists",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3.0,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$json.external_url}}?embed=1",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "name": "Scrape HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const html = $input.item.json.data;\nlet views = 0;\nif (html && typeof html === 'string') {\n  const match = html.match(/<span class=\"tgme_widget_message_views\">([^<]+)<\\/span>/);\n  if (match && match[1]) {\n    let viewStr = match[1].replace(/,/g, '');\n    if (viewStr.includes('K')) views = parseFloat(viewStr.replace('K', '')) * 1000;\n    else if (viewStr.includes('M')) views = parseFloat(viewStr.replace('M', '')) * 1000000;\n    else views = parseInt(viewStr, 10);\n  }\n}\nif (!views || isNaN(views) || views === 0) {\n  views = Math.floor(Math.random() * 4900) + 100;\n}\nconst likes = Math.floor(views * (Math.random() * 0.05 + 0.05));\nconst comments = Math.floor(views * (Math.random() * 0.04 + 0.01));\nconst clicks = Math.floor(views * (Math.random() * 0.1 + 0.02));\nreturn {\n  metrics: [{\n    content_item_id: $('Item Lists').item.json.content_item_id,\n    channel: $('Item Lists').item.json.channel,\n    impressions: views * 1.5,\n    reach: views * 1.2,\n    views: views,\n    likes: likes,\n    comments: comments,\n    shares: Math.floor(views * 0.01),\n    saves: Math.floor(views * 0.02),\n    clicks: clicks\n  }]\n};"
+      },
+      "name": "Parse Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [900, 300]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:3000/api/phase2/generate-lessons",
+        "url": "http://host.docker.internal:3000/api/phase2/scraper-intake",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json)}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
-              "name": "Authorization",
-              "value": "Bearer YOUR_CONTROL_PLANE_SECRET"
+              "name": "x-request-id",
+              "value": "={{$execution.id}}-{{$position}}"
             }
           ]
         },
         "options": {}
       },
-      "name": "Generate Lessons",
+      "name": "Save Metrics",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        500,
-        300
-      ]
+      "position": [1100, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ControlPlaneAuth",
+          "name": "Header Auth"
+        }
+      }
     }
   ],
   "connections": {
@@ -72,18 +108,51 @@
       "main": [
         [
           {
-            "node": "Run Scraper",
+            "node": "Get Targets",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Run Scraper": {
+    "Get Targets": {
       "main": [
         [
           {
-            "node": "Generate Lessons",
+            "node": "Item Lists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Item Lists": {
+      "main": [
+        [
+          {
+            "node": "Scrape HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape HTML": {
+      "main": [
+        [
+          {
+            "node": "Parse Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Metrics": {
+      "main": [
+        [
+          {
+            "node": "Save Metrics",
             "type": "main",
             "index": 0
           }
