@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-
+import { z } from 'zod';
+import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
 // ----------------------------------------------------------------------
 // ADAPTER PATTERN CHO PERFORMANCE SCRAPER
 // ----------------------------------------------------------------------
@@ -84,15 +85,23 @@ function getAdapter(channel: string): PerformanceAdapter {
 // ----------------------------------------------------------------------
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request) {
-  try {
-    // 1. Kiểm tra Authority (Yêu cầu cronjob phải gọi bằng CONTROL_PLANE_SECRET)
-    const authHeader = req.headers.get('authorization');
-    const expectedSecret = process.env.CONTROL_PLANE_SECRET;
+const PerformanceScraperPayloadSchema = z.record(z.string(), z.any());
 
-    if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
-      return NextResponse.json({ error: 'FORBIDDEN_ACTOR', message: 'Invalid or missing CONTROL_PLANE_SECRET' }, { status: 403 });
-    }
+export async function POST(req: Request) {
+  // 1. Central Guard
+  const guard = await verifyN8nWebhook(req, 'performance_scraper_run', PerformanceScraperPayloadSchema);
+  
+  if (!guard.ok) {
+    return guard.response;
+  }
+  
+  if (guard.duplicate) {
+    return guard.response;
+  }
+
+  const { logCompletion } = guard;
+
+  try {
 
     const supabaseUrl = process.env.SUPABASE_URL || '';
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -160,17 +169,18 @@ export async function POST(req: Request) {
         scrapedRecords.push(newPerformanceRecord);
       } else {
         const errorText = await insertRes.text();
-        console.error("Insert failed:", errorText);
+        await logCompletion('FAILED', 'Insert failed for record', { content_item_id: record.content_item_id, error: errorText });
       }
     }
 
+    await logCompletion('ACCEPTED', `Processed ${scrapedRecords.length} records`);
     return NextResponse.json({ 
       status: 'OK', 
       recordsProcessed: scrapedRecords.length 
     });
 
   } catch (error: any) {
-    console.error("Performance Scraper Error:", error);
+    await logCompletion('FAILED', `Performance Scraper Error: ${error.message}`);
     return NextResponse.json({ error: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
   }
 }
