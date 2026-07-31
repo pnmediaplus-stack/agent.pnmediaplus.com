@@ -1,28 +1,36 @@
 import { NextResponse } from "next/server";
+import { z } from 'zod';
+import { verifyUiAuth } from '@/lib/ui-auth-guard';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+const SyncPayloadSchema = z.object({
+  page: z.number().int().min(1),
+  limit: z.number().int().min(1),
+  since: z.string(),
+  ids: z.array(z.string().uuid()),
+});
+
 export async function POST(req: Request) {
+  // 1. Check UI Auth (Requires valid Portal Session)
+  const guard = await verifyUiAuth(req, SyncPayloadSchema);
+  
+  if (!guard.ok) {
+    return guard.response;
+  }
+
+  const { payload } = guard;
+  const { page, limit, since, ids } = payload;
+
   try {
-    const body = await req.json();
-    const { page, limit, since, ids } = body;
-    
-    if (typeof page !== 'number' || typeof limit !== 'number' || typeof since !== 'string' || !Array.isArray(ids)) {
-      return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
-    }
-
-    if (page < 1 || limit <= 0) {
-      return NextResponse.json({ error: "Boundary validation failed: page must be >= 1 and limit > 0" }, { status: 400 });
-    }
-
     const headers = {
       "apikey": SUPABASE_SERVICE_ROLE_KEY!,
       "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY!}`,
       "Content-Type": "application/json"
     };
 
-    // 1. Fetch current top IDs for page/limit to check for shifts
+    // 2. Fetch current top IDs for page/limit to check for shifts
     const offset = (page - 1) * limit;
     const idsRes = await fetch(
       `${SUPABASE_URL}/rest/v1/phase2_content_items?select=id&order=scheduled_at.asc.nullsfirst,updated_at.desc&offset=${offset}&limit=${limit}`,

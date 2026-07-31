@@ -1,29 +1,33 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { verifyUiAuth } from '@/lib/ui-auth-guard';
+
+const ApprovePublishSchema = z.object({
+  content_item_id: z.string().uuid('Invalid content item ID'),
+});
 
 export async function POST(req: Request) {
+  // 1. Check UI Auth (Requires valid Portal Session)
+  const guard = await verifyUiAuth(req, ApprovePublishSchema);
+  
+  if (!guard.ok) {
+    return guard.response;
+  }
+
+  const { payload, logAudit, user } = guard;
+  const { content_item_id } = payload;
+
   try {
-    // 1. Kiểm tra Authority & Gated Access
-    // Giao diện Next.js gọi API này sẽ truyền JWT hoặc ta kiểm tra session.
-    // Để đơn giản và fail-safe cho MVP, chúng ta có thể check secret hoặc pass thẳng nếu được gọi từ Dashboard nội bộ.
-    // Tạm thời bỏ qua auth phức tạp, tập trung vào logic xuất bản.
-
-    const body = await req.json();
-    const { content_item_id } = body;
-
-    if (!content_item_id) {
-      return NextResponse.json({ error: 'INVALID_PAYLOAD', message: 'Missing content_item_id' }, { status: 400 });
-    }
-
-    // 2. Kết nối Supabase bằng Service Role
-    const supabaseUrl = process.env.SUPABASE_URL || '';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    // 2. Load Supabase Service Role
+    const supabaseUrl = process.env.SUPABASE_URL?.trim() || '';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
 
     if (!supabaseUrl || !supabaseKey) {
+      await logAudit('approve_publish', 'Supabase credentials missing', { content_item_id });
       return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: 'Supabase credentials missing' }, { status: 500 });
     }
 
-    // 3. Lấy dữ liệu bài viết và assets
-    // Lấy Content Item
+    // 3. Fetch Content Item
     const contentRes = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${content_item_id}`, {
       headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
     });
@@ -38,13 +42,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'INVALID_STATE', message: 'Content must be in QA_passed or scheduled state to publish' }, { status: 400 });
     }
 
-    // Lấy Assets
+    // 4. Fetch Assets
     const assetsRes = await fetch(`${supabaseUrl}/rest/v1/phase2_assets?content_item_id=eq.${content_item_id}`, {
       headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
     });
     const assets = await assetsRes.json();
 
-    // Tìm caption và visual asset
     const captionAsset = assets.find((a: any) => a.asset_type === 'caption_output');
     const visualAsset = assets.find((a: any) => a.asset_type === 'visual_asset');
 
@@ -65,15 +68,16 @@ export async function POST(req: Request) {
     const captionText = extractBase64Data(captionAsset.asset_uri);
     const visualUri = visualAsset ? extractBase64Data(visualAsset.asset_uri) : '';
 
-    // 4. Đọc cấu hình Nền tảng (Telegram)
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
+    // 5. Read Telegram Config
+    const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+    const chatId = process.env.TELEGRAM_CHAT_ID?.trim();
 
     if (!botToken || !chatId) {
-      return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: 'TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID missing' }, { status: 500 });
+      await logAudit('approve_publish', 'Telegram credentials missing', { content_item_id });
+      return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: 'Telegram credentials missing' }, { status: 500 });
     }
 
-    // 5. Định dạng và gửi lên Telegram
+    // 6. Post to Telegram
     const messageText = `🚀 𝐁𝐚̀𝐢 𝐯𝐢𝐞̂́𝐭 𝐦𝐨̛́𝐢: ${content.title}\n\n${captionText}\n\n🎨 Hình ảnh đính kèm: ${visualUri || 'Không có'}`;
     const tgUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
     const response = await fetch(tgUrl, {
@@ -85,10 +89,11 @@ export async function POST(req: Request) {
     const data = await response.json();
 
     if (!data.ok) {
+      await logAudit('approve_publish', 'Telegram API returned error', { content_item_id, tg_error: data.description });
       return NextResponse.json({ error: 'PUBLISH_FAILED', message: data.description }, { status: 500 });
     }
 
-    // 6. Cập nhật Database
+    // 7. Update Database
     const messageId = data.result.message_id;
     const chatStr = chatId.toString().replace('-100', '');
     const publishUrl = `https://t.me/c/${chatStr}/${messageId}`;
@@ -112,10 +117,13 @@ export async function POST(req: Request) {
       body: JSON.stringify({ state: 'published', published_at: new Date().toISOString() })
     });
 
+    await logAudit('approve_publish', 'Published successfully', { content_item_id, publishUrl });
+    
     return NextResponse.json({ status: 'OK', publish_url: publishUrl });
 
   } catch (error: any) {
     console.error("Approve Publish Error:", error);
-    return NextResponse.json({ error: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
+    await logAudit('approve_publish', 'Internal execution error', { content_item_id, error_message: error.message });
+    return NextResponse.json({ error: 'INTERNAL_ERROR', message: 'Internal server error occurred during publish' }, { status: 500 });
   }
 }
