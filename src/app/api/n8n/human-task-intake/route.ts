@@ -3,7 +3,7 @@ import { verifyUiAuth } from '@/lib/ui-auth-guard';
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 
-const IntakePayloadSchema = z.any(); // Allow flexible payload since it's a generic intake
+const IntakePayloadSchema = z.record(z.any()); // Must be an object, not a raw string/array
 
 export async function POST(request: Request) {
   // 1. Check UI Auth (Requires valid Portal Session)
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     });
 
     if (result.ok) {
-      await logAudit('human_task_intake', 'Forwarded to N8N successfully', { payload_summary: payload });
+      await logAudit('human_task_intake', 'Forwarded to N8N successfully', { payload_keys: Object.keys(payload) });
     } else {
       await logAudit('human_task_intake', 'Forwarded to N8N failed', { status: result.status, message: result.message });
     }
