@@ -4,9 +4,8 @@ import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
 import { invokeLlm } from '@/lib/llm-client';
 
 const AiBrokerPayloadSchema = z.object({
+  provider: z.string().optional(),
   model: z.string(),
-  messages: z.array(z.any()).min(1),
-  temperature: z.number().optional(),
   tenant_id: z.string(),
 }).passthrough();
 
