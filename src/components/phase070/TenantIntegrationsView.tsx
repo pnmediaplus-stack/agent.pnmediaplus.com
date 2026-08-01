@@ -251,7 +251,7 @@ export function TenantIntegrationsView() {
       )}
 
       {/* Tenant Context */}
-      <Panel title="Organization Context" description="Verified claims from the active portal session">
+      <Panel title={t("summary.organization") ?? "Organization Context"} description={t("summary.modeValue") ?? "Verified claims from the active portal session"}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <MetadataRow label="Organization Name" value={organization.organization_name} />
           <MetadataRow label="Organization Key" value={organization.organization_key} />
@@ -262,8 +262,8 @@ export function TenantIntegrationsView() {
       {/* Dynamic Catalog */}
       <section>
         <div className="mb-6">
-           <h2 className="text-xl font-semibold text-slate-100">AI Provider Catalog</h2>
-           <p className="mt-1 text-sm text-slate-400">Configure BYOK (Bring Your Own Key) access for your tenant. Secrets are write-only and instantly vaulted.</p>
+           <h2 className="text-xl font-semibold text-slate-100">{t("providers.title") ?? "AI Provider Catalog"}</h2>
+           <p className="mt-1 text-sm text-slate-400">{t("writeOnly.description") ?? "Configure BYOK (Bring Your Own Key) access for your tenant. Secrets are write-only and instantly vaulted."}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {providers.map((provider) => {
@@ -284,7 +284,7 @@ export function TenantIntegrationsView() {
         </div>
         {providers.length === 0 && (
            <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-12 text-center">
-              <p className="text-sm text-slate-400">No active AI providers found in the catalog.</p>
+              <p className="text-sm text-slate-400">{t("providers.noCapabilities") ?? "No active AI providers found in the catalog."}</p>
            </div>
         )}
       </section>

@@ -23,7 +23,7 @@ export const shared = {
   "shared.nav.phase066Evidence": "Phase 066 Evidence",
   "shared.nav.phase067Leads": "Phase 067 Leads",
   "shared.nav.phase068Portal": "Phase 068 Portal",
-  "shared.nav.tenantIntegrations": "Tenant Integrations",
+  "shared.nav.tenantIntegrations": "API Integrations",
   "shared.nav.departmentGovernance": "Department Governance",
   "shared.nav.marketing": "Marketing",
   "shared.nav.operations": "Operations",

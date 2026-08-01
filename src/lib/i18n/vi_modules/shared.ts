@@ -23,7 +23,7 @@ export const shared = {
   "shared.nav.phase066Evidence": "Evidence Phase 066",
   "shared.nav.phase067Leads": "Leads Phase 067",
   "shared.nav.phase068Portal": "Portal Phase 068",
-  "shared.nav.tenantIntegrations": "Tenant Integrations",
+  "shared.nav.tenantIntegrations": "Cấu hình API",
   "shared.nav.departmentGovernance": "Quản trị phòng ban",
   "shared.nav.marketing": "Marketing",
   "shared.nav.operations": "Operations",
