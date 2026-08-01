@@ -1,6 +1,7 @@
 "use server";
 
 import { insertAuditLog, insertChatMessage, loadChatMessages, loadThreadAuditLogs, deleteChatMessage, deleteAuditLog } from "@/lib/phase1-loader";
+import { postN8nWebhook } from "@/lib/n8n-client";
 import type { ChatIntentType } from "@/types/state";
 
 import { verifyActionAuth } from "@/lib/action-auth-guard";
@@ -85,10 +86,25 @@ export async function sendChatMessage(threadId: string, body: string, intentType
       details: `requestId=${requestId}`
     });
 
+    // 7.5. Fire async n8n webhook (Side-effect)
+    let webhookResult = { ok: true, route: "direct-llm", status: 200, message: "n8n bypass for MVP" };
+    try {
+      webhookResult = await postN8nWebhook("webhook/chat", {
+        threadId,
+        humanMessageId,
+        body,
+        tenantId: auth.tenantId,
+        actorId: auth.actorId
+      });
+    } catch (e) {
+      console.error("n8n webhook side-effect failed", e);
+      webhookResult = { ok: false, route: "webhook/chat", status: 500, message: String(e) };
+    }
+
     return {
       success: true,
       message: agentMsgResult.data,
-      webhook: { ok: true, route: "direct-llm", status: 200 }
+      webhook: webhookResult
     };
 
   } catch (error) {
