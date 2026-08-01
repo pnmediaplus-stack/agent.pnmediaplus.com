@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION public.phase1_audit_logs_insert()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pn_os_ai_department, pg_temp
+SET search_path = public, pn_os_ai_department, extensions, pg_temp
 AS $$
 DECLARE
   v_entity_type pn_os_ai_department.entity_type_enum;
@@ -40,7 +40,7 @@ BEGIN
         coalesce(new.details, ''),
         v_created_at::text
       ),
-      'sha256'
+      'sha256'::text
     ),
     'hex'
   );

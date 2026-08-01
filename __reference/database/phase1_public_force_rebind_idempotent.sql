@@ -303,7 +303,7 @@ begin
         coalesce(new.details, ''),
         v_created_at::text
       ),
-      'sha256'
+      'sha256'::text
     ),
     'hex'
   );
