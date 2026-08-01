@@ -1,6 +1,6 @@
 export type AuditLog = {
   id: string;
-  entityType: "task" | "artifact" | "approval" | "workflow" | "chat" | "gate";
+  entityType: "task" | "artifact" | "approval" | "workflow" | "chat" | "chat_thread" | "gate";
   entityId: string;
   action: string;
   actor: string;
