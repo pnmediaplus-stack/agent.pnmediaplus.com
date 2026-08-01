@@ -13,12 +13,6 @@ const CreateWorkflowRunSchema = z.object({
 }).passthrough();
 
 export async function POST(req: Request) {
-  const clonedReq = req.clone();
-  console.log('--- Incoming n8n Request ---');
-  console.log('URL:', clonedReq.url);
-  console.log('Headers:', Object.fromEntries(clonedReq.headers.entries()));
-  console.log('Body:', await clonedReq.text());
-  
   const guard = await verifyN8nWebhook(req, 'create_workflow_run', CreateWorkflowRunSchema);
   if (!guard.ok) return guard.response;
   if (guard.duplicate) return guard.response;
