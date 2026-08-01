@@ -221,7 +221,41 @@ export async function insertChatMessage(payload: Omit<ChatMessage, "id" | "creat
 }
 
 export async function insertAuditLog(payload: Omit<AuditLog, "id" | "createdAt">) {
-  return insertRow<AuditLog>("phase1_audit_logs", payload);
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || process.env.SUPABASE_URL?.trim();
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+
+  if (!url || !serviceKey) {
+    console.error("AuditLog Insert Failed: Missing SUPABASE_SERVICE_ROLE_KEY");
+    return { data: null, error: "SUPABASE_SERVICE_ROLE_KEY_MISSING" };
+  }
+
+  try {
+    const endpoint = new URL(`${url.replace(/\/$/, "")}/rest/v1/phase1_audit_logs`);
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        "Content-Profile": SCHEMA,
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      console.error(`AuditLog Insert Failed (${response.status}):`, body || response.statusText);
+      return { data: null, error: `Supabase audit_logs insert failed (${response.status}): ${body || response.statusText}` };
+    }
+
+    const json = await response.json();
+    return { data: Array.isArray(json) ? json[0] : json };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("AuditLog Insert Failed (Exception):", msg);
+    return { data: null, error: `Supabase audit_logs insert failed: ${msg}` };
+  }
 }
 
 export async function deleteChatMessage(id: string) {
