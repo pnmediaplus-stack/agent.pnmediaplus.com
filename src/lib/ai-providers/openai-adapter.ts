@@ -11,7 +11,7 @@ const OPENAI_PRICING: Record<string, { prompt: number; completion: number }> = {
 
 export const openaiAdapter: AiProviderAdapter = {
   id: 'openai',
-  billingUnit: 'tokens',
+  billingUnits: ['tokens', 'images'],
   
   getEndpointUrl: (payload: any, options: { endpointUrl?: string }) => {
     if (options.endpointUrl) return options.endpointUrl;

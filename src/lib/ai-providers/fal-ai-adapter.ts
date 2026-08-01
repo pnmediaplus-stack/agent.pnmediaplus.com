@@ -44,7 +44,7 @@ export const falAiAdapter: AiProviderAdapter = {
        const durationSeconds = responseJson.metrics.inference_time; 
        estimatedCost = durationSeconds * pricing.per_unit;
        unit = 'seconds';
-       totalTokens = Math.ceil(durationSeconds);
+       totalTokens = 0; // Cost is the only metric tracked for seconds
     } else {
        // Flat rate
        estimatedCost = pricing.per_unit;
