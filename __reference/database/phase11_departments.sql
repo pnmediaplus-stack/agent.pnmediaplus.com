@@ -31,7 +31,8 @@ USING (true);
 -- Service roles bypass RLS by default.
 
 -- Grant API access to the tables so PostgREST can read/write them
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.phase1_departments TO anon, authenticated, service_role;
+GRANT SELECT ON public.phase1_departments TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.phase1_departments TO service_role;
 
 -- 3. Seed Data
 -- Insert foundational AI departments for the PN OS AI ecosystem
