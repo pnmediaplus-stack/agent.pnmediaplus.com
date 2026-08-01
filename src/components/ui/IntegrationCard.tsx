@@ -47,7 +47,7 @@ export function IntegrationCard({
         </div>
         <StateBadge 
           label={isConfigured ? (integration.status === "ACTIVE" ? "ready" : "blocked") : "blocked"} 
-          displayLabel={isConfigured ? integration.status : (t("integrations.credentialMissing") ?? "NOT CONFIGURED")} 
+          displayLabel={isConfigured ? integration.status : (t("phase070.integrations.credentialMissing") ?? "NOT CONFIGURED")} 
         />
       </div>
 
@@ -58,9 +58,9 @@ export function IntegrationCard({
               <div className="rounded-xl border border-emerald-900/30 bg-emerald-900/10 p-4 flex items-start space-x-3">
                  <CheckCircle className="h-5 w-5 text-emerald-400 mt-0.5" />
                  <div>
-                    <h4 className="text-sm font-medium text-emerald-200">{t("integrations.credentialConfigured") ?? "Integration Active"}</h4>
+                    <h4 className="text-sm font-medium text-emerald-200">{t("phase070.integrations.credentialConfigured") ?? "Integration Active"}</h4>
                     <p className="text-xs text-emerald-400/70 mt-1">
-                      {t("integrations.description") ?? "Key is securely stored in write-only vault."}
+                      {t("phase070.integrations.description") ?? "Key is securely stored in write-only vault."}
                     </p>
                     <p className="text-xs font-mono text-slate-500 mt-2">
                        {integration.integration_key}
@@ -74,7 +74,7 @@ export function IntegrationCard({
                    className="flex items-center space-x-2 text-sm text-slate-300 hover:text-cyan-400 transition-colors"
                  >
                    <RefreshCw className="h-4 w-4" />
-                   <span>{t("actions.rotate") ?? "Rotate Key"}</span>
+                   <span>{t("phase070.actions.rotate") ?? "Rotate Key"}</span>
                  </button>
                  
                  <form onSubmit={onSubmitTest} className="contents">
@@ -85,7 +85,7 @@ export function IntegrationCard({
                       className="flex items-center space-x-2 text-sm text-slate-300 hover:text-emerald-400 transition-colors ml-auto"
                     >
                       <Play className="h-4 w-4" />
-                      <span>{t("actions.broker") ?? "Test Connection"}</span>
+                      <span>{t("phase070.actions.broker") ?? "Test Connection"}</span>
                     </button>
                  </form>
 
@@ -108,7 +108,7 @@ export function IntegrationCard({
               {!isConfigured && (
                  <>
                    <div className="space-y-1.5">
-                     <label className="text-xs font-medium text-slate-400">{t("writeOnly.key") ?? "Integration Key (Unique ID)"}</label>
+                     <label className="text-xs font-medium text-slate-400">{t("phase070.writeOnly.key") ?? "Integration Key (Unique ID)"}</label>
                      <input 
                        required
                        name="integration_key"
@@ -117,7 +117,7 @@ export function IntegrationCard({
                      />
                    </div>
                    <div className="space-y-1.5">
-                     <label className="text-xs font-medium text-slate-400">{t("writeOnly.name") ?? "Display Name"}</label>
+                     <label className="text-xs font-medium text-slate-400">{t("phase070.writeOnly.name") ?? "Display Name"}</label>
                      <input 
                        required
                        name="integration_name"
@@ -134,7 +134,7 @@ export function IntegrationCard({
               
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-400 flex justify-between">
-                  <span>{t("writeOnly.secret") ?? "Secret Material (API Key)"}</span>
+                  <span>{t("phase070.writeOnly.secret") ?? "Secret Material (API Key)"}</span>
                   <span className="text-rose-400/80 text-[10px] uppercase tracking-widest">Write-Only</span>
                 </label>
                 <div className="relative">
@@ -165,7 +165,7 @@ export function IntegrationCard({
                    className="ml-auto flex items-center space-x-2 rounded-lg bg-cyan-600/20 px-4 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-600/30 hover:text-cyan-300 disabled:opacity-50"
                  >
                    <PlusCircle className="h-4 w-4" />
-                   <span>{isConfigured ? (t("writeOnly.submit") ?? 'Save New Key') : (t("writeOnly.submit") ?? 'Configure Provider')}</span>
+                   <span>{isConfigured ? (t("phase070.writeOnly.submit") ?? 'Save New Key') : (t("phase070.writeOnly.submit") ?? 'Configure Provider')}</span>
                  </button>
               </div>
            </form>
