@@ -7,8 +7,8 @@ CREATE OR REPLACE VIEW public.phase1_departments_ssot AS
 SELECT 
   id,
   canonical_name AS name,
-  COALESCE(owner_external_ref, owner_actor_type::text) AS owner,
-  description AS purpose,
+  owner_label AS owner,
+  purpose,
   state::text AS state,
   0 AS "activeAgents", 
   0 AS "openTasks"
