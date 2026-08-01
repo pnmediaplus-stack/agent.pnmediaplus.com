@@ -8,6 +8,7 @@ export interface UsageInfo {
 
 export interface AiProviderAdapter {
   id: string;
+  billingUnit: 'tokens' | 'seconds' | 'images' | 'requests';
   getEndpointUrl: (payload: any, options: { endpointUrl?: string }) => string;
   injectAuth: (headers: Record<string, string>, tenantKey?: string) => void;
   parseUsage: (responseJson: any, payload: any) => UsageInfo;
