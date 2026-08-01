@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       idempotency_key: payload.idempotency_key,
       created_by_actor_type: payload.created_by_actor_type,
       created_by_external_ref: payload.created_by_external_ref || 'unknown',
-      state: 'IN_PROGRESS',
+      state: 'PARTIAL',
       run_status: 'QUEUED',
       n8n_execution_id: req.headers.get('x-request-id') // map request id to n8n execution
     };
