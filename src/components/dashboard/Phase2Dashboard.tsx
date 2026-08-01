@@ -244,13 +244,13 @@ function PipelineBoard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0 flex-1 overflow-hidden">
-        <div className="col-span-1 lg:col-span-1 min-h-0 overflow-y-auto">
-          <PipelineFunnelChart data={aggregatePipelineStates(data.contentItems)} />
-        </div>
-        <div className="col-span-1 lg:col-span-3 min-h-0 overflow-x-auto pb-2">
-          <div className="flex h-full w-max min-w-max items-stretch gap-4 snap-x snap-mandatory">
-            {data.contentItems.map((item) => {
+      <div className="shrink-0 mb-4">
+        <PipelineFunnelChart data={aggregatePipelineStates(data.contentItems)} />
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden pb-2">
+        <div className="flex h-full w-max min-w-max items-stretch gap-4 snap-x snap-mandatory">
+          {data.contentItems.map((item) => {
             const review = getPhase2LatestReview(item.id, data.qaReviews);
             const publish = getPhase2PublishEligibility(item.id, data.qaReviews, data.assets);
             const nextState = getPhase2NextState(item.currentState);
@@ -277,7 +277,6 @@ function PipelineBoard() {
               </div>
             );
           })}
-          </div>
         </div>
       </div>
     </div>

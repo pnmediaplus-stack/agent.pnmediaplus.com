@@ -39,24 +39,24 @@ export default function PipelineFunnelChart({ data }: PipelineFunnelChartProps) 
   }, [data, t]);
 
   return (
-    <div className="h-[300px] w-full rounded-2xl border border-slate-800 bg-slate-950/80 p-4 pt-6">
+    <div className="h-[200px] w-full rounded-2xl border border-slate-800/60 bg-slate-900/40 p-4 pt-6">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} layout="vertical">
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#1e293b" />
+        <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
           <XAxis 
+            type="category"
+            dataKey="displayName"
+            axisLine={false} 
+            tickLine={false} 
+            tick={{ fontSize: 10, fill: '#94a3b8' }} 
+            dy={10}
+          />
+          <YAxis 
             type="number"
             axisLine={false} 
             tickLine={false} 
             tick={{ fontSize: 11, fill: '#64748b' }} 
             allowDecimals={false}
-          />
-          <YAxis 
-            type="category"
-            dataKey="displayName"
-            axisLine={false} 
-            tickLine={false} 
-            tick={{ fontSize: 11, fill: '#cbd5e1' }} 
-            width={120}
           />
           <Tooltip
             cursor={{ fill: 'rgba(15, 23, 42, 0.5)' }}
@@ -70,7 +70,7 @@ export default function PipelineFunnelChart({ data }: PipelineFunnelChartProps) 
             }}
             itemStyle={{ fontSize: '0.75rem' }}
           />
-          <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={40}>
+          <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={40}>
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
