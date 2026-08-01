@@ -48,7 +48,7 @@ JOIN pn_os_ai_department.artifact_versions av ON qr.artifact_version_id = av.id;
 CREATE VIEW public.phase1_approvals AS
 SELECT 
   id,
-  entity_type::text AS "targetType",
+  lower(entity_type::text) AS "targetType",
   entity_id AS "targetId",
   approval_status::text AS status,
   COALESCE(requested_by_external_ref, requested_by_actor_type::text) AS "requestedBy",
