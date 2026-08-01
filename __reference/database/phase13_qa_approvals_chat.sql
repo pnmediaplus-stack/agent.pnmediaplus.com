@@ -133,9 +133,15 @@ SELECT '66666666-6666-6666-6666-666666666666', '55555555-5555-5555-5555-55555555
 WHERE NOT EXISTS (SELECT 1 FROM public.phase1_chat_messages WHERE id = '66666666-6666-6666-6666-666666666666');
 
 INSERT INTO public.phase1_chat_messages (id, "threadId", sender, body, "intentType", "targetDepartmentId", "targetAgentId", "createdAt")
-SELECT '77777777-7777-7777-7777-777777777777', '55555555-5555-5555-5555-555555555555', 'system', 'Đã tiếp nhận yêu cầu. Khởi chạy Workflow: "Campaign Planning". Giao việc cho phòng Marketing.', 'request_status', NULL, NULL, now() - interval '2 hours 59 minutes'
+SELECT '77777777-7777-7777-7777-777777777777', '55555555-5555-5555-5555-555555555555', 'system', 'Đã tiếp nhận yêu cầu. Khởi chạy Workflow: "Campaign Planning". Giao việc cho phòng Marketing.', 'request_status', 
+  (SELECT id FROM pn_os_ai_department.departments WHERE department_key = 'pn_media_plus' LIMIT 1), 
+  NULL, 
+  now() - interval '2 hours 59 minutes'
 WHERE NOT EXISTS (SELECT 1 FROM public.phase1_chat_messages WHERE id = '77777777-7777-7777-7777-777777777777');
 
 INSERT INTO public.phase1_chat_messages (id, "threadId", sender, body, "intentType", "targetDepartmentId", "targetAgentId", "createdAt")
-SELECT '88888888-8888-8888-8888-888888888888', '55555555-5555-5555-5555-555555555555', 'agent', 'Tôi đã phân tích xong tệp khách hàng B2B. Đang lên sườn bài cho Day 1.', 'create_content', NULL, NULL, now() - interval '1 hour'
+SELECT '88888888-8888-8888-8888-888888888888', '55555555-5555-5555-5555-555555555555', 'agent', 'Tôi đã phân tích xong tệp khách hàng B2B. Đang lên sườn bài cho Day 1.', 'create_content', 
+  (SELECT id FROM pn_os_ai_department.departments WHERE department_key = 'pn_media_plus' LIMIT 1), 
+  (SELECT id FROM pn_os_ai_department.agents WHERE agent_key = 'pn_media_plus_seed_registry_observer' LIMIT 1), 
+  now() - interval '1 hour'
 WHERE NOT EXISTS (SELECT 1 FROM public.phase1_chat_messages WHERE id = '88888888-8888-8888-8888-888888888888');
