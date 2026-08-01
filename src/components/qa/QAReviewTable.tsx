@@ -3,12 +3,16 @@
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { QAReview } from "@/types/qa";
 import { StateBadge } from "@/components/shared/StateBadge";
+import { ShieldCheck, AlertTriangle } from "lucide-react";
 
 export function QAReviewTable({ reviews }: { reviews: QAReview[] }) {
   const { t } = useI18n("qa");
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70">
-      <div className="border-b border-slate-800 px-5 py-4 text-sm font-semibold text-white">{t("qa.table.title") ?? "QA reviews"}</div>
+    <div className="overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-xl shadow-xl shadow-black/20">
+      <div className="border-b border-slate-800/60 px-5 py-4 flex items-center gap-2">
+        <ShieldCheck className="h-5 w-5 text-indigo-400" />
+        <span className="text-sm font-semibold text-white">{t("qa.table.title") ?? "QA reviews"}</span>
+      </div>
       <table className="min-w-full divide-y divide-slate-800 text-left text-sm">
         <thead className="bg-slate-900/70 text-xs uppercase tracking-[0.22em] text-slate-400">
           <tr>
@@ -18,15 +22,29 @@ export function QAReviewTable({ reviews }: { reviews: QAReview[] }) {
             <th className="px-5 py-3">{t("qa.table.notes") ?? "Notes"}</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-800">
+        <tbody className="divide-y divide-slate-800/60">
           {reviews.map((review) => (
-            <tr key={review.id} className="text-slate-300">
-              <td className="px-5 py-4">{review.artifactId}</td>
-              <td className="px-5 py-4">{review.reviewer}</td>
+            <tr key={review.id} className="text-slate-300 transition-colors hover:bg-slate-900/40 group">
+              <td className="px-5 py-4">
+                <div className="font-medium text-white group-hover:text-indigo-300 transition-colors">{review.artifactId}</div>
+                <div className="font-mono text-[10px] text-slate-500 truncate max-w-[150px]" title={review.id}>{review.id}</div>
+              </td>
+              <td className="px-5 py-4">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-slate-200">{review.reviewer}</span>
+                </div>
+              </td>
               <td className="px-5 py-4">
                 <StateBadge label={review.status} />
               </td>
-              <td className="px-5 py-4">{review.notes}</td>
+              <td className="px-5 py-4">
+                <div className="flex items-start gap-2">
+                  {review.status === "BLOCKED" || review.status === "HOLD" ? (
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                  ) : null}
+                  <span className="text-sm leading-relaxed text-slate-400 group-hover:text-slate-300 transition-colors">{review.notes}</span>
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>
