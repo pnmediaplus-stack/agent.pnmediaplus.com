@@ -125,21 +125,17 @@ ON CONFLICT (id) DO UPDATE SET
   "decidedBy" = EXCLUDED."decidedBy";
 
 INSERT INTO public.phase1_chat_threads (id, title, purpose, status, "lastActivityAt")
-VALUES 
-  ('55555555-5555-5555-5555-555555555555', 'Command Center', 'Main orchestration thread', 'ACTIVE', now())
-ON CONFLICT (id) DO UPDATE SET
-  title = EXCLUDED.title,
-  purpose = EXCLUDED.purpose,
-  status = EXCLUDED.status;
+SELECT '55555555-5555-5555-5555-555555555555', 'Command Center', 'Main orchestration thread', 'ACTIVE', now()
+WHERE NOT EXISTS (SELECT 1 FROM public.phase1_chat_threads WHERE id = '55555555-5555-5555-5555-555555555555');
 
 INSERT INTO public.phase1_chat_messages (id, "threadId", sender, body, "intentType", "targetDepartmentId", "targetAgentId", "createdAt")
-VALUES 
-  ('66666666-6666-6666-6666-666666666666', '55555555-5555-5555-5555-555555555555', 'human', 'Khởi tạo chiến dịch marketing 10 ngày cho CRM.', 'create_content', NULL, NULL, now() - interval '3 hours'),
-  ('77777777-7777-7777-7777-777777777777', '55555555-5555-5555-5555-555555555555', 'system', 'Đã tiếp nhận yêu cầu. Khởi chạy Workflow: "Campaign Planning". Giao việc cho phòng Marketing.', 'request_status', '22222222-2222-2222-2222-222222222222', NULL, now() - interval '2 hours 59 minutes'),
-  ('88888888-8888-8888-8888-888888888888', '55555555-5555-5555-5555-555555555555', 'agent', 'Tôi đã phân tích xong tệp khách hàng B2B. Đang lên sườn bài cho Day 1.', 'create_content', '22222222-2222-2222-2222-222222222222', 'a2222222-2222-2222-2222-222222222222', now() - interval '1 hour')
-ON CONFLICT (id) DO UPDATE SET
-  sender = EXCLUDED.sender,
-  body = EXCLUDED.body,
-  "intentType" = EXCLUDED."intentType",
-  "targetDepartmentId" = EXCLUDED."targetDepartmentId",
-  "targetAgentId" = EXCLUDED."targetAgentId";
+SELECT '66666666-6666-6666-6666-666666666666', '55555555-5555-5555-5555-555555555555', 'human', 'Khởi tạo chiến dịch marketing 10 ngày cho CRM.', 'create_content', NULL, NULL, now() - interval '3 hours'
+WHERE NOT EXISTS (SELECT 1 FROM public.phase1_chat_messages WHERE id = '66666666-6666-6666-6666-666666666666');
+
+INSERT INTO public.phase1_chat_messages (id, "threadId", sender, body, "intentType", "targetDepartmentId", "targetAgentId", "createdAt")
+SELECT '77777777-7777-7777-7777-777777777777', '55555555-5555-5555-5555-555555555555', 'system', 'Đã tiếp nhận yêu cầu. Khởi chạy Workflow: "Campaign Planning". Giao việc cho phòng Marketing.', 'request_status', '22222222-2222-2222-2222-222222222222', NULL, now() - interval '2 hours 59 minutes'
+WHERE NOT EXISTS (SELECT 1 FROM public.phase1_chat_messages WHERE id = '77777777-7777-7777-7777-777777777777');
+
+INSERT INTO public.phase1_chat_messages (id, "threadId", sender, body, "intentType", "targetDepartmentId", "targetAgentId", "createdAt")
+SELECT '88888888-8888-8888-8888-888888888888', '55555555-5555-5555-5555-555555555555', 'agent', 'Tôi đã phân tích xong tệp khách hàng B2B. Đang lên sườn bài cho Day 1.', 'create_content', '22222222-2222-2222-2222-222222222222', 'a2222222-2222-2222-2222-222222222222', now() - interval '1 hour'
+WHERE NOT EXISTS (SELECT 1 FROM public.phase1_chat_messages WHERE id = '88888888-8888-8888-8888-888888888888');
