@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { useI18n } from "@/lib/i18n/useI18n";
@@ -22,6 +22,11 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   const [isSending, setIsSending] = useState(false);
   const { t: tChat } = useI18n("chat");
   const { t: tShared } = useI18n("shared");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isSending]);
 
   useEffect(() => {
     let mounted = true;
@@ -102,7 +107,10 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{tShared("shared.thread.summary") ?? "Thread summary"}</div>
           <div className="mt-2 text-sm text-slate-200 line-clamp-3">{summary}</div>
         </div>
-        <ChatMessageList messages={messages} isTyping={isSending} />
+        <div className="max-h-[60vh] overflow-y-auto rounded-2xl p-2 scroll-smooth">
+          <ChatMessageList messages={messages} isTyping={isSending} />
+          <div ref={messagesEndRef} />
+        </div>
       </div>
       <div className="space-y-4">
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
