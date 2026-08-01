@@ -464,6 +464,40 @@ export function getPhase2RequiredAssets(contentItemId: string, phase2Assets: Pha
   };
 }
 
+export function aggregatePipelineStates(items: Phase2ContentItem[]) {
+  const counts = Object.fromEntries(PHASE2_PIPELINE_STATES.map((state) => [state, 0])) as Record<Phase2PipelineState, number>;
+  for (const item of items) {
+    if (counts[item.currentState] !== undefined) {
+      counts[item.currentState]++;
+    }
+  }
+  return PHASE2_PIPELINE_STATES.map((state) => ({
+    name: state,
+    value: counts[state]
+  }));
+}
+
+export function aggregatePerformanceData(records: Phase2PerformanceRecord[]) {
+  // Sort records by capturedAt ascending to ensure chronological order
+  const sorted = [...records].sort((a, b) => new Date(a.capturedAt).getTime() - new Date(b.capturedAt).getTime());
+  
+  // Group by Date (YYYY-MM-DD)
+  const grouped: Record<string, any> = {};
+  for (const record of sorted) {
+    const dateStr = record.capturedAt.split("T")[0];
+    if (!grouped[dateStr]) {
+      grouped[dateStr] = { date: dateStr, impressions: 0, views: 0, likes: 0, reach: 0 };
+    }
+    grouped[dateStr].impressions += Number(record.impressions || 0);
+    grouped[dateStr].views += Number(record.views || 0);
+    grouped[dateStr].likes += Number(record.likes || 0);
+    grouped[dateStr].reach += Number(record.reach || 0);
+  }
+
+  // Convert to array
+  return Object.values(grouped);
+}
+
 export function getPhase2LatestReview(contentItemId: string, phase2QaReviews: Phase2QaReview[]) {
   return [...phase2QaReviews]
     .filter((review) => review.contentItemId === contentItemId)

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { PageFrame } from "@/components/shared/PageFrame";
 import { StateBadge } from "@/components/shared/StateBadge";
 import { useI18n } from "@/lib/i18n/useI18n";
@@ -11,8 +12,20 @@ import {
   getPhase2PublishEligibility,
   getPhase2RequiredAssets,
   getPhase2LatestReview,
-  getPhase2NextState
+  getPhase2NextState,
+  aggregatePerformanceData,
+  aggregatePipelineStates
 } from "@/lib/phase2-dashboard-contract";
+
+const PerformanceChart = dynamic(() => import("./charts/PerformanceChart"), {
+  loading: () => <div className="h-[300px] w-full animate-pulse rounded-2xl bg-slate-800/50" />,
+  ssr: false
+});
+
+const PipelineFunnelChart = dynamic(() => import("./charts/PipelineFunnelChart"), {
+  loading: () => <div className="h-[300px] w-full animate-pulse rounded-2xl bg-slate-800/50" />,
+  ssr: false
+});
 
 const DashboardDataContext = createContext<Phase2DashboardData | null>(null);
 
@@ -231,9 +244,13 @@ function PipelineBoard() {
         ))}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden pb-2">
-        <div className="flex h-full w-max min-w-max items-stretch gap-4 snap-x snap-mandatory">
-          {data.contentItems.map((item) => {
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0 flex-1 overflow-hidden">
+        <div className="col-span-1 lg:col-span-1 min-h-0 overflow-y-auto">
+          <PipelineFunnelChart data={aggregatePipelineStates(data.contentItems)} />
+        </div>
+        <div className="col-span-1 lg:col-span-3 min-h-0 overflow-x-auto pb-2">
+          <div className="flex h-full w-max min-w-max items-stretch gap-4 snap-x snap-mandatory">
+            {data.contentItems.map((item) => {
             const review = getPhase2LatestReview(item.id, data.qaReviews);
             const publish = getPhase2PublishEligibility(item.id, data.qaReviews, data.assets);
             const nextState = getPhase2NextState(item.currentState);
@@ -260,6 +277,7 @@ function PipelineBoard() {
               </div>
             );
           })}
+          </div>
         </div>
       </div>
     </div>
@@ -500,6 +518,9 @@ function PerformanceView() {
           {t("dashboard.sections.performanceDescription") ??
             "Post-publish snapshots only. Missing metrics render as pending / incomplete."}
         </div>
+      </div>
+      <div className="mb-6 mt-4 min-h-0">
+        <PerformanceChart data={aggregatePerformanceData(data.performanceRecords)} />
       </div>
       <div className="min-h-0 flex-1">
         <LedgerShell
