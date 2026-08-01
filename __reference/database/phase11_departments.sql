@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.phase1_departments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   owner text NOT NULL,
-  purpose text,
+  purpose text NOT NULL,
   state text NOT NULL DEFAULT 'REVIEW',
   "activeAgents" integer NOT NULL DEFAULT 0,
   "openTasks" integer NOT NULL DEFAULT 0,
@@ -29,6 +29,9 @@ USING (true);
 
 -- Allow service role to do everything (implicit, but good to be clear)
 -- Service roles bypass RLS by default.
+
+-- Grant API access to the tables so PostgREST can read/write them
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.phase1_departments TO anon, authenticated, service_role;
 
 -- 3. Seed Data
 -- Insert foundational AI departments for the PN OS AI ecosystem
