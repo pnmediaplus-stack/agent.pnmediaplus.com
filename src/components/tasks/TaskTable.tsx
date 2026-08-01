@@ -340,12 +340,12 @@ export function TaskTable({ tasks, departments }: { tasks: Task[], departments: 
                 <tr key={task.id} className="text-slate-300 transition-colors hover:bg-slate-900/40 group">
                   <td className="px-5 py-4">
                     <div className="font-medium text-white group-hover:text-cyan-400 transition-colors">{task.title}</div>
-                    <div className="font-mono text-[10px] text-slate-500">{task.id}</div>
+                    <div className="font-mono text-xs text-slate-500/70 truncate max-w-[200px]" title={task.id}>{task.id}</div>
                   </td>
                   <td className="px-5 py-4">{task.owner}</td>
                   <td className="px-5 py-4">
                     <div className="font-medium text-white">{department.name}</div>
-                    <div className="font-mono text-[10px] text-slate-500">{department.id}</div>
+                    <div className="font-mono text-xs text-slate-500/70 truncate max-w-[180px]" title={department.id}>{department.id}</div>
                   </td>
                   <td className="px-5 py-4">{getTaskIntentLabel(task.intentType, t)}</td>
                   <td className="px-5 py-4">
