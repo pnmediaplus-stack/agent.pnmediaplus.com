@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { useI18n } from "@/lib/i18n/useI18n";
 
