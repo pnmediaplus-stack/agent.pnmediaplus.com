@@ -282,6 +282,7 @@ declare
   v_actor_external_ref text := 'Human Founder';
   v_created_at timestamptz;
   v_id uuid;
+  v_event_hash text;
   v_before_state pn_os_ai_department.lifecycle_state := 'NOT_STARTED';
   v_after_state pn_os_ai_department.lifecycle_state := 'PARTIAL';
 begin
@@ -289,6 +290,23 @@ begin
   v_entity_id := public.safe_uuid(coalesce(new."entityId", null));
   v_created_at := coalesce(new."createdAt", now());
   v_id := coalesce(new.id, gen_random_uuid());
+
+  v_event_hash := encode(
+    digest(
+      concat_ws(
+        '|',
+        v_actor_type::text,
+        v_actor_external_ref,
+        coalesce(new.action, ''),
+        v_entity_type::text,
+        v_entity_id::text,
+        coalesce(new.details, ''),
+        v_created_at::text
+      ),
+      'sha256'
+    ),
+    'hex'
+  );
 
   insert into pn_os_ai_department.audit_logs (
     id,
@@ -300,6 +318,9 @@ begin
     before_state,
     after_state,
     reason,
+    evidence_ref,
+    request_id,
+    event_hash,
     created_at
   ) values (
     v_id,
@@ -311,6 +332,9 @@ begin
     v_before_state,
     v_after_state,
     coalesce(new.details, ''),
+    null,
+    gen_random_uuid(),
+    v_event_hash,
     v_created_at
   );
 
