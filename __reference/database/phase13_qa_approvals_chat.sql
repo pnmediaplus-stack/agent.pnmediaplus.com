@@ -78,35 +78,17 @@ SELECT
   "decidedBy"
 FROM public.phase1_approvals_data;
 
-CREATE TABLE IF NOT EXISTS public.phase1_chat_threads (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  title text NOT NULL,
-  purpose text NOT NULL,
-  "lastActivityAt" timestamptz NOT NULL DEFAULT now(),
-  status text NOT NULL CHECK (status IN ('ACTIVE', 'WAITING_ON_HUMAN', 'CLOSED'))
-);
-
-CREATE TABLE IF NOT EXISTS public.phase1_chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  "threadId" uuid NOT NULL REFERENCES public.phase1_chat_threads(id),
-  sender text NOT NULL CHECK (sender IN ('human', 'system', 'agent')),
-  body text NOT NULL,
-  "intentType" text CHECK ("intentType" IN ('create_content', 'review_artifact', 'check_governance', 'request_status', 'approve_or_reject', 'unknown')),
-  "targetDepartmentId" uuid REFERENCES public.phase1_departments(id),
-  "targetAgentId" uuid REFERENCES public.phase1_agents(id),
-  "createdAt" timestamptz NOT NULL DEFAULT now()
-);
+-- Chat threads and messages are already implemented as views over the SSOT schema 
+-- (pn_os_ai_department.chat_threads & pn_os_ai_department.chat_messages)
+-- The underlying SSOT tables ALREADY have strict FK constraints for target_department_id and target_agent_id.
+-- We only need to provide seed data here via the INSTEAD OF INSERT triggers.
 
 -- 3. Row Level Security (RLS)
 ALTER TABLE public.phase1_qa_reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.phase1_approvals_data ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.phase1_chat_threads ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.phase1_chat_messages ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow anon read for qa_reviews" ON public.phase1_qa_reviews FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Allow anon read for approvals_data" ON public.phase1_approvals_data FOR SELECT TO anon, authenticated USING (true);
-CREATE POLICY "Allow anon read for chat_threads" ON public.phase1_chat_threads FOR SELECT TO anon, authenticated USING (true);
-CREATE POLICY "Allow anon read for chat_messages" ON public.phase1_chat_messages FOR SELECT TO anon, authenticated USING (true);
 
 -- 4. API Grants (Least Privilege)
 GRANT SELECT ON public.phase1_qa_reviews TO anon, authenticated;
@@ -116,11 +98,7 @@ GRANT SELECT ON public.phase1_approvals TO anon, authenticated;
 GRANT SELECT ON public.phase1_approvals_data TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.phase1_approvals_data TO service_role;
 
-GRANT SELECT ON public.phase1_chat_threads TO anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.phase1_chat_threads TO service_role;
-
-GRANT SELECT ON public.phase1_chat_messages TO anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.phase1_chat_messages TO service_role;
+-- API Grants for Chat views are already handled by phase1_public_force_rebind_idempotent.sql
 
 -- 5. Seed Target Tables
 INSERT INTO public.phase1_qa_reviews (id, "artifactId", reviewer, status, notes, "reviewedAt")
