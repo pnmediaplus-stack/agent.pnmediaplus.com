@@ -100,7 +100,7 @@ export async function loadAgents() {
 }
 
 export async function loadTasks() {
-  return fetchTable<Task>("phase1_tasks");
+  return fetchTable<Task>("phase1_tasks", "*", "createdAt.desc");
 }
 
 export async function loadArtifacts() {
