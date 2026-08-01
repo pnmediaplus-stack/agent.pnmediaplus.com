@@ -86,25 +86,22 @@ export async function sendChatMessage(threadId: string, body: string, intentType
       details: `requestId=${requestId}`
     });
 
-    // 7.5. Fire async n8n webhook (Side-effect)
-    let webhookResult = { ok: true, route: "direct-llm", status: 200, message: "n8n bypass for MVP" };
-    try {
-      webhookResult = await postN8nWebhook("webhook/chat", {
-        threadId,
-        humanMessageId,
-        body,
-        tenantId: auth.tenantId,
-        actorId: auth.actorId
-      });
-    } catch (e) {
+    // 7.5. Fire async n8n webhook (True Fire-and-Forget Side-effect)
+    // We do NOT await this promise so it doesn't block the UI response.
+    postN8nWebhook("webhook/chat", {
+      threadId,
+      humanMessageId,
+      body,
+      tenantId: auth.tenantId,
+      actorId: auth.actorId
+    }).catch(e => {
       console.error("n8n webhook side-effect failed", e);
-      webhookResult = { ok: false, route: "webhook/chat", status: 500, message: String(e) };
-    }
+    });
 
     return {
       success: true,
       message: agentMsgResult.data,
-      webhook: webhookResult
+      webhook: { ok: true, route: "webhook/chat", status: 202, message: "n8n webhook fired asynchronously" }
     };
 
   } catch (error) {
