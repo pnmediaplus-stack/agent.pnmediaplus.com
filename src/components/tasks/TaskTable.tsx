@@ -319,7 +319,7 @@ export function TaskTable({ tasks, departments }: { tasks: Task[], departments: 
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-[1020px] divide-y divide-slate-800 text-left text-sm">
+        <table className="w-full min-w-[1020px] divide-y divide-slate-800 text-left text-sm">
           <thead className="bg-slate-900/70 text-xs uppercase tracking-[0.22em] text-slate-400">
             <tr>
               <th className="px-5 py-3">{t("tasks.table.task") ?? "Task"}</th>
