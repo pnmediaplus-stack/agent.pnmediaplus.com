@@ -1,7 +1,6 @@
 "use server";
 
 import { insertAuditLog, insertChatMessage, loadChatMessages, loadThreadAuditLogs, deleteChatMessage, deleteAuditLog } from "@/lib/phase1-loader";
-import { postN8nWebhook } from "@/lib/n8n-client";
 import type { ChatIntentType } from "@/types/state";
 
 import { verifyActionAuth } from "@/lib/action-auth-guard";
