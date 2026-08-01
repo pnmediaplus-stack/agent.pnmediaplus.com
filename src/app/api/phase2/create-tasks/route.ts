@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
 
 const TaskSchema = z.object({
-  department_id: z.string().uuid(),
+  department_id: z.string(),
   task_key: z.string(),
   title: z.string(),
   intent_type: z.string().default('unknown'),
@@ -11,12 +11,12 @@ const TaskSchema = z.object({
   requester_actor_type: z.enum(['HUMAN', 'AGENT', 'SYSTEM']),
   requester_external_ref: z.string().optional(),
   owner_label: z.string().default('AI Agent'),
-  owner_agent_id: z.string().uuid().optional(),
+  owner_agent_id: z.string().optional(),
 });
 
 const CreateTasksSchema = z.object({
   tenant_id: z.string(), // Added for billing/isolation context
-  workflow_run_id: z.string().uuid().optional(),
+  workflow_run_id: z.string().optional(),
   tasks: z.array(TaskSchema)
 }).passthrough();
 

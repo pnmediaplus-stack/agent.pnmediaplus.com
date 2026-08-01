@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
 
 const CreateWorkflowRunSchema = z.object({
-  department_id: z.string().uuid(),
+  department_id: z.string(),
   workflow_key: z.string(),
   workflow_name: z.string(),
   idempotency_key: z.string(),
@@ -13,6 +13,12 @@ const CreateWorkflowRunSchema = z.object({
 }).passthrough();
 
 export async function POST(req: Request) {
+  const clonedReq = req.clone();
+  console.log('--- Incoming n8n Request ---');
+  console.log('URL:', clonedReq.url);
+  console.log('Headers:', Object.fromEntries(clonedReq.headers.entries()));
+  console.log('Body:', await clonedReq.text());
+  
   const guard = await verifyN8nWebhook(req, 'create_workflow_run', CreateWorkflowRunSchema);
   if (!guard.ok) return guard.response;
   if (guard.duplicate) return guard.response;
