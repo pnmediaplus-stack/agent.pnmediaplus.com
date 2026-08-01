@@ -3,24 +3,27 @@
 import { useI18n } from "@/lib/i18n/useI18n";
 import { StateBadge } from "@/components/shared/StateBadge";
 import type { Department } from "@/types/department";
+import { UserCircle2, Users, ListTodo, Key } from "lucide-react";
 
 export function DepartmentCard({ department }: { department: Department }) {
   const { t } = useI18n("departments");
   const stateLabel = getDepartmentStateLabel(department.state, t);
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+    <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-xl shadow-2xl shadow-black/20 transition-all hover:bg-slate-900/60 hover:border-slate-700/50">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-lg font-semibold text-white">{department.name}</div>
-          <div className="mt-1 text-sm text-slate-400">{department.purpose}</div>
+          <div className="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">{department.name}</div>
+          <div className="mt-2 text-sm leading-relaxed text-slate-400">{department.purpose}</div>
         </div>
-        <StateBadge label={department.state} displayLabel={stateLabel} />
+        <div className="shrink-0">
+          <StateBadge label={department.state} displayLabel={stateLabel} />
+        </div>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-        <Stat label={t("departments.card.owner") ?? "Owner"} value={department.owner} />
-        <Stat label={t("departments.card.agents") ?? "Agents"} value={department.activeAgents} />
-        <Stat label={t("departments.card.openTasks") ?? "Open tasks"} value={department.openTasks} />
-        <Stat label={t("departments.card.id") ?? "Id"} value={department.id} />
+      <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
+        <Stat icon={<UserCircle2 className="h-4 w-4 text-cyan-500" />} label={t("departments.card.owner") ?? "Owner"} value={department.owner} />
+        <Stat icon={<Users className="h-4 w-4 text-indigo-400" />} label={t("departments.card.agents") ?? "Agents"} value={department.activeAgents} />
+        <Stat icon={<ListTodo className="h-4 w-4 text-emerald-400" />} label={t("departments.card.openTasks") ?? "Open tasks"} value={department.openTasks} />
+        <Stat icon={<Key className="h-4 w-4 text-rose-400" />} label={t("departments.card.id") ?? "Id"} value={department.id} />
       </div>
     </div>
   );
@@ -37,11 +40,14 @@ function getDepartmentStateLabel(state: Department["state"], t: ReturnType<typeo
   }
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+function Stat({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string | number }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-      <div className="text-xs uppercase tracking-[0.24em] text-slate-500">{label}</div>
-      <div className="mt-2 text-sm font-medium text-white">{value}</div>
+    <div className="flex flex-col rounded-xl border border-slate-800/60 bg-slate-950/50 p-3.5 transition-colors hover:bg-slate-950/80">
+      <div className="flex items-center gap-2">
+        {icon}
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</div>
+      </div>
+      <div className="mt-2.5 truncate text-sm font-medium text-white">{value}</div>
     </div>
   );
 }
