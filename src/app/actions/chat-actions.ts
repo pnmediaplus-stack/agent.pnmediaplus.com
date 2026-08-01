@@ -1,6 +1,6 @@
 "use server";
 
-import { insertAuditLog, insertChatMessage, loadChatMessages, loadThreadAuditLogs } from "@/lib/phase1-loader";
+import { insertAuditLog, insertChatMessage, loadChatMessages, loadThreadAuditLogs, deleteChatMessage, deleteAuditLog } from "@/lib/phase1-loader";
 import { postN8nWebhook } from "@/lib/n8n-client";
 import type { ChatIntentType } from "@/types/state";
 
@@ -24,18 +24,22 @@ export async function sendChatMessage(threadId: string, body: string, intentType
     intentType
   });
 
-  if (messageResult.error) {
+  if (messageResult.error || !messageResult.data) {
     throw new Error(`Failed to insert chat message: ${messageResult.error}`);
   }
 
+  const humanMessageId = messageResult.data.id;
+
   // 3. Insert audit log for Human
-  await insertAuditLog({
+  const auditResult = await insertAuditLog({
     entityId: threadId,
     entityType: "chat",
     action: "message_received",
-    actor: auth.email, // Use authenticated email instead of hardcoded 'Human'
+    actor: auth.email,
     details: `intent=${intentType ?? "unknown"}`
   });
+  
+  const auditLogId = auditResult.data?.id;
 
   try {
     // 4. Context Loading
@@ -65,7 +69,7 @@ export async function sendChatMessage(threadId: string, body: string, intentType
       threadId,
       sender: "agent",
       body: aiText,
-      intentType: "create_content" // simplified for MVP, could use inferChatIntent here
+      intentType: "create_content" // simplified for MVP
     });
 
     if (agentMsgResult.error) throw new Error(agentMsgResult.error);
@@ -86,7 +90,14 @@ export async function sendChatMessage(threadId: string, body: string, intentType
     };
 
   } catch (error) {
-    // 8. Rollback/Compensate: Log error and insert System failure message
+    // 8. TRUE Rollback/Compensate: Delete the human message and its audit log
+    if (humanMessageId) {
+      await deleteChatMessage(humanMessageId).catch(() => {});
+    }
+    if (auditLogId) {
+      await deleteAuditLog(auditLogId).catch(() => {});
+    }
+    
     const errMessage = error instanceof Error ? error.message : String(error);
     
     await insertAuditLog({
@@ -94,13 +105,13 @@ export async function sendChatMessage(threadId: string, body: string, intentType
       entityType: "chat",
       action: "llm_invocation_failed",
       actor: "System AI",
-      details: `requestId=${requestId} error=${errMessage}`
+      details: `requestId=${requestId} error=${errMessage} (Rollback Applied)`
     });
 
     await insertChatMessage({
       threadId,
       sender: "system",
-      body: `Hệ thống gặp lỗi trong quá trình kết nối AI Broker: ${errMessage}`,
+      body: `Hệ thống gặp lỗi trong quá trình kết nối AI Broker: ${errMessage}. Lệnh của bạn đã được hủy bỏ an toàn (Rollback).`,
       intentType: "request_status"
     });
 

@@ -91,6 +91,34 @@ async function insertRow<T>(table: string, payload: Partial<T>): Promise<{ data:
   }
 }
 
+async function deleteRow(table: string, id: string): Promise<{ success: boolean; error?: string }> {
+  const config = getSupabaseConfig();
+  if (!config) return { success: false, error: "SUPABASE_ENV_MISSING" };
+
+  try {
+    const endpoint = new URL(`${config.url.replace(/\/$/, "")}/rest/v1/${table}`);
+    endpoint.searchParams.set("id", `eq.${id}`);
+
+    const response = await fetch(endpoint, {
+      method: "DELETE",
+      headers: {
+        apikey: config.anonKey,
+        Authorization: `Bearer ${config.anonKey}`,
+        "Content-Profile": SCHEMA
+      }
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      return { success: false, error: `Supabase ${table} delete failed (${response.status}): ${body || response.statusText}` };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: `Supabase ${table} delete failed: ${error instanceof Error ? error.message : String(error)}` };
+  }
+}
+
 export async function loadDepartments() {
   return fetchTable<Department>("phase1_departments");
 }
@@ -192,4 +220,12 @@ export async function insertChatMessage(payload: Omit<ChatMessage, "id" | "creat
 
 export async function insertAuditLog(payload: Omit<AuditLog, "id" | "createdAt">) {
   return insertRow<AuditLog>("phase1_audit_logs", payload);
+}
+
+export async function deleteChatMessage(id: string) {
+  return deleteRow("phase1_chat_messages", id);
+}
+
+export async function deleteAuditLog(id: string) {
+  return deleteRow("phase1_audit_logs", id);
 }
