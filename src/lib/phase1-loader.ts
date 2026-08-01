@@ -122,15 +122,15 @@ async function deleteRow(table: string, id: string): Promise<{ success: boolean;
 }
 
 export async function loadDepartments() {
-  return fetchTable<Department>("phase1_departments");
+  return fetchTable<Department>("phase1_departments_ssot");
 }
 
 export async function loadAgents() {
-  return fetchTable<Agent>("phase1_agents");
+  return fetchTable<Agent>("phase1_agents_ssot");
 }
 
 export async function loadTasks() {
-  return fetchTable<Task>("phase1_tasks", "*", "createdAt.desc");
+  return fetchTable<Task>("phase1_tasks_ssot", "*", "createdAt.desc");
 }
 
 export async function loadArtifacts() {
@@ -146,7 +146,7 @@ export async function loadQaReviews() {
 }
 
 export async function loadGates() {
-  return fetchTable<Gate>("phase1_gates", "*", "id.asc");
+  return fetchTable<Gate>("phase1_gates_ssot", "*", "id.asc");
 }
 
 export async function loadApprovals() {
