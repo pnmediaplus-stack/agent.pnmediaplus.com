@@ -67,11 +67,11 @@ ON CONFLICT (id) DO UPDATE SET
 -- 5. Seed Data: Tasks
 INSERT INTO public.phase1_tasks (id, title, "departmentId", "agentId", status, "intentType", owner, priority, "createdAt", "updatedAt")
 VALUES 
-  ('t1111111-1111-1111-1111-111111111111', 'Plan 10-Day CRM Launch Campaign', '22222222-2222-2222-2222-222222222222', 'a6666666-6666-6666-6666-666666666666', 'IN_PROGRESS', 'create_content', 'human_founder', 'High', now() - interval '2 hours', now()),
-  ('t2222222-2222-2222-2222-222222222222', 'Research B2B CRM pain points', '11111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', 'IN_PROGRESS', 'unknown', 'system_orchestrator', 'Medium', now() - interval '1 hour', now()),
-  ('t3333333-3333-3333-3333-333333333333', 'Generate hero image for Day 1 Post', '11111111-1111-1111-1111-111111111111', 'a2222222-2222-2222-2222-222222222222', 'DONE', 'create_content', 'system_orchestrator', 'High', now() - interval '5 hours', now() - interval '4 hours'),
-  ('t4444444-4444-4444-4444-444444444444', 'Render final promotional video', '11111111-1111-1111-1111-111111111111', 'a4444444-4444-4444-4444-444444444444', 'BLOCKED', 'create_content', 'system_orchestrator', 'Low', now() - interval '1 day', now() - interval '1 day'),
-  ('t5555555-5555-5555-5555-555555555555', 'Audit Day 1 CRM Post for overclaims', '33333333-3333-3333-3333-333333333333', NULL, 'OPEN', 'check_governance', 'gatekeeper_sentinel', 'High', now(), now())
+  ('f1111111-1111-1111-1111-111111111111', 'Plan 10-Day CRM Launch Campaign', '22222222-2222-2222-2222-222222222222', 'a6666666-6666-6666-6666-666666666666', 'IN_PROGRESS', 'create_content', 'human_founder', 'High', now() - interval '2 hours', now()),
+  ('f2222222-2222-2222-2222-222222222222', 'Research B2B CRM pain points', '11111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', 'IN_PROGRESS', 'unknown', 'system_orchestrator', 'Medium', now() - interval '1 hour', now()),
+  ('f3333333-3333-3333-3333-333333333333', 'Generate hero image for Day 1 Post', '11111111-1111-1111-1111-111111111111', 'a2222222-2222-2222-2222-222222222222', 'DONE', 'create_content', 'system_orchestrator', 'High', now() - interval '5 hours', now() - interval '4 hours'),
+  ('f4444444-4444-4444-4444-444444444444', 'Render final promotional video', '11111111-1111-1111-1111-111111111111', 'a4444444-4444-4444-4444-444444444444', 'BLOCKED', 'create_content', 'system_orchestrator', 'Low', now() - interval '1 day', now() - interval '1 day'),
+  ('f5555555-5555-5555-5555-555555555555', 'Audit Day 1 CRM Post for overclaims', '33333333-3333-3333-3333-333333333333', NULL, 'OPEN', 'check_governance', 'gatekeeper_sentinel', 'High', now(), now())
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,
   "departmentId" = EXCLUDED."departmentId",
