@@ -4,8 +4,19 @@ import { insertAuditLog, insertChatMessage, loadChatMessages, loadThreadAuditLog
 import { postN8nWebhook } from "@/lib/n8n-client";
 import type { ChatIntentType } from "@/types/state";
 
+import { verifyActionAuth } from "@/lib/action-auth-guard";
+import { invokeLlm } from "@/lib/llm-client";
+
 export async function sendChatMessage(threadId: string, body: string, intentType?: ChatIntentType) {
-  // 1. Insert human message into DB
+  // 1. Authentication (Fail-closed)
+  const auth = await verifyActionAuth();
+  if (!auth.ok) {
+    throw new Error(`Auth failed: ${auth.message}`);
+  }
+
+  const requestId = crypto.randomUUID();
+
+  // 2. Insert human message into DB
   const messageResult = await insertChatMessage({
     threadId,
     sender: "human",
@@ -17,45 +28,84 @@ export async function sendChatMessage(threadId: string, body: string, intentType
     throw new Error(`Failed to insert chat message: ${messageResult.error}`);
   }
 
-  // 2. Insert audit log
+  // 3. Insert audit log for Human
   await insertAuditLog({
     entityId: threadId,
     entityType: "chat",
     action: "message_received",
-    actor: "Human",
+    actor: auth.email, // Use authenticated email instead of hardcoded 'Human'
     details: `intent=${intentType ?? "unknown"}`
   });
 
-  // 3. Trigger webhook to n8n for agent processing
-  // Gatekeeper requires using the human-task-intake boundary, so we call postN8nWebhook directly
-  // like the API route does, to keep it server-side without absolute URL headaches.
-  let webhookResult = null;
   try {
-    webhookResult = await postN8nWebhook("human-task-intake", {
-      received: true,
-      payload: {
-        threadId,
-        body,
-        message: body,
-        intentType,
-        sender: "human"
-      }
+    // 4. Context Loading
+    const historyRes = await loadChatMessages(threadId);
+    if (historyRes.error) throw new Error(historyRes.error);
+    
+    // 5. LLM Invocation
+    const messages = (historyRes.data || []).map(m => ({
+      role: m.sender === "human" ? "user" : m.sender === "agent" ? "assistant" : "system",
+      content: m.body
+    }));
+    
+    const llmResponse: any = await invokeLlm({
+      provider: "openai",
+      model: "gpt-4o-mini",
+      messages
+    }, {
+      actorId: auth.actorId,
+      tenantId: auth.tenantId,
+      requestId
     });
-  } catch (error) {
-    webhookResult = {
-      ok: false,
-      mocked: false,
-      route: "human-task-intake",
-      status: 502,
-      message: error instanceof Error ? error.message : String(error)
-    };
-  }
 
-  return {
-    success: true,
-    message: messageResult.data,
-    webhook: webhookResult
-  };
+    const aiText = llmResponse?.choices?.[0]?.message?.content || "No response generated.";
+
+    // 6. Insert Agent reply
+    const agentMsgResult = await insertChatMessage({
+      threadId,
+      sender: "agent",
+      body: aiText,
+      intentType: "create_content" // simplified for MVP, could use inferChatIntent here
+    });
+
+    if (agentMsgResult.error) throw new Error(agentMsgResult.error);
+
+    // 7. Insert Audit for Agent
+    await insertAuditLog({
+      entityId: threadId,
+      entityType: "chat",
+      action: "agent_replied",
+      actor: "System AI",
+      details: `requestId=${requestId}`
+    });
+
+    return {
+      success: true,
+      message: agentMsgResult.data,
+      webhook: { ok: true, route: "direct-llm", status: 200 }
+    };
+
+  } catch (error) {
+    // 8. Rollback/Compensate: Log error and insert System failure message
+    const errMessage = error instanceof Error ? error.message : String(error);
+    
+    await insertAuditLog({
+      entityId: threadId,
+      entityType: "chat",
+      action: "llm_invocation_failed",
+      actor: "System AI",
+      details: `requestId=${requestId} error=${errMessage}`
+    });
+
+    await insertChatMessage({
+      threadId,
+      sender: "system",
+      body: `Hệ thống gặp lỗi trong quá trình kết nối AI Broker: ${errMessage}`,
+      intentType: "request_status"
+    });
+
+    throw error;
+  }
 }
 
 export async function pollChatMessages(threadId: string) {

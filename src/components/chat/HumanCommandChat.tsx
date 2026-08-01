@@ -98,16 +98,11 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
       <div className="space-y-4">
         <ChatComposer value={draft} onChange={setDraft} onSubmit={handleSubmit} />
-        {isSending && (
-          <div className="text-xs text-slate-400 animate-pulse px-4">
-            Sending command...
-          </div>
-        )}
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
           <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{tShared("shared.thread.summary") ?? "Thread summary"}</div>
           <div className="mt-2 text-sm text-slate-200">{summary}</div>
         </div>
-        <ChatMessageList messages={messages} />
+        <ChatMessageList messages={messages} isTyping={isSending} />
       </div>
       <div className="space-y-4">
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
