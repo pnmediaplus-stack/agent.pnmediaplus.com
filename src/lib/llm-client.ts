@@ -38,50 +38,54 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
   adapter.injectAuth(headers);
 
   const endpointUrl = adapter.getEndpointUrl(payload, options);
+  // 1. ATOMIC QUOTA RESERVE (Fail-closed via RPC)
+  const quotaKey = `LLM_DAILY_BUDGET_${providerId.toUpperCase().replace(/-/g, '_')}`;
+  const fallbackBudget = providerId === 'openai' ? 5.0 : 10.0;
+  const budget = parseFloat(process.env[quotaKey] || String(fallbackBudget));
+  const RESERVE_COST = 0.05; // Reserve $0.05 upfront to prevent race conditions
 
-  // 1. Rate Limit Check (Pre-execution)
-  // We query the usage strictly for THIS provider in the last 24h based on COST (budget)
+  let recordId: string | undefined;
   try {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const usageRes = await fetch(`${supabaseUrl}/rest/v1/phase2_llm_usage?tenant_id=eq.${encodeURIComponent(tenantId)}&provider=eq.${encodeURIComponent(providerId)}&status=eq.COMPLETED&created_at=gte.${twentyFourHoursAgo}&select=estimated_cost`, {
+    const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/reserve_llm_budget`, {
+      method: 'POST',
       headers: {
         'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`
-      }
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        p_tenant_id: tenantId,
+        p_actor_id: actorId,
+        p_provider: providerId,
+        p_model: payload.model,
+        p_request_id: requestId,
+        p_reserve_cost: RESERVE_COST,
+        p_daily_budget: budget
+      })
     });
     
-    if (usageRes.ok) {
-      const usageData = await usageRes.json();
-      const currentCost = usageData.reduce((acc: number, row: any) => acc + (Number(row.estimated_cost) || 0), 0);
-      
-      const quotaKey = `LLM_DAILY_BUDGET_${providerId.toUpperCase().replace(/-/g, '_')}`;
-      const fallbackBudget = providerId === 'openai' ? 5.0 : 10.0; // In dollars
-      const budget = parseFloat(process.env[quotaKey] || String(fallbackBudget));
-
-      if (currentCost >= budget) {
-        // FAIL-CLOSED: Log blocked request
-        await logUsage({
-          supabaseUrl, supabaseKey, tenantId, actorId, 
-          provider: providerId, model: payload.model, requestId,
-          promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0,
-          status: 'BLOCKED'
-        });
-        throw new Error(`LLM_QUOTA_EXCEEDED: Tenant ${tenantId} exceeded daily budget of $${budget} for provider ${providerId}`);
-      }
-    } else {
-      // If the table/view doesn't exist yet, we still fail-closed!
-      console.error(`Rate limit check failed. Status: ${usageRes.status}`);
-      throw new Error('Rate limit check failed to read from DB (Fail-closed)');
+    if (!rpcRes.ok) {
+       const errBody = await rpcRes.text();
+       if (errBody.includes('LLM_QUOTA_EXCEEDED')) {
+           throw new Error(`LLM_QUOTA_EXCEEDED: Tenant ${tenantId} exceeded daily budget of $${budget} for provider ${providerId}`);
+       } else if (errBody.includes('DUPLICATE_REQUEST_ID')) {
+           throw new Error(`DUPLICATE_REQUEST_ID: Request ${requestId} was already processed`);
+       } else {
+           throw new Error(`Rate limit RPC failed: ${rpcRes.status} ${errBody}`);
+       }
     }
+    
+    // The RPC returns the new UUID directly
+    recordId = await rpcRes.json();
   } catch (error) {
-    throw error; // Let it fail-closed
+    console.error('Failed to reserve LLM quota:', error);
+    throw error; // Fail-closed
   }
 
   // 2. Execute LLM Call
   let responseData;
   let responseStatus;
   try {
-    // Clean payload for provider
     const cleanPayload = { ...payload };
     delete cleanPayload.provider;
 
@@ -95,87 +99,58 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     responseData = await response.json();
 
     if (!response.ok) {
-      // Log failure
-      await logUsage({
-        supabaseUrl, supabaseKey, tenantId, actorId,
-        provider: providerId, model: payload.model, requestId,
-        promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0,
-        status: 'FAILED'
-      });
+      if (recordId) await updateUsageRecord(supabaseUrl, supabaseKey, recordId, { status: 'FAILED', estimated_cost: 0 });
       throw new Error(`API Error from ${providerId}: ${response.status} - ${JSON.stringify(responseData)}`);
     }
 
   } catch (error: any) {
     if (!responseStatus) {
-      // Network error before response
-      await logUsage({
-        supabaseUrl, supabaseKey, tenantId, actorId,
-        provider: providerId, model: payload.model, requestId,
-        promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0,
-        status: 'FAILED'
-      });
+      if (recordId) await updateUsageRecord(supabaseUrl, supabaseKey, recordId, { status: 'FAILED', estimated_cost: 0 });
     }
     throw error;
   }
 
-  // 3. Parse Usage and Log (Post-execution)
-  // Adapter MUST parse usage strictly. If it fails, it throws, ensuring fail-closed billing tracking!
+  // 3. Parse Usage and Log (Post-execution Update)
   const usageInfo = adapter.parseUsage(responseData, payload);
   
   if (!adapter.billingUnits.includes(usageInfo.unit)) {
+    if (recordId) await updateUsageRecord(supabaseUrl, supabaseKey, recordId, { status: 'FAILED', estimated_cost: 0 });
     throw new Error(`BILLING_CONTRACT_VIOLATION: Adapter ${adapter.id} returned unit '${usageInfo.unit}' but contract only allows '${adapter.billingUnits.join(', ')}'`);
   }
 
-  await logUsage({
-    supabaseUrl, supabaseKey, tenantId, actorId,
-    provider: providerId, model: payload.model, requestId,
-    promptTokens: usageInfo.promptTokens, 
-    completionTokens: usageInfo.completionTokens, 
-    totalTokens: usageInfo.totalTokens,
-    estimatedCost: usageInfo.estimatedCost, 
-    status: 'COMPLETED'
-  });
+  if (recordId) {
+    await updateUsageRecord(supabaseUrl, supabaseKey, recordId, {
+      prompt_tokens: usageInfo.promptTokens,
+      completion_tokens: usageInfo.completionTokens,
+      total_tokens: usageInfo.totalTokens,
+      estimated_cost: usageInfo.estimatedCost,
+      status: 'COMPLETED'
+    });
+  }
 
   return responseData;
 }
 
-// Helper to write to phase2_llm_usage
-async function logUsage(args: {
-  supabaseUrl: string;
-  supabaseKey: string;
-  tenantId: string;
-  actorId: string;
-  provider: string;
-  model: string;
-  requestId: string;
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-  estimatedCost?: number;
-  status: string;
-}) {
+// Helper to UPDATE phase2_llm_usage row via RPC
+async function updateUsageRecord(supabaseUrl: string, supabaseKey: string, recordId: string, updates: any) {
   try {
-    await fetch(`${args.supabaseUrl}/rest/v1/phase2_llm_usage`, {
+    await fetch(`${supabaseUrl}/rest/v1/rpc/finalize_llm_usage`, {
       method: 'POST',
       headers: {
-        'apikey': args.supabaseKey,
-        'Authorization': `Bearer ${args.supabaseKey}`,
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        tenant_id: args.tenantId,
-        actor_id: args.actorId,
-        provider: args.provider,
-        model: args.model,
-        request_id: args.requestId,
-        prompt_tokens: args.promptTokens,
-        completion_tokens: args.completionTokens,
-        total_tokens: args.totalTokens,
-        estimated_cost: args.estimatedCost || 0.0,
-        status: args.status
+        p_record_id: recordId,
+        p_status: updates.status,
+        p_prompt_tokens: updates.prompt_tokens || 0,
+        p_completion_tokens: updates.completion_tokens || 0,
+        p_total_tokens: updates.total_tokens || 0,
+        p_estimated_cost: updates.estimated_cost || 0
       })
     });
   } catch (e) {
-    console.error('Failed to write LLM usage log:', e);
+    console.error('Failed to update LLM usage log:', e);
   }
 }
