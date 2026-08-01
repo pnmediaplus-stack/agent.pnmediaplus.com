@@ -1,4 +1,4 @@
-import { loadChatThreads, loadChatMessages, loadAuditLogs } from "@/lib/phase1-loader";
+import { loadChatThreads, loadChatMessages, loadThreadAuditLogs } from "@/lib/phase1-loader";
 import { ChatPageClient } from "./ChatPageClient";
 
 export const dynamic = "force-dynamic";
@@ -13,13 +13,17 @@ export default async function ChatPage() {
     messages = messagesRes.data;
   }
 
-  const auditLogsRes = await loadAuditLogs();
+  let auditLogs: any[] = [];
+  if (thread) {
+    const auditLogsRes = await loadThreadAuditLogs(thread.id);
+    auditLogs = auditLogsRes.data;
+  }
 
   return (
     <ChatPageClient
       thread={thread}
       messages={messages}
-      auditLogs={auditLogsRes.data}
+      auditLogs={auditLogs}
     />
   );
 }
