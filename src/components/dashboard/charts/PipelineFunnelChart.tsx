@@ -68,7 +68,8 @@ export default function PipelineFunnelChart({ data }: PipelineFunnelChartProps) 
               fontSize: '0.75rem',
               color: '#f8fafc'
             }}
-            itemStyle={{ fontSize: '0.75rem' }}
+            itemStyle={{ fontSize: '0.75rem', color: '#f8fafc' }}
+            labelStyle={{ color: '#94a3b8', marginBottom: '0.25rem' }}
           />
           <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={40}>
             {chartData.map((entry, index) => (
