@@ -100,7 +100,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         <ChatComposer value={draft} onChange={setDraft} onSubmit={handleSubmit} />
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
           <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{tShared("shared.thread.summary") ?? "Thread summary"}</div>
-          <div className="mt-2 text-sm text-slate-200">{summary}</div>
+          <div className="mt-2 text-sm text-slate-200 line-clamp-3">{summary}</div>
         </div>
         <ChatMessageList messages={messages} isTyping={isSending} />
       </div>
