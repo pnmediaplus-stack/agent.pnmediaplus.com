@@ -92,18 +92,20 @@ async function insertRow<T>(table: string, payload: Partial<T>): Promise<{ data:
 }
 
 async function deleteRow(table: string, id: string): Promise<{ success: boolean; error?: string }> {
-  const config = getSupabaseConfig();
-  if (!config) return { success: false, error: "SUPABASE_ENV_MISSING" };
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || process.env.SUPABASE_URL?.trim();
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+
+  if (!url || !serviceKey) return { success: false, error: "SUPABASE_SERVICE_ROLE_KEY_MISSING" };
 
   try {
-    const endpoint = new URL(`${config.url.replace(/\/$/, "")}/rest/v1/${table}`);
+    const endpoint = new URL(`${url.replace(/\/$/, "")}/rest/v1/${table}`);
     endpoint.searchParams.set("id", `eq.${id}`);
 
     const response = await fetch(endpoint, {
       method: "DELETE",
       headers: {
-        apikey: config.anonKey,
-        Authorization: `Bearer ${config.anonKey}`,
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
         "Content-Profile": SCHEMA
       }
     });

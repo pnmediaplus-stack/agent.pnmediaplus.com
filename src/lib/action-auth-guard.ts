@@ -17,7 +17,7 @@ type ActionAuthResult =
  * Strictly uses cookies() to prevent client spoofing.
  */
 export async function verifyActionAuth(): Promise<ActionAuthResult> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const accessToken = cookieStore.get(PORTAL_ACCESS_COOKIE)?.value;
 
   if (!accessToken) {
@@ -32,7 +32,7 @@ export async function verifyActionAuth(): Promise<ActionAuthResult> {
 
   // 2. Load Organization Context to ensure tenant boundaries
   const orgContext = await loadPortalOrganizationContext(accessToken, user.id);
-  if (orgContext.state !== "valid" || !orgContext.active_membership) {
+  if (orgContext.state !== "ready" || !orgContext.active_membership) {
     return { 
       ok: false, 
       error: "FORBIDDEN", 

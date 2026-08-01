@@ -40,6 +40,7 @@ export async function sendChatMessage(threadId: string, body: string, intentType
   });
   
   const auditLogId = auditResult.data?.id;
+  let agentMessageId: string | undefined;
 
   try {
     // 4. Context Loading
@@ -72,7 +73,9 @@ export async function sendChatMessage(threadId: string, body: string, intentType
       intentType: "create_content" // simplified for MVP
     });
 
-    if (agentMsgResult.error) throw new Error(agentMsgResult.error);
+    if (agentMsgResult.error || !agentMsgResult.data) throw new Error(agentMsgResult.error || "Missing agent message data");
+    
+    agentMessageId = agentMsgResult.data.id;
 
     // 7. Insert Audit for Agent
     await insertAuditLog({
@@ -90,9 +93,12 @@ export async function sendChatMessage(threadId: string, body: string, intentType
     };
 
   } catch (error) {
-    // 8. TRUE Rollback/Compensate: Delete the human message and its audit log
+    // 8. TRUE Rollback/Compensate: Delete all inserted records (Human message, Agent message, and initial Audit log)
     if (humanMessageId) {
       await deleteChatMessage(humanMessageId).catch(() => {});
+    }
+    if (agentMessageId) {
+      await deleteChatMessage(agentMessageId).catch(() => {});
     }
     if (auditLogId) {
       await deleteAuditLog(auditLogId).catch(() => {});
