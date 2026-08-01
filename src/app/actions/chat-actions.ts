@@ -33,7 +33,7 @@ export async function sendChatMessage(threadId: string, body: string, intentType
   // 3. Insert audit log for Human
   const auditResult = await insertAuditLog({
     entityId: threadId,
-    entityType: "chat",
+    entityType: "chat_thread",
     action: "message_received",
     actor: auth.email,
     details: `intent=${intentType ?? "unknown"}`
@@ -80,7 +80,7 @@ export async function sendChatMessage(threadId: string, body: string, intentType
     // 7. Insert Audit for Agent
     await insertAuditLog({
       entityId: threadId,
-      entityType: "chat",
+      entityType: "chat_thread",
       action: "agent_replied",
       actor: "System AI",
       details: `requestId=${requestId}`
@@ -108,7 +108,7 @@ export async function sendChatMessage(threadId: string, body: string, intentType
     
     await insertAuditLog({
       entityId: threadId,
-      entityType: "chat",
+      entityType: "chat_thread",
       action: "llm_invocation_failed",
       actor: "System AI",
       details: `requestId=${requestId} error=${errMessage} (Rollback Applied)`
