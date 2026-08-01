@@ -40,9 +40,10 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
   const endpointUrl = adapter.getEndpointUrl(payload, options);
 
   // 1. Rate Limit Check (Pre-execution)
-  // We query the daily usage view by tenant_id
+  // We query the usage strictly for THIS provider in the last 24h
   try {
-    const usageRes = await fetch(`${supabaseUrl}/rest/v1/phase2_llm_usage_daily?tenant_id=eq.${encodeURIComponent(tenantId)}&select=daily_tokens`, {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const usageRes = await fetch(`${supabaseUrl}/rest/v1/phase2_llm_usage?tenant_id=eq.${encodeURIComponent(tenantId)}&provider=eq.${encodeURIComponent(providerId)}&status=eq.COMPLETED&created_at=gte.${twentyFourHoursAgo}&select=total_tokens`, {
       headers: {
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`
@@ -51,9 +52,12 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     
     if (usageRes.ok) {
       const usageData = await usageRes.json();
-      const currentUsage = usageData.length > 0 ? (usageData[0].daily_tokens || 0) : 0;
+      const currentUsage = usageData.reduce((acc: number, row: any) => acc + (row.total_tokens || 0), 0);
       
-      const quota = parseInt(process.env.LLM_DAILY_QUOTA || String(DEFAULT_DAILY_QUOTA), 10);
+      const quotaKey = `LLM_DAILY_QUOTA_${providerId.toUpperCase().replace(/-/g, '_')}`;
+      const fallbackQuota = providerId === 'openai' ? 100000 : 1000;
+      const quota = parseInt(process.env[quotaKey] || String(fallbackQuota), 10);
+
       if (currentUsage >= quota) {
         // FAIL-CLOSED: Log blocked request
         await logUsage({
@@ -62,7 +66,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
           promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0,
           status: 'BLOCKED'
         });
-        throw new Error(`LLM_QUOTA_EXCEEDED: Tenant ${tenantId} exceeded daily quota of ${quota} tokens (or equivalent estimated cost)`);
+        throw new Error(`LLM_QUOTA_EXCEEDED: Tenant ${tenantId} exceeded daily quota of ${quota} units for provider ${providerId}`);
       }
     } else {
       // If the table/view doesn't exist yet, we still fail-closed!
@@ -117,6 +121,10 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
   // 3. Parse Usage and Log (Post-execution)
   // Adapter MUST parse usage strictly. If it fails, it throws, ensuring fail-closed billing tracking!
   const usageInfo = adapter.parseUsage(responseData, payload);
+  
+  if (!adapter.billingUnits.includes(usageInfo.unit)) {
+    throw new Error(`BILLING_CONTRACT_VIOLATION: Adapter ${adapter.id} returned unit '${usageInfo.unit}' but contract only allows '${adapter.billingUnits.join(', ')}'`);
+  }
 
   await logUsage({
     supabaseUrl, supabaseKey, tenantId, actorId,
