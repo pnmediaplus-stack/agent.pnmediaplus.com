@@ -9,7 +9,14 @@ export async function POST(request: Request) {
   const payload = await request.json().catch(() => ({}));
 
   try {
-    await authorizeControlPlaneRequest(request.headers, payload);
+    const isDev = process.env.NODE_ENV === "development";
+    const devBypass = process.env.DEV_BYPASS_CONTROL_PLANE === "true";
+
+    if (isDev && devBypass) {
+      console.warn("[Control Plane Guard] WARN: DEV_BYPASS_CONTROL_PLANE is active. Bypassing CP auth for local development.");
+    } else {
+      await authorizeControlPlaneRequest(request.headers, payload);
+    }
   } catch (error) {
     if (error instanceof ControlPlaneRequestError) {
       return Response.json(
