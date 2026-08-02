@@ -16,69 +16,73 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.all()[0].json.body || {};\n\nreturn [\n  {\n    json: {\n      \"tasks\": [\n        {\n          \"title\": \"Viết bài chuẩn SEO cho chiến dịch\",\n          \"department_id\": \"11111111-1111-1111-1111-111111111111\",\n          \"task_key\": \"task_seo_\" + Date.now(),\n          \"priority\": 80,\n          \"intent_type\": \"content_creation\"\n        },\n        {\n          \"title\": \"Thiết kế hình ảnh banner Facebook\",\n          \"department_id\": \"11111111-1111-1111-1111-111111111111\",\n          \"task_key\": \"task_design_\" + (Date.now() + 1),\n          \"priority\": 70,\n          \"intent_type\": \"design\"\n        }\n      ]\n    }\n  }\n];"
+        "resource": "chat",
+        "model": "gpt-4o",
+        "prompt": "={{ 'Extract intent from this message: ' + $('Webhook Trigger').item.json.body.body + '\\n\\nOutput MUST be valid JSON array of tasks, e.g. [{\"title\": \"Task 1\", \"department_id\": \"11111111-1111-1111-1111-111111111111\", \"task_key\": \"task_1\", \"priority\": 80, \"intent_type\": \"create_content\"}]' }}"
       },
       "id": "2",
-      "name": "Mock AI (Code Node)",
+      "name": "OpenAI Intent Extractor",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI_Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  let content = $('OpenAI Intent Extractor').item.json.message.content;\n  if (content.startsWith('```json')) {\n    content = content.substring(7, content.length - 3);\n  }\n  return [{\n    json: {\n      tasks: JSON.parse(content)\n    }\n  }];\n} catch (e) {\n  return [{ json: { tasks: [] } }];\n}"
+      },
+      "id": "99",
+      "name": "Parse Tasks",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [450, 300]
+      "position": [600, 300]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://agent.pnmediaplus.com/api/phase2/create-workflow-run",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer YOUR_CONTROL_PLANE_SECRET"
-            },
-            {
-              "name": "x-request-id",
-              "value": "={{ $('Webhook Trigger').item.json.body.threadId || 'test_' + Date.now() }}"
-            }
-          ]
-        },
+        "authentication": "headerAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { department_id: '11111111-1111-1111-1111-111111111111', workflow_key: 'wf_' + ($('Webhook Trigger').item.json.body.threadId || Date.now().toString()).replace(/-/g, ''), workflow_name: 'Chiến dịch Marketing từ Chat', idempotency_key: $('Webhook Trigger').item.json.body.threadId || Date.now().toString(), tenant_id: $('Webhook Trigger').item.json.body.tenantId || 'test_tenant', created_by_actor_type: 'HUMAN', created_by_external_ref: $('Webhook Trigger').item.json.body.actorId || 'test_actor' } }}",
-        "options": {}
+        "jsonBody": "={{ { department_id: '11111111-1111-1111-1111-111111111111', workflow_key: 'wf_' + ($('Webhook Trigger').item.json.body.humanMessageId || Date.now().toString()).replace(/-/g, ''), workflow_name: 'Chiến dịch Marketing từ Chat', idempotency_key: $('Webhook Trigger').item.json.body.humanMessageId || Date.now().toString(), tenant_id: $('Webhook Trigger').item.json.body.tenantId || 'test_tenant', created_by_actor_type: 'HUMAN', created_by_external_ref: $('Webhook Trigger').item.json.body.actorId || 'test_actor' } }}"
       },
       "id": "3",
       "name": "Create Workflow Run (Next.js)",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [650, 300]
+      "typeVersion": 1,
+      "position": [800, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Worker_API_Auth"
+        }
+      }
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://agent.pnmediaplus.com/api/phase2/create-tasks",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer YOUR_CONTROL_PLANE_SECRET"
-            },
-            {
-              "name": "x-request-id",
-              "value": "={{ $('Webhook Trigger').item.json.body.threadId || 'test_' + Date.now() }}_tasks"
-            }
-          ]
-        },
+        "authentication": "headerAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { tenant_id: $('Webhook Trigger').item.json.body.tenantId || 'test_tenant', workflow_run_id: $('Create Workflow Run (Next.js)').item.json.id, tasks: $('Mock AI (Code Node)').item.json.tasks.map(t => ({ task_key: t.task_key, title: t.title, department_id: t.department_id, intent_type: t.intent_type, priority: t.priority, requester_actor_type: 'HUMAN', requester_external_ref: $('Webhook Trigger').item.json.body.actorId || 'test_actor' })) } }}",
-        "options": {}
+        "jsonBody": "={{ { tenant_id: $('Webhook Trigger').item.json.body.tenantId || 'test_tenant', workflow_run_id: $('Create Workflow Run (Next.js)').item.json.id, tasks: $('Parse Tasks').item.json.tasks.map(t => ({ task_key: t.task_key, title: t.title, department_id: t.department_id, intent_type: t.intent_type, priority: t.priority, requester_actor_type: 'HUMAN', requester_external_ref: $('Webhook Trigger').item.json.body.actorId || 'test_actor' })) } }}"
       },
       "id": "4",
       "name": "Create Tasks (Next.js)",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [850, 300]
+      "typeVersion": 1,
+      "position": [1000, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Worker_API_Auth"
+        }
+      }
     }
   ],
   "connections": {
@@ -86,14 +90,25 @@
       "main": [
         [
           {
-            "node": "Mock AI (Code Node)",
+            "node": "OpenAI Intent Extractor",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Mock AI (Code Node)": {
+    "OpenAI Intent Extractor": {
+      "main": [
+        [
+          {
+            "node": "Parse Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Tasks": {
       "main": [
         [
           {

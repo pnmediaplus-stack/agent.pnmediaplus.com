@@ -21,15 +21,7 @@
       "parameters": {
         "method": "POST",
         "url": "https://agent.pnmediaplus.com/api/phase2/worker-api",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer pn_media_os_super_secret_key_2026_xyz"
-            }
-          ]
-        },
+        "authentication": "headerAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={ \"action\": \"get_pending_tasks\" }",
@@ -39,7 +31,13 @@
       "name": "Get Pending Tasks",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
-      "position": [200, 0]
+      "position": [200, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Worker_API_Auth"
+        }
+      }
     },
     {
       "parameters": {
@@ -97,15 +95,7 @@
       "parameters": {
         "method": "POST",
         "url": "https://agent.pnmediaplus.com/api/phase2/worker-api",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer pn_media_os_super_secret_key_2026_xyz"
-            }
-          ]
-        },
+        "authentication": "headerAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ action: 'complete_task', taskId: $('Split Tasks').item.json.id, threadId: $('Split Tasks').item.json.requester_external_ref, chatMessage: '✅ Đã hoàn thành Task: **' + $('Split Tasks').item.json.title + '**!\\n\\n' + ($json.message?.content || $json.data?.[0]?.url || 'Done.'), outputPayload: { result: $json.message?.content || $json.data?.[0]?.url } }) }}",
@@ -115,7 +105,13 @@
       "name": "Complete Task (Callback)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
-      "position": [1150, 0]
+      "position": [1150, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Worker_API_Auth"
+        }
+      }
     }
   ],
   "connections": {
