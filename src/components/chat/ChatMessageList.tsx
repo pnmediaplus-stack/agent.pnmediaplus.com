@@ -10,7 +10,29 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
   const { t } = useI18n("chat");
   return (
     <div className="space-y-3">
-      {messages.map((message) => {
+      {isTyping && (
+        <div className="flex w-full justify-start">
+          <div className="relative max-w-[85%] overflow-hidden rounded-2xl border p-4 shadow-xl backdrop-blur-xl border-emerald-500/30 bg-emerald-950/40 shadow-emerald-900/20 rounded-tl-sm animate-pulse">
+            <div className="mb-3 flex items-center justify-between gap-4 border-b border-white/5 pb-2">
+              <div className="flex items-center gap-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full border border-emerald-500/50 bg-emerald-500/20">
+                  <Bot className="h-3.5 w-3.5 text-emerald-300" />
+                </div>
+                <span className="text-[11px] font-semibold uppercase tracking-widest text-emerald-300">
+                  {t("chat.message.sender.agent") ?? "Agent"}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="h-2 w-2 rounded-full bg-emerald-400/50 animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="h-2 w-2 rounded-full bg-emerald-400/50 animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="h-2 w-2 rounded-full bg-emerald-400/50 animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {messages.slice().reverse().map((message) => {
         const isHuman = message.sender === "human";
         const isAgent = message.sender === "agent";
 
@@ -72,28 +94,6 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
           </div>
         );
       })}
-      
-      {isTyping && (
-        <div className="flex w-full justify-start">
-          <div className="relative max-w-[85%] overflow-hidden rounded-2xl border p-4 shadow-xl backdrop-blur-xl border-emerald-500/30 bg-emerald-950/40 shadow-emerald-900/20 rounded-tl-sm animate-pulse">
-            <div className="mb-3 flex items-center justify-between gap-4 border-b border-white/5 pb-2">
-              <div className="flex items-center gap-2">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full border border-emerald-500/50 bg-emerald-500/20">
-                  <Bot className="h-3.5 w-3.5 text-emerald-300" />
-                </div>
-                <span className="text-[11px] font-semibold uppercase tracking-widest text-emerald-300">
-                  {t("chat.message.sender.agent") ?? "Agent"}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="h-2 w-2 rounded-full bg-emerald-400/50 animate-bounce" style={{ animationDelay: '0ms' }} />
-              <div className="h-2 w-2 rounded-full bg-emerald-400/50 animate-bounce" style={{ animationDelay: '150ms' }} />
-              <div className="h-2 w-2 rounded-full bg-emerald-400/50 animate-bounce" style={{ animationDelay: '300ms' }} />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
