@@ -106,8 +106,6 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
       <div className="space-y-4">
-        <ChatComposer value={draft} onChange={setDraft} onSubmit={handleSubmit} />
-        
         {activeTasks.length > 0 && (
           <div className="rounded-2xl border border-indigo-500/30 bg-indigo-950/20 p-4 shadow-lg shadow-indigo-900/10">
             <div className="flex items-center gap-2 mb-3">
@@ -140,10 +138,13 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{tShared("shared.thread.summary") ?? "Thread summary"}</div>
           <div className="mt-2 text-sm text-slate-200 line-clamp-3">{summary}</div>
         </div>
-        <div className="max-h-[60vh] overflow-y-auto rounded-2xl p-2 scroll-smooth">
+        
+        <div className="max-h-[75vh] overflow-y-auto rounded-2xl p-2 scroll-smooth">
           <ChatMessageList messages={messages} isTyping={isSending} />
           <div ref={messagesEndRef} />
         </div>
+
+        <ChatComposer value={draft} onChange={setDraft} onSubmit={handleSubmit} />
       </div>
       <div className="space-y-4">
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
