@@ -114,17 +114,7 @@ export async function authorizeControlPlaneRequest(
     );
   }
 
-  let session;
-  try {
-    session = await verifyControlPlaneSessionCookieValue(sessionValue);
-  } catch (err) {
-    throw new ControlPlaneRequestError(
-      401,
-      "INVALID_CONTROL_PLANE_SESSION",
-      `Control plane session cookie is invalid: ${err instanceof Error ? err.message : String(err)}. Please restart your Next.js dev server.`
-    );
-  }
-
+  const session = await verifyControlPlaneSessionCookieValue(sessionValue);
   if (!session) {
     throw new ControlPlaneRequestError(
       401,
