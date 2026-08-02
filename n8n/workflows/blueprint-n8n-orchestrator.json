@@ -41,9 +41,18 @@
         "requestMethod": "POST",
         "url": "https://agent.pnmediaplus.com/api/phase2/create-workflow-run",
         "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-request-id",
+              "value": "={{ $('Webhook Trigger').item.json.body.humanMessageId || 'test_' + Date.now() }}_wf"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { department_id: '11111111-1111-1111-1111-111111111111', workflow_key: 'wf_' + ($('Webhook Trigger').item.json.body.humanMessageId || Date.now().toString()).replace(/-/g, ''), workflow_name: 'Chiến dịch Marketing từ Chat', idempotency_key: $('Webhook Trigger').item.json.body.humanMessageId || Date.now().toString(), tenant_id: $('Webhook Trigger').item.json.body.tenantId || 'test_tenant', created_by_actor_type: 'HUMAN', created_by_external_ref: $('Webhook Trigger').item.json.body.actorId || 'test_actor' } }}"
+        "jsonBody": "={{ JSON.stringify({ department_id: '11111111-1111-1111-1111-111111111111', workflow_key: 'wf_' + ($('Webhook Trigger').item.json.body.humanMessageId || Date.now().toString()).replace(/-/g, ''), workflow_name: 'Chiến dịch Marketing từ Chat', idempotency_key: $('Webhook Trigger').item.json.body.humanMessageId || Date.now().toString(), tenant_id: $('Webhook Trigger').item.json.body.tenantId || 'test_tenant', created_by_actor_type: 'HUMAN', created_by_external_ref: $('Webhook Trigger').item.json.body.actorId || 'test_actor' }) }}"
       },
       "id": "3",
       "name": "Create Workflow Run (Next.js)",
@@ -56,9 +65,18 @@
         "requestMethod": "POST",
         "url": "https://agent.pnmediaplus.com/api/phase2/create-tasks",
         "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-request-id",
+              "value": "={{ $('Webhook Trigger').item.json.body.humanMessageId || 'test_' + Date.now() }}_tasks"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { tenant_id: $('Webhook Trigger').item.json.body.tenantId || 'test_tenant', workflow_run_id: $('Create Workflow Run (Next.js)').item.json.id, tasks: $('Parse Tasks').item.json.tasks.map(t => ({ task_key: t.task_key, title: t.title, department_id: t.department_id, intent_type: t.intent_type, priority: t.priority, requester_actor_type: 'HUMAN', requester_external_ref: $('Webhook Trigger').item.json.body.actorId || 'test_actor' })) } }}"
+        "jsonBody": "={{ JSON.stringify({ tenant_id: $('Webhook Trigger').item.json.body.tenantId || 'test_tenant', workflow_run_id: $('Create Workflow Run (Next.js)').item.json.id, tasks: $('Parse Tasks').item.json.tasks.map(t => ({ task_key: t.task_key, title: t.title, department_id: t.department_id, intent_type: t.intent_type, priority: t.priority, requester_actor_type: 'HUMAN', requester_external_ref: $('Webhook Trigger').item.json.body.actorId || 'test_actor' })) }) }}"
       },
       "id": "4",
       "name": "Create Tasks (Next.js)",
