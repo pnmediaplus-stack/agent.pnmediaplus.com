@@ -28,7 +28,8 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={ \"action\": \"get_pending_tasks\" }",
-        "options": {}
+        "options": {},
+        "jsonParameters": true
       },
       "id": "2",
       "name": "Get Pending Tasks",
@@ -101,7 +102,8 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ action: 'complete_task', taskId: $('Split Tasks').item.json.id, threadId: $('Split Tasks').item.json.requester_external_ref, chatMessage: '✅ Đã hoàn thành Task: **' + $('Split Tasks').item.json.title + '**!\\n\\n' + ($json.output || $json.text || 'Done.'), outputPayload: { result: $json.output || $json.text } }) }}",
-        "options": {}
+        "options": {},
+        "jsonParameters": true
       },
       "id": "7",
       "name": "Complete Task (Callback)",
