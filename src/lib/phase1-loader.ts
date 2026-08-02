@@ -301,38 +301,45 @@ export async function deleteAuditLog(id: string) {
 }
 
 export async function loadActiveTasks(actorId: string): Promise<SupabaseTableResult<any>> {
-  // Use public ssot view to avoid raw table queries and ensure RLS/Schema abstraction
   const config = getSupabaseConfig();
   if (!config) return { data: [], error: "SUPABASE_ENV_MISSING" };
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!serviceKey) return { data: [], error: "SUPABASE_SERVICE_ROLE_KEY_MISSING" };
   
   try {
-    const endpoint = new URL(`${config.url.replace(/\/$/, "")}/rest/v1/phase1_tasks_ssot`);
-    endpoint.searchParams.set("select", "id, title, intentType, status, priority");
-    endpoint.searchParams.set("owner", `eq.${actorId}`);
-    endpoint.searchParams.set("status", "in.(NOT_STARTED,QUEUED,PARTIAL,REVIEW,BLOCKED)");
-    endpoint.searchParams.set("order", "createdAt.desc");
+    const endpoint = new URL(`${config.url.replace(/\/$/, "")}/rest/v1/tasks`);
+    endpoint.searchParams.set("select", "id, title, intent_type, state, priority");
+    endpoint.searchParams.set("requester_external_ref", `eq.${actorId}`);
+    endpoint.searchParams.set("state", "in.(NOT_STARTED,QUEUED,PARTIAL,REVIEW,BLOCKED)");
+    endpoint.searchParams.set("order", "created_at.desc");
 
     const response = await fetch(endpoint, {
       cache: "no-store",
       headers: {
-        apikey: config.anonKey,
-        Authorization: `Bearer ${config.anonKey}`,
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
         Accept: "application/json",
-        "Accept-Profile": "public",
-        "Content-Profile": "public"
+        "Accept-Profile": "pn_os_ai_department",
+        "Content-Profile": "pn_os_ai_department"
       }
     });
 
     if (!response.ok) throw new Error(await response.text());
     
-    // Map status back to state for the UI component
+    // Map status back to state for the UI component, and map priority
     const payload = await response.json();
-    const mapped = payload.map((p: any) => ({
-      ...p,
-      intent_type: p.intentType,
-      state: p.status,
-      created_at: p.createdAt
-    }));
+    const mapped = payload.map((p: any) => {
+      let priorityStr = "Medium";
+      if (p.priority < 40) priorityStr = "Low";
+      else if (p.priority >= 70) priorityStr = "High";
+      
+      return {
+        ...p,
+        intentType: p.intent_type,
+        status: p.state,
+        priority: priorityStr
+      };
+    });
     return { data: mapped };
   } catch (error) {
     return { data: [], error: `Supabase loadActiveTasks failed: ${error instanceof Error ? error.message : String(error)}` };
