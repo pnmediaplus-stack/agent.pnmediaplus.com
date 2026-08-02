@@ -24,13 +24,7 @@
       "name": "OpenAI Intent Extractor",
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
-      "position": [450, 300],
-      "credentials": {
-        "openAiApi": {
-          "id": "",
-          "name": "OpenAI_Account"
-        }
-      }
+      "position": [450, 300]
     },
     {
       "parameters": {
@@ -55,13 +49,7 @@
       "name": "Create Workflow Run (Next.js)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
-      "position": [800, 300],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "",
-          "name": "Worker_API_Auth"
-        }
-      }
+      "position": [800, 300]
     },
     {
       "parameters": {
@@ -76,13 +64,7 @@
       "name": "Create Tasks (Next.js)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
-      "position": [1000, 300],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "",
-          "name": "Worker_API_Auth"
-        }
-      }
+      "position": [1000, 300]
     }
   ],
   "connections": {
