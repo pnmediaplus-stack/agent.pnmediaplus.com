@@ -156,11 +156,11 @@ async function updateRow<T>(table: string, id: string, payload: Partial<T>): Pro
 }
 
 export async function loadDepartments() {
-  return fetchTable<Department>("phase1_departments_ssot");
+  return fetchTable<Department>("phase1_departments_ssot", "*", "id.asc");
 }
 
 export async function loadAgents() {
-  return fetchTable<Agent>("phase1_agents_ssot");
+  return fetchTable<Agent>("phase1_agents_ssot", "*", "id.asc");
 }
 
 export async function loadTasks() {
