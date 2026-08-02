@@ -26,8 +26,9 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   const { t: tShared } = useI18n("shared");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll removed per user request to allow reading history
-
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length, isSending]);
   useEffect(() => {
     let mounted = true;
     let inFlight = false;
@@ -139,7 +140,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           <div className="mt-2 text-sm text-slate-200 line-clamp-3">{summary}</div>
         </div>
         
-        <div className="max-h-[75vh] overflow-y-auto rounded-2xl p-2 scroll-smooth">
+        <div className="max-h-[85vh] overflow-y-auto rounded-2xl p-2 scroll-smooth">
           <ChatMessageList messages={messages} isTyping={isSending} />
           <div ref={messagesEndRef} />
         </div>
