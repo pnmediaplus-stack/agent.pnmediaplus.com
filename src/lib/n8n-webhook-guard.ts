@@ -112,6 +112,7 @@ export async function verifyN8nWebhook<T>(
   const validation = schema.safeParse(rawBody);
   if (!validation.success) {
     const errorDetails = validation.error.format();
+    console.error(`[n8n Guard] Schema Validation Failed for ${actionName}:`, JSON.stringify(errorDetails, null, 2), "Raw Body:", rawBody);
     await writeAuditLog('REJECTED', 'Schema validation failed', requestId, { errors: errorDetails });
     return { 
       ok: false, 

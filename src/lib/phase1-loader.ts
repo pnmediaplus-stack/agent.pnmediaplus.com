@@ -19,7 +19,7 @@ type SupabaseTableResult<T> = {
   error?: string;
 };
 
-async function fetchTable<T>(table: string, select = "*", orderBy = "created_at.desc"): Promise<SupabaseTableResult<T>> {
+async function fetchTable<T>(table: string, select = "*", orderBy = "created_at.desc", schemaOverride = SCHEMA): Promise<SupabaseTableResult<T>> {
   const config = getSupabaseConfig();
 
   if (!config) {
@@ -37,8 +37,8 @@ async function fetchTable<T>(table: string, select = "*", orderBy = "created_at.
         apikey: config.anonKey,
         Authorization: `Bearer ${config.anonKey}`,
         Accept: "application/json",
-        "Accept-Profile": SCHEMA,
-        "Content-Profile": SCHEMA
+        "Accept-Profile": schemaOverride,
+        "Content-Profile": schemaOverride
       }
     });
 
@@ -118,6 +118,40 @@ async function deleteRow(table: string, id: string): Promise<{ success: boolean;
     return { success: true };
   } catch (error) {
     return { success: false, error: `Supabase ${table} delete failed: ${error instanceof Error ? error.message : String(error)}` };
+  }
+}
+
+async function updateRow<T>(table: string, id: string, payload: Partial<T>): Promise<{ data: T | null; error?: string }> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || process.env.SUPABASE_URL?.trim();
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+
+  if (!url || !serviceKey) return { data: null, error: "SUPABASE_SERVICE_ROLE_KEY_MISSING" };
+
+  try {
+    const endpoint = new URL(`${url.replace(/\/$/, "")}/rest/v1/${table}`);
+    endpoint.searchParams.set("id", `eq.${id}`);
+
+    const response = await fetch(endpoint, {
+      method: "PATCH",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+        "Content-Profile": SCHEMA
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      return { data: null, error: `Supabase ${table} update failed (${response.status}): ${body || response.statusText}` };
+    }
+
+    const json = await response.json();
+    return { data: Array.isArray(json) ? json[0] : json };
+  } catch (error) {
+    return { data: null, error: `Supabase ${table} update failed: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
 
@@ -264,4 +298,100 @@ export async function deleteChatMessage(id: string) {
 
 export async function deleteAuditLog(id: string) {
   return deleteRow("phase1_audit_logs", id);
+}
+
+export async function loadActiveTasks(actorId: string): Promise<SupabaseTableResult<any>> {
+  // Use public ssot view to avoid raw table queries and ensure RLS/Schema abstraction
+  const config = getSupabaseConfig();
+  if (!config) return { data: [], error: "SUPABASE_ENV_MISSING" };
+  
+  try {
+    const endpoint = new URL(`${config.url.replace(/\/$/, "")}/rest/v1/phase1_tasks_ssot`);
+    endpoint.searchParams.set("select", "id, title, intentType, status, priority");
+    endpoint.searchParams.set("owner", `eq.${actorId}`);
+    endpoint.searchParams.set("status", "in.(NOT_STARTED,QUEUED,PARTIAL,REVIEW,BLOCKED)");
+    endpoint.searchParams.set("order", "createdAt.desc");
+
+    const response = await fetch(endpoint, {
+      cache: "no-store",
+      headers: {
+        apikey: config.anonKey,
+        Authorization: `Bearer ${config.anonKey}`,
+        Accept: "application/json",
+        "Accept-Profile": "public",
+        "Content-Profile": "public"
+      }
+    });
+
+    if (!response.ok) throw new Error(await response.text());
+    
+    // Map status back to state for the UI component
+    const payload = await response.json();
+    const mapped = payload.map((p: any) => ({
+      ...p,
+      intent_type: p.intentType,
+      state: p.status,
+      created_at: p.createdAt
+    }));
+    return { data: mapped };
+  } catch (error) {
+    return { data: [], error: `Supabase loadActiveTasks failed: ${error instanceof Error ? error.message : String(error)}` };
+  }
+}
+
+// Dedicated helper for the AI Worker API to fetch pending tasks safely
+export async function getPendingTasks(): Promise<SupabaseTableResult<any>> {
+  const config = getSupabaseConfig();
+  if (!config) return { data: [], error: "SUPABASE_ENV_MISSING" };
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!serviceKey) return { data: [], error: "SUPABASE_SERVICE_ROLE_KEY_MISSING" };
+
+  try {
+    // Worker uses the raw schema table because it runs as service_role
+    const endpoint = new URL(`${config.url.replace(/\/$/, "")}/rest/v1/tasks`);
+    endpoint.searchParams.set("select", "id,title,intent_type,metadata,department_id,requester_external_ref");
+    endpoint.searchParams.set("state", "eq.NOT_STARTED");
+    endpoint.searchParams.set("limit", "10");
+
+    const response = await fetch(endpoint, {
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        Accept: "application/json",
+        Prefer: "return=representation",
+        "Accept-Profile": "pn_os_ai_department"
+      }
+    });
+    if (!response.ok) throw new Error(await response.text());
+    return { data: await response.json() };
+  } catch (error) {
+    return { data: [], error: `getPendingTasks failed: ${error instanceof Error ? error.message : String(error)}` };
+  }
+}
+
+// Dedicated helper for the AI Worker API to update a task's state using service_role
+export async function updateTaskFromWorker(id: string, payload: any): Promise<{ success: boolean; error?: string }> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || process.env.SUPABASE_URL?.trim();
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!url || !serviceKey) return { success: false, error: "SUPABASE_SERVICE_ROLE_KEY_MISSING" };
+
+  try {
+    const endpoint = new URL(`${url.replace(/\/$/, "")}/rest/v1/tasks`);
+    endpoint.searchParams.set("id", `eq.${id}`);
+
+    const response = await fetch(endpoint, {
+      method: "PATCH",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        "Content-Profile": "pn_os_ai_department"
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error(await response.text());
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: `updateTaskFromWorker failed: ${error instanceof Error ? error.message : String(error)}` };
+  }
 }

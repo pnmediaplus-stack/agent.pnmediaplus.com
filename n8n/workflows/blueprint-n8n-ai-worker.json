@@ -1,0 +1,178 @@
+{
+  "name": "Phase 3: AI Task Worker (Safe Full)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent.pnmediaplus.com/api/phase2/worker-api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pn_media_os_super_secret_key_2026_xyz"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"action\": \"get_pending_tasks\" }",
+        "options": {}
+      },
+      "id": "2",
+      "name": "Get Pending Tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "tasks",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Split Tasks",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.intent_type }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "create_content"
+            },
+            {
+              "value2": "design"
+            }
+          ]
+        },
+        "fallbackOutput": 0
+      },
+      "id": "4",
+      "name": "Switch by Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [600, 0]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4o-mini",
+        "prompt": "={{ 'Write an SEO article for: ' + $json.title + '. Summary: ' + $json.metadata?.summary }}",
+        "options": {}
+      },
+      "id": "5",
+      "name": "OpenAI SEO Writer",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [850, -100],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI_Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent.pnmediaplus.com/api/phase2/worker-api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pn_media_os_super_secret_key_2026_xyz"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: 'complete_task', taskId: $('Split Tasks').item.json.id, threadId: $('Split Tasks').item.json.requester_external_ref, chatMessage: '✅ Đã hoàn thành Task: **' + $('Split Tasks').item.json.title + '**!\\n\\n' + ($json.message?.content || $json.data?.[0]?.url || 'Done.'), outputPayload: { result: $json.message?.content || $json.data?.[0]?.url } }) }}",
+        "options": {}
+      },
+      "id": "7",
+      "name": "Complete Task (Callback)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1150, 0]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Pending Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Pending Tasks": {
+      "main": [
+        [
+          {
+            "node": "Split Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Tasks": {
+      "main": [
+        [
+          {
+            "node": "Switch by Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch by Intent": {
+      "main": [
+        [
+          {
+            "node": "OpenAI SEO Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI SEO Writer": {
+      "main": [
+        [
+          {
+            "node": "Complete Task (Callback)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

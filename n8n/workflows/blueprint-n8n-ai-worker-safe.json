@@ -1,0 +1,137 @@
+{
+  "name": "Phase 3: AI Task Worker",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent.pnmediaplus.com/api/phase2/worker-api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pn_media_os_super_secret_key_2026_xyz"
+            }
+          ]
+        },
+        "options": {},
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "get_pending_tasks"
+            }
+          ]
+        }
+      },
+      "id": "2",
+      "name": "Get Pending Tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "tasks",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Split Tasks",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent.pnmediaplus.com/api/phase2/worker-api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pn_media_os_super_secret_key_2026_xyz"
+            }
+          ]
+        },
+        "options": {},
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "complete_task"
+            },
+            {
+              "name": "taskId",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "threadId",
+              "value": "={{ $json.requester_external_ref }}"
+            },
+            {
+              "name": "chatMessage",
+              "value": "✅ Đã hoàn thành Task: {{ $json.title }}!"
+            }
+          ]
+        }
+      },
+      "id": "7",
+      "name": "Complete Task (Callback)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1150, 0]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Pending Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Pending Tasks": {
+      "main": [
+        [
+          {
+            "node": "Split Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Tasks": {
+      "main": [
+        [
+          {
+            "node": "Complete Task (Callback)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

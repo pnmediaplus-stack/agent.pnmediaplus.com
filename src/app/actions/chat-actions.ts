@@ -1,6 +1,6 @@
 "use server";
 
-import { insertAuditLog, insertChatMessage, loadChatMessages, loadThreadAuditLogs, deleteChatMessage, deleteAuditLog } from "@/lib/phase1-loader";
+import { insertAuditLog, insertChatMessage, loadChatMessages, loadThreadAuditLogs, deleteChatMessage, deleteAuditLog, loadActiveTasks } from "@/lib/phase1-loader";
 import { postN8nWebhook } from "@/lib/n8n-client";
 import type { ChatIntentType } from "@/types/state";
 
@@ -151,4 +151,11 @@ export async function pollAuditLogs(threadId: string) {
     throw new Error(`Failed to poll audit logs: ${result.error}`);
   }
   return result.data;
+}
+
+export async function pollActiveTasks() {
+  const auth = await verifyActionAuth();
+  if (!auth.ok) return [];
+  const result = await loadActiveTasks(auth.actorId);
+  return result.data || [];
 }

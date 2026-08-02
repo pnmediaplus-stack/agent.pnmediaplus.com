@@ -3,6 +3,8 @@
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { ChatMessage } from "@/types/chat";
 import { User, Bot, LayoutTemplate, Activity } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[], isTyping?: boolean }) {
   const { t } = useI18n("chat");
@@ -52,7 +54,11 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
                 <div className="font-mono text-[10px] text-slate-500">{new Date(message.createdAt).toLocaleTimeString()}</div>
               </div>
               
-              <div className="text-sm leading-relaxed text-slate-200">{message.body}</div>
+              <div className="text-sm leading-relaxed text-slate-200 prose prose-invert prose-sm max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {message.body}
+                </ReactMarkdown>
+              </div>
               
               {message.intentType ? (
                 <div className="mt-4 flex items-center gap-1.5 rounded bg-black/20 px-2.5 py-1 w-fit border border-white/5">

@@ -1,0 +1,119 @@
+{
+  "name": "Phase 2 Orchestrator (Safe Import)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook/chat",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.all()[0].json.body || {};\n\nreturn [\n  {\n    json: {\n      \"tasks\": [\n        {\n          \"title\": \"Viết bài chuẩn SEO cho chiến dịch\",\n          \"department_id\": \"11111111-1111-1111-1111-111111111111\",\n          \"task_key\": \"task_seo_\" + Date.now(),\n          \"priority\": 80,\n          \"intent_type\": \"content_creation\"\n        },\n        {\n          \"title\": \"Thiết kế hình ảnh banner Facebook\",\n          \"department_id\": \"11111111-1111-1111-1111-111111111111\",\n          \"task_key\": \"task_design_\" + (Date.now() + 1),\n          \"priority\": 70,\n          \"intent_type\": \"design\"\n        }\n      ]\n    }\n  }\n];"
+      },
+      "id": "2",
+      "name": "Mock AI (Code Node)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent.pnmediaplus.com/api/phase2/create-workflow-run",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_CONTROL_PLANE_SECRET"
+            },
+            {
+              "name": "x-request-id",
+              "value": "={{ $('Webhook Trigger').item.json.body.threadId || 'test_' + Date.now() }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { department_id: '11111111-1111-1111-1111-111111111111', workflow_key: 'wf_' + ($('Webhook Trigger').item.json.body.threadId || Date.now().toString()).replace(/-/g, ''), workflow_name: 'Chiến dịch Marketing từ Chat', idempotency_key: $('Webhook Trigger').item.json.body.threadId || Date.now().toString(), tenant_id: $('Webhook Trigger').item.json.body.tenantId || 'test_tenant', created_by_actor_type: 'HUMAN', created_by_external_ref: $('Webhook Trigger').item.json.body.actorId || 'test_actor' } }}",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Create Workflow Run (Next.js)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent.pnmediaplus.com/api/phase2/create-tasks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_CONTROL_PLANE_SECRET"
+            },
+            {
+              "name": "x-request-id",
+              "value": "={{ $('Webhook Trigger').item.json.body.threadId || 'test_' + Date.now() }}_tasks"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { tenant_id: $('Webhook Trigger').item.json.body.tenantId || 'test_tenant', workflow_run_id: $('Create Workflow Run (Next.js)').item.json.id, tasks: $('Mock AI (Code Node)').item.json.tasks.map(t => ({ task_key: t.task_key, title: t.title, department_id: t.department_id, intent_type: t.intent_type, priority: t.priority, requester_actor_type: 'HUMAN', requester_external_ref: $('Webhook Trigger').item.json.body.actorId || 'test_actor' })) } }}",
+        "options": {}
+      },
+      "id": "4",
+      "name": "Create Tasks (Next.js)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Mock AI (Code Node)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mock AI (Code Node)": {
+      "main": [
+        [
+          {
+            "node": "Create Workflow Run (Next.js)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Workflow Run (Next.js)": {
+      "main": [
+        [
+          {
+            "node": "Create Tasks (Next.js)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
