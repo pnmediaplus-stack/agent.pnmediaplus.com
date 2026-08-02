@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "method": "POST",
+        "requestMethod": "POST",
         "url": "https://agent.pnmediaplus.com/api/phase2/worker-api",
         "authentication": "headerAuth",
         "sendBody": true,
@@ -81,7 +81,7 @@
     },
     {
       "parameters": {
-        "method": "POST",
+        "requestMethod": "POST",
         "url": "https://agent.pnmediaplus.com/api/phase2/worker-api",
         "authentication": "headerAuth",
         "sendBody": true,
