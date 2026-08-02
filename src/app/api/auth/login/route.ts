@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { loginWithSupabasePassword, PORTAL_ACCESS_COOKIE, PORTAL_REFRESH_COOKIE } from "@/lib/portal-auth";
+import { createControlPlaneSessionCookieValue, CONTROL_PLANE_SESSION_COOKIE } from "@/lib/control-plane-session";
 
 function json(status: number, body: Record<string, unknown>) {
   return NextResponse.json(
@@ -67,6 +68,22 @@ export async function POST(request: Request) {
     path: "/",
     maxAge: 60 * 60 * 24 * 30
   });
+
+  try {
+    const cpSessionValue = await createControlPlaneSessionCookieValue(result.user.id);
+    response.cookies.set({
+      name: CONTROL_PLANE_SESSION_COOKIE,
+      value: cpSessionValue,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      // Control plane session usually expires with the access token or session length
+      maxAge: 60 * 60 * 24
+    });
+  } catch (error) {
+    console.error("Failed to mint Control Plane Session cookie:", error);
+  }
 
   return response;
 }
