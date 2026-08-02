@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     if (!response.ok) {
       const errorText = await response.text();
       // Handle Postgres unique constraint violation gracefully (Idempotency)
-      if (response.status === 409 || errorText.includes('duplicate key')) {
+      if (response.status === 409 && errorText.includes('duplicate key')) {
         await logCompletion('ACCEPTED', 'Idempotent skip (Already exists)');
         return NextResponse.json({ message: 'Already exists', idempotent: true }, { status: 200 });
       }
