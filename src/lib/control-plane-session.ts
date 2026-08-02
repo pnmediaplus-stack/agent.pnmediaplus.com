@@ -82,22 +82,25 @@ export async function createControlPlaneSessionCookieValue(
 }
 
 export async function verifyControlPlaneSessionCookieValue(value: string | undefined | null) {
-  if (!value) return null;
+  if (!value) throw new Error("Cookie value is empty.");
 
   const secret = getServerSecret();
-  if (!secret) return null;
+  if (!secret) throw new Error("Server secret is empty.");
 
   const [encodedPayload, signature] = value.split(".");
-  if (!encodedPayload || !signature) return null;
+  if (!encodedPayload || !signature) throw new Error("Cookie format invalid (missing payload or signature).");
 
   const expectedSignature = await signValue(encodedPayload, secret);
-  if (expectedSignature !== signature) return null;
+  if (expectedSignature !== signature) throw new Error(`Signature mismatch. Expected: ${expectedSignature}, Got: ${signature}`);
 
   try {
     const payloadText = fromBase64Url(encodedPayload);
     const payload = JSON.parse(payloadText) as Partial<ControlPlaneSessionPayload>;
-    if (payload.actorType !== "HUMAN" || typeof payload.actorRef !== "string" || !payload.actorRef.trim()) {
-      return null;
+    if (payload.actorType !== "HUMAN") {
+      throw new Error(`Invalid actorType: ${payload.actorType}`);
+    }
+    if (typeof payload.actorRef !== "string" || !payload.actorRef.trim()) {
+      throw new Error(`Invalid actorRef: ${payload.actorRef}`);
     }
 
     return {
@@ -105,8 +108,8 @@ export async function verifyControlPlaneSessionCookieValue(value: string | undef
       actorRef: payload.actorRef.trim(),
       issuedAt: typeof payload.issuedAt === "string" ? payload.issuedAt : ""
     } satisfies ControlPlaneSessionPayload;
-  } catch {
-    return null;
+  } catch (err) {
+    throw new Error(`Payload parsing failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
