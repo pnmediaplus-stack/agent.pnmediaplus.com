@@ -15,7 +15,10 @@
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
-      "position": [0, 0]
+      "position": [
+        0,
+        0
+      ]
     },
     {
       "parameters": {
@@ -31,7 +34,10 @@
       "name": "Get Pending Tasks",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
-      "position": [200, 0]
+      "position": [
+        200,
+        0
+      ]
     },
     {
       "parameters": {
@@ -42,7 +48,10 @@
       "name": "Split Tasks",
       "type": "n8n-nodes-base.itemLists",
       "typeVersion": 1,
-      "position": [400, 0]
+      "position": [
+        400,
+        0
+      ]
     },
     {
       "parameters": {
@@ -64,20 +73,25 @@
       "name": "Switch by Intent",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 1,
-      "position": [600, 0]
+      "position": [
+        600,
+        0
+      ]
     },
     {
       "parameters": {
-        "resource": "chat",
-        "model": "gpt-4o-mini",
-        "prompt": "={{ 'Write an SEO article for: ' + $json.title + '. Summary: ' + $json.metadata?.summary }}",
+        "promptType": "define",
+        "text": "={{ 'Write an SEO article for: ' + $json.title + '. Summary: ' + $json.metadata?.summary }}",
         "options": {}
       },
       "id": "5",
-      "name": "OpenAI SEO Writer",
-      "type": "n8n-nodes-base.openAi",
-      "typeVersion": 1,
-      "position": [850, -100]
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        850,
+        -100
+      ]
     },
     {
       "parameters": {
@@ -86,14 +100,31 @@
         "authentication": "headerAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ action: 'complete_task', taskId: $('Split Tasks').item.json.id, threadId: $('Split Tasks').item.json.requester_external_ref, chatMessage: '✅ Đã hoàn thành Task: **' + $('Split Tasks').item.json.title + '**!\\n\\n' + ($json.message?.content || $json.data?.[0]?.url || 'Done.'), outputPayload: { result: $json.message?.content || $json.data?.[0]?.url } }) }}",
+        "jsonBody": "={{ JSON.stringify({ action: 'complete_task', taskId: $('Split Tasks').item.json.id, threadId: $('Split Tasks').item.json.requester_external_ref, chatMessage: '✅ Đã hoàn thành Task: **' + $('Split Tasks').item.json.title + '**!\\n\\n' + ($json.output || $json.text || 'Done.'), outputPayload: { result: $json.output || $json.text } }) }}",
         "options": {}
       },
       "id": "7",
       "name": "Complete Task (Callback)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
-      "position": [1150, 0]
+      "position": [
+        1150,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {}
+      },
+      "id": "5_model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        850,
+        100
+      ]
     }
   ],
   "connections": {
@@ -134,19 +165,30 @@
       "main": [
         [
           {
-            "node": "OpenAI SEO Writer",
+            "node": "AI Agent",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "OpenAI SEO Writer": {
+    "AI Agent": {
       "main": [
         [
           {
             "node": "Complete Task (Callback)",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]
