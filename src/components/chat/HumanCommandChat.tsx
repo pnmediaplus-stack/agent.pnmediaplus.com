@@ -147,18 +147,18 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
 
         <ChatComposer value={draft} onChange={setDraft} onSubmit={handleSubmit} />
       </div>
-      <div className="space-y-4">
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+      <div className="space-y-4 flex flex-col h-full overflow-hidden">
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shrink-0">
           <div className="text-sm font-semibold text-white">{thread.title}</div>
           <p className="mt-2 text-sm leading-6 text-slate-400">{thread.purpose}</p>
           <div className="mt-4 text-xs uppercase tracking-[0.24em] text-slate-500">{tShared("shared.thread.status") ?? "Thread status"}</div>
           <div className="mt-2 text-sm text-slate-200">{thread.status}</div>
         </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
-          <div className="text-sm font-semibold text-white">{tShared("shared.audit.trail") ?? "Audit trail"}</div>
-          <div className="mt-3 space-y-3">
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 flex flex-col flex-1 min-h-0">
+          <div className="text-sm font-semibold text-white shrink-0">{tShared("shared.audit.trail") ?? "Audit trail"}</div>
+          <div className="mt-3 space-y-3 overflow-y-auto pr-2">
             {auditLogs.map((log) => (
-              <div key={log.id} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+              <div key={log.id} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 shrink-0">
                 <div className="text-xs uppercase tracking-[0.24em] text-slate-500">{log.action}</div>
                 <div className="mt-2 text-sm text-slate-200">{log.details}</div>
               </div>
