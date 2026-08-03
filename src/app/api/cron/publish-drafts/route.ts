@@ -51,18 +51,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: `Task ${task.id} is APPROVED but lacks metadata.artifact_id to find the artifact.` });
     }
 
-    const artRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/phase1_artifacts?id=eq.${targetArtifactId}&select=*&limit=1`, {
-      headers
+    const artRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/artifact_versions?artifact_id=eq.${targetArtifactId}&select=*&limit=1&order=version_number.desc`, {
+      headers: { ...headers, 'Accept-Profile': 'pn_os_ai_department' }
     });
     
-    let artifactId = null;
+    let artifactId = targetArtifactId;
     let postContent = "";
 
     if (artRes.ok) {
-      const artifacts = await artRes.json();
-      if (artifacts && artifacts.length > 0) {
-        artifactId = artifacts[0].id;
-        postContent = artifacts[0].content || artifacts[0].title || "";
+      const versions = await artRes.json();
+      if (versions && versions.length > 0) {
+        postContent = versions[0].content_ref || "";
       }
     }
 

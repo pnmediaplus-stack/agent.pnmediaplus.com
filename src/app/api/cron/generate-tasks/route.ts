@@ -16,21 +16,46 @@ export async function POST(request: Request) {
   }
 
   const dateStr = new Date().toLocaleDateString('vi-VN');
-  // Theo đúng schema của pn_os_ai_department
-  const taskPayload = {
-    title: `Bài đăng Facebook tự động ngày ${dateStr}`,
-    intent_type: 'create_content',
-    state: 'NOT_STARTED',
-    priority: 50,
-    metadata: {
-      source: 'cron_auto_task',
-      generated_at: new Date().toISOString(),
-      platform: 'facebook'
-    },
-    requester_external_ref: 'system_cron'
-  };
-
+  
   try {
+    // Lấy department thật từ DB theo logic nghiệp vụ (media_pipeline cho AI Worker)
+    const depRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/departments?department_key=eq.media_pipeline&select=id&limit=1`, {
+      headers: {
+        'apikey': serviceKey,
+        'Authorization': `Bearer ${serviceKey}`,
+        'Accept-Profile': 'pn_os_ai_department'
+      }
+    });
+
+    if (!depRes.ok) {
+      return NextResponse.json({ error: 'Failed to query departments' }, { status: 500 });
+    }
+
+    const departments = await depRes.json();
+    if (!departments || departments.length === 0) {
+      return NextResponse.json({ error: 'Department media_pipeline not found. Fail-closed.' }, { status: 400 });
+    }
+    const departmentId = departments[0].id;
+
+    // Theo đúng schema của pn_os_ai_department
+    const timestamp = Date.now();
+    const taskPayload = {
+      task_key: `auto_fb_${timestamp}`,
+      title: `Bài đăng Facebook tự động ngày ${dateStr}`,
+      intent_type: 'create_content',
+      state: 'NOT_STARTED',
+      priority: 50,
+      department_id: departmentId,
+      requester_actor_type: 'SYSTEM',
+      requester_external_ref: 'system_cron',
+      metadata: {
+        source: 'cron_auto_task',
+        generated_at: new Date().toISOString(),
+        platform: 'facebook'
+      },
+      requester_external_ref: 'system_cron'
+    };
+
     const res = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/tasks`, {
       method: 'POST',
       headers: {
