@@ -2,10 +2,11 @@ import type { LifecycleState } from "@/types/state";
 
 export type Department = {
   id: string;
-  name: string;
-  owner: string;
-  purpose: string;
+  organization_id: string;
+  department_key: string;
+  canonical_name: string;
+  description: string | null;
   state: LifecycleState;
-  activeAgents: number;
-  openTasks: number;
+  created_at: string;
+  updated_at: string;
 };
