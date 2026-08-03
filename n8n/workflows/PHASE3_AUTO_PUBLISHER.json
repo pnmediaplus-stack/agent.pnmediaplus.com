@@ -112,7 +112,11 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{$env[\"RUNTIME_INGRESS_SECRET\"]}}"
+              "value": "=Bearer {{$env[\"CONTROL_PLANE_SECRET\"]}}"
+            },
+            {
+              "name": "x-request-id",
+              "value": "={{ $execution.id }}"
             },
             {
               "name": "Content-Type",
