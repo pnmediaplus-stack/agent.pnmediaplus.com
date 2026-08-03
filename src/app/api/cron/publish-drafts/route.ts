@@ -115,13 +115,14 @@ export async function POST(request: Request) {
     });
 
     if (!n8nRes.ok) {
-      // Nếu n8n webhook lỗi, rollback trạng thái về APPROVED (Fail-closed)
+      // Nếu n8n webhook lỗi (timeout hoặc lỗi 5xx), không được rollback về APPROVED để tránh rủi ro
+      // gửi lặp (duplicate publish) khi side effect đã xảy ra ở n8n. Đổi state thành FAILED để manual review.
       await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/tasks?id=eq.${task.id}`, {
         method: 'PATCH',
         headers: { ...headers, 'Content-Profile': 'pn_os_ai_department' },
-        body: JSON.stringify({ state: 'APPROVED' })
+        body: JSON.stringify({ state: 'FAILED' })
       });
-      throw new Error(`n8n webhook failed with status ${n8nRes.status}. Task state rolled back to APPROVED.`);
+      throw new Error(`n8n webhook failed with status ${n8nRes.status}. Task state set to FAILED for manual review.`);
     }
 
     return NextResponse.json({ 
