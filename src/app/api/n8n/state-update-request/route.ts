@@ -66,7 +66,6 @@ export async function POST(request: Request) {
       { status: decision.status }
     );
   }
-
   const forwardedPayload = {
     received: true,
     payload,
@@ -80,6 +79,10 @@ export async function POST(request: Request) {
 
   try {
     const result = await postN8nWebhook("state-update-request", forwardedPayload);
+    const isApproved = !result.fail_closed && decision.requestedTransition === "APPROVED";
+
+    // Direct FB dispatch removed for Queue-based architecture (Draft Buffer)
+
     return Response.json(
       {
         ...result,
@@ -89,7 +92,7 @@ export async function POST(request: Request) {
         allowedTransitions: decision.allowedTransitions,
         receivedAt: new Date().toISOString()
       },
-      { status: result.status }
+      { status: result.status || 200 }
     );
   } catch (error) {
     return Response.json(

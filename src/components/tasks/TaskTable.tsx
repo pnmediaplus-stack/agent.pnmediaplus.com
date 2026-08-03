@@ -7,6 +7,7 @@ import { TaskStatusBadge } from "@/components/tasks/TaskStatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { Department } from "@/types/department";
+import { getArtifactMetadataForTask } from "@/app/actions/task-actions";
 
 type TaskAction = {
   key: string;
@@ -215,6 +216,23 @@ export function TaskTable({ tasks, departments }: { tasks: Task[], departments: 
     setNotice(null);
 
     try {
+      // 1. Fetch artifact metadata and compute SHA256 (acting as Client/Origin)
+      let extraPayload: any = {};
+      try {
+        const metaData = await getArtifactMetadataForTask(task.id);
+        if (metaData && metaData.computed_content_sha256) {
+          Object.assign(extraPayload, metaData);
+        }
+      } catch (err: any) {
+        setNotice({
+          kind: "error",
+          title: "Thiếu siêu dữ liệu bản nháp",
+          detail: err.message || "Task này chưa có Artifact (bản nháp) đính kèm. Không thể duyệt."
+        });
+        return;
+      }
+
+      // 2. Submit the full transition request
       const response = await fetch("/api/n8n/state-update-request", {
         method: "POST",
         credentials: "include",
@@ -229,7 +247,8 @@ export function TaskTable({ tasks, departments }: { tasks: Task[], departments: 
             requested_transition: action.requestedTransition,
             actor_type: "HUMAN",
             reason: `${action.label} via task inbox`,
-            source: "task-inbox-ui"
+            source: "task-inbox-ui",
+            ...extraPayload
           }
         })
       });

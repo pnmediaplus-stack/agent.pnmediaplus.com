@@ -1,0 +1,120 @@
+{
+  "name": "WORKFLOW-D - Auto Task Scheduler",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Cron - 8:00 AM (Generate Tasks)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        100,
+        100
+      ],
+      "id": "27db0d9b-d7be-47ea-a86d-3e6e8e860959"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/cron/generate-tasks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-cron-secret",
+              "value": "pn_os_cron_secret"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Generate Auto Tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        300,
+        100
+      ],
+      "id": "8482ab81-9bba-4e9f-be21-d7790b8f15cc"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9,19 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Cron - 9:00 AM & 19:00 PM (Publish Drafts)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ],
+      "id": "e501d51a-d2d4-4a57-897e-128a58e658bc"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/cron/publish-drafts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-cron-secret",
+              "value": "pn_os_cron_secret"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Publish Approved Drafts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        300,
+        300
+      ],
+      "id": "7649520e-6f94-4d8b-a4be-a69074092b76"
+    }
+  ],
+  "connections": {
+    "Cron - 8:00 AM (Generate Tasks)": {
+      "main": [
+        [
+          {
+            "node": "Generate Auto Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron - 9:00 AM & 19:00 PM (Publish Drafts)": {
+      "main": [
+        [
+          {
+            "node": "Publish Approved Drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
