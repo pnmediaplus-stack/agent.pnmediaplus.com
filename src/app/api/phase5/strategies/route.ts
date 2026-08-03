@@ -14,13 +14,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'MISSING_CONFIGURATION', message: 'Supabase credentials missing' }, { status: 500 });
   }
 
-  const url = new URL(req.url);
-  const tenantId = url.searchParams.get("tenant_id");
-  
   let query = `${supabaseUrl}/rest/v1/phase5_strategies?status=eq.active&limit=1`;
-  if (tenantId) {
-    query += `&tenant_id=eq.${tenantId}`;
-  }
 
   const headers = {
     'apikey': supabaseKey,
