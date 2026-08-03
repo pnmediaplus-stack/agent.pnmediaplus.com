@@ -37,7 +37,13 @@ CREATE POLICY "service_role_all_ledger" ON public.ai_token_ledger FOR ALL TO ser
 CREATE POLICY "tenant_read_billing" ON public.tenant_billing_profiles FOR SELECT TO authenticated USING (true);
 CREATE POLICY "tenant_read_ledger" ON public.ai_token_ledger FOR SELECT TO authenticated USING (true);
 
--- 4. Trigger to update current_spend_usd automatically on ledger insert
+-- 4. Explicit GRANTS
+GRANT ALL ON public.tenant_billing_profiles TO service_role;
+GRANT ALL ON public.ai_token_ledger TO service_role;
+GRANT SELECT ON public.tenant_billing_profiles TO authenticated;
+GRANT SELECT ON public.ai_token_ledger TO authenticated;
+
+-- 5. Trigger to update current_spend_usd automatically on ledger insert
 CREATE OR REPLACE FUNCTION public.update_tenant_spend()
 RETURNS trigger AS $$
 BEGIN

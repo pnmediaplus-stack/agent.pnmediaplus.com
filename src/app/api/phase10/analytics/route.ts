@@ -20,11 +20,10 @@ export async function GET(request: Request) {
     }
 
     // 1. Fetch live ledger data for this tenant
-    // We use the existing Phase 2 usage ledger for Phase 10 governance
-    const endpoint = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/phase2_llm_usage`);
-    endpoint.searchParams.set("tenant_id", `eq.${tenantId}`);
-    endpoint.searchParams.set("status", "eq.COMPLETED");
-    endpoint.searchParams.set("select", "created_at,provider,model,estimated_cost");
+    // We now govern via the official Phase 10 ledger (ai_token_ledger)
+    const endpoint = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/ai_token_ledger`);
+    endpoint.searchParams.set("organization_id", `eq.${tenantId}`);
+    endpoint.searchParams.set("select", "created_at,provider_code,model_used,estimated_cost_usd");
     endpoint.searchParams.set("order", "created_at.desc");
 
     const response = await fetch(endpoint, {
@@ -43,9 +42,9 @@ export async function GET(request: Request) {
 
     const usageRecords = (await response.json()) as Array<{
       created_at: string;
-      provider: string;
-      model: string;
-      estimated_cost: number;
+      provider_code: string;
+      model_used: string;
+      estimated_cost_usd: number;
     }>;
 
     // 2. Compute live aggregates
@@ -62,17 +61,17 @@ export async function GET(request: Request) {
     };
 
     usageRecords.forEach((record) => {
-      const cost = Number(record.estimated_cost) || 0;
+      const cost = Number(record.estimated_cost_usd) || 0;
       currentSpend += cost;
 
       // Model Distribution
-      if (!distributionMap[record.model]) {
-        distributionMap[record.model] = {
+      if (!distributionMap[record.model_used]) {
+        distributionMap[record.model_used] = {
            value: 0,
-           fill: fallbackColors[record.model] || "#8b5cf6" // Default purple
+           fill: fallbackColors[record.model_used] || "#8b5cf6" // Default purple
         };
       }
-      distributionMap[record.model].value += cost;
+      distributionMap[record.model_used].value += cost;
 
       // Daily Chart
       // Assuming created_at is ISO format: 2026-08-03T10:00:00Z -> Extract just the YYYY-MM-DD
@@ -80,9 +79,9 @@ export async function GET(request: Request) {
       if (!chartMap[dateStr]) {
         chartMap[dateStr] = { openai: 0, fal_ai: 0 };
       }
-      if (record.provider === "openai") {
+      if (record.provider_code === "openai") {
         chartMap[dateStr].openai += cost;
-      } else if (record.provider === "fal-ai" || record.provider === "fal_ai") {
+      } else if (record.provider_code === "fal-ai" || record.provider_code === "fal_ai") {
         chartMap[dateStr].fal_ai += cost;
       }
     });
@@ -101,13 +100,32 @@ export async function GET(request: Request) {
       fal_ai: chartMap[date].fal_ai
     }));
 
-    // In a real environment, we'd query tenant_billing_profiles for the quota.
-    // For now, we use the environment variable limit, matching the reserve RPC logic.
-    const quotaEnvVar = `LLM_DAILY_BUDGET_OPENAI`;
-    const monthlyQuota = parseFloat(process.env[quotaEnvVar] || "50.0");
+    // 3. Fetch tenant billing profile for true quota governance
+    const billingEndpoint = new URL(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/tenant_billing_profiles`);
+    billingEndpoint.searchParams.set("organization_id", `eq.${tenantId}`);
+    billingEndpoint.searchParams.set("select", "monthly_quota_usd,current_spend_usd,status");
     
-    // Status reflects the actual fail-closed limit from Phase 2 RPC
-    const status = currentSpend >= monthlyQuota ? "EXCEEDED" : "ACTIVE";
+    const billingResponse = await fetch(billingEndpoint, {
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+        Accept: "application/json"
+      },
+      cache: "no-store"
+    });
+
+    let monthlyQuota = 50.0;
+    let billingStatus = currentSpend >= monthlyQuota ? "EXCEEDED" : "ACTIVE";
+    let storedSpend = currentSpend;
+
+    if (billingResponse.ok) {
+      const billingRecords = await billingResponse.json();
+      if (billingRecords && billingRecords.length > 0) {
+        monthlyQuota = parseFloat(billingRecords[0].monthly_quota_usd) || 50.0;
+        storedSpend = parseFloat(billingRecords[0].current_spend_usd) || currentSpend;
+        billingStatus = billingRecords[0].status || (storedSpend >= monthlyQuota ? "EXCEEDED" : "ACTIVE");
+      }
+    }
 
     return NextResponse.json({
       ok: true,
@@ -115,8 +133,8 @@ export async function GET(request: Request) {
         tenant_id: tenantId,
         billing: {
           monthly_quota_usd: monthlyQuota,
-          current_spend_usd: currentSpend,
-          status
+          current_spend_usd: storedSpend,
+          status: billingStatus
         },
         chartData,
         distribution
