@@ -84,7 +84,29 @@ export async function POST(request: Request) {
       }
     };
 
-    // 4. Bắn sang n8n
+    // 4. Khóa/Claim Task: Đổi state thành PUBLISHING trước khi bắn webhook
+    // Sử dụng optimistic locking: chỉ update nếu state vẫn đang là APPROVED
+    const updateRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/tasks?id=eq.${task.id}&state=eq.APPROVED`, {
+      method: 'PATCH',
+      headers: { 
+        ...headers, 
+        'Content-Profile': 'pn_os_ai_department',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({ state: 'PUBLISHING' })
+    });
+
+    if (!updateRes.ok) {
+      const errText = await updateRes.text();
+      throw new Error(`Failed to update task state to PUBLISHING: ${errText}`);
+    }
+
+    const updatedTasks = await updateRes.json();
+    if (!updatedTasks || updatedTasks.length === 0) {
+      return NextResponse.json({ success: false, message: `Task ${task.id} was already claimed or is no longer APPROVED.` });
+    }
+
+    // 5. Bắn sang n8n
     const n8nUrl = process.env.N8N_WEBHOOK_URL || "https://n8n.pnmediaplus.com";
     const n8nRes = await fetch(`${n8nUrl}/webhook/campaign-submit-v2-final`, {
       method: 'POST',
@@ -93,19 +115,13 @@ export async function POST(request: Request) {
     });
 
     if (!n8nRes.ok) {
-      throw new Error(`n8n webhook failed with status ${n8nRes.status}`);
-    }
-
-    // 5. Cập nhật Task thành PUBLISHING (hoặc PUBLISHED) để không lấy lại nữa
-    const updateRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/tasks?id=eq.${task.id}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Profile': 'pn_os_ai_department' },
-      body: JSON.stringify({ state: 'PUBLISHING' })
-    });
-
-    if (!updateRes.ok) {
-      const errText = await updateRes.text();
-      throw new Error(`Failed to update task state to PUBLISHING: ${errText}`);
+      // Nếu n8n webhook lỗi, rollback trạng thái về APPROVED (Fail-closed)
+      await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/tasks?id=eq.${task.id}`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Profile': 'pn_os_ai_department' },
+        body: JSON.stringify({ state: 'APPROVED' })
+      });
+      throw new Error(`n8n webhook failed with status ${n8nRes.status}. Task state rolled back to APPROVED.`);
     }
 
     return NextResponse.json({ 
