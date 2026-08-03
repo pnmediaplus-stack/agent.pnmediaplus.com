@@ -1,5 +1,11 @@
 export async function POST(request: Request) {
   try {
+    const authHeader = request.headers.get('x-n8n-api-key') || request.headers.get('authorization')?.replace('Bearer ', '');
+    const validKey = process.env.N8N_API_KEY;
+    if (validKey && authHeader !== validKey) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const payload = await request.json();
     const { job_id, post_id, status, error_message, fb_id } = payload;
 
@@ -11,35 +17,35 @@ export async function POST(request: Request) {
 
     // 1. Cập nhật Database (Supabase) dựa trên trạng thái
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (supabaseUrl && serviceKey) {
-      const targetState = status.toLowerCase() === 'success' ? 'PUBLISHED' : 'FAILED';
-      const errorMessage = status.toLowerCase() !== 'success' ? (error_message || 'Unknown error during publish') : null;
+    if (!supabaseUrl || !serviceKey) {
+      return Response.json({ error: 'Supabase credentials missing' }, { status: 500 });
+    }
 
-      try {
-        const res = await fetch(`${supabaseUrl}/rest/v1/tasks?id=eq.${job_id}`, {
-          method: 'PATCH',
-          headers: {
-            'apikey': serviceKey,
-            'Authorization': `Bearer ${serviceKey}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({ 
-            status: targetState,
-            // (Nếu có cột lưu metadata, ta có thể lưu fb_id và errorMessage vào đó)
-          })
-        });
-        
-        if (!res.ok) {
-          console.error('[FB_PUBLISH_CALLBACK] Lỗi update DB:', await res.text());
-        } else {
-          console.log(`[FB_PUBLISH_CALLBACK] Đã cập nhật task ${job_id} thành ${targetState}. FB_ID: ${fb_id || 'N/A'}`);
-        }
-      } catch (dbErr) {
-        console.error('[FB_PUBLISH_CALLBACK] Request update DB thất bại:', dbErr);
-      }
+    const targetState = status.toLowerCase() === 'success' ? 'PUBLISHED' : 'FAILED';
+    const errorMessage = status.toLowerCase() !== 'success' ? (error_message || 'Unknown error during publish') : null;
+
+    const res = await fetch(`${supabaseUrl}/rest/v1/tasks?id=eq.${job_id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': serviceKey,
+        'Authorization': `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+        'Content-Profile': 'pn_os_ai_department'
+      },
+      body: JSON.stringify({ 
+        state: targetState
+      })
+    });
+    
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('[FB_PUBLISH_CALLBACK] Lỗi update DB:', errText);
+      return Response.json({ ok: false, error: "DB_ERROR" }, { status: 500 });
+    } else {
+      console.log(`[FB_PUBLISH_CALLBACK] Đã cập nhật task ${job_id} thành ${targetState}. FB_ID: ${fb_id || 'N/A'}`);
     }
 
     return Response.json({ ok: true, received: true });

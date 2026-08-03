@@ -97,11 +97,16 @@ export async function POST(request: Request) {
     }
 
     // 5. Cập nhật Task thành PUBLISHING (hoặc PUBLISHED) để không lấy lại nữa
-    await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/tasks?id=eq.${task.id}`, {
+    const updateRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/tasks?id=eq.${task.id}`, {
       method: 'PATCH',
       headers: { ...headers, 'Content-Profile': 'pn_os_ai_department' },
       body: JSON.stringify({ state: 'PUBLISHING' })
     });
+
+    if (!updateRes.ok) {
+      const errText = await updateRes.text();
+      throw new Error(`Failed to update task state to PUBLISHING: ${errText}`);
+    }
 
     return NextResponse.json({ 
       success: true, 
