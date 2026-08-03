@@ -45,6 +45,8 @@ create policy "Allow all for service_role on campaigns"
   using (true)
   with check (true);
 
+grant all on pn_content_phase2.campaigns to service_role;
+
 -- 3. Add campaign_id to content_items
 do $$
 begin
