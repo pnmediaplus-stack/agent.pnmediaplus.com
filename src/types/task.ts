@@ -1,4 +1,4 @@
-import type { TaskStatus, ChatIntentType } from "@/types/state";
+import type { TaskStatus, ChatIntentType, LifecycleState } from "@/types/state";
 
 export type Task = {
   id: string;
