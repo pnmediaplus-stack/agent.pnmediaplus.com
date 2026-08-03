@@ -128,29 +128,30 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     });
     
     // Phase 10: Double-write to the new governed ai_token_ledger
-    try {
-       await fetch(`${supabaseUrl}/rest/v1/ai_token_ledger`, {
-          method: 'POST',
-          headers: {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({
-            organization_id: tenantId,
-            provider_code: providerId,
-            model_used: payload.model,
-            workflow_run_id: requestId,
-            unit: usageInfo.unit,
-            prompt_tokens: usageInfo.promptTokens,
-            completion_tokens: usageInfo.completionTokens,
-            total_tokens: usageInfo.totalTokens,
-            estimated_cost_usd: usageInfo.estimatedCost
-          })
-       });
-    } catch (e) {
-       console.error('Phase 10 ledger insert failed:', e);
+    const ledgerRes = await fetch(`${supabaseUrl}/rest/v1/ai_token_ledger`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        organization_id: tenantId,
+        provider_code: providerId,
+        model_used: payload.model,
+        workflow_run_id: requestId,
+        unit: usageInfo.unit,
+        prompt_tokens: usageInfo.promptTokens,
+        completion_tokens: usageInfo.completionTokens,
+        total_tokens: usageInfo.totalTokens,
+        estimated_cost_usd: usageInfo.estimatedCost
+      })
+    });
+    
+    if (!ledgerRes.ok) {
+       const errBody = await ledgerRes.text();
+       throw new Error(`PHASE10_LEDGER_INSERT_FAILED: ${ledgerRes.status} ${errBody}`);
     }
   }
 
