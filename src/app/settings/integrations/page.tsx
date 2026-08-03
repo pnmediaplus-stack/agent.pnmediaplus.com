@@ -1,12 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
 import { Facebook, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { TenantIntegrationsView } from '@/components/phase070/TenantIntegrationsView';
 import { TokenAnalyticsView } from '@/components/phase10/TokenAnalyticsView';
@@ -19,7 +13,6 @@ export default function IntegrationsSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message?: string } | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     fetch('/api/settings/facebook')
@@ -47,12 +40,12 @@ export default function IntegrationsSettingsPage() {
         body: JSON.stringify({ action: 'save', pageId, accessToken, enabled })
       });
       if (res.ok) {
-        toast({ title: 'Saved successfully', description: 'Facebook settings have been updated.' });
+        alert('Saved successfully: Facebook settings have been updated.');
       } else {
         throw new Error('Failed to save');
       }
     } catch (err) {
-      toast({ title: 'Error', description: 'Could not save settings.', variant: 'destructive' });
+      alert('Error: Could not save settings.');
     } finally {
       setSaving(false);
     }
@@ -70,10 +63,8 @@ export default function IntegrationsSettingsPage() {
       const data = await res.json();
       if (data.success) {
         setTestResult({ success: true, message: `Connected as: ${data.user.name || 'Valid Token'}` });
-        toast({ title: 'Connection Successful', description: 'Token is valid.' });
       } else {
         setTestResult({ success: false, message: data.error });
-        toast({ title: 'Connection Failed', description: data.error, variant: 'destructive' });
       }
     } catch (err) {
       setTestResult({ success: false, message: 'Network error or endpoint unreachable' });
@@ -105,63 +96,83 @@ export default function IntegrationsSettingsPage() {
       {/* Social Integrations */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Social Publishers</h2>
-        <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Facebook className="text-blue-600 h-6 w-6" />
-            <CardTitle>Facebook Page Publisher</CardTitle>
-          </div>
-          <CardDescription>Configure credentials for the Auto-Publisher to post directly to your Fanpage.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Enable Auto-Publishing</Label>
-              <div className="text-sm text-muted-foreground">Allow the system to post automatically when a campaign is approved.</div>
+        <div className="rounded-2xl border border-slate-700/50 bg-slate-900/40 backdrop-blur-md overflow-hidden">
+          <div className="p-6 border-b border-slate-700/50">
+            <div className="flex items-center gap-2 mb-2">
+              <Facebook className="text-blue-500 h-6 w-6" />
+              <h3 className="text-lg font-semibold text-slate-100">Facebook Page Publisher</h3>
             </div>
-            <Switch checked={enabled} onCheckedChange={setEnabled} />
+            <p className="text-sm text-slate-400">Configure credentials for the Auto-Publisher to post directly to your Fanpage.</p>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="pageId">Facebook Page ID</Label>
-            <Input 
-              id="pageId" 
-              value={pageId} 
-              onChange={e => setPageId(e.target.value)} 
-              placeholder="e.g. 10456218793214"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="token">Page Access Token</Label>
-            <Input 
-              id="token" 
-              type="password"
-              value={accessToken} 
-              onChange={e => setAccessToken(e.target.value)} 
-              placeholder="EAA..."
-            />
-            <p className="text-xs text-muted-foreground">Long-lived Page Access Token from Facebook Developer Portal.</p>
-          </div>
-
-          {testResult && (
-            <div className={`p-3 rounded-md flex items-center gap-2 text-sm ${testResult.success ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
-              {testResult.success ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-              {testResult.message}
+          
+          <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <label className="text-sm font-medium leading-none text-slate-200">Enable Auto-Publishing</label>
+                <div className="text-sm text-slate-400">Allow the system to post automatically when a campaign is approved.</div>
+              </div>
+              <button 
+                type="button" 
+                role="switch" 
+                aria-checked={enabled} 
+                onClick={() => setEnabled(!enabled)}
+                className={`peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-50 ${enabled ? 'bg-cyan-500' : 'bg-slate-700'}`}
+              >
+                <span className={`pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
             </div>
-          )}
-        </CardContent>
-        <CardFooter className="flex justify-between border-t p-6">
-          <Button variant="outline" onClick={handleTest} disabled={testing || !accessToken}>
-            {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Test Connection
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Settings
-          </Button>
-        </CardFooter>
-      </Card>
+
+            <div className="space-y-2">
+              <label htmlFor="pageId" className="text-sm font-medium leading-none text-slate-200">Facebook Page ID</label>
+              <input 
+                id="pageId" 
+                value={pageId} 
+                onChange={e => setPageId(e.target.value)} 
+                placeholder="e.g. 10456218793214"
+                className="flex h-10 w-full rounded-md border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-slate-100 ring-offset-slate-950 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="token" className="text-sm font-medium leading-none text-slate-200">Page Access Token</label>
+              <input 
+                id="token" 
+                type="password"
+                value={accessToken} 
+                onChange={e => setAccessToken(e.target.value)} 
+                placeholder="EAA..."
+                className="flex h-10 w-full rounded-md border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-slate-100 ring-offset-slate-950 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+              />
+              <p className="text-xs text-slate-400">Long-lived Page Access Token from Facebook Developer Portal.</p>
+            </div>
+
+            {testResult && (
+              <div className={`p-3 rounded-md flex items-center gap-2 text-sm ${testResult.success ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-900/50' : 'bg-rose-950/30 text-rose-400 border border-rose-900/50'}`}>
+                {testResult.success ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                {testResult.message}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-between items-center border-t border-slate-700/50 p-6 bg-slate-900/20">
+            <button 
+              onClick={handleTest} 
+              disabled={testing || !accessToken}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-slate-950 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:pointer-events-none disabled:opacity-50 border border-slate-700 bg-transparent hover:bg-slate-800 text-slate-200 h-10 px-4 py-2"
+            >
+              {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Test Connection
+            </button>
+            <button 
+              onClick={handleSave} 
+              disabled={saving}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-slate-950 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:pointer-events-none disabled:opacity-50 bg-cyan-600 hover:bg-cyan-700 text-white h-10 px-4 py-2"
+            >
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Configuration
+            </button>
+          </div>
+        </div>
       </section>
     </div>
   );

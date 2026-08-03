@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
-import { loadPortalOrganizationContext } from "@/lib/portal-auth";
+import { readPortalAccessToken, loadPortalOrganizationContext, verifySupabaseAccessToken } from "@/lib/portal-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
-    const authContext = await loadPortalOrganizationContext(request.headers);
+    const token = readPortalAccessToken(request.headers);
+    const auth = await verifySupabaseAccessToken(token);
+    
+    if (!auth) {
+      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const authContext = await loadPortalOrganizationContext(token || '', auth.id);
     if (authContext.state !== "ready") {
       return NextResponse.json({ ok: false, error: authContext.reason }, { status: 401 });
     }

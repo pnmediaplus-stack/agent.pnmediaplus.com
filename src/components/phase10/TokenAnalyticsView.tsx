@@ -99,7 +99,7 @@ export function TokenAnalyticsView() {
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc', borderRadius: '0.5rem' }} 
                     itemStyle={{ color: '#e2e8f0' }}
-                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Cost']}
+                    formatter={(value: any) => [`$${Number(value || 0).toFixed(2)}`, 'Cost']}
                   />
                   <Legend verticalAlign="middle" align="right" layout="vertical" wrapperStyle={{ fontSize: '12px', color: '#94a3b8' }} />
                 </PieChart>
@@ -119,7 +119,7 @@ export function TokenAnalyticsView() {
               <Tooltip 
                 cursor={{ fill: '#1e293b', opacity: 0.5 }} 
                 contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc', borderRadius: '0.5rem' }}
-                formatter={(value: number) => [`$${value.toFixed(2)}`, 'Cost']}
+                formatter={(value: any) => [`$${Number(value || 0).toFixed(2)}`, 'Cost']}
               />
               <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
               <Bar dataKey="openai" name="OpenAI" stackId="a" fill="#06b6d4" radius={[0, 0, 4, 4]} />

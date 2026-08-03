@@ -5,6 +5,7 @@ type N8nResult = {
   status: number;
   message: string;
   response?: unknown;
+  fail_closed?: boolean;
 };
 
 export async function postN8nWebhook(route: string, payload: unknown): Promise<N8nResult> {
@@ -17,7 +18,8 @@ export async function postN8nWebhook(route: string, payload: unknown): Promise<N
       mocked: false,
       route,
       status: 500,
-      message: "BLOCKED: N8N_WEBHOOK_BASE_URL is missing. Failsafe activated."
+      message: "BLOCKED: N8N_WEBHOOK_BASE_URL is missing. Failsafe activated.",
+      fail_closed: true
     };
   }
 
@@ -45,6 +47,7 @@ export async function postN8nWebhook(route: string, payload: unknown): Promise<N
     route,
     status: response.status,
     message: response.ok ? "n8n webhook completed." : "n8n webhook returned an error.",
-    response: parsed
+    response: parsed,
+    fail_closed: !response.ok
   };
 }

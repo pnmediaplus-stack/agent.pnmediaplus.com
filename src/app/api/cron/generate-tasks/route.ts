@@ -52,8 +52,7 @@ export async function POST(request: Request) {
         source: 'cron_auto_task',
         generated_at: new Date().toISOString(),
         platform: 'facebook'
-      },
-      requester_external_ref: 'system_cron'
+      }
     };
 
     const res = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/tasks`, {
