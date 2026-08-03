@@ -118,7 +118,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer pn_media_os_super_secret_key_2026_xyz"
+              "value": "=Bearer {{$env[\"RUNTIME_INGRESS_SECRET\"]}}"
             },
             {
               "name": "Content-Type",

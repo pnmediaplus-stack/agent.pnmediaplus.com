@@ -107,7 +107,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 1. Lấy thời gian thực\nconst timestamp = Date.now().toString();\n\n// 2. Secret Key từ .env của Next.js\nconst secret = \"pn_media_os_super_secret_key_2026_xyz\";\n\n// 3. Chuẩn bị payload lấy từ node Set phía trước\nconst payload = $input.item.json;\nconst raw_json_body = JSON.stringify(payload);\n\n// 4. Tạo chữ ký theo format chuẩn Next.js đang cần: timestamp.body\nconst dataToSign = timestamp + '.' + raw_json_body;\nconst crypto = require('crypto');\nconst signature = crypto.createHmac('sha256', secret).update(dataToSign).digest('hex');\n\n// 5. Xuất kết quả dọn cỗ cho node HTTP Request\nreturn [{\n  json: {\n    body: payload,\n    current_timestamp: timestamp,\n    generated_signature: signature\n  }\n}];"
+        "jsCode": "// 1. Lấy thời gian thực\nconst timestamp = Date.now().toString();\n\n// 2. Secret Key từ .env của Next.js\nconst secret = $env.get('RUNTIME_INGRESS_SECRET');\n\n// 3. Chuẩn bị payload lấy từ node Set phía trước\nconst payload = $input.item.json;\nconst raw_json_body = JSON.stringify(payload);\n\n// 4. Tạo chữ ký theo format chuẩn Next.js đang cần: timestamp.body\nconst dataToSign = timestamp + '.' + raw_json_body;\nconst crypto = require('crypto');\nconst signature = crypto.createHmac('sha256', secret).update(dataToSign).digest('hex');\n\n// 5. Xuất kết quả dọn cỗ cho node HTTP Request\nreturn [{\n  json: {\n    body: payload,\n    current_timestamp: timestamp,\n    generated_signature: signature\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
