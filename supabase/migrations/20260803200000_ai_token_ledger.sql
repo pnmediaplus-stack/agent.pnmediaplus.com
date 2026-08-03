@@ -2,7 +2,7 @@
 
 -- 1. Create tenant_billing_profiles
 CREATE TABLE IF NOT EXISTS public.tenant_billing_profiles (
-    organization_id uuid PRIMARY KEY REFERENCES public.portal_organizations(organization_id) ON DELETE CASCADE, -- Anchored to portal organization source-of-truth
+    organization_id uuid PRIMARY KEY REFERENCES portal_auth.organizations(id) ON DELETE CASCADE, -- Anchored to portal organization source-of-truth
     monthly_quota_usd numeric NOT NULL DEFAULT 50.00,
     current_spend_usd numeric NOT NULL DEFAULT 0.00,
     status text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'EXCEEDED')),

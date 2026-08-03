@@ -8,7 +8,15 @@ export async function GET(req: Request) {
   const auth = await verifyUiAuth(req);
   if (!auth.ok) return auth.response;
 
-  const config = getIntegrationsConfig();
+  const token = readPortalAccessToken(req.headers);
+  const orgContext = await loadPortalOrganizationContext(token || '', auth.user.id);
+  
+  if (orgContext.state !== 'ready') {
+    return NextResponse.json({ error: 'FORBIDDEN', message: 'Org context not ready' }, { status: 403 });
+  }
+
+  const organizationId = orgContext.active_membership.organization_id;
+  const config = await getIntegrationsConfig(organizationId);
   // Mask the token in the GET response for security
   const fbConfig = config.facebook ? {
     pageId: config.facebook.pageId,
@@ -37,7 +45,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { action, pageId, accessToken, enabled } = body;
-    const currentConfig = getIntegrationsConfig();
+    const organizationId = orgContext.active_membership.organization_id;
+    const currentConfig = await getIntegrationsConfig(organizationId);
 
     if (action === 'test') {
       // Test the token via Graph API
@@ -71,7 +80,7 @@ export async function POST(req: Request) {
         newFbConfig.accessToken = accessToken;
       }
 
-      saveIntegrationsConfig({
+      await saveIntegrationsConfig(organizationId, {
         ...currentConfig,
         facebook: newFbConfig
       });

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getIntegrationsConfig } from '@/lib/config/integrations';
+import { decryptToken } from '@/lib/config/integrations';
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get('authorization') || request.headers.get('x-cron-secret');
@@ -16,20 +16,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Supabase credentials missing' }, { status: 500 });
   }
 
-  // Lấy cấu hình Facebook đã được lưu an toàn (đã được tự động decrypt trong hàm getIntegrationsConfig)
-  const config = getIntegrationsConfig();
-  const fbConfig = config.facebook;
-
-  if (!fbConfig || !fbConfig.enabled || !fbConfig.pageId || !fbConfig.accessToken) {
-    return NextResponse.json({ success: false, message: 'Facebook integration is disabled or missing configuration.' });
-  }
-
-  try {
     const headers = {
       'apikey': serviceKey,
       'Authorization': `Bearer ${serviceKey}`,
       'Content-Type': 'application/json'
     };
+
+    // Lấy cấu hình Facebook đã được lưu an toàn từ Supabase
+    const configRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/social_publishers_config?facebook_enabled=eq.true&limit=1`, {
+      headers
+    });
+    
+    if (!configRes.ok) throw new Error('Failed to fetch FB config');
+    const configs = await configRes.json();
+    
+    if (!configs || configs.length === 0) {
+      return NextResponse.json({ success: false, message: 'Facebook integration is disabled or missing configuration.' });
+    }
+
+    const row = configs[0];
+    const fbConfig = {
+      pageId: row.facebook_page_id,
+      accessToken: decryptToken(row.facebook_access_token),
+      enabled: row.facebook_enabled
+    };
+
+    if (!fbConfig.enabled || !fbConfig.pageId || !fbConfig.accessToken) {
+      return NextResponse.json({ success: false, message: 'Facebook integration is disabled or missing configuration.' });
+    }
+
+  try {
+
 
     // 1. Tìm 1 Task đang ở trạng thái APPROVED
     const tasksRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/tasks?state=eq.APPROVED&limit=1`, {

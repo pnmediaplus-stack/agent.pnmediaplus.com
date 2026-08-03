@@ -33,7 +33,7 @@ const encryptToken = (token: string): string => {
   return `${iv.toString('hex')}:${encrypted}:${authTag}`;
 };
 
-const decryptToken = (encryptedToken: string): string => {
+export const decryptToken = (encryptedToken: string): string => {
   if (!encryptedToken || !encryptedToken.includes(':')) return encryptedToken;
   try {
     const parts = encryptedToken.split(':');
@@ -52,35 +52,81 @@ const decryptToken = (encryptedToken: string): string => {
   }
 };
 
-export const getIntegrationsConfig = (): IntegrationsConfig => {
+export const getIntegrationsConfig = async (organizationId: string): Promise<IntegrationsConfig> => {
   try {
-    if (!fs.existsSync(CONFIG_FILE)) {
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !serviceRoleKey || !organizationId) {
       return {};
     }
-    const fileContent = fs.readFileSync(CONFIG_FILE, 'utf8');
-    const config = JSON.parse(fileContent) as IntegrationsConfig;
-    if (config.facebook && config.facebook.accessToken) {
-      config.facebook.accessToken = decryptToken(config.facebook.accessToken);
-    }
+
+    const res = await fetch(`${supabaseUrl}/rest/v1/social_publishers_config?organization_id=eq.${organizationId}&select=*`, {
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-store'
+    });
+
+    if (!res.ok) return {};
+    
+    const rows = await res.json();
+    if (!rows || rows.length === 0) return {};
+
+    const row = rows[0];
+    const config: IntegrationsConfig = {
+      facebook: {
+        pageId: row.facebook_page_id || '',
+        accessToken: decryptToken(row.facebook_access_token) || '',
+        enabled: row.facebook_enabled === true
+      }
+    };
     return config;
   } catch (error) {
-    console.error('Error reading integrations config:', error);
+    console.error('Error reading integrations config from DB:', error);
     return {};
   }
 };
 
-export const saveIntegrationsConfig = (config: IntegrationsConfig) => {
+export const saveIntegrationsConfig = async (organizationId: string, config: IntegrationsConfig) => {
   try {
-    if (!fs.existsSync(CONFIG_DIR)) {
-      fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !serviceRoleKey || !organizationId) {
+      throw new Error('Missing Supabase config or organizationId');
     }
-    const configToSave = JSON.parse(JSON.stringify(config)); // deep clone
-    if (configToSave.facebook && configToSave.facebook.accessToken) {
-      configToSave.facebook.accessToken = encryptToken(configToSave.facebook.accessToken);
+
+    const fbConfig = config.facebook || { pageId: '', accessToken: '', enabled: false };
+    const encryptedToken = encryptToken(fbConfig.accessToken || '');
+
+    const payload = {
+      organization_id: organizationId,
+      facebook_page_id: fbConfig.pageId,
+      facebook_access_token: encryptedToken,
+      facebook_enabled: fbConfig.enabled,
+      updated_at: new Date().toISOString()
+    };
+
+    const res = await fetch(`${supabaseUrl}/rest/v1/social_publishers_config`, {
+      method: 'POST',
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Failed to save config: ${err}`);
     }
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(configToSave, null, 2), 'utf8');
   } catch (error) {
-    console.error('Error saving integrations config:', error);
+    console.error('Error saving integrations config to DB:', error);
     throw error;
   }
 };
