@@ -171,15 +171,15 @@ export function OperationsExecutionSurface({ workflowRuns }: { workflowRuns: Wor
                 {workflowRuns.map((run) => (
                   <tr key={run.id} className="text-slate-300">
                     <td className="px-4 py-4">
-                      <div className="font-medium text-white">{run.name}</div>
+                      <div className="font-medium text-white">{run.workflow_name}</div>
                       <div className="text-xs text-slate-500">{run.id}</div>
                     </td>
-                    <td className="px-4 py-4">{run.workflowKey}</td>
+                    <td className="px-4 py-4">{run.workflow_key}</td>
                     <td className="px-4 py-4">
-                      <StateBadge label={run.status} displayLabel={t(`operations.run.status.${run.status}`) ?? run.status} />
+                      <StateBadge label={run.run_status} />
                     </td>
-                    <td className="px-4 py-4">{run.duration}</td>
-                    <td className="px-4 py-4">{run.target}</td>
+                    <td className="px-4 py-4">{run.started_at ? 'Started' : '-'}</td>
+                    <td className="px-4 py-4">{run.task_id ? `Task: ${run.task_id.substring(0,8)}` : '-'}</td>
                   </tr>
                 ))}
               </tbody>
