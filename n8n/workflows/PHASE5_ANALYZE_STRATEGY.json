@@ -87,7 +87,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_lessons_learned?order=created_at.desc&limit=20",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_lessons_learned?order=createdAt.desc&limit=20",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
