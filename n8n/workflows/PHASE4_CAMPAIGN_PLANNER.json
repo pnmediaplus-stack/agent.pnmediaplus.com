@@ -17,7 +17,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase4_campaigns",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/campaigns",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -29,6 +29,14 @@
             {
               "name": "Prefer",
               "value": "return=representation"
+            },
+            {
+              "name": "Content-Profile",
+              "value": "pn_content_phase2"
+            },
+            {
+              "name": "Accept-Profile",
+              "value": "pn_content_phase2"
             }
           ]
         },
