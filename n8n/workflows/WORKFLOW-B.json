@@ -227,7 +227,7 @@
             "x-forwarded-for": "116.97.106.9",
             "x-forwarded-host": "n8n.pnmediaplus.com",
             "x-forwarded-proto": "https",
-            "x-webhook-secret": "pnmediaplus_2026"
+            "x-webhook-secret": "REMOVED_FOR_SECURITY"
           },
           "params": {},
           "query": {},
@@ -256,7 +256,7 @@
             "x-forwarded-for": "116.97.106.9",
             "x-forwarded-host": "n8n.pnmediaplus.com",
             "x-forwarded-proto": "https",
-            "x-webhook-secret": "pnmediaplus_2026"
+            "x-webhook-secret": "REMOVED_FOR_SECURITY"
           },
           "params": {},
           "query": {},
@@ -291,7 +291,7 @@
             "x-forwarded-for": "116.97.106.9",
             "x-forwarded-host": "n8n.pnmediaplus.com",
             "x-forwarded-proto": "https",
-            "x-webhook-secret": "pnmediaplus_2026"
+            "x-webhook-secret": "REMOVED_FOR_SECURITY"
           },
           "params": {},
           "query": {},
@@ -335,7 +335,7 @@
             "x-forwarded-for": "116.97.106.9",
             "x-forwarded-host": "n8n.pnmediaplus.com",
             "x-forwarded-proto": "https",
-            "x-webhook-secret": "pnmediaplus_2026"
+            "x-webhook-secret": "REMOVED_FOR_SECURITY"
           },
           "params": {},
           "query": {},
