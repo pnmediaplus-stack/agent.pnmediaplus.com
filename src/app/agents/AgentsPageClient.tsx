@@ -143,9 +143,9 @@ export function AgentsPageClient() {
             onChange={(e) => setFilterDept(e.target.value)}
             className="bg-transparent p-1.5 text-sm text-slate-200 outline-none"
           >
-            <option value="ALL">All Departments</option>
+            <option value="ALL" className="bg-slate-900">All Departments</option>
             {departments.map(d => (
-              <option key={d.id} value={d.id}>{d.canonical_name}</option>
+              <option key={d.id} value={d.id} className="bg-slate-900">{d.canonical_name}</option>
             ))}
           </select>
         </div>
@@ -194,7 +194,7 @@ export function AgentsPageClient() {
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
                 {departments.map(d => (
-                  <option key={d.id} value={d.id}>{d.canonical_name}</option>
+                  <option key={d.id} value={d.id} className="bg-slate-900">{d.canonical_name}</option>
                 ))}
               </select>
             </div>
@@ -207,7 +207,7 @@ export function AgentsPageClient() {
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
                 {ROLE_OPTIONS.map(r => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
+                  <option key={r.value} value={r.value} className="bg-slate-900">{r.label}</option>
                 ))}
               </select>
             </div>
@@ -220,7 +220,7 @@ export function AgentsPageClient() {
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
                 {AUTHORITY_SCOPES.map(s => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s} className="bg-slate-900">{s}</option>
                 ))}
               </select>
             </div>

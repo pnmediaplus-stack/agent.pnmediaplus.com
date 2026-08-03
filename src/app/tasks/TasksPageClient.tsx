@@ -207,7 +207,7 @@ export function TasksPageClient() {
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
                 {departments.map(d => (
-                  <option key={d.id} value={d.id}>{d.canonical_name}</option>
+                  <option key={d.id} value={d.id} className="bg-slate-900">{d.canonical_name}</option>
                 ))}
               </select>
             </div>
@@ -218,9 +218,9 @@ export function TasksPageClient() {
                 onChange={(e) => setAgentId(e.target.value)}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
-                <option value="">-- Unassigned --</option>
+                <option value="" className="bg-slate-900">-- Unassigned --</option>
                 {availableAgents.map(a => (
-                  <option key={a.id} value={a.id}>{a.canonical_name}</option>
+                  <option key={a.id} value={a.id} className="bg-slate-900">{a.canonical_name}</option>
                 ))}
               </select>
             </div>
