@@ -94,7 +94,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:3000/api/phase2/ai-broker",
+        "url": "={{$env[\"API_BASE_URL\"] || 'http://host.docker.internal:3000'}}/api/phase2/ai-broker",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -134,7 +134,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:3000/api/phase2/ai-broker",
+        "url": "={{$env[\"API_BASE_URL\"] || 'http://host.docker.internal:3000'}}/api/phase2/ai-broker",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
