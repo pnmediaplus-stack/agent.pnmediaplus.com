@@ -27,7 +27,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
   }, [messages.length, isSending]);
   useEffect(() => {
     let mounted = true;
