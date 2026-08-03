@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Facebook, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { TenantIntegrationsView } from '@/components/phase070/TenantIntegrationsView';
+import { TokenAnalyticsView } from '@/components/phase10/TokenAnalyticsView';
 
 export default function IntegrationsSettingsPage() {
   const [pageId, setPageId] = useState('');
@@ -87,7 +88,13 @@ export default function IntegrationsSettingsPage() {
 
   return (
     <div className="container mx-auto p-8 max-w-4xl space-y-12">
-      <h1 className="text-3xl font-bold">Integrations</h1>
+      <h1 className="text-3xl font-bold">Integrations & Billing</h1>
+
+      {/* AI Analytics (Phase 10) */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4">AI Usage & Quota</h2>
+        <TokenAnalyticsView />
+      </section>
 
       {/* AI Integrations (Phase 9 BYOK UI) */}
       <section>
