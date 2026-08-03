@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Facebook, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { TenantIntegrationsView } from '@/components/phase070/TenantIntegrationsView';
 
 export default function IntegrationsSettingsPage() {
   const [pageId, setPageId] = useState('');
@@ -85,10 +86,19 @@ export default function IntegrationsSettingsPage() {
   }
 
   return (
-    <div className="container mx-auto p-8 max-w-3xl">
-      <h1 className="text-3xl font-bold mb-8">Integrations</h1>
+    <div className="container mx-auto p-8 max-w-4xl space-y-12">
+      <h1 className="text-3xl font-bold">Integrations</h1>
 
-      <Card>
+      {/* AI Integrations (Phase 9 BYOK UI) */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4">AI Providers (BYOK)</h2>
+        <TenantIntegrationsView />
+      </section>
+
+      {/* Social Integrations */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4">Social Publishers</h2>
+        <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Facebook className="text-blue-600 h-6 w-6" />
@@ -145,6 +155,7 @@ export default function IntegrationsSettingsPage() {
           </Button>
         </CardFooter>
       </Card>
+      </section>
     </div>
   );
 }
