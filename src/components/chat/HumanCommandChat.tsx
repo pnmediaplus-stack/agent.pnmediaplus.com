@@ -140,7 +140,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           <div className="mt-2 text-sm text-slate-200 line-clamp-3">{summary}</div>
         </div>
         
-        <div className="flex-1 min-h-0 overflow-y-auto rounded-2xl p-2 scroll-smooth">
+        <div className="flex-1 min-h-0 overflow-y-auto rounded-2xl p-2">
           <ChatMessageList messages={messages} isTyping={isSending} />
           <div ref={messagesEndRef} />
         </div>
