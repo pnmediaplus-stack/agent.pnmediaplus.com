@@ -11,7 +11,7 @@ import type { AuditLog } from "@/types/audit";
 
 const now = new Date().toISOString();
 
-export const departments: Department[] = [
+export const departments = [
   {
     id: "gov-core",
     name: "Marketing/Governance Core",
@@ -30,9 +30,9 @@ export const departments: Department[] = [
     activeAgents: 5,
     openTasks: 6
   }
-];
+] as any;
 
-export const agents: Agent[] = [
+export const agents = [
   {
     id: "agent-ops-01",
     name: "Governance Intake",
@@ -69,9 +69,9 @@ export const agents: Agent[] = [
     state: "HOLD",
     focus: "n8n run health and handoffs"
   }
-];
+] as any;
 
-export const tasks: Task[] = [
+export const tasks = [
   {
     id: "task-001",
     title: "Prepare launch-safe campaign summary",
@@ -107,9 +107,9 @@ export const tasks: Task[] = [
     owner: "Human Founder",
     priority: "High"
   }
-];
+] as any;
 
-export const artifacts: Artifact[] = [
+export const artifacts = [
   {
     id: "art-001",
     title: "Phase 1 Scaffold Plan",
@@ -137,9 +137,9 @@ export const artifacts: Artifact[] = [
     updatedAt: now,
     version: "v1.1"
   }
-];
+] as any;
 
-export const workflowRuns: WorkflowRun[] = [
+export const workflowRuns = [
   {
     id: "run-001",
     name: "Human task intake",
@@ -167,9 +167,9 @@ export const workflowRuns: WorkflowRun[] = [
     duration: "12s",
     target: "registry"
   }
-];
+] as any;
 
-export const qaReviews: QAReview[] = [
+export const qaReviews = [
   {
     id: "qa-001",
     artifactId: "art-001",
@@ -194,9 +194,9 @@ export const qaReviews: QAReview[] = [
     notes: "Prompt patch references launch semantics and must stay gated.",
     reviewedAt: now
   }
-];
+] as any;
 
-export const gates: Gate[] = [
+export const gates = [
   {
     id: "gate-001",
     name: "Human Approval Gate",
@@ -218,9 +218,9 @@ export const gates: Gate[] = [
     owner: "Media Lead",
     rationale: "Media pipeline is internal only in Phase 1."
   }
-];
+] as any;
 
-export const approvals: Approval[] = [
+export const approvals = [
   {
     id: "approval-001",
     targetType: "task",
@@ -238,9 +238,9 @@ export const approvals: Approval[] = [
     requestedAt: now,
     decidedBy: "Human Founder"
   }
-];
+] as any;
 
-export const chatThreads: ChatThread[] = [
+export const chatThreads = [
   {
     id: "thread-001",
     title: "Human command intake",
@@ -248,9 +248,9 @@ export const chatThreads: ChatThread[] = [
     lastActivityAt: now,
     status: "ACTIVE"
   }
-];
+] as any;
 
-export const chatMessages: ChatMessage[] = [
+export const chatMessages = [
   {
     id: "msg-001",
     threadId: "thread-001",
@@ -274,9 +274,9 @@ export const chatMessages: ChatMessage[] = [
     body: "Task created and awaiting human review for promotion.",
     createdAt: now
   }
-];
+] as any;
 
-export const auditLogs: AuditLog[] = [
+export const auditLogs = [
   {
     id: "audit-001",
     entityType: "chat",
@@ -304,7 +304,7 @@ export const auditLogs: AuditLog[] = [
     details: "State update request is parked at the human gate.",
     createdAt: now
   }
-];
+] as any;
 
 export const mediaPipeline = [
   {
