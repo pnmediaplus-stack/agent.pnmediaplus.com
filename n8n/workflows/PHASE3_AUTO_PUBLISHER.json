@@ -89,7 +89,7 @@
     {
       "parameters": {
         "operation": "sendPhoto",
-        "chatId": "CHAT_ID_HERE",
+        "chatId": "={{$env[\"TELEGRAM_CHAT_ID\"]}}",
         "photo": "={{ $json.image }}",
         "additionalFields": {
           "caption": "={{ $json.caption }}"
@@ -101,13 +101,7 @@
       "position": [
         1100,
         300
-      ],
-      "credentials": {
-        "telegramApi": {
-          "id": "CREATE_CREDENTIAL_ID_HERE",
-          "name": "Telegram account"
-        }
-      }
+      ]
     },
     {
       "parameters": {
@@ -143,7 +137,7 @@
             },
             {
               "name": "externalUrl",
-              "value": "https://t.me/c/CHAT_ID_HERE/"
+              "value": "https://t.me/c/{{$env[\"TELEGRAM_CHAT_ID\"]}}/"
             }
           ]
         },
