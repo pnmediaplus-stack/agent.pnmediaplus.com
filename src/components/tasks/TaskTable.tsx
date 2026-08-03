@@ -1,401 +1,91 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { Task } from "@/types/task";
-import type { LifecycleState } from "@/types/state";
-import { TaskStatusBadge } from "@/components/tasks/TaskStatusBadge";
-import { EmptyState } from "@/components/shared/EmptyState";
 import { useI18n } from "@/lib/i18n/useI18n";
-import type { Department } from "@/types/department";
-import { getArtifactMetadataForTask } from "@/app/actions/task-actions";
+import type { Task } from "@/types/task";
+import { StateBadge } from "@/components/shared/StateBadge";
+import { Clock, AlertCircle } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
-type TaskAction = {
-  key: string;
-  label: string;
-  requestedTransition: LifecycleState;
-  tone: "primary" | "danger" | "neutral";
-};
-
-type NoticeKind = "success" | "info" | "error";
-
-type Notice = {
-  kind: NoticeKind;
-  title: string;
-  detail?: string;
-};
-
-function getActionPlan(status: Task["status"], t: ReturnType<typeof useI18n>["t"]): TaskAction[] {
-  switch (status) {
-    case "DRAFT":
-    case "PARTIAL":
-      return [
-        {
-          key: "submit-for-review",
-          label: t("tasks.actions.submitForReview") ?? "Submit for review",
-          requestedTransition: "REVIEW",
-          tone: "primary"
-        }
-      ];
-    case "HOLD":
-      return [
-        {
-          key: "submit-for-review",
-          label: t("tasks.actions.submitForReview") ?? "Submit for review",
-          requestedTransition: "READY_FOR_RECHECK",
-          tone: "primary"
-        },
-        {
-          key: "reject",
-          label: t("tasks.actions.reject") ?? "Reject",
-          requestedTransition: "BLOCKED",
-          tone: "danger"
-        }
-      ];
-    case "REVIEW":
-      return [
-        {
-          key: "approve",
-          label: t("tasks.actions.approve") ?? "Approve",
-          requestedTransition: "PASS",
-          tone: "primary"
-        },
-        {
-          key: "reject",
-          label: t("tasks.actions.reject") ?? "Reject",
-          requestedTransition: "BLOCKED",
-          tone: "danger"
-        }
-      ];
-    case "PASS":
-      return [
-        {
-          key: "approve",
-          label: t("tasks.actions.approve") ?? "Approve",
-          requestedTransition: "APPROVED",
-          tone: "primary"
-        }
-      ];
-    case "READY_FOR_RECHECK":
-      return [
-        {
-          key: "submit-for-review",
-          label: t("tasks.actions.submitForReview") ?? "Submit for review",
-          requestedTransition: "REVIEW",
-          tone: "primary"
-        }
-      ];
-    default:
-      return [];
-  }
-}
-
-function noticeClasses(kind: NoticeKind) {
-  if (kind === "error") return "border-rose-500/30 bg-rose-500/10 text-rose-100";
-  if (kind === "info") return "border-cyan-500/30 bg-cyan-500/10 text-cyan-100";
-  return "border-emerald-500/30 bg-emerald-500/10 text-emerald-100";
-}
-
-function actionButtonClasses(tone: TaskAction["tone"], disabled: boolean) {
-  const base =
-    "inline-flex items-center rounded-lg border px-3 py-2 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-0";
-  const variant =
-    tone === "danger"
-      ? "border-rose-500/30 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20 focus:ring-rose-400"
-      : tone === "primary"
-        ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-100 hover:bg-cyan-500/20 focus:ring-cyan-400"
-        : "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 focus:ring-slate-400";
-
-  return [
-    base,
-    variant,
-    disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-  ].join(" ");
-}
-
-function getTaskStatusLabel(status: Task["status"], t: ReturnType<typeof useI18n>["t"]) {
-  switch (status) {
-    case "NOT_STARTED":
-      return t("tasks.status.notStarted") ?? "Not started";
-    case "DRAFT":
-      return t("tasks.status.draft") ?? "Draft";
-    case "PARTIAL":
-      return t("tasks.status.partial") ?? "Partially complete";
-    case "REVIEW":
-      return t("tasks.status.review") ?? "Under review";
-    case "HOLD":
-      return t("tasks.status.hold") ?? "On hold";
-    case "READY_FOR_RECHECK":
-      return t("tasks.status.readyForRecheck") ?? "Ready for recheck";
-    case "PASS":
-      return t("tasks.status.pass") ?? "Passed";
-    case "BLOCKED":
-      return t("tasks.status.blocked") ?? "Blocked";
-    case "APPROVED":
-      return t("tasks.status.approved") ?? "Approved";
-    case "DEPRECATED":
-      return t("tasks.status.deprecated") ?? "Deprecated";
-    case "OPEN":
-      return t("tasks.status.open") ?? "Open";
-    case "IN_PROGRESS":
-      return t("tasks.status.inProgress") ?? "In progress";
-    case "DONE":
-      return t("tasks.status.done") ?? "Done";
-    default:
-      return status;
-  }
-}
-
-function getTaskIntentLabel(intentType: Task["intentType"], t: ReturnType<typeof useI18n>["t"]) {
-  switch (intentType) {
-    case "create_content":
-      return t("tasks.intent.createContent") ?? "Create content";
-    case "review_artifact":
-      return t("tasks.intent.reviewArtifact") ?? "Review artifact";
-    case "check_governance":
-      return t("tasks.intent.checkGovernance") ?? "Check governance";
-    case "request_status":
-      return t("tasks.intent.requestStatus") ?? "Request status";
-    case "approve_or_reject":
-      return t("tasks.intent.approveOrReject") ?? "Approve or reject";
-    case "unknown":
-    default:
-      return t("tasks.intent.unknown") ?? "Unknown";
-  }
-}
-
-function getTaskPriorityLabel(priority: Task["priority"], t: ReturnType<typeof useI18n>["t"]) {
-  switch (priority) {
-    case "Low":
-      return t("tasks.priority.low") ?? "Low";
-    case "Medium":
-      return t("tasks.priority.medium") ?? "Medium";
-    case "High":
-      return t("tasks.priority.high") ?? "High";
-    default:
-      return priority;
-  }
-}
-
-function getDepartmentDisplay(departmentId: Task["departmentId"], departmentRecords: Department[]) {
-  const department = departmentRecords.find((item) => item.id === departmentId);
-  return {
-    name: department?.name ?? departmentId,
-    id: department?.id ?? departmentId
-  };
-}
-
-export function TaskTable({ tasks, departments }: { tasks: Task[], departments: Department[] }) {
+export function TaskTable({ tasks }: { tasks: Task[] }) {
   const { t } = useI18n("tasks");
-  const [rows, setRows] = useState(tasks);
-  const [pendingKey, setPendingKey] = useState<string | null>(null);
-  const [notice, setNotice] = useState<Notice | null>(null);
 
-  useEffect(() => {
-    setRows(tasks);
-  }, [tasks]);
-
-  useEffect(() => {
-    if (!notice) return;
-    const timer = window.setTimeout(() => setNotice(null), 5000);
-    return () => window.clearTimeout(timer);
-  }, [notice]);
-
-  const emptyCopy = useMemo(
-    () => ({
-    title: t("tasks.empty.title") ?? "No tasks yet",
-      description:
-        t("tasks.empty.description") ?? 
-        "The task inbox is empty. New commands from chat will appear here."
-    }),
-    [t]
-  );
-
-  async function handleAction(task: Task, action: TaskAction) {
-    const requestKey = `${task.id}:${action.key}`;
-    setPendingKey(requestKey);
-    setNotice(null);
-
-    try {
-      // 1. Fetch artifact metadata and compute SHA256 (acting as Client/Origin)
-      let extraPayload: any = {};
-      try {
-        const metaData = await getArtifactMetadataForTask(task.id);
-        if (metaData && metaData.computed_content_sha256) {
-          Object.assign(extraPayload, metaData);
-        }
-      } catch (err: any) {
-        setNotice({
-          kind: "error",
-          title: "Thiếu siêu dữ liệu bản nháp",
-          detail: err.message || "Task này chưa có Artifact (bản nháp) đính kèm. Không thể duyệt."
-        });
-        return;
-      }
-
-      // 2. Submit the full transition request
-      const response = await fetch("/api/n8n/state-update-request", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          payload: {
-            entity_type: "TASK",
-            entity_id: task.id,
-            current_state: task.status,
-            requested_transition: action.requestedTransition,
-            actor_type: "HUMAN",
-            reason: `${action.label} via task inbox`,
-            source: "task-inbox-ui",
-            ...extraPayload
-          }
-        })
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const status = response.status;
-        const title =
-          status === 401
-            ? t("tasks.feedback.unauthorized") ?? "Control plane secret is missing or invalid."
-            : status === 403
-              ? t("tasks.feedback.forbiddenAuthority") ?? "Human authority is required."
-              : status === 400
-                ? t("tasks.feedback.invalidState") ?? "Invalid state transition."
-                : status === 409
-                  ? t("tasks.feedback.forbiddenTransition") ?? "Transition blocked by state guard."
-                  : status === 502
-                    ? t("tasks.feedback.downstreamFailed") ?? "n8n is currently unavailable."
-                    : (typeof data?.message === "string" && data.message) || "Task action failed.";
-
-        const detail =
-          typeof data?.message === "string" && data.message !== title ? data.message : undefined;
-
-        setNotice({
-          kind: "error",
-          title,
-          detail
-        });
-        return;
-      }
-
-      const nextStatus = action.requestedTransition;
-      setRows((currentRows) =>
-        currentRows.map((row) =>
-          row.id === task.id
-            ? {
-                ...row,
-                status: nextStatus as Task["status"],
-                updatedAt: new Date().toISOString()
-              }
-            : row
-        )
-      );
-
-      setNotice({
-        kind: data?.mocked ? "info" : "success",
-        title:
-          (data?.mocked
-            ? t("tasks.feedback.mocked")
-            : t("tasks.feedback.success")) ?? "State update request sent.",
-        detail: typeof data?.message === "string" ? data.message : undefined
-      });
-    } catch (error) {
-      setNotice({
-        kind: "error",
-        title: t("tasks.feedback.downstreamFailed") ?? "n8n is currently unavailable.",
-        detail: error instanceof Error ? error.message : String(error)
-      });
-    } finally {
-      setPendingKey(null);
-    }
+  function getPriorityColor(priority: number) {
+    if (priority >= 80) return "text-rose-400 bg-rose-500/10 border-rose-500/30";
+    if (priority >= 50) return "text-amber-400 bg-amber-500/10 border-amber-500/30";
+    return "text-emerald-400 bg-emerald-500/10 border-emerald-500/30";
   }
 
-  if (!rows.length) {
-    return <EmptyState title={emptyCopy.title} description={emptyCopy.description} />;
+  function getPriorityLabel(priority: number) {
+    if (priority >= 80) return "HIGH";
+    if (priority >= 50) return "MEDIUM";
+    return "LOW";
+  }
+
+  if (!tasks || tasks.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 rounded-2xl border border-slate-700/50 bg-slate-900/30 backdrop-blur-xl">
+        <AlertCircle className="h-10 w-10 text-slate-500 mb-4" />
+        <h3 className="text-lg font-semibold text-slate-300">No Tasks Found</h3>
+        <p className="text-sm text-slate-500">There are currently no tasks assigned to this organization.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70">
-      {notice ? (
-        <div className="pointer-events-none absolute right-4 top-4 z-20 w-[min(100%-2rem,28rem)]">
-          <div
-            role="status"
-            aria-live="polite"
-            className={`rounded-2xl border px-4 py-3 shadow-lg backdrop-blur ${noticeClasses(notice.kind)}`}
-          >
-            <div className="text-sm font-semibold">{notice.title}</div>
-            {notice.detail ? <div className="mt-1 text-xs opacity-90">{notice.detail}</div> : null}
-          </div>
-        </div>
-      ) : null}
-      <div className="border-b border-slate-800 px-5 py-4">
-        <div className="text-sm font-semibold text-white">{t("tasks.table.title") ?? "Task inbox"}</div>
-        <div className="mt-1 text-xs text-slate-400">
-          {t("tasks.table.description") ?? "Sorted for scanability with safe state badges and ownership context."}
-        </div>
-      </div>
+    <div className="overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-900/30 backdrop-blur-xl shadow-2xl">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1020px] divide-y divide-slate-800 text-left text-sm">
-          <thead className="bg-slate-900/70 text-xs uppercase tracking-[0.22em] text-slate-400">
+        <table className="w-full text-left text-sm text-slate-300">
+          <thead className="bg-slate-800/60 text-xs uppercase text-slate-400 border-b border-slate-700/50">
             <tr>
-              <th className="px-5 py-3">{t("tasks.table.task") ?? "Task"}</th>
-              <th className="px-5 py-3">{t("tasks.table.owner") ?? "Owner"}</th>
-              <th className="px-5 py-3">{t("tasks.table.department") ?? "Department"}</th>
-              <th className="px-5 py-3">{t("tasks.table.intent") ?? "Intent"}</th>
-              <th className="px-5 py-3">{t("tasks.table.status") ?? "Status"}</th>
-              <th className="px-5 py-3">{t("tasks.table.priority") ?? "Priority"}</th>
-              <th className="px-5 py-3">{t("tasks.table.actions") ?? "Actions"}</th>
+              <th scope="col" className="px-6 py-4 font-semibold tracking-wider">Task Info</th>
+              <th scope="col" className="px-6 py-4 font-semibold tracking-wider text-center">State</th>
+              <th scope="col" className="px-6 py-4 font-semibold tracking-wider text-center">Priority</th>
+              <th scope="col" className="px-6 py-4 font-semibold tracking-wider">Assignment</th>
+              <th scope="col" className="px-6 py-4 font-semibold tracking-wider">Created</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
-            {rows.map((task) => {
-              const actions = getActionPlan(task.status, t);
-              const department = getDepartmentDisplay(task.departmentId, departments);
-
-              return (
-                <tr key={task.id} className="text-slate-300 transition-colors hover:bg-slate-900/40 group">
-                  <td className="px-5 py-4">
-                    <div className="font-medium text-white group-hover:text-cyan-400 transition-colors">{task.title}</div>
-                    <div className="font-mono text-xs text-slate-500/70 truncate max-w-[200px]" title={task.id}>{task.id}</div>
-                  </td>
-                  <td className="px-5 py-4">{task.owner}</td>
-                  <td className="px-5 py-4">
-                    <div className="font-medium text-white">{department.name}</div>
-                    <div className="font-mono text-xs text-slate-500/70 truncate max-w-[180px]" title={department.id}>{department.id}</div>
-                  </td>
-                  <td className="px-5 py-4">{getTaskIntentLabel(task.intentType, t)}</td>
-                  <td className="px-5 py-4">
-                    <TaskStatusBadge status={task.status} displayLabel={getTaskStatusLabel(task.status, t)} />
-                  </td>
-                  <td className="px-5 py-4">{getTaskPriorityLabel(task.priority, t)}</td>
-                  <td className="px-5 py-4">
-                    {actions.length ? (
-                      <div className="flex flex-wrap gap-2">
-                        {actions.map((action) => {
-                          const isCurrentAction = pendingKey === `${task.id}:${action.key}`;
-                          return (
-                            <button
-                              key={action.key}
-                              type="button"
-                              disabled={Boolean(pendingKey) || isCurrentAction}
-                              onClick={() => handleAction(task, action)}
-                              className={actionButtonClasses(action.tone, Boolean(pendingKey) || isCurrentAction)}
-                            >
-                            {isCurrentAction ? (t("tasks.actions.sending") ?? "Sending...") : action.label}
-                            </button>
-                          );
-                        })}
-                      </div>
+          <tbody className="divide-y divide-slate-700/50">
+            {tasks.map((task) => (
+              <tr key={task.id} className="transition-colors hover:bg-slate-800/40">
+                <td className="px-6 py-4">
+                  <div className="font-semibold text-slate-200">{task.title}</div>
+                  <div className="mt-1 flex items-center gap-2 text-xs font-mono text-slate-500">
+                    {task.task_key}
+                  </div>
+                  {task.summary && (
+                    <div className="mt-2 text-xs text-slate-400 line-clamp-2">{task.summary}</div>
+                  )}
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <StateBadge label={task.state} />
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <span className={`inline-flex items-center rounded-md border px-2 py-1 text-[10px] font-bold tracking-wider ${getPriorityColor(task.priority)}`}>
+                    {getPriorityLabel(task.priority)} ({task.priority})
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-slate-400">
+                      Dept: <span className="font-mono text-slate-300">{task.department_id.split('-')[0]}</span>
+                    </span>
+                    {task.owner_agent_id ? (
+                      <span className="text-xs text-indigo-400 font-semibold">
+                        Agent: <span className="font-mono">{task.owner_agent_id.split('-')[0]}</span>
+                      </span>
                     ) : (
-                      <div className="text-xs text-slate-500">{t("tasks.actions.none") ?? "No actions available"}</div>
+                      <span className="text-xs text-amber-500 font-semibold">Unassigned</span>
                     )}
-                  </td>
-                </tr>
-              );
-            })}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>{formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}</span>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
