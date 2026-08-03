@@ -60,18 +60,26 @@ export async function POST(req: Request) {
     }
 
     // 3. Mark Proposal as approved
-    await fetch(`${supabaseUrl}/rest/v1/phase5_pivot_proposals?id=eq.${proposal_id}`, {
+    const propPatchRes = await fetch(`${supabaseUrl}/rest/v1/phase5_pivot_proposals?id=eq.${proposal_id}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ status: 'approved' })
     });
+    
+    if (!propPatchRes.ok) {
+      return NextResponse.json({ error: 'DB_ERROR', message: `Failed to mark proposal as approved. Aborting.` }, { status: 500 });
+    }
 
     // 4. Mark old strategy as abandoned
-    await fetch(`${supabaseUrl}/rest/v1/phase5_strategies?id=eq.${oldStrategyId}`, {
+    const stratPatchRes = await fetch(`${supabaseUrl}/rest/v1/phase5_strategies?id=eq.${oldStrategyId}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ status: 'abandoned' })
     });
+    
+    if (!stratPatchRes.ok) {
+      return NextResponse.json({ error: 'DB_ERROR', message: `Failed to mark old strategy as abandoned. Aborting.` }, { status: 500 });
+    }
 
     // 5. Create new strategy based on proposal
     const newStrategyPayload = {
