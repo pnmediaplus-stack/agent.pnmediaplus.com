@@ -15,7 +15,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] || 'http://host.docker.internal:3000'}}/api/phase2/scraper-targets",
+        "url": "={{$env[\"API_BASE_URL\"]}}/api/phase2/scraper-targets",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -74,7 +74,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] || 'http://host.docker.internal:3000'}}/api/phase2/scraper-intake",
+        "url": "={{$env[\"API_BASE_URL\"]}}/api/phase2/scraper-intake",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
