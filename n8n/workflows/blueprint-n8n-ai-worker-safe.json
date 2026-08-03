@@ -20,7 +20,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://agent.pnmediaplus.com/api/phase2/worker-api",
+        "url": "={{$env[\"API_BASE_URL\"]}}/api/phase2/worker-api",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -60,7 +60,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://agent.pnmediaplus.com/api/phase2/worker-api",
+        "url": "={{$env[\"API_BASE_URL\"]}}/api/phase2/worker-api",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [

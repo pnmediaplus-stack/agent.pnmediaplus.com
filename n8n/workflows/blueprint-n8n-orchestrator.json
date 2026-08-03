@@ -39,7 +39,7 @@
     {
       "parameters": {
         "requestMethod": "POST",
-        "url": "https://agent.pnmediaplus.com/api/phase2/create-workflow-run",
+        "url": "={{$env[\"API_BASE_URL\"]}}/api/phase2/create-workflow-run",
         "authentication": "headerAuth",
         "sendHeaders": true,
         "headerParameters": {
@@ -63,7 +63,7 @@
     {
       "parameters": {
         "requestMethod": "POST",
-        "url": "https://agent.pnmediaplus.com/api/phase2/create-tasks",
+        "url": "={{$env[\"API_BASE_URL\"]}}/api/phase2/create-tasks",
         "authentication": "headerAuth",
         "sendHeaders": true,
         "headerParameters": {

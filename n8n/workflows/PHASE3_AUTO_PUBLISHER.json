@@ -106,7 +106,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://agent.pnmediaplus.com/api/phase3/publish-success",
+        "url": "={{$env[\"API_BASE_URL\"]}}/api/phase3/publish-success",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
