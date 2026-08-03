@@ -69,13 +69,7 @@ export async function POST(request: Request) {
 
   const forwardedPayload = {
     received: true,
-    payload: {
-      ...payload,
-      source_filename: "phase1_ui_mock.md",
-      sha_compute_status: "MOCK_VALID",
-      metadata_status: "VALID",
-      computed_content_sha256: "mocked_sha256_hash_for_phase1_testing_only_000000000000000000"
-    },
+    payload,
     control_plane_guard: decision.controlPlaneDecision,
     normalized_state_update: {
       current_state: decision.currentState,
