@@ -33,9 +33,22 @@ ALTER TABLE public.ai_token_ledger ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "service_role_all_billing" ON public.tenant_billing_profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY "service_role_all_ledger" ON public.ai_token_ledger FOR ALL TO service_role USING (true) WITH CHECK (true);
 
--- Authenticated users (Tenants) can only read their own data via RLS (if needed in UI)
-CREATE POLICY "tenant_read_billing" ON public.tenant_billing_profiles FOR SELECT TO authenticated USING (true);
-CREATE POLICY "tenant_read_ledger" ON public.ai_token_ledger FOR SELECT TO authenticated USING (true);
+-- Authenticated users (Tenants) can only read their own data via RLS
+CREATE POLICY "tenant_read_billing" ON public.tenant_billing_profiles FOR SELECT TO authenticated 
+USING (
+  organization_id IN (
+    SELECT organization_id FROM public.portal_organization_memberships
+    WHERE user_id = auth.uid()
+  )
+);
+
+CREATE POLICY "tenant_read_ledger" ON public.ai_token_ledger FOR SELECT TO authenticated 
+USING (
+  organization_id IN (
+    SELECT organization_id FROM public.portal_organization_memberships
+    WHERE user_id = auth.uid()
+  )
+);
 
 -- 4. Explicit GRANTS
 GRANT ALL ON public.tenant_billing_profiles TO service_role;
