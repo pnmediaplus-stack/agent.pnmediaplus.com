@@ -23,5 +23,11 @@ export const gates = {
   "gates.kind.REVIEW": "Đánh giá",
   "gates.kind.RUNTIME": "Runtime",
   "gates.entity.TASK": "Tác vụ",
-  "gates.entity.ARTIFACT_VERSION": "Phiên bản Artifact"
+  "gates.entity.ARTIFACT_VERSION": "Phiên bản Artifact",
+  "gates.names.human_approval_gate": "Cổng phê duyệt Human",
+  "gates.rules.human_approval_gate": "Không được phép thực hiện hành động publish hoặc launch nếu không có sự phê duyệt rõ ràng.",
+  "gates.names.qa_state_gate": "Cổng trạng thái QA",
+  "gates.rules.qa_state_gate": "Các chuyển đổi trạng thái được bảo vệ bởi state machine nội bộ.",
+  "gates.names.media_release_gate": "Cổng phát hành Media",
+  "gates.rules.media_release_gate": "Pipeline media chỉ dành cho nội bộ trong Phase 1."
 } as const;

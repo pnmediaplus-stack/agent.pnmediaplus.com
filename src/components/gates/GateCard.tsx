@@ -11,9 +11,9 @@ export function GateCard({ gate }: { gate: Gate }) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="text-lg font-semibold text-white capitalize">
-            {(gate.canonical_name || gate.gate_key || 'Unknown').replace(/_/g, ' ')}
+            {t(`gates.names.${gate.gate_key}`) ?? gate.canonical_name ?? gate.gate_key ?? 'Unknown'}
           </div>
-          <div className="mt-1 text-sm text-slate-400">{gate.rule_summary || "-"}</div>
+          <div className="mt-1 text-sm text-slate-400">{t(`gates.rules.${gate.gate_key}`) ?? gate.rule_summary ?? "-"}</div>
         </div>
         <StateBadge label={gate.state} displayLabel={t(`gates.state.${gate.state}`) ?? gate.state} />
       </div>

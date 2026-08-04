@@ -23,5 +23,11 @@ export const gates = {
   "gates.kind.REVIEW": "Review",
   "gates.kind.RUNTIME": "Runtime",
   "gates.entity.TASK": "Task",
-  "gates.entity.ARTIFACT_VERSION": "Artifact Version"
+  "gates.entity.ARTIFACT_VERSION": "Artifact Version",
+  "gates.names.human_approval_gate": "Human Approval Gate",
+  "gates.rules.human_approval_gate": "No publish or launch action is allowed without explicit approval.",
+  "gates.names.qa_state_gate": "QA State Gate",
+  "gates.rules.qa_state_gate": "State transitions are guarded by the local state machine.",
+  "gates.names.media_release_gate": "Media Release Gate",
+  "gates.rules.media_release_gate": "Media pipeline is internal only in Phase 1."
 } as const;
