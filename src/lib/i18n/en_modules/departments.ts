@@ -14,6 +14,21 @@ export const departments = {
   "departments.state.blocked": "Blocked",
   "departments.card.owner": "Owner",
   "departments.card.agents": "Agents",
-  "departments.card.openTasks": "Open tasks",
-  "departments.card.id": "Id"
+  "departments.card.openTasks": "Open Tasks",
+  "departments.card.id": "Id",
+  "departments.title": "Organization Structure",
+  "departments.chart.title": "Agent Distribution",
+  "departments.form.cancel": "Cancel",
+  "departments.form.add": "Add Department",
+  "departments.form.title": "Create New Department",
+  "departments.form.keyLabel": "Department Key (Unique identifier)",
+  "departments.form.keyPlaceholder": "e.g. sales_team",
+  "departments.form.keyHint": "Only lowercase letters, numbers, and underscores.",
+  "departments.form.nameLabel": "Display Name",
+  "departments.form.namePlaceholder": "e.g. Global Sales",
+  "departments.form.descLabel": "Purpose / Description",
+  "departments.form.descPlaceholder": "What does this department do?",
+  "departments.form.submit": "Create Department",
+  "departments.empty.title": "No departments found.",
+  "departments.empty.hint": "Click \"Add Department\" to create one."
 } as const;

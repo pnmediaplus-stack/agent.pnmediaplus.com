@@ -104,7 +104,7 @@ export function DepartmentsPageClient() {
       purpose={t("departments.page.purpose") ?? "Internal department directory with ownership, purpose, and active task counts."}
       statusLabel={t("departments.page.statusLabel") ?? "Department registry"}
       statusValue="PASS"
-      statusDisplayValue="Fully Operational"
+      statusDisplayValue={t("departments.state.ready") ?? "Fully Operational"}
       allowedActions={[
         t("departments.page.allowed.inspectOwnership") ?? "Inspect department ownership",
         t("departments.page.allowed.viewOpenTasks") ?? "View open tasks",
@@ -117,19 +117,19 @@ export function DepartmentsPageClient() {
       ]}
     >
       <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Organization Structure</h2>
+        <h2 className="text-xl font-bold text-white">{t("departments.title") ?? "Organization Structure"}</h2>
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-400 border border-emerald-500/30 transition-all hover:bg-emerald-500/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)]"
         >
           <Plus className="h-4 w-4" />
-          {showForm ? "Cancel" : "Add Department"}
+          {showForm ? (t("departments.form.cancel") ?? "Cancel") : (t("departments.form.add") ?? "Add Department")}
         </button>
       </div>
 
       {!isLoading && chartData.length > 0 && chartData.some(d => d.agents > 0) && (
         <div className="mb-8 h-[200px] rounded-2xl border border-slate-700/50 bg-slate-900/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">Agent Distribution</h3>
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">{t("departments.chart.title") ?? "Agent Distribution"}</h3>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
               <XAxis dataKey="name" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
@@ -151,38 +151,38 @@ export function DepartmentsPageClient() {
 
       {showForm && (
         <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-700/50 bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-6 text-lg font-bold text-slate-200">Create New Department</h3>
+          <h3 className="mb-6 text-lg font-bold text-slate-200">{t("departments.form.title") ?? "Create New Department"}</h3>
           <div className="grid gap-6 md:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">Department Key (Unique identifier)</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("departments.form.keyLabel") ?? "Department Key (Unique identifier)"}</label>
               <input
                 type="text"
                 required
                 pattern="[a-z0-9_]+"
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                placeholder="e.g. sales_team"
+                placeholder={t("departments.form.keyPlaceholder") ?? "e.g. sales_team"}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
               />
-              <p className="mt-1 text-xs text-slate-500">Only lowercase letters, numbers, and underscores.</p>
+              <p className="mt-1 text-xs text-slate-500">{t("departments.form.keyHint") ?? "Only lowercase letters, numbers, and underscores."}</p>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">Display Name</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("departments.form.nameLabel") ?? "Display Name"}</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Global Sales"
+                placeholder={t("departments.form.namePlaceholder") ?? "e.g. Global Sales"}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-400">Purpose / Description</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("departments.form.descLabel") ?? "Purpose / Description"}</label>
               <textarea
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
-                placeholder="What does this department do?"
+                placeholder={t("departments.form.descPlaceholder") ?? "What does this department do?"}
                 rows={2}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
               />
@@ -195,7 +195,7 @@ export function DepartmentsPageClient() {
               className="flex items-center gap-2 rounded-lg bg-cyan-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-cyan-500 disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Create Department
+              {t("departments.form.submit") ?? "Create Department"}
             </button>
           </div>
         </form>
@@ -207,8 +207,8 @@ export function DepartmentsPageClient() {
         </div>
       ) : departments.length === 0 ? (
         <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/50 text-slate-400">
-          <p>No departments found.</p>
-          <p className="text-sm">Click "Add Department" to create one.</p>
+          <p>{t("departments.empty.title") ?? "No departments found."}</p>
+          <p className="text-sm">{t("departments.empty.hint") ?? "Click \"Add Department\" to create one."}</p>
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">

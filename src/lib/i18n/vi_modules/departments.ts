@@ -15,5 +15,20 @@ export const departments = {
   "departments.card.owner": "Chủ sở hữu",
   "departments.card.agents": "Agent",
   "departments.card.openTasks": "Task đang mở",
-  "departments.card.id": "Id"
+  "departments.card.id": "Id",
+  "departments.title": "Cấu trúc tổ chức",
+  "departments.chart.title": "Phân bổ Agent",
+  "departments.form.cancel": "Hủy bỏ",
+  "departments.form.add": "Thêm phòng ban",
+  "departments.form.title": "Tạo phòng ban mới",
+  "departments.form.keyLabel": "Mã phòng ban (ID duy nhất)",
+  "departments.form.keyPlaceholder": "vd: sales_team",
+  "departments.form.keyHint": "Chỉ sử dụng chữ cái viết thường, số, và dấu gạch dưới.",
+  "departments.form.nameLabel": "Tên hiển thị",
+  "departments.form.namePlaceholder": "vd: Khối Kinh doanh",
+  "departments.form.descLabel": "Mục đích / Mô tả",
+  "departments.form.descPlaceholder": "Phòng ban này đảm nhận chức năng gì?",
+  "departments.form.submit": "Tạo phòng ban",
+  "departments.empty.title": "Không tìm thấy phòng ban nào.",
+  "departments.empty.hint": "Nhấn \"Thêm phòng ban\" để tạo mới."
 } as const;
