@@ -1,10 +1,10 @@
 export const approvals = {
   "approvals.page.title": "Phê duyệt",
-  "approvals.page.purpose": "Chế độ xem phê duyệt của Human cho các yêu cầu chờ xử lý, quyết định rõ ràng và thay đổi được yêu cầu.",
+  "approvals.page.purpose": "Chế độ xem phê duyệt của con người cho các yêu cầu chờ xử lý, quyết định rõ ràng và thay đổi được yêu cầu.",
   "approvals.page.statusLabel": "Bảng điều khiển phê duyệt",
   "approvals.page.allowed.requestApproval": "Yêu cầu phê duyệt",
-  "approvals.page.allowed.markReadyHumanReview": "Đánh dấu sẵn sàng để Human review",
-  "approvals.page.allowed.approveAsHuman": "Duyệt với vai trò Human",
+  "approvals.page.allowed.markReadyHumanReview": "Đánh dấu sẵn sàng để kiểm duyệt",
+  "approvals.page.allowed.approveAsHuman": "Phê duyệt với tư cách người kiểm duyệt",
   "approvals.page.allowed.reject": "Từ chối",
   "approvals.page.allowed.requestChanges": "Yêu cầu chỉnh sửa",
   "approvals.page.forbidden.launchNow": "Khởi chạy ngay",

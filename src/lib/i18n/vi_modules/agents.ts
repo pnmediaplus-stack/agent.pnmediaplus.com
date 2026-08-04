@@ -5,7 +5,7 @@ export const agents = {
   "agents.page.allowed.inspectFocus": "Xem trọng tâm đặc vụ",
   "agents.page.allowed.checkStatus": "Kiểm tra trạng thái",
   "agents.page.allowed.reviewDepartmentMapping": "Xem ánh xạ phòng ban",
-  "agents.page.forbidden.assignDestructiveWork": "Gán việc phá huỷ",
+  "agents.page.forbidden.assignDestructiveWork": "Gán tác vụ phá hủy",
   "agents.page.forbidden.overrideAuthority": "Ghi đè quyền hạn",
   "agents.page.forbidden.publishArtifacts": "Xuất bản tài nguyên",
   "agents.card.role": "Vai trò",
