@@ -123,7 +123,7 @@ export function AgentsPageClient() {
       purpose={t("agents.page.purpose") ?? "Directory of reasoning and artifact workers, grouped by department and current focus."}
       statusLabel={t("agents.page.statusLabel") ?? "Agent directory"}
       statusValue="PASS"
-      statusDisplayValue={t("agents.state.ready") ?? "Fully Operational"}
+      statusDisplayValue={t("agents.state.ready") ?? "Sẵn sàng"}
       allowedActions={[
         t("agents.page.allowed.inspectFocus") ?? "Inspect agent focus",
         t("agents.page.allowed.checkStatus") ?? "Check status",

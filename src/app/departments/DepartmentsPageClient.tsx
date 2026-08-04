@@ -104,7 +104,7 @@ export function DepartmentsPageClient() {
       purpose={t("departments.page.purpose") ?? "Internal department directory with ownership, purpose, and active task counts."}
       statusLabel={t("departments.page.statusLabel") ?? "Department registry"}
       statusValue="PASS"
-      statusDisplayValue={t("departments.state.ready") ?? "Fully Operational"}
+      statusDisplayValue={t("departments.state.ready") ?? "Sẵn sàng"}
       allowedActions={[
         t("departments.page.allowed.inspectOwnership") ?? "Inspect department ownership",
         t("departments.page.allowed.viewOpenTasks") ?? "View open tasks",

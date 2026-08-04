@@ -123,7 +123,7 @@ export function TasksPageClient() {
       purpose={t("tasks.page.purpose") ?? "Central queue for all active and pending reasoning tasks."}
       statusLabel={t("tasks.page.statusLabel") ?? "Task queue"}
       statusValue="PASS"
-      statusDisplayValue={t("tasks.state.ready") ?? "Fully Operational"}
+      statusDisplayValue={t("tasks.state.ready") ?? "Sẵn sàng"}
       allowedActions={[
         t("tasks.page.allowed.viewTasks") ?? "View task queue",
         t("tasks.page.allowed.submitReview") ?? "Submit tasks for review",
