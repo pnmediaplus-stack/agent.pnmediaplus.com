@@ -15,16 +15,25 @@ function getHeaders() {
   };
 }
 
+function getPublicHeaders() {
+  if (!serviceRoleKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY is missing");
+  return {
+    'apikey': serviceRoleKey,
+    'Authorization': `Bearer ${serviceRoleKey}`,
+    'Accept-Profile': 'public',
+    'Content-Type': 'application/json'
+  };
+}
+
 export async function dbInsertChatMessage(organizationId: string, message: { threadId: string; sender: "human" | "agent" | "system"; body: string; intentType?: string }) {
-  const res = await fetch(`${supabaseUrl}/rest/v1/chat_messages`, {
+  const res = await fetch(`${supabaseUrl}/rest/v1/phase1_chat_messages`, {
     method: 'POST',
-    headers: { ...getHeaders(), 'Prefer': 'return=representation' },
+    headers: { ...getPublicHeaders(), 'Prefer': 'return=representation' },
     body: JSON.stringify({
-      organization_id: organizationId,
-      thread_id: message.threadId,
+      threadId: message.threadId,
       sender: message.sender,
       body: message.body,
-      intent_type: message.intentType
+      intentType: message.intentType
     })
   });
   if (!res.ok) throw new Error(await res.text());
@@ -33,16 +42,15 @@ export async function dbInsertChatMessage(organizationId: string, message: { thr
 }
 
 export async function dbInsertAuditLog(organizationId: string, log: { entityId: string; entityType: string; action: string; actor: string; details: string }) {
-  const res = await fetch(`${supabaseUrl}/rest/v1/audit_logs`, {
+  const res = await fetch(`${supabaseUrl}/rest/v1/phase1_audit_logs`, {
     method: 'POST',
-    headers: { ...getHeaders(), 'Prefer': 'return=representation' },
+    headers: { ...getPublicHeaders(), 'Prefer': 'return=representation' },
     body: JSON.stringify({
-      organization_id: organizationId,
-      entity_type: log.entityType,
-      entity_id: log.entityId,
-      action_type: log.action,
-      actor_type: log.actor,
-      metadata: { details: log.details }
+      entityId: log.entityId,
+      entityType: log.entityType,
+      action: log.action,
+      actor: log.actor,
+      details: log.details
     })
   });
   if (!res.ok) throw new Error(await res.text());
@@ -51,8 +59,8 @@ export async function dbInsertAuditLog(organizationId: string, log: { entityId: 
 }
 
 export async function dbLoadChatMessages(organizationId: string, threadId: string) {
-  const res = await fetch(`${supabaseUrl}/rest/v1/chat_messages?organization_id=eq.${organizationId}&thread_id=eq.${threadId}&order=created_at.asc`, {
-    headers: getHeaders(),
+  const res = await fetch(`${supabaseUrl}/rest/v1/phase1_chat_messages?thread_id=eq.${threadId}&order=created_at.asc`, {
+    headers: getPublicHeaders(),
     cache: 'no-store'
   });
   if (!res.ok) return { error: await res.text(), data: [] };
@@ -61,8 +69,8 @@ export async function dbLoadChatMessages(organizationId: string, threadId: strin
 }
 
 export async function dbLoadThreadAuditLogs(organizationId: string, threadId: string) {
-  const res = await fetch(`${supabaseUrl}/rest/v1/audit_logs?organization_id=eq.${organizationId}&entity_id=eq.${threadId}&entity_type=eq.chat_thread&order=created_at.desc`, {
-    headers: getHeaders(),
+  const res = await fetch(`${supabaseUrl}/rest/v1/phase1_audit_logs?entity_id=eq.${threadId}&entityType=eq.chat&order=created_at.desc`, {
+    headers: getPublicHeaders(),
     cache: 'no-store'
   });
   if (!res.ok) return { error: await res.text(), data: [] };
@@ -71,7 +79,7 @@ export async function dbLoadThreadAuditLogs(organizationId: string, threadId: st
 }
 
 export async function dbDeleteChatMessage(organizationId: string, messageId: string) {
-  const res = await fetch(`${supabaseUrl}/rest/v1/chat_messages?organization_id=eq.${organizationId}&id=eq.${messageId}`, {
+  const res = await fetch(`${supabaseUrl}/rest/v1/chat_messages?id=eq.${messageId}`, {
     method: 'DELETE',
     headers: getHeaders()
   });
@@ -79,7 +87,7 @@ export async function dbDeleteChatMessage(organizationId: string, messageId: str
 }
 
 export async function dbDeleteAuditLog(organizationId: string, logId: string) {
-  const res = await fetch(`${supabaseUrl}/rest/v1/audit_logs?organization_id=eq.${organizationId}&id=eq.${logId}`, {
+  const res = await fetch(`${supabaseUrl}/rest/v1/audit_logs?id=eq.${logId}`, {
     method: 'DELETE',
     headers: getHeaders()
   });

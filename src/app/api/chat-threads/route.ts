@@ -35,7 +35,18 @@ export async function GET(req: Request) {
       throw new Error(await res.text());
     }
 
-    const data = await res.json();
+    const rawData = await res.json();
+    const data = rawData.map((row: any) => ({
+      id: row.id,
+      organization_id: row.organization_id || '',
+      title: row.subject || '',
+      purpose: row.purpose || '',
+      status: row.thread_status || 'ACTIVE',
+      last_activity_at: row.last_activity_at || row.created_at,
+      metadata: row.metadata,
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    }));
     return NextResponse.json({ chat_threads: data });
   } catch (error: any) {
     console.error('API Error:', error);

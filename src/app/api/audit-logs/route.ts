@@ -35,7 +35,20 @@ export async function GET(req: Request) {
       throw new Error(await res.text());
     }
 
-    const data = await res.json();
+    const rawData = await res.json();
+    const data = rawData.map((row: any) => ({
+      id: row.id,
+      organization_id: row.organization_id || '',
+      entity_type: row.entity_type ? row.entity_type.toLowerCase() : '',
+      entity_id: row.entity_id,
+      actor_type: row.actor_type,
+      agent_id: row.actor_agent_id || null,
+      external_ref: row.actor_external_ref || null,
+      action_type: row.action,
+      metadata: { reason: row.reason, before: row.before_state, after: row.after_state },
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    }));
     return NextResponse.json({ audit_logs: data });
   } catch (error: any) {
     console.error('API Error:', error);
