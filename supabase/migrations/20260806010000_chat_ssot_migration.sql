@@ -740,4 +740,11 @@ where th.thread_key = 'thread_001'
       and al.entity_id = th.id
   );
 
+-- -----------------------------------------------------------------------------
+-- explicitly grant access to service_role for API usage via PostgREST
+-- -----------------------------------------------------------------------------
+GRANT SELECT, INSERT, UPDATE, DELETE ON pn_os_ai_department.chat_threads TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON pn_os_ai_department.chat_messages TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON pn_os_ai_department.audit_logs TO service_role;
+
 commit;
