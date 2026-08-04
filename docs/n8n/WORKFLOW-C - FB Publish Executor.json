@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\nreturn {\n  job_id: body.job_id,\n  post_id: body.post_id,\n  mode: body.post?.mode || \"text\",\n  message: body.post?.content || body.post?.message || \"\",\n  media_urls: body.post?.media_urls || [],\n  page_id: body.page?.id || \"\",\n  access_token: body.page?.access_token || body.access_token || \"\"\n};"
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst redeem = $node[\"Redeem BYOK Reference Token\"].json;\nconst redeemData = redeem.data || redeem;\n\nif (!redeemData.access_token) {\n  throw new Error(\"REDEEM_FAILED: Missing access_token from redeem node.\");\n}\n\nreturn {\n  job_id: body.job_id,\n  post_id: body.post_id,\n  mode: body.post?.mode || \"text\",\n  message: body.post?.content || body.post?.message || \"\",\n  media_urls: body.post?.media_urls || [],\n  page_id: redeemData.page_id,\n  access_token: redeemData.access_token\n};"
       },
       "name": "Normalize Payload",
       "type": "n8n-nodes-base.code",
@@ -632,6 +632,33 @@
       "typeVersion": 4.2,
       "id": "6673f0d9-0562-4eb8-a060-20d8fd99e8a0",
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NEXT_PUBLIC_BASE_URL }}/api/byok/redeem",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-broker-internal-secret",
+              "value": "={{ $env.BROKER_INTERNAL_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"reference_token\": \"{{ $json.body.reference_token || $json.reference_token }}\",\n  \"organization_id\": \"{{ $json.body.organization_id || $json.organization_id }}\",\n  \"integration_key\": \"{{ $json.body.integration_key || $json.integration_key }}\"\n}",
+        "options": {}
+      },
+      "id": "redeem-byok-reference-token",
+      "name": "Redeem BYOK Reference Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -460,
+        816
+      ]
     }
   ],
   "pinData": {
@@ -866,7 +893,7 @@
       "main": [
         [
           {
-            "node": "Normalize Payload",
+            "node": "Redeem BYOK Reference Token",
             "type": "main",
             "index": 0
           }
@@ -1074,6 +1101,17 @@
         [
           {
             "node": "Set Success Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redeem BYOK Reference Token": {
+      "main": [
+        [
+          {
+            "node": "Normalize Payload",
             "type": "main",
             "index": 0
           }

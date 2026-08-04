@@ -41,6 +41,7 @@ type ConsumeReferenceTokenRow = {
   ciphertext: string;
   ciphertext_nonce?: string | null;
   broker_receipt_ref: string;
+  request_id?: string;
 };
 
 type VaultMasterKeysEnv = {
@@ -229,14 +230,14 @@ export async function issueReferenceToken(request: ByokIssueTokenRequest, actor:
 
   return {
     jti: token.jti,
-    reference_token: token.lease_token,
+    lease_token: token.lease_token,
     expires_at: token.expires_at,
     broker_receipt_ref: token.broker_receipt_ref,
     request_id: requestId
   };
 }
 
-async function consumeReferenceToken(referenceToken: string, actor: BrokerActor) {
+export async function consumeReferenceToken(referenceToken: string, actor: BrokerActor) {
   if (!referenceToken.trim()) {
     throw new ByokBrokerError(400, "MISSING_REFERENCE_TOKEN", "reference_token is required.");
   }
@@ -254,13 +255,68 @@ async function consumeReferenceToken(referenceToken: string, actor: BrokerActor)
     throw new ByokBrokerError(502, "VAULT_TOKEN_CONSUME_EMPTY", "Vault did not return a decryptable secret package.");
   }
 
-  if (!isLlmScope(consumed.scope)) {
-    throw new ByokBrokerError(403, "INVALID_TOKEN_SCOPE", "Reference token scope is not allowed for LLM broker calls.");
-  }
-
   return {
     ...consumed,
     request_id: requestId
+  };
+}
+
+export async function redeemReferenceToken(
+  referenceToken: string,
+  organizationId: string,
+  integrationKey: string,
+  actor: BrokerActor
+) {
+  // 1. Consume token to get encrypted envelope
+  const consumed = await consumeReferenceToken(referenceToken, actor);
+
+  // 2. Validate tenant scope
+  const config = getSupabaseVaultConfig();
+  const response = await fetch(`${config.url}/rest/v1/tenant_integrations?organization_id=eq.${organizationId}&integration_key=eq.${integrationKey}&select=vault_credential_ref`, {
+    headers: {
+      apikey: config.serviceRoleKey,
+      Authorization: `Bearer ${config.serviceRoleKey}`,
+      Accept: "application/json",
+      "Accept-Profile": "tenant_integration_vault"
+    },
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+     throw new ByokBrokerError(500, "TENANT_LOOKUP_FAILED", "Failed to query tenant_integrations.");
+  }
+  
+  const rows = await response.json();
+  if (!rows || rows.length === 0 || rows[0].vault_credential_ref !== consumed.credential_ref) {
+     throw new ByokBrokerError(403, "TENANT_SCOPE_MISMATCH", "Token does not match the provided organization and integration context.");
+  }
+
+  // 3. Decrypt payload
+  const secretBuffer = decryptSecretPackage(consumed);
+  const rawSecretStr = secretBuffer.toString("utf8").trim();
+
+  if (!rawSecretStr) {
+    throw new ByokBrokerError(502, "VAULT_SECRET_EMPTY", "Secret package decrypted to an empty credential.");
+  }
+
+  let accessToken = rawSecretStr;
+  let pageId = "";
+
+  try {
+    const parsed = JSON.parse(rawSecretStr);
+    if (parsed.access_token) accessToken = parsed.access_token;
+    if (parsed.page_id) pageId = parsed.page_id;
+  } catch {
+    // Not JSON, assume the entire string is the access token
+  }
+
+  secretBuffer.fill(0); // Clear memory
+
+  return {
+    access_token: accessToken,
+    page_id: pageId,
+    expires_at: consumed.expires_at,
+    broker_receipt_ref: consumed.broker_receipt_ref
   };
 }
 
@@ -385,7 +441,7 @@ function decodeMasterKey(version: string) {
   return key;
 }
 
-function decryptSecretPackage(consumed: Awaited<ReturnType<typeof consumeReferenceToken>>) {
+export function decryptSecretPackage(consumed: Awaited<ReturnType<typeof consumeReferenceToken>>) {
   const cipherPackage = parseCipherPackage(consumed.ciphertext);
   const key = decodeMasterKey(cipherPackage.version);
 

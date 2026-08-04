@@ -2,7 +2,7 @@ export type VaultActorType = "HUMAN" | "SYSTEM" | "N8N" | "SERVICE";
 
 export type ByokBrokerEnvelope<TData = unknown> = {
   ok: boolean;
-  route: "byok-reference-token" | "byok-llm-proxy";
+  route: "byok-reference-token" | "byok-llm-proxy" | "byok-redeem-token";
   status: number;
   message: string;
   data?: TData;
