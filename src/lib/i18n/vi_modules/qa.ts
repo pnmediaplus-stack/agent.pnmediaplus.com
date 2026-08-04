@@ -1,7 +1,7 @@
 export const qa = {
   "qa.page.title": "Đánh giá QA",
-  "qa.page.purpose": "Bảng review QA với kết quả pass, hold, block cho governance nội bộ.",
-  "qa.page.statusLabel": "QA review panel",
+  "qa.page.purpose": "Bảng đánh giá QA với kết quả đạt, tạm giữ, chặn cho quản trị nội bộ.",
+  "qa.page.statusLabel": "Bảng đánh giá QA",
   "qa.page.allowed.submitForQA": "Gửi cho QA",
   "qa.page.allowed.markReadyHumanReview": "Đánh dấu sẵn sàng cho Human review",
   "qa.page.allowed.requestChanges": "Yêu cầu chỉnh sửa",
@@ -11,7 +11,7 @@ export const qa = {
   "qa.table.title": "Đánh giá QA",
   "qa.table.description": "Kết quả review và ghi chú cho các kiểm tra governance nội bộ.",
   "qa.table.artifact": "Tài nguyên",
-  "qa.table.reviewer": "Người review",
+  "qa.table.reviewer": "Người duyệt",
   "qa.table.status": "Trạng thái",
   "qa.table.notes": "Ghi chú",
   "qa.loading": "Đang tải dữ liệu QA...",

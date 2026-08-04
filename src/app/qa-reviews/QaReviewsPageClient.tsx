@@ -14,14 +14,14 @@ export function QaReviewsPageClient() {
 
   return (
     <PageFrame
-      title={t("qa.page.title") ?? "QA Reviews"}
-      purpose={t("qa.page.purpose") ?? "Bảng review QA với kết quả pass, hold, block cho governance nội bộ."}
-      statusLabel={t("qa.page.statusLabel") ?? "QA review panel"}
+      title={t("qa.page.title") ?? "Đánh giá QA"}
+      purpose={t("qa.page.purpose") ?? "Bảng đánh giá QA với kết quả đạt, tạm giữ, chặn cho quản trị nội bộ."}
+      statusLabel={t("qa.page.statusLabel") ?? "Bảng đánh giá QA"}
       statusValue="REVIEW"
       statusDisplayValue={t("qa.state.REVIEW") ?? "Đang duyệt"}
       allowedActions={[
         t("qa.page.allowed.submitForQA") ?? "Gửi cho QA",
-        t("qa.page.allowed.markReadyHumanReview") ?? "Đánh dấu sẵn sàng cho Human review",
+        t("qa.page.allowed.markReadyHumanReview") ?? "Đánh dấu sẵn sàng cho con người duyệt",
         t("qa.page.allowed.requestChanges") ?? "Yêu cầu chỉnh sửa"
       ]}
       forbiddenActions={[

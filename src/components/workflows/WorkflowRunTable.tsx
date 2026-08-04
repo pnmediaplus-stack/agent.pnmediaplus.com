@@ -30,16 +30,16 @@ export function WorkflowRunTable({ runs, namespace = "workflows" }: WorkflowRunT
     <div className="overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-900/30 backdrop-blur-xl shadow-2xl">
       <div className="border-b border-slate-700/50 bg-slate-800/40 px-5 py-4 text-sm font-semibold text-white flex items-center gap-2">
         <Activity className="h-4 w-4 text-indigo-400" />
-        {t(`${namespace}.table.title`) ?? "Workflow runs"}
+        {t(`${namespace}.table.title`) ?? "Các lượt chạy quy trình"}
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-700/50 text-left text-sm">
           <thead className="bg-slate-800/60 text-xs uppercase tracking-[0.1em] text-slate-400">
             <tr>
-              <th className="px-6 py-4 font-semibold">{t(`${namespace}.table.run`) ?? "Run"}</th>
+              <th className="px-6 py-4 font-semibold">{t(`${namespace}.table.run`) ?? "Lượt chạy"}</th>
               <th className="px-6 py-4 font-semibold text-center">{t(`${namespace}.table.status`) ?? "Trạng thái"}</th>
               <th className="px-6 py-4 font-semibold">{t(`${namespace}.table.duration`) ?? "Thời lượng"}</th>
-              <th className="px-6 py-4 font-semibold">{t(`${namespace}.table.target`) ?? "Target"}</th>
+              <th className="px-6 py-4 font-semibold">{t(`${namespace}.table.target`) ?? "Mục tiêu"}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
@@ -77,7 +77,7 @@ export function WorkflowRunTable({ runs, namespace = "workflows" }: WorkflowRunT
                     {run.n8n_execution_id ? (
                       <span className="text-amber-500 font-mono">n8n: {run.n8n_execution_id}</span>
                     ) : (
-                      <span className="text-slate-500 italic">{t(`${namespace}.table.noN8n`) ?? "Không có run n8n"}</span>
+                      <span className="text-slate-500 italic">{t(`${namespace}.table.noN8n`) ?? "Không có dữ liệu n8n"}</span>
                     )}
                   </div>
                 </td>

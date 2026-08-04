@@ -17,13 +17,13 @@ export function WorkflowsPageClient() {
     const fetchRuns = async () => {
       try {
         const res = await fetch("/api/workflow-runs");
-        if (!res.ok) throw new Error("Failed to fetch workflows");
+        if (!res.ok) throw new Error("Không thể tải quy trình");
         
         const data = await res.json();
         setRuns(data.runs || []);
       } catch (error) {
         console.error(error);
-        toast.error("Error loading workflows");
+        toast.error("Lỗi tải quy trình");
       } finally {
         setIsLoading(false);
       }
@@ -46,20 +46,20 @@ export function WorkflowsPageClient() {
 
   return (
     <PageFrame
-      title={t("workflows.page.title") ?? "Workflow Board"}
-      purpose={t("workflows.page.purpose") ?? "Bảng workflow cho chuyển trạng thái, status run và các checkpoint handoff an toàn."}
-      statusLabel={t("workflows.page.statusLabel") ?? "Trạng thái hiện tại"}
+      title={t("workflows.page.title") ?? "Bảng quy trình"}
+      purpose={t("workflows.page.purpose") ?? "Bảng quy trình cho việc chuyển trạng thái, trạng thái chạy và các điểm kiểm tra an toàn."}
+      statusLabel={t("workflows.page.statusLabel") ?? "Bảng quy trình"}
       statusValue="WAITING_ON_HUMAN"
       statusDisplayValue={t("workflows.state.WAITING_ON_HUMAN") ?? "Chờ duyệt"}
       allowedActions={[
-        t("workflows.page.allowed.viewRunStatus") ?? "Xem trạng thái run",
-        t("workflows.page.allowed.viewCheckpoints") ?? "Xem checkpoint",
+        t("workflows.page.allowed.viewRunStatus") ?? "Xem trạng thái chạy",
+        t("workflows.page.allowed.viewCheckpoints") ?? "Xem điểm kiểm tra",
         t("workflows.page.allowed.holdForHuman") ?? "Giữ để Human review"
       ]}
       forbiddenActions={[
-        t("workflows.page.forbidden.autoLaunch") ?? "Tự động launch",
+        t("workflows.page.forbidden.autoLaunch") ?? "Khởi chạy tự động",
         t("workflows.page.forbidden.deployProd") ?? "Triển khai Production",
-        t("workflows.page.forbidden.skipGate") ?? "Bỏ qua state"
+        t("workflows.page.forbidden.skipGate") ?? "Bỏ qua trạng thái"
       ]}
     >
       {isLoading ? (
