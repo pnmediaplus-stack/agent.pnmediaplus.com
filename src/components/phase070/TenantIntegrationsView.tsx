@@ -206,7 +206,7 @@ export function TenantIntegrationsView() {
 
   if (loading) {
     return (
-      <Panel title={t("loading.title") ?? "Loading tenant integrations"} description={t("loading.description") ?? "Reading provider catalog and tenant integration metadata."}>
+      <Panel title={t("phase070.loading.title") ?? "Loading tenant integrations"} description={t("phase070.loading.description") ?? "Reading provider catalog and tenant integration metadata."}>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
              <div key={i} className="h-64 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/60" />
@@ -218,7 +218,7 @@ export function TenantIntegrationsView() {
 
   if (!response?.data) {
     return (
-      <Panel title={t("blocked.title") ?? "Tenant integrations blocked"} description={t("blocked.description") ?? "Phase 070 fails closed until portal session, membership, and read surfaces are ready."}>
+      <Panel title={t("phase070.blocked.title") ?? "Tenant integrations blocked"} description={t("phase070.blocked.description") ?? "Phase 070 fails closed until portal session, membership, and read surfaces are ready."}>
         <div className="rounded-xl border border-rose-900/50 bg-rose-950/30 p-6">
           <div className="text-sm font-medium text-rose-400">Response State: {response?.state ?? "Unknown"}</div>
           <div className="mt-2 text-sm text-slate-300">Reason: {response?.reason ?? "No data received from API"}</div>

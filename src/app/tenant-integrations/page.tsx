@@ -9,21 +9,21 @@ export default function TenantIntegrationsPage() {
 
   return (
     <PageFrame
-      title={t("page.title") ?? "Tenant Integration Vault"}
-      purpose={t("page.purpose") ?? "Phase 070 metadata shell for tenant integrations, write-only secret intake, and n8n-safe broker boundaries."}
-      statusLabel={t("page.statusLabel") ?? "Vault boundary"}
+      title={t("phase070.page.title") ?? "Tenant Integration Vault"}
+      purpose={t("phase070.page.purpose") ?? "Phase 070 metadata shell for tenant integrations, write-only secret intake, and n8n-safe broker boundaries."}
+      statusLabel={t("phase070.page.statusLabel") ?? "Vault boundary"}
       statusValue="BLOCKED"
-      statusDisplayValue={t("page.statusValue") ?? "Writes blocked pending Gatekeeper encryption approval"}
+      statusDisplayValue={t("phase070.page.statusValue") ?? "Writes blocked pending Gatekeeper encryption approval"}
       allowedActions={[
-        t("page.allowed.viewProviders") ?? "View provider catalog",
-        t("page.allowed.viewStatus") ?? "View tenant integration status",
-        t("page.allowed.submitWriteOnly") ?? "Submit write-only secret placeholder"
+        t("phase070.page.allowed.viewProviders") ?? "View provider catalog",
+        t("phase070.page.allowed.viewStatus") ?? "View tenant integration status",
+        t("phase070.page.allowed.submitWriteOnly") ?? "Submit write-only secret placeholder"
       ]}
       forbiddenActions={[
-        t("page.forbidden.readSecret") ?? "Read raw secrets",
-        t("page.forbidden.n8nSecret") ?? "Send raw secrets to n8n",
-        t("page.forbidden.publicRead") ?? "Expose secret data through public read surfaces",
-        t("page.forbidden.selfActivate") ?? "Self-activate integrations"
+        t("phase070.page.forbidden.readSecret") ?? "Read raw secrets",
+        t("phase070.page.forbidden.n8nSecret") ?? "Send raw secrets to n8n",
+        t("phase070.page.forbidden.publicRead") ?? "Expose secret data through public read surfaces",
+        t("phase070.page.forbidden.selfActivate") ?? "Self-activate integrations"
       ]}
       contentClassName="grid gap-7"
     >
