@@ -52,5 +52,21 @@ export const tasks = {
   "tasks.feedback.forbiddenAuthority": "Yêu cầu cần thẩm quyền Human.",
   "tasks.feedback.invalidState": "Chuyển trạng thái không hợp lệ.",
   "tasks.feedback.forbiddenTransition": "Chuyển trạng thái bị chặn bởi bộ luật trạng thái.",
-  "tasks.feedback.downstreamFailed": "Hệ thống n8n đang mất kết nối."
+  "tasks.feedback.downstreamFailed": "Hệ thống n8n đang mất kết nối.",
+  "tasks.state.ready": "Sẵn sàng",
+  "tasks.board.title": "Bảng tác vụ",
+  "tasks.form.cancel": "Hủy bỏ",
+  "tasks.form.assign": "Giao việc",
+  "tasks.form.title": "Giao tác vụ mới",
+  "tasks.form.keyLabel": "Mã tác vụ (ID duy nhất)",
+  "tasks.form.keyPlaceholder": "vd: generate_report_1",
+  "tasks.form.titleLabel": "Tiêu đề",
+  "tasks.form.titlePlaceholder": "vd: Báo cáo tài chính Q3",
+  "tasks.form.summaryLabel": "Tóm tắt (Tùy chọn)",
+  "tasks.form.summaryPlaceholder": "Chi tiết công việc cần làm...",
+  "tasks.form.priorityLabel": "Độ ưu tiên (1-100)",
+  "tasks.form.departmentLabel": "Phòng ban",
+  "tasks.form.agentLabel": "Giao cho Agent (Tùy chọn)",
+  "tasks.form.agentUnassigned": "-- Chưa chỉ định --",
+  "tasks.form.submit": "Gửi tác vụ"
 } as const;

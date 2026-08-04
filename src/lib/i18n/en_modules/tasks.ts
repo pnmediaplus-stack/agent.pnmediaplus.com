@@ -52,5 +52,21 @@ export const tasks = {
   "tasks.feedback.forbiddenAuthority": "Human authority is required.",
   "tasks.feedback.invalidState": "Invalid state transition.",
   "tasks.feedback.forbiddenTransition": "Transition blocked by state guard.",
-  "tasks.feedback.downstreamFailed": "n8n is currently unavailable."
+  "tasks.feedback.downstreamFailed": "The downstream n8n orchestrator is currently unreachable.",
+  "tasks.state.ready": "Fully Operational",
+  "tasks.board.title": "Task Board",
+  "tasks.form.cancel": "Cancel",
+  "tasks.form.assign": "Assign Task",
+  "tasks.form.title": "Assign New Task",
+  "tasks.form.keyLabel": "Task Key (Unique identifier)",
+  "tasks.form.keyPlaceholder": "e.g. generate_report_1",
+  "tasks.form.titleLabel": "Title",
+  "tasks.form.titlePlaceholder": "e.g. Generate Q3 Financial Report",
+  "tasks.form.summaryLabel": "Summary (Optional)",
+  "tasks.form.summaryPlaceholder": "Details about what needs to be done...",
+  "tasks.form.priorityLabel": "Priority (1-100)",
+  "tasks.form.departmentLabel": "Department",
+  "tasks.form.agentLabel": "Assign to Agent (Optional)",
+  "tasks.form.agentUnassigned": "-- Unassigned --",
+  "tasks.form.submit": "Dispatch Task"
 } as const;

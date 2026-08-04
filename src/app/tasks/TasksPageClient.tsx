@@ -123,7 +123,7 @@ export function TasksPageClient() {
       purpose={t("tasks.page.purpose") ?? "Central queue for all active and pending reasoning tasks."}
       statusLabel={t("tasks.page.statusLabel") ?? "Task queue"}
       statusValue="PASS"
-      statusDisplayValue="Fully Operational"
+      statusDisplayValue={t("tasks.state.ready") ?? "Fully Operational"}
       allowedActions={[
         t("tasks.page.allowed.viewTasks") ?? "View task queue",
         t("tasks.page.allowed.submitReview") ?? "Submit tasks for review",
@@ -136,55 +136,55 @@ export function TasksPageClient() {
       ]}
     >
       <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Task Board</h2>
+        <h2 className="text-xl font-bold text-white">{t("tasks.board.title") ?? "Task Board"}</h2>
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-400 border border-indigo-500/30 transition-all hover:bg-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]"
         >
           <Plus className="h-4 w-4" />
-          {showForm ? "Cancel" : "Assign Task"}
+          {showForm ? (t("tasks.form.cancel") ?? "Cancel") : (t("tasks.form.assign") ?? "Assign Task")}
         </button>
       </div>
 
       {showForm && (
         <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-700/50 bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-6 text-lg font-bold text-slate-200">Assign New Task</h3>
+          <h3 className="mb-6 text-lg font-bold text-slate-200">{t("tasks.form.title") ?? "Assign New Task"}</h3>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <div className="lg:col-span-1">
-              <label className="mb-2 block text-sm font-medium text-slate-400">Task Key (Unique identifier)</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.keyLabel") ?? "Task Key (Unique identifier)"}</label>
               <input
                 type="text"
                 required
                 pattern="[a-z0-9_]+"
                 value={taskKey}
                 onChange={(e) => setTaskKey(e.target.value)}
-                placeholder="e.g. generate_report_1"
+                placeholder={t("tasks.form.keyPlaceholder") ?? "e.g. generate_report_1"}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div className="lg:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-400">Title</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.titleLabel") ?? "Title"}</label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Generate Q3 Financial Report"
+                placeholder={t("tasks.form.titlePlaceholder") ?? "e.g. Generate Q3 Financial Report"}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div className="lg:col-span-3">
-              <label className="mb-2 block text-sm font-medium text-slate-400">Summary (Optional)</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.summaryLabel") ?? "Summary (Optional)"}</label>
               <textarea
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
-                placeholder="Details about what needs to be done..."
+                placeholder={t("tasks.form.summaryPlaceholder") ?? "Details about what needs to be done..."}
                 rows={2}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">Priority (1-100)</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.priorityLabel") ?? "Priority (1-100)"}</label>
               <input
                 type="number"
                 min="1"
@@ -196,7 +196,7 @@ export function TasksPageClient() {
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">Department</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.departmentLabel") ?? "Department"}</label>
               <select
                 required
                 value={deptId}
@@ -212,13 +212,13 @@ export function TasksPageClient() {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">Assign to Agent (Optional)</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.agentLabel") ?? "Assign to Agent (Optional)"}</label>
               <select
                 value={agentId}
                 onChange={(e) => setAgentId(e.target.value)}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
-                <option value="" className="bg-slate-900">-- Unassigned --</option>
+                <option value="" className="bg-slate-900">{t("tasks.form.agentUnassigned") ?? "-- Unassigned --"}</option>
                 {availableAgents.map(a => (
                   <option key={a.id} value={a.id} className="bg-slate-900">{a.canonical_name}</option>
                 ))}
@@ -232,7 +232,7 @@ export function TasksPageClient() {
               className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-indigo-500 disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Dispatch Task
+              {t("tasks.form.submit") ?? "Dispatch Task"}
             </button>
           </div>
         </form>
