@@ -10,5 +10,20 @@ export const agents = {
   "agents.page.forbidden.publishArtifacts": "Publish artifacts",
   "agents.card.role": "Role",
   "agents.card.focus": "Focus",
-  "agents.card.department": "Department"
+  "agents.card.department": "Department",
+  "agents.state.ready": "Fully Operational",
+  "agents.filter.allDepartments": "All Departments",
+  "agents.form.cancel": "Cancel",
+  "agents.form.assign": "Assign Agent",
+  "agents.form.title": "Assign New Agent",
+  "agents.form.keyLabel": "Agent Key",
+  "agents.form.keyPlaceholder": "e.g. content_bot_1",
+  "agents.form.nameLabel": "Display Name",
+  "agents.form.namePlaceholder": "e.g. Alpha Content Writer",
+  "agents.form.departmentLabel": "Department",
+  "agents.form.roleLabel": "Role",
+  "agents.form.scopeLabel": "Authority Scope",
+  "agents.form.submit": "Assign Agent",
+  "agents.empty.title": "No agents found.",
+  "agents.empty.hint": "Click \"Assign Agent\" to onboard one."
 } as const;

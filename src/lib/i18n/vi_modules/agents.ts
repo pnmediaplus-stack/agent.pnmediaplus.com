@@ -10,5 +10,20 @@ export const agents = {
   "agents.page.forbidden.publishArtifacts": "Publish artifact",
   "agents.card.role": "Vai trò",
   "agents.card.focus": "Focus",
-  "agents.card.department": "Phòng ban"
+  "agents.card.department": "Phòng ban",
+  "agents.state.ready": "Sẵn sàng",
+  "agents.filter.allDepartments": "Tất cả phòng ban",
+  "agents.form.cancel": "Hủy bỏ",
+  "agents.form.assign": "Phân công Agent",
+  "agents.form.title": "Phân công Agent mới",
+  "agents.form.keyLabel": "Mã Agent (Agent Key)",
+  "agents.form.keyPlaceholder": "vd: content_bot_1",
+  "agents.form.nameLabel": "Tên hiển thị",
+  "agents.form.namePlaceholder": "vd: Alpha Content Writer",
+  "agents.form.departmentLabel": "Phòng ban",
+  "agents.form.roleLabel": "Vai trò (Role)",
+  "agents.form.scopeLabel": "Quyền hạn (Authority Scope)",
+  "agents.form.submit": "Xác nhận phân công",
+  "agents.empty.title": "Không tìm thấy agent nào.",
+  "agents.empty.hint": "Nhấn \"Phân công Agent\" để thêm mới."
 } as const;

@@ -123,7 +123,7 @@ export function AgentsPageClient() {
       purpose={t("agents.page.purpose") ?? "Directory of reasoning and artifact workers, grouped by department and current focus."}
       statusLabel={t("agents.page.statusLabel") ?? "Agent directory"}
       statusValue="PASS"
-      statusDisplayValue="Fully Operational"
+      statusDisplayValue={t("agents.state.ready") ?? "Fully Operational"}
       allowedActions={[
         t("agents.page.allowed.inspectFocus") ?? "Inspect agent focus",
         t("agents.page.allowed.checkStatus") ?? "Check status",
@@ -143,7 +143,7 @@ export function AgentsPageClient() {
             onChange={(e) => setFilterDept(e.target.value)}
             className="bg-transparent p-1.5 text-sm text-slate-200 outline-none"
           >
-            <option value="ALL" className="bg-slate-900">All Departments</option>
+            <option value="ALL" className="bg-slate-900">{t("agents.filter.allDepartments") ?? "All Departments"}</option>
             {departments.map(d => (
               <option key={d.id} value={d.id} className="bg-slate-900">{d.canonical_name}</option>
             ))}
@@ -154,39 +154,39 @@ export function AgentsPageClient() {
           className="flex items-center gap-2 rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-400 border border-indigo-500/30 transition-all hover:bg-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]"
         >
           <Plus className="h-4 w-4" />
-          {showForm ? "Cancel" : "Assign Agent"}
+          {showForm ? (t("agents.form.cancel") ?? "Cancel") : (t("agents.form.assign") ?? "Assign Agent")}
         </button>
       </div>
 
       {showForm && (
         <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-700/50 bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-6 text-lg font-bold text-slate-200">Assign New Agent</h3>
+          <h3 className="mb-6 text-lg font-bold text-slate-200">{t("agents.form.title") ?? "Assign New Agent"}</h3>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <div className="lg:col-span-1">
-              <label className="mb-2 block text-sm font-medium text-slate-400">Agent Key</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.keyLabel") ?? "Agent Key"}</label>
               <input
                 type="text"
                 required
                 pattern="[a-z0-9_]+"
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                placeholder="e.g. content_bot_1"
+                placeholder={t("agents.form.keyPlaceholder") ?? "e.g. content_bot_1"}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div className="lg:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-400">Display Name</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.nameLabel") ?? "Display Name"}</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Alpha Content Writer"
+                placeholder={t("agents.form.namePlaceholder") ?? "e.g. Alpha Content Writer"}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">Department</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.departmentLabel") ?? "Department"}</label>
               <select
                 required
                 value={deptId}
@@ -199,7 +199,7 @@ export function AgentsPageClient() {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">Role</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.roleLabel") ?? "Role"}</label>
               <select
                 required
                 value={role}
@@ -212,7 +212,7 @@ export function AgentsPageClient() {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">Authority Scope</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.scopeLabel") ?? "Authority Scope"}</label>
               <select
                 required
                 value={scope}
@@ -232,7 +232,7 @@ export function AgentsPageClient() {
               className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-indigo-500 disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Assign Agent
+              {t("agents.form.submit") ?? "Assign Agent"}
             </button>
           </div>
         </form>
@@ -244,8 +244,8 @@ export function AgentsPageClient() {
         </div>
       ) : filteredAgents.length === 0 ? (
         <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/50 text-slate-400">
-          <p>No agents found.</p>
-          <p className="text-sm">Click "Assign Agent" to onboard one.</p>
+          <p>{t("agents.empty.title") ?? "No agents found."}</p>
+          <p className="text-sm">{t("agents.empty.hint") ?? "Click \"Assign Agent\" to onboard one."}</p>
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
