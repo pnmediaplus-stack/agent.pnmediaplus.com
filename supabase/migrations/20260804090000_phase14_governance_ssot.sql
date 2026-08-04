@@ -7,9 +7,6 @@
 ALTER TABLE pn_os_ai_department.artifacts 
 ADD COLUMN IF NOT EXISTS organization_id uuid REFERENCES portal_auth.organizations(id) ON DELETE CASCADE;
 
-ALTER TABLE pn_os_ai_department.artifact_versions 
-ADD COLUMN IF NOT EXISTS organization_id uuid REFERENCES portal_auth.organizations(id) ON DELETE CASCADE;
-
 ALTER TABLE pn_os_ai_department.qa_reviews 
 ADD COLUMN IF NOT EXISTS organization_id uuid REFERENCES portal_auth.organizations(id) ON DELETE CASCADE;
 
@@ -29,16 +26,11 @@ SET organization_id = d.organization_id
 FROM pn_os_ai_department.departments d
 WHERE a.department_id = d.id AND a.organization_id IS NULL;
 
--- Backfill artifact_versions from artifacts
-UPDATE pn_os_ai_department.artifact_versions av
-SET organization_id = a.organization_id
-FROM pn_os_ai_department.artifacts a
-WHERE av.artifact_id = a.id AND av.organization_id IS NULL;
-
--- Backfill qa_reviews from artifact_versions
+-- Backfill qa_reviews by traversing up to artifacts (bypassing artifact_versions mutation)
 UPDATE pn_os_ai_department.qa_reviews q
-SET organization_id = av.organization_id
+SET organization_id = a.organization_id
 FROM pn_os_ai_department.artifact_versions av
+JOIN pn_os_ai_department.artifacts a ON av.artifact_id = a.id
 WHERE q.artifact_version_id = av.id AND q.organization_id IS NULL;
 
 -- Backfill gates from departments
@@ -58,7 +50,6 @@ WHERE a.gate_id = g.id AND a.organization_id IS NULL;
 -- ==============================================================================
 
 ALTER TABLE pn_os_ai_department.artifacts ALTER COLUMN organization_id SET NOT NULL;
-ALTER TABLE pn_os_ai_department.artifact_versions ALTER COLUMN organization_id SET NOT NULL;
 ALTER TABLE pn_os_ai_department.qa_reviews ALTER COLUMN organization_id SET NOT NULL;
 ALTER TABLE pn_os_ai_department.gates ALTER COLUMN organization_id SET NOT NULL;
 ALTER TABLE pn_os_ai_department.approvals ALTER COLUMN organization_id SET NOT NULL;
@@ -90,7 +81,10 @@ CREATE POLICY "tenant_read_artifacts" ON pn_os_ai_department.artifacts FOR SELEC
 USING (organization_id IN (SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()));
 
 CREATE POLICY "tenant_read_artifact_versions" ON pn_os_ai_department.artifact_versions FOR SELECT TO authenticated 
-USING (organization_id IN (SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()));
+USING (artifact_id IN (
+  SELECT id FROM pn_os_ai_department.artifacts 
+  WHERE organization_id IN (SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid())
+));
 
 CREATE POLICY "tenant_read_qa_reviews" ON pn_os_ai_department.qa_reviews FOR SELECT TO authenticated 
 USING (organization_id IN (SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()));
