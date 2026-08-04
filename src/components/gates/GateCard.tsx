@@ -10,12 +10,17 @@ export function GateCard({ gate }: { gate: Gate }) {
     <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-lg font-semibold text-white capitalize">{gate.gate_type.replace(/_/g, ' ')}</div>
-          <div className="mt-1 text-sm text-slate-400">{gate.notes || "-"}</div>
+          <div className="text-lg font-semibold text-white capitalize">
+            {(gate.canonical_name || gate.gate_key || 'Unknown').replace(/_/g, ' ')}
+          </div>
+          <div className="mt-1 text-sm text-slate-400">{gate.rule_summary || "-"}</div>
         </div>
-        <StateBadge label={gate.status} />
+        <StateBadge label={gate.state} />
       </div>
-      <div className="mt-4 text-sm text-slate-300">{t("gates.card.owner") ?? "Owner"}: {gate.owner_external_ref || gate.owner_actor_type}</div>
+      <div className="mt-4 flex flex-col gap-1 text-sm text-slate-300">
+        <div>{t("gates.card.type") ?? "Type"}: <span className="font-semibold">{gate.gate_kind}</span></div>
+        <div>{t("gates.card.appliesTo") ?? "Applies To"}: <span className="font-semibold">{gate.applies_to_entity_type}</span></div>
+      </div>
     </div>
   );
 }

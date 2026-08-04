@@ -10,5 +10,7 @@ export const gates = {
   "gates.page.forbidden.deployProduction": "Deploy production",
   "gates.card.owner": "Owner",
   "gates.card.rationale": "Rationale",
-  "gates.approvalPanel.title": "Approval panel"
+  "gates.approvalPanel.title": "Approval Panel",
+  "gates.card.type": "Gate Type",
+  "gates.card.appliesTo": "Applies To"
 } as const;
