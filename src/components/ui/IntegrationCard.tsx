@@ -107,10 +107,9 @@ export function IntegrationCard({
               
               {!isConfigured && (
                  <>
-                   <div className="space-y-1.5">
+                   <div className="hidden space-y-1.5">
                      <label className="text-xs font-medium text-slate-400">{t("phase070.writeOnly.key") ?? "Integration Key (Unique ID)"}</label>
                      <input 
-                       required
                        name="integration_key"
                        placeholder="e.g., openai_main"
                        className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-slate-200 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"

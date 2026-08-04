@@ -121,11 +121,16 @@ export function TenantIntegrationsView() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     
-    // Auto generate integration_key if not provided to make it true zero-code
-    let integrationKey = String(formData.get("integration_key") || "");
     const providerCode = String(formData.get("provider_code") || "");
+    const pageId = String(formData.get("page_id") || "").trim();
+    
+    let integrationKey = String(formData.get("integration_key") || "");
     if (!integrationKey) {
-        integrationKey = `${providerCode}_main`;
+        if (providerCode === "facebook_page" && pageId) {
+            integrationKey = `${providerCode}_${pageId}`;
+        } else {
+            integrationKey = `${providerCode}_${Date.now()}`;
+        }
     }
 
     const providerName = response?.data?.providers.find(p => p.provider_code === providerCode)?.provider_name || providerCode;
@@ -137,14 +142,11 @@ export function TenantIntegrationsView() {
     let secretMaterial = String(formData.get("secret_material") || "");
     
     // For BYOT facebook_page, combine access_token and page_id into JSON
-    if (providerCode === "facebook_page") {
-       const pageId = String(formData.get("page_id") || "").trim();
-       if (pageId) {
-          secretMaterial = JSON.stringify({
-             access_token: secretMaterial,
-             page_id: pageId
-          });
-       }
+    if (providerCode === "facebook_page" && pageId) {
+        secretMaterial = JSON.stringify({
+            access_token: secretMaterial,
+            page_id: pageId
+        });
     }
 
     await executeAction(providerCode, () => 
