@@ -5,6 +5,7 @@ import type { WorkflowRun } from "@/types/workflow";
 import { StateBadge } from "@/components/shared/StateBadge";
 import { Clock, Activity, Target } from "lucide-react";
 import { formatDistanceToNow, formatDistance } from "date-fns";
+import { vi, enUS } from "date-fns/locale";
 
 type WorkflowRunTableProps = {
   runs: WorkflowRun[];
@@ -12,7 +13,8 @@ type WorkflowRunTableProps = {
 };
 
 export function WorkflowRunTable({ runs, namespace = "workflows" }: WorkflowRunTableProps) {
-  const { t } = useI18n(namespace);
+  const { t, locale } = useI18n(namespace);
+  const dateLocale = locale === "vi" ? vi : enUS;
 
   if (!runs || runs.length === 0) {
     return (
@@ -57,12 +59,12 @@ export function WorkflowRunTable({ runs, namespace = "workflows" }: WorkflowRunT
                     {run.started_at && (
                       <div className="flex items-center gap-1.5">
                         <Clock className="h-3.5 w-3.5" />
-                        <span>{t(`${namespace}.table.started`) ?? "Đã bắt đầu"}: {formatDistanceToNow(new Date(run.started_at), { addSuffix: true })}</span>
+                        <span>{t(`${namespace}.table.started`) ?? "Đã bắt đầu"}: {formatDistanceToNow(new Date(run.started_at), { addSuffix: true, locale: dateLocale })}</span>
                       </div>
                     )}
                     {run.finished_at && run.started_at && (
                       <div className="text-emerald-400 font-medium">
-                        {t(`${namespace}.table.took`) ?? "Mất"} {formatDistance(new Date(run.started_at), new Date(run.finished_at))}
+                        {t(`${namespace}.table.took`) ?? "Mất"} {formatDistance(new Date(run.started_at), new Date(run.finished_at), { locale: dateLocale })}
                       </div>
                     )}
                   </div>

@@ -620,22 +620,23 @@ export function Phase2Dashboard({
       <PageFrame
       className="flex min-h-full min-w-0 flex-col overflow-hidden"
       contentClassName="flex min-h-0 min-w-0 flex-1 flex-col gap-5 overflow-hidden pr-1"
-      title={t("dashboard.page.title") ?? "Dashboard"}
+      title={t("dashboard.page.title") ?? "Bảng điều khiển"}
       purpose={
         t("dashboard.page.purpose") ??
-        "Canonical Phase 2 content pipeline dashboard for content_items, agent_tasks, assets, qa_reviews, and performance_records."
+        "Bảng điều khiển pipeline Phase 2 cho content_items, agent_tasks, assets, qa_reviews, và performance_records."
       }
-      statusLabel={t("dashboard.page.statusLabel") ?? "Phase 2 canonical pipeline"}
+      statusLabel={t("dashboard.page.statusLabel") ?? "Phase 2 pipeline"}
       statusValue="QA_ready"
+      statusDisplayValue={t("dashboard.state.QA_ready") ?? "Sẵn sàng QA"}
       allowedActions={[
-        t("dashboard.page.allowed.inspectPipeline") ?? "Inspect pipeline",
-        t("dashboard.page.allowed.reviewOwnership") ?? "Review task ownership",
-        t("dashboard.page.allowed.checkEligibility") ?? "Check publish eligibility"
+        t("dashboard.page.allowed.inspectPipeline") ?? "Xem pipeline",
+        t("dashboard.page.allowed.reviewOwnership") ?? "Xem quyền sở hữu task",
+        t("dashboard.page.allowed.checkEligibility") ?? "Kiểm tra điều kiện xuất bản"
       ]}
       forbiddenActions={[
-        t("dashboard.page.forbidden.autoPublish") ?? "Auto publish",
-        t("dashboard.page.forbidden.autoApprove") ?? "Auto approve",
-        t("dashboard.page.forbidden.bypassQa") ?? "Bypass QA"
+        t("dashboard.page.forbidden.autoPublish") ?? "Tự động xuất bản",
+        t("dashboard.page.forbidden.autoApprove") ?? "Tự động phê duyệt",
+        t("dashboard.page.forbidden.bypassQa") ?? "Bỏ qua QA"
       ]}
     >
       <CampaignControlBar activeTab={activeTab} onTabChange={setActiveTab} />

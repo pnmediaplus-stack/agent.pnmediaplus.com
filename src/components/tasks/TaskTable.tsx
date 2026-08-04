@@ -5,9 +5,11 @@ import type { Task } from "@/types/task";
 import { StateBadge } from "@/components/shared/StateBadge";
 import { Clock, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { vi, enUS } from "date-fns/locale";
 
 export function TaskTable({ tasks }: { tasks: Task[] }) {
-  const { t } = useI18n("tasks");
+  const { t, locale } = useI18n("tasks");
+  const dateLocale = locale === "vi" ? vi : enUS;
 
   function getPriorityColor(priority: number) {
     if (priority >= 80) return "text-rose-400 bg-rose-500/10 border-rose-500/30";
@@ -24,45 +26,43 @@ export function TaskTable({ tasks }: { tasks: Task[] }) {
   if (!tasks || tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 rounded-2xl border border-slate-700/50 bg-slate-900/30 backdrop-blur-xl">
-        <AlertCircle className="h-10 w-10 text-slate-500 mb-4" />
-        <h3 className="text-lg font-semibold text-slate-300">No Tasks Found</h3>
-        <p className="text-sm text-slate-500">There are currently no tasks assigned to this organization.</p>
+        <ClipboardList className="h-10 w-10 text-slate-500 mb-4" />
+        <h3 className="text-lg font-semibold text-slate-300">{t("tasks.empty.title") ?? "No Tasks Found"}</h3>
+        <p className="text-sm text-slate-500">{t("tasks.empty.description") ?? "Your task queue is currently empty."}</p>
       </div>
     );
   }
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-900/30 backdrop-blur-xl shadow-2xl">
+      <div className="border-b border-slate-700/50 bg-slate-800/40 px-5 py-4 text-sm font-semibold text-white flex items-center gap-2">
+        <ClipboardList className="h-4 w-4 text-indigo-400" />
+        {t("tasks.table.title") ?? "Active tasks"}
+      </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-slate-300">
-          <thead className="bg-slate-800/60 text-xs uppercase text-slate-400 border-b border-slate-700/50">
+        <table className="min-w-full divide-y divide-slate-700/50 text-left text-sm">
+          <thead className="bg-slate-800/60 text-xs uppercase tracking-[0.1em] text-slate-400">
             <tr>
-              <th scope="col" className="px-6 py-4 font-semibold tracking-wider">Task Info</th>
-              <th scope="col" className="px-6 py-4 font-semibold tracking-wider text-center">State</th>
-              <th scope="col" className="px-6 py-4 font-semibold tracking-wider text-center">Priority</th>
-              <th scope="col" className="px-6 py-4 font-semibold tracking-wider">Assignment</th>
-              <th scope="col" className="px-6 py-4 font-semibold tracking-wider">Created</th>
+              <th className="px-6 py-4 font-semibold">{t("tasks.table.task") ?? "Task"}</th>
+              <th className="px-6 py-4 font-semibold text-center">{t("tasks.table.status") ?? "Status"}</th>
+              <th className="px-6 py-4 font-semibold">{t("tasks.table.assignee") ?? "Assignee"}</th>
+              <th className="px-6 py-4 font-semibold">{t("tasks.table.timeline") ?? "Timeline"}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
             {tasks.map((task) => (
-              <tr key={task.id} className="transition-colors hover:bg-slate-800/40">
+              <tr key={task.id} className="transition-colors hover:bg-slate-800/40 text-slate-300">
                 <td className="px-6 py-4">
-                  <div className="font-semibold text-slate-200">{task.title}</div>
+                  <div className="font-semibold text-white">{task.title}</div>
                   <div className="mt-1 flex items-center gap-2 text-xs font-mono text-slate-500">
                     {task.task_key}
                   </div>
                   {task.summary && (
-                    <div className="mt-2 text-xs text-slate-400 line-clamp-2">{task.summary}</div>
+                    <div className="mt-2 text-xs text-slate-400 max-w-md line-clamp-2">{task.summary}</div>
                   )}
                 </td>
                 <td className="px-6 py-4 text-center">
                   <StateBadge label={task.state} />
-                </td>
-                <td className="px-6 py-4 text-center">
-                  <span className={`inline-flex items-center rounded-md border px-2 py-1 text-[10px] font-bold tracking-wider ${getPriorityColor(task.priority)}`}>
-                    {getPriorityLabel(task.priority)} ({task.priority})
-                  </span>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex flex-col gap-1">
@@ -81,7 +81,7 @@ export function TaskTable({ tasks }: { tasks: Task[] }) {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-1.5 text-xs text-slate-400">
                     <Clock className="h-3.5 w-3.5" />
-                    <span>{formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}</span>
+                    <span>{formatDistanceToNow(new Date(task.created_at), { addSuffix: true, locale: dateLocale })}</span>
                   </div>
                 </td>
               </tr>

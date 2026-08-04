@@ -14,20 +14,21 @@ export function ApprovalsPageClient() {
 
   return (
     <PageFrame
-      title={t("approvals.page.title") ?? "Approvals"}
-      purpose={t("approvals.page.purpose") ?? "Human approval view for pending requests, explicit decisions, and changes requested."}
-      statusLabel={t("approvals.page.statusLabel") ?? "Approval console"}
-      statusValue="REQUESTED"
+      title={t("approvals.page.title") ?? "Phê duyệt"}
+      purpose={t("approvals.page.purpose") ?? "Bảng phê duyệt cho các yêu cầu đang chờ, quyết định rõ ràng và yêu cầu thay đổi."}
+      statusLabel={t("approvals.page.statusLabel") ?? "Bảng điều khiển phê duyệt"}
+      statusValue="PENDING"
+      statusDisplayValue={t("approvals.state.PENDING") ?? "Đang chờ"}
       allowedActions={[
-        t("approvals.page.allowed.requestApproval") ?? "Request Approval",
-        t("approvals.page.allowed.approveAsHuman") ?? "Approve as Human",
-        t("approvals.page.allowed.reject") ?? "Reject",
-        t("approvals.page.allowed.requestChanges") ?? "Request Changes"
+        t("approvals.page.allowed.requestApproval") ?? "Yêu cầu phê duyệt",
+        t("approvals.page.allowed.approveAsHuman") ?? "Duyệt bởi Human",
+        t("approvals.page.allowed.reject") ?? "Từ chối",
+        t("approvals.page.allowed.requestChanges") ?? "Yêu cầu chỉnh sửa"
       ]}
       forbiddenActions={[
-        t("approvals.page.forbidden.launchNow") ?? "Launch Now",
-        t("approvals.page.forbidden.autoPublish") ?? "Auto Publish",
-        t("approvals.page.forbidden.deployProduction") ?? "Deploy Production"
+        t("approvals.page.forbidden.launchNow") ?? "Khởi chạy ngay",
+        t("approvals.page.forbidden.autoPublish") ?? "Tự động xuất bản",
+        t("approvals.page.forbidden.deployProduction") ?? "Triển khai Production"
       ]}
     >
       {isLoading ? (

@@ -15,18 +15,19 @@ export function ArtifactsPageClient() {
   return (
     <PageFrame
       title={t("artifacts.page.title") ?? "Artifacts"}
-      purpose={t("artifacts.page.purpose") ?? "Artifact registry for briefs, prompts, assets, workflow notes, and related state."}
+      purpose={t("artifacts.page.purpose") ?? "Artifact registry cho các tài liệu, prompt, asset, ghi chú quy trình và các trạng thái liên quan."}
       statusLabel={t("artifacts.page.statusLabel") ?? "Artifact registry"}
-      statusValue="PASS"
+      statusValue="ACTIVE"
+      statusDisplayValue={t("artifacts.state.ACTIVE") ?? "Hoạt động"}
       allowedActions={[
-        t("artifacts.page.allowed.inspectVersion") ?? "Inspect version",
-        t("artifacts.page.allowed.markReadyReview") ?? "Mark ready for review",
-        t("artifacts.page.allowed.viewOwnership") ?? "View ownership"
+        t("artifacts.page.allowed.inspectVersion") ?? "Xem phiên bản",
+        t("artifacts.page.allowed.markReadyReview") ?? "Đánh dấu sẵn sàng review",
+        t("artifacts.page.allowed.viewOwnership") ?? "Xem quyền sở hữu"
       ]}
       forbiddenActions={[
-        t("artifacts.page.forbidden.autoPublish") ?? "Auto publish",
-        t("artifacts.page.forbidden.launchAsset") ?? "Launch asset",
-        t("artifacts.page.forbidden.bypassQA") ?? "Bypass QA"
+        t("artifacts.page.forbidden.autoPublish") ?? "Tự động xuất bản",
+        t("artifacts.page.forbidden.launchAsset") ?? "Khởi chạy asset",
+        t("artifacts.page.forbidden.bypassQA") ?? "Bỏ qua QA"
       ]}
     >
       {isLoading ? (
