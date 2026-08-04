@@ -35,7 +35,6 @@ export function ChatPageClient() {
   if (!thread) {
     return (
       <PageFrame
-      <PageFrame
         title={t("chat.page.title") ?? "Trò chuyện mệnh lệnh Human"}
         purpose={t("chat.page.purpose") ?? "Tiếp nhận lệnh, tạo tác vụ, yêu cầu làm rõ, và định tuyến các hành động an toàn đến đúng phòng ban."}
         statusLabel={t("chat.page.statusLabel") ?? "Tiếp nhận lệnh"}
