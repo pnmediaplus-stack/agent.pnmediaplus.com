@@ -3,7 +3,7 @@
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { Task } from "@/types/task";
 import { StateBadge } from "@/components/shared/StateBadge";
-import { Clock, AlertCircle } from "lucide-react";
+import { Clock, AlertCircle, ClipboardList } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { vi, enUS } from "date-fns/locale";
 
