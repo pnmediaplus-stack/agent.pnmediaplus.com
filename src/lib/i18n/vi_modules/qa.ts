@@ -10,7 +10,7 @@ export const qa = {
   "qa.page.forbidden.publishNow": "Xuất bản ngay",
   "qa.table.title": "Đánh giá QA",
   "qa.table.description": "Kết quả review và ghi chú cho các kiểm tra governance nội bộ.",
-  "qa.table.artifact": "Artifact",
+  "qa.table.artifact": "Tài nguyên",
   "qa.table.reviewer": "Người review",
   "qa.table.status": "Trạng thái",
   "qa.table.notes": "Ghi chú",

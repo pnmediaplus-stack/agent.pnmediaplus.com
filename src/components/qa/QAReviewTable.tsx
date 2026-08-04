@@ -16,7 +16,7 @@ export function QAReviewTable({ reviews }: { reviews: QAReview[] }) {
       <table className="min-w-full divide-y divide-slate-800 text-left text-sm">
         <thead className="bg-slate-900/70 text-xs uppercase tracking-[0.22em] text-slate-400">
           <tr>
-            <th className="px-5 py-3">{t("qa.table.artifact") ?? "Artifact"}</th>
+            <th className="px-5 py-3">{t("qa.table.artifact") ?? "Tài nguyên"}</th>
             <th className="px-5 py-3">{t("qa.table.reviewer") ?? "Người review"}</th>
             <th className="px-5 py-3">{t("qa.table.status") ?? "Trạng thái"}</th>
             <th className="px-5 py-3">{t("qa.table.notes") ?? "Ghi chú"}</th>
