@@ -134,7 +134,18 @@ export function TenantIntegrationsView() {
         integrationName = `${providerName} Chính thức`;
     }
 
-    const secretMaterial = String(formData.get("secret_material") || "");
+    let secretMaterial = String(formData.get("secret_material") || "");
+    
+    // For BYOT facebook_page, combine access_token and page_id into JSON
+    if (providerCode === "facebook_page") {
+       const pageId = String(formData.get("page_id") || "").trim();
+       if (pageId) {
+          secretMaterial = JSON.stringify({
+             access_token: secretMaterial,
+             page_id: pageId
+          });
+       }
+    }
 
     await executeAction(providerCode, () => 
       createTenantIntegration(providerCode, integrationKey, integrationName, secretMaterial)
@@ -152,7 +163,18 @@ export function TenantIntegrationsView() {
       return;
     }
     const providerCode = String(formData.get("provider_code") || "rotate");
-    const secretMaterial = String(formData.get("secret_material") || "");
+    let secretMaterial = String(formData.get("secret_material") || "");
+
+    // For BYOT facebook_page, combine access_token and page_id into JSON
+    if (providerCode === "facebook_page") {
+       const pageId = String(formData.get("page_id") || "").trim();
+       if (pageId) {
+          secretMaterial = JSON.stringify({
+             access_token: secretMaterial,
+             page_id: pageId
+          });
+       }
+    }
 
     await executeAction(providerCode, () => 
       rotateTenantIntegration(integrationKey, secretMaterial)

@@ -134,7 +134,7 @@ export function IntegrationCard({
               
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-400 flex justify-between">
-                  <span>{t("phase070.writeOnly.secret") ?? "Secret Material (API Key)"}</span>
+                  <span>{provider.provider_code === "facebook_page" ? "Page Access Token (BYOT)" : (t("phase070.writeOnly.secret") ?? "Secret Material (API Key)")}</span>
                   <span className="text-rose-400/80 text-[10px] uppercase tracking-widest">Write-Only</span>
                 </label>
                 <div className="relative">
@@ -142,12 +142,25 @@ export function IntegrationCard({
                     required
                     type="password"
                     name="secret_material"
-                    placeholder="sk-..."
+                    placeholder={provider.provider_code === "facebook_page" ? "EAA..." : "sk-..."}
                     className="w-full rounded-lg border border-slate-700 bg-slate-900/50 pl-10 pr-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                   />
                   <Key className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                 </div>
               </div>
+
+              {provider.provider_code === "facebook_page" && (
+                <div className="space-y-1.5 mt-3">
+                  <label className="text-xs font-medium text-slate-400">Fanpage ID (bắt buộc)</label>
+                  <input 
+                    required
+                    type="text"
+                    name="page_id"
+                    placeholder="e.g. 10023456789"
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-slate-200 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  />
+                </div>
+              )}
 
               <div className="mt-auto pt-4 flex items-center justify-between">
                  {isConfigured && (
