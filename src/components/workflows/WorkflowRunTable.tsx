@@ -18,8 +18,8 @@ export function WorkflowRunTable({ runs, namespace = "workflows" }: WorkflowRunT
     return (
       <div className="flex flex-col items-center justify-center py-12 rounded-2xl border border-slate-700/50 bg-slate-900/30 backdrop-blur-xl">
         <Activity className="h-10 w-10 text-slate-500 mb-4" />
-        <h3 className="text-lg font-semibold text-slate-300">No Runs Found</h3>
-        <p className="text-sm text-slate-500">There are currently no active workflow runs.</p>
+        <h3 className="text-lg font-semibold text-slate-300">{t(`${namespace}.empty.title`) ?? "Không tìm thấy Run nào"}</h3>
+        <p className="text-sm text-slate-500">{t(`${namespace}.empty.description`) ?? "Hiện tại không có workflow run nào đang hoạt động."}</p>
       </div>
     );
   }
@@ -34,10 +34,10 @@ export function WorkflowRunTable({ runs, namespace = "workflows" }: WorkflowRunT
         <table className="min-w-full divide-y divide-slate-700/50 text-left text-sm">
           <thead className="bg-slate-800/60 text-xs uppercase tracking-[0.1em] text-slate-400">
             <tr>
-              <th className="px-6 py-4 font-semibold">{t(`${namespace}.table.run`) ?? "Run Info"}</th>
-              <th className="px-6 py-4 font-semibold text-center">{t(`${namespace}.table.status`) ?? "Status"}</th>
-              <th className="px-6 py-4 font-semibold">{t(`${namespace}.table.duration`) ?? "Timing"}</th>
-              <th className="px-6 py-4 font-semibold">{t(`${namespace}.table.target`) ?? "Refs"}</th>
+              <th className="px-6 py-4 font-semibold">{t(`${namespace}.table.run`) ?? "Run"}</th>
+              <th className="px-6 py-4 font-semibold text-center">{t(`${namespace}.table.status`) ?? "Trạng thái"}</th>
+              <th className="px-6 py-4 font-semibold">{t(`${namespace}.table.duration`) ?? "Thời lượng"}</th>
+              <th className="px-6 py-4 font-semibold">{t(`${namespace}.table.target`) ?? "Target"}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
@@ -50,19 +50,19 @@ export function WorkflowRunTable({ runs, namespace = "workflows" }: WorkflowRunT
                   </div>
                 </td>
                 <td className="px-6 py-4 text-center">
-                  <StateBadge label={run.run_status} />
+                  <StateBadge label={run.run_status} displayLabel={t(`${namespace}.state.${run.run_status}`) ?? run.run_status} />
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex flex-col gap-1 text-xs text-slate-400">
                     {run.started_at && (
                       <div className="flex items-center gap-1.5">
                         <Clock className="h-3.5 w-3.5" />
-                        <span>Started: {formatDistanceToNow(new Date(run.started_at), { addSuffix: true })}</span>
+                        <span>{t(`${namespace}.table.started`) ?? "Đã bắt đầu"}: {formatDistanceToNow(new Date(run.started_at), { addSuffix: true })}</span>
                       </div>
                     )}
                     {run.finished_at && run.started_at && (
                       <div className="text-emerald-400 font-medium">
-                        Took {formatDistance(new Date(run.started_at), new Date(run.finished_at))}
+                        {t(`${namespace}.table.took`) ?? "Mất"} {formatDistance(new Date(run.started_at), new Date(run.finished_at))}
                       </div>
                     )}
                   </div>
@@ -70,12 +70,12 @@ export function WorkflowRunTable({ runs, namespace = "workflows" }: WorkflowRunT
                 <td className="px-6 py-4">
                   <div className="flex flex-col gap-1 text-xs">
                     {run.task_id && (
-                      <span className="text-indigo-400 font-mono">Task: {run.task_id.split('-')[0]}</span>
+                      <span className="text-indigo-400 font-mono">{t(`${namespace}.table.taskRef`) ?? "Tác vụ"}: {run.task_id.split('-')[0]}</span>
                     )}
                     {run.n8n_execution_id ? (
                       <span className="text-amber-500 font-mono">n8n: {run.n8n_execution_id}</span>
                     ) : (
-                      <span className="text-slate-500 italic">No n8n execution</span>
+                      <span className="text-slate-500 italic">{t(`${namespace}.table.noN8n`) ?? "Không có run n8n"}</span>
                     )}
                   </div>
                 </td>

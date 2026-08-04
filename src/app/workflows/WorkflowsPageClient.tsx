@@ -50,6 +50,7 @@ export function WorkflowsPageClient() {
       purpose={t("workflows.page.purpose") ?? "Bảng workflow cho chuyển trạng thái, status run và các checkpoint handoff an toàn."}
       statusLabel={t("workflows.page.statusLabel") ?? "Trạng thái hiện tại"}
       statusValue="WAITING_ON_HUMAN"
+      statusDisplayValue={t("workflows.state.WAITING_ON_HUMAN") ?? "Chờ duyệt"}
       allowedActions={[
         t("workflows.page.allowed.viewRunStatus") ?? "Xem trạng thái run",
         t("workflows.page.allowed.viewCheckpoints") ?? "Xem checkpoint",
@@ -57,7 +58,7 @@ export function WorkflowsPageClient() {
       ]}
       forbiddenActions={[
         t("workflows.page.forbidden.autoLaunch") ?? "Tự động launch",
-        t("workflows.page.forbidden.deployProd") ?? "Deploy production",
+        t("workflows.page.forbidden.deployProd") ?? "Triển khai Production",
         t("workflows.page.forbidden.skipGate") ?? "Bỏ qua state"
       ]}
     >
