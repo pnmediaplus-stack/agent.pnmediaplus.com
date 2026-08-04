@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/audit_logs?organization_id=eq.${organizationId}&order=created_at.desc`, {
+    const res = await fetch(`${supabaseUrl}/rest/v1/audit_logs?order=created_at.desc`, {
       headers: {
         'apikey': serviceRoleKey,
         'Authorization': `Bearer ${serviceRoleKey}`,

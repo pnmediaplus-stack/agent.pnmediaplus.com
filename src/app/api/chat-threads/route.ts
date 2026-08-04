@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/chat_threads?organization_id=eq.${organizationId}&order=created_at.desc`, {
+    const res = await fetch(`${supabaseUrl}/rest/v1/chat_threads?order=created_at.desc`, {
       headers: {
         'apikey': serviceRoleKey,
         'Authorization': `Bearer ${serviceRoleKey}`,
@@ -39,6 +39,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ chat_threads: data });
   } catch (error: any) {
     console.error('API Error:', error);
-    return NextResponse.json({ error: 'Failed to fetch chat threads' }, { status: 500 });
+    return NextResponse.json({ error: error.message || String(error) }, { status: 500 });
   }
 }
