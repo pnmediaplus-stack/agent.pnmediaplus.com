@@ -22,28 +22,8 @@ export async function POST(request: Request) {
       'Content-Type': 'application/json'
     };
 
-    // Lấy cấu hình Facebook đã được lưu an toàn từ Supabase
-    const configRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/social_publishers_config?facebook_enabled=eq.true&limit=1`, {
-      headers
-    });
-    
-    if (!configRes.ok) throw new Error('Failed to fetch FB config');
-    const configs = await configRes.json();
-    
-    if (!configs || configs.length === 0) {
-      return NextResponse.json({ success: false, message: 'Facebook integration is disabled or missing configuration.' });
-    }
-
-    const row = configs[0];
-    const fbConfig = {
-      pageId: row.facebook_page_id,
-      accessToken: decryptToken(row.facebook_access_token),
-      enabled: row.facebook_enabled
-    };
-
-    if (!fbConfig.enabled || !fbConfig.pageId || !fbConfig.accessToken) {
-      return NextResponse.json({ success: false, message: 'Facebook integration is disabled or missing configuration.' });
-    }
+    // Phase 16: Bỏ qua social_publishers_config.
+    // Webhook n8n sẽ tự động fetch token an toàn từ Tenant Integration Vault dựa trên organization_id của Task.
 
   try {
 
@@ -87,6 +67,7 @@ export async function POST(request: Request) {
     }
 
     // 3. Chuẩn bị Payload gửi sang n8n FB Executor
+    // n8n sẽ dùng job_id -> tìm department_id -> organization_id -> Vault để lấy token
     const fbPayload = {
       job_id: task.id,
       post_id: artifactId,
@@ -94,10 +75,6 @@ export async function POST(request: Request) {
         mode: "text",
         content: postContent,
         media_urls: []
-      },
-      page: {
-        id: fbConfig.pageId,
-        access_token: fbConfig.accessToken
       }
     };
 
