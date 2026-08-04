@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { decryptToken } from '@/lib/config/integrations';
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get('authorization') || request.headers.get('x-cron-secret');
