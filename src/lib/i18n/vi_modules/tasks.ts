@@ -39,7 +39,7 @@ export const tasks = {
   "tasks.table.status": "Trạng thái",
   "tasks.table.priority": "Độ ưu tiên",
   "tasks.table.actions": "Thao tác",
-  "tasks.empty.title": "Chưa có task nào",
+  "tasks.empty.title": "Chưa có tác vụ nào",
   "tasks.empty.description": "Hộp tác vụ đang trống. Lệnh mới từ chat sẽ xuất hiện ở đây.",
   "tasks.actions.submitForReview": "Gửi để review",
   "tasks.actions.approve": "Phê duyệt",
@@ -66,7 +66,7 @@ export const tasks = {
   "tasks.form.summaryPlaceholder": "Chi tiết công việc cần làm...",
   "tasks.form.priorityLabel": "Độ ưu tiên (1-100)",
   "tasks.form.departmentLabel": "Phòng ban",
-  "tasks.form.agentLabel": "Giao cho Agent (tùy chọn)",
+  "tasks.form.agentLabel": "Giao cho đặc vụ (tùy chọn)",
   "tasks.form.agentUnassigned": "-- Chưa giao --",
   "tasks.form.submit": "Gửi tác vụ"
 } as const;

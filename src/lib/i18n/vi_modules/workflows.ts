@@ -1,5 +1,5 @@
 export const workflows = {
-  "workflows.page.title": "Workflow",
+  "workflows.page.title": "Quy trình",
   "workflows.page.purpose": "Bảng quy trình cho việc chuyển trạng thái, trạng thái chạy và các điểm kiểm tra an toàn.",
   "workflows.page.statusLabel": "Bảng quy trình",
   "workflows.page.allowed.viewRunStatus": "Xem trạng thái chạy",

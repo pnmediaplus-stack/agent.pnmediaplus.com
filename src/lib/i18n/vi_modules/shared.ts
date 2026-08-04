@@ -15,7 +15,7 @@ export const shared = {
   "shared.audit.trail": "Dấu vết audit",
   "shared.status.system": "Trạng thái hệ thống",
   "shared.status.registryStore": "Kho registry",
-  "shared.status.n8nRuntime": "n8n runtime",
+  "shared.status.n8nRuntime": "Thời gian chạy n8n",
   "shared.status.humanApproval": "Phê duyệt của Human",
   "shared.nav.dashboard": "Bảng điều khiển",
   "shared.nav.phase3": "Giai đoạn 3",
@@ -63,6 +63,6 @@ export const shared = {
   "shared.button.approveAsHuman": "Duyệt với vai trò Human",
   "shared.button.reject": "Từ chối",
   "shared.button.requestChanges": "Yêu cầu chỉnh sửa",
-  "shared.meta.title": "PN OS AI Department",
-  "shared.meta.description": "MVP nội bộ Phase 1 cho tiếp nhận lệnh, xem registry và theo dõi phê duyệt an toàn."
+  "shared.meta.title": "Phòng AI PN OS",
+  "shared.meta.description": "Bản thử nghiệm nội bộ giai đoạn 1 cho tiếp nhận lệnh, xem danh bạ và theo dõi phê duyệt an toàn."
 } as const;
