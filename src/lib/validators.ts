@@ -1,4 +1,4 @@
-import type { ChatIntentType } from "@/types/state";
+import type { ChatIntentType, LifecycleState } from "@/types/state";
 import { canTransition } from "@/lib/state-machine";
 
 export function inferChatIntent(body: string): ChatIntentType {
@@ -17,7 +17,7 @@ export function requiresHumanApproval(body: string) {
 }
 
 export function isSafeStateTransition(from: string, to: string) {
-  const states = [
+  const states: LifecycleState[] = [
     "NOT_STARTED",
     "DRAFT",
     "PARTIAL",
@@ -30,6 +30,6 @@ export function isSafeStateTransition(from: string, to: string) {
     "DEPRECATED"
   ];
 
-  if (!states.includes(from) || !states.includes(to)) return false;
-  return canTransition(from as any, to as any);
+  if (!states.includes(from as LifecycleState) || !states.includes(to as LifecycleState)) return false;
+  return canTransition(from as LifecycleState, to as LifecycleState);
 }

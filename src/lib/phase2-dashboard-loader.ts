@@ -398,7 +398,7 @@ export async function loadPhase2DashboardData(page = 1, limit = 20): Promise<Pha
     channel: row.channel,
     externalId: row.external_id ?? undefined,
     externalUrl: row.external_url ?? undefined,
-    status: row.status as any,
+    status: row.status,
     publishedAt: row.published_at ?? undefined,
     errorMessage: row.error_message ?? undefined
   }));
