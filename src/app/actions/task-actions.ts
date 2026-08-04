@@ -11,10 +11,11 @@ export async function getArtifactMetadataForTask(taskId: string) {
   }
 
   // 1. Lấy thông tin Task
-  const taskRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/phase1_tasks_ssot?id=eq.${taskId}&select=*&limit=1`, {
+  const taskRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/tasks?id=eq.${taskId}&select=*&limit=1`, {
     headers: {
       'apikey': serviceKey,
-      'Authorization': `Bearer ${serviceKey}`
+      'Authorization': `Bearer ${serviceKey}`,
+      'Accept-Profile': 'pn_os_ai_department'
     }
   });
 
@@ -25,17 +26,18 @@ export async function getArtifactMetadataForTask(taskId: string) {
   }
 
   const task = tasks[0];
-  const artifactId = task.metadata?.artifact_id;
+  const artifactId = task.public_metadata?.artifact_id || task.metadata?.artifact_id;
 
   if (!artifactId) {
     throw new Error("Task has no artifact metadata");
   }
 
   // 2. Fetch nội dung Artifact
-  const artRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/phase1_artifacts?id=eq.${artifactId}&select=*&limit=1`, {
+  const artRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/artifacts?id=eq.${artifactId}&select=*&limit=1`, {
     headers: {
       'apikey': serviceKey,
-      'Authorization': `Bearer ${serviceKey}`
+      'Authorization': `Bearer ${serviceKey}`,
+      'Accept-Profile': 'pn_os_ai_department'
     }
   });
 
@@ -43,7 +45,7 @@ export async function getArtifactMetadataForTask(taskId: string) {
   if (artRes.ok) {
     const artifacts = await artRes.json();
     if (artifacts && artifacts.length > 0) {
-      content = artifacts[0].content || artifacts[0].title || "";
+      content = artifacts[0].metadata?.content || artifacts[0].canonical_name || artifacts[0].title || "";
     }
   }
 

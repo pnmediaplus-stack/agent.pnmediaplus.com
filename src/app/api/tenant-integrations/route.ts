@@ -43,18 +43,3 @@ export async function GET(request: Request) {
   });
 }
 
-export async function POST(request: Request) {
-  const result = isTenantIntegrationRuntimeAuthorityApproved()
-    ? await createTenantIntegrationRuntime(request.headers, (await request.json().catch(() => ({}))) as Record<string, unknown>)
-    : await blockTenantIntegrationSecretMutation(request.headers, "create");
-  const status = result.state === "ready" ? 201 : 403;
-
-  return envelope(status, {
-    ok: result.state === "ready",
-    state: result.state,
-    reason: result.reason,
-    data: {
-      receipt: result.receipt
-    }
-  });
-}

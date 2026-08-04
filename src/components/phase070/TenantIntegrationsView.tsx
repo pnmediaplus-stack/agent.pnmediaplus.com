@@ -56,6 +56,8 @@ function MetadataRow({ label, value }: { label: string; value: React.ReactNode }
   );
 }
 
+import { createTenantIntegration, rotateTenantIntegration, revokeTenantIntegration, issueReferenceToken, type VaultActionResponse } from "@/app/actions/vault-actions";
+
 export function TenantIntegrationsView() {
   const { t } = useI18n("phase070");
   const [response, setResponse] = useState<TenantIntegrationsResponse | null>(null);
@@ -96,25 +98,12 @@ export function TenantIntegrationsView() {
     void load();
   }, []);
 
-  async function submitAction(url: string, payload: Record<string, FormDataEntryValue | null>, operation: string) {
+  async function executeAction(operation: string, actionFn: () => Promise<VaultActionResponse>) {
     setActionLoading(operation);
     setOperationResult(null);
     try {
-      const result = await fetch(url, {
-        method: "POST",
-        cache: "no-store",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-      const body = (await result.json().catch(() => ({
-        ok: false,
-        state: "blocked",
-        reason: "PHASE074_INVALID_ACTION_RESPONSE"
-      }))) as TenantIntegrationActionResponse;
-      setOperationResult(body);
+      const result = await actionFn();
+      setOperationResult(result as TenantIntegrationActionResponse);
       await load();
     } catch (error) {
       setOperationResult({
@@ -127,7 +116,7 @@ export function TenantIntegrationsView() {
     }
   }
 
-  async function submitWriteOnlySecret(event: FormEvent<HTMLFormElement>) {
+  async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -142,18 +131,13 @@ export function TenantIntegrationsView() {
     const providerName = response?.data?.providers.find(p => p.provider_code === providerCode)?.provider_name || providerCode;
     let integrationName = String(formData.get("integration_name") || "");
     if (!integrationName) {
-        integrationName = `${providerName} Production`;
+        integrationName = `${providerName} Chính thức`;
     }
 
-    await submitAction(
-      "/api/tenant-integrations/secret",
-      {
-        provider_code: providerCode,
-        integration_key: integrationKey,
-        integration_name: integrationName,
-        secret_material: formData.get("secret_material")
-      },
-      providerCode
+    const secretMaterial = String(formData.get("secret_material") || "");
+
+    await executeAction(providerCode, () => 
+      createTenantIntegration(providerCode, integrationKey, integrationName, secretMaterial)
     );
     form.reset();
   }
@@ -168,12 +152,10 @@ export function TenantIntegrationsView() {
       return;
     }
     const providerCode = String(formData.get("provider_code") || "rotate");
-    await submitAction(
-      `/api/tenant-integrations/${encodeURIComponent(integrationKey)}/rotate`,
-      {
-        secret_material: formData.get("secret_material")
-      },
-      providerCode
+    const secretMaterial = String(formData.get("secret_material") || "");
+
+    await executeAction(providerCode, () => 
+      rotateTenantIntegration(integrationKey, secretMaterial)
     );
     form.reset();
   }
@@ -188,7 +170,9 @@ export function TenantIntegrationsView() {
       return;
     }
     const providerCode = String(formData.get("provider_code") || "revoke");
-    await submitAction(`/api/tenant-integrations/${encodeURIComponent(integrationKey)}/revoke`, {}, providerCode);
+    await executeAction(providerCode, () => 
+      revokeTenantIntegration(integrationKey)
+    );
   }
 
   async function submitBrokerCall(event: FormEvent<HTMLFormElement>) {
@@ -201,7 +185,9 @@ export function TenantIntegrationsView() {
       return;
     }
     const providerCode = String(formData.get("provider_code") || "test");
-    await submitAction(`/api/tenant-integrations/${encodeURIComponent(integrationKey)}/broker-call`, {}, providerCode);
+    await executeAction(providerCode, () => 
+      issueReferenceToken(integrationKey)
+    );
   }
 
   if (loading) {
@@ -274,7 +260,7 @@ export function TenantIntegrationsView() {
                  provider={provider}
                  integration={integration}
                  actionLoading={actionLoading}
-                 onSubmitCreate={submitWriteOnlySecret}
+                 onSubmitCreate={submitCreate}
                  onSubmitRotate={submitRotateSecret}
                  onSubmitRevoke={submitRevoke}
                  onSubmitTest={submitBrokerCall}

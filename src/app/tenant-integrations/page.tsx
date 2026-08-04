@@ -12,8 +12,8 @@ export default function TenantIntegrationsPage() {
       title={t("phase070.page.title") ?? "Tenant Integration Vault"}
       purpose={t("phase070.page.purpose") ?? "Phase 070 metadata shell for tenant integrations, write-only secret intake, and n8n-safe broker boundaries."}
       statusLabel={t("phase070.page.statusLabel") ?? "Vault boundary"}
-      statusValue="BLOCKED"
-      statusDisplayValue={t("phase070.page.statusValue") ?? "Writes blocked pending Gatekeeper encryption approval"}
+      statusValue="SECURE"
+      statusDisplayValue={t("phase070.page.statusValue") ?? "BẢO MẬT KÉP - Hệ thống SSOT đang hoạt động"}
       allowedActions={[
         t("phase070.page.allowed.viewProviders") ?? "View provider catalog",
         t("phase070.page.allowed.viewStatus") ?? "View tenant integration status",

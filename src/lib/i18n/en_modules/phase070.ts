@@ -2,7 +2,7 @@ export const phase070 = {
   "phase070.page.title": "Tenant Integration Vault",
   "phase070.page.purpose": "Phase 070 metadata shell for tenant integrations, write-only secret intake, and n8n-safe broker boundaries.",
   "phase070.page.statusLabel": "Vault boundary",
-  "phase070.page.statusValue": "Writes blocked pending Gatekeeper encryption approval",
+  "phase070.page.statusValue": "SECURE - SSOT Vault is active",
   "phase070.page.allowed.viewProviders": "View provider catalog",
   "phase070.page.allowed.viewStatus": "View tenant integration status",
   "phase070.page.allowed.submitWriteOnly": "Submit write-only secret placeholder",

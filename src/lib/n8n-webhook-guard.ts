@@ -17,24 +17,33 @@ export async function verifyN8nWebhook<T>(
   const writeAuditLog = async (status: 'ACCEPTED' | 'REJECTED' | 'FAILED', reason: string, reqId: string, extraMeta: any = {}) => {
     if (!supabaseUrl || !serviceKey) return;
     try {
-      await fetch(`${supabaseUrl}/rest/v1/phase1_audit_logs`, {
+      const mappedState = status === 'ACCEPTED' ? 'PASS' : 'BLOCKED';
+      
+      const { createHash } = await import('crypto');
+      const timestamp = new Date().toISOString();
+      const eventHash = createHash('sha256')
+        .update(`webhook|SYSTEM|n8n:webhook_client|${actionName}|WORKFLOW_RUN|${reqId}|${reason}|${timestamp}`)
+        .digest('hex');
+
+      await fetch(`${supabaseUrl}/rest/v1/audit_logs`, {
         method: 'POST',
         headers: {
           'apikey': serviceKey,
           'Authorization': `Bearer ${serviceKey}`,
+          'Accept-Profile': 'pn_os_ai_department',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           actor_type: 'SYSTEM',
           actor_external_ref: 'n8n:webhook_client',
           action: actionName,
-          entity_type: 'SYSTEM',
-          reason,
-          after_state: status,
-          metadata: { 
-            request_id: reqId,
-            ...extraMeta
-          }
+          entity_type: 'WORKFLOW_RUN',
+          entity_id: reqId,
+          before_state: 'NOT_STARTED',
+          after_state: mappedState,
+          reason: JSON.stringify({ message: reason, ...extraMeta }),
+          request_id: reqId,
+          event_hash: eventHash
         })
       });
     } catch (e) {
@@ -66,11 +75,12 @@ export async function verifyN8nWebhook<T>(
   // 3. Idempotency Check
   if (supabaseUrl && serviceKey) {
     try {
-      const url = `${supabaseUrl}/rest/v1/phase1_audit_logs?action=eq.${actionName}&after_state=eq.ACCEPTED&metadata->>request_id=eq.${requestId}&select=id`;
+      const url = `${supabaseUrl}/rest/v1/audit_logs?action=eq.${actionName}&after_state=eq.PASS&request_id=eq.${requestId}&select=id`;
       const res = await fetch(url, {
         headers: {
           'apikey': serviceKey,
-          'Authorization': `Bearer ${serviceKey}`
+          'Authorization': `Bearer ${serviceKey}`,
+          'Accept-Profile': 'pn_os_ai_department'
         }
       });
       const data = await res.json();

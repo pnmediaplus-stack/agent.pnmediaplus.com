@@ -352,4 +352,33 @@ export async function loadPortalOrganizationContext(accessToken: string, userId:
   };
 }
 
+export async function requireAuthContext() {
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get(PORTAL_ACCESS_COOKIE)?.value;
+  
+  if (!accessToken) {
+    throw new Error("UNAUTHORIZED_MISSING_TOKEN");
+  }
+
+  const user = await verifySupabaseAccessToken(accessToken);
+  if (!user) {
+    throw new Error("UNAUTHORIZED_INVALID_TOKEN");
+  }
+
+  const context = await loadPortalOrganizationContext(accessToken, user.id);
+  
+  if (context.state === "blocked" || !context.active_membership) {
+    throw new Error(`UNAUTHORIZED_BLOCKED_CONTEXT: ${context.reason}`);
+  }
+
+  return {
+    userId: user.id,
+    email: user.email,
+    organizationId: context.active_membership.organization_id,
+    role: context.active_membership.role,
+    accessToken
+  };
+}
+
 export { PORTAL_ACCESS_COOKIE, PORTAL_REFRESH_COOKIE };

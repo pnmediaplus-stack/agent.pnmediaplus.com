@@ -59,8 +59,8 @@ export async function dbInsertAuditLog(organizationId: string, log: { entityId: 
 }
 
 export async function dbLoadChatMessages(organizationId: string, threadId: string) {
-  const res = await fetch(`${supabaseUrl}/rest/v1/phase1_chat_messages?thread_id=eq.${threadId}&order=created_at.asc`, {
-    headers: getPublicHeaders(),
+  const res = await fetch(`${supabaseUrl}/rest/v1/chat_message_feed_v1?threadId=eq.${threadId}&order=createdAt.asc`, {
+    headers: getHeaders(),
     cache: 'no-store'
   });
   if (!res.ok) return { error: await res.text(), data: [] };
@@ -69,8 +69,8 @@ export async function dbLoadChatMessages(organizationId: string, threadId: strin
 }
 
 export async function dbLoadThreadAuditLogs(organizationId: string, threadId: string) {
-  const res = await fetch(`${supabaseUrl}/rest/v1/phase1_audit_logs?entity_id=eq.${threadId}&entityType=eq.chat&order=created_at.desc`, {
-    headers: getPublicHeaders(),
+  const res = await fetch(`${supabaseUrl}/rest/v1/audit_log_feed_v1?entityId=eq.${threadId}&entityType=eq.chat&order=createdAt.desc`, {
+    headers: getHeaders(),
     cache: 'no-store'
   });
   if (!res.ok) return { error: await res.text(), data: [] };
