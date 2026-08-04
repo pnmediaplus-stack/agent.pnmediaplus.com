@@ -5,7 +5,7 @@ import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { useI18n } from "@/lib/i18n/useI18n";
 import { inferChatIntent } from "@/lib/validators";
-import { sendChatMessage, pollChatMessages, pollAuditLogs, pollActiveTasks } from "@/app/actions/chat-actions";
+import { sendChatMessage, pollActiveTasks } from "@/app/actions/chat-actions";
 import type { ChatMessage, ChatThread } from "@/types/chat";
 import type { AuditLog } from "@/types/audit";
 import { Loader2, CheckCircle2, Clock } from "lucide-react";
@@ -36,14 +36,17 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
       if (inFlight) return;
       inFlight = true;
       try {
-        const [latestMessages, latestLogs, latestTasks] = await Promise.all([
-          pollChatMessages(thread.id),
-          pollAuditLogs(thread.id),
+        const [messagesRes, logsRes, latestTasks] = await Promise.all([
+          fetch(`/api/chat-messages?thread_id=${thread.id}`).then(r => r.json()),
+          fetch(`/api/audit-logs`).then(r => r.json()),
           pollActiveTasks()
         ]);
         if (mounted) {
-          setMessages(latestMessages);
-          setAuditLogs(latestLogs);
+          if (messagesRes.chat_messages) setMessages(messagesRes.chat_messages);
+          if (logsRes.audit_logs) {
+            const threadLogs = logsRes.audit_logs.filter((l: AuditLog) => l.entity_id === thread.id && l.entity_type === 'chat_thread');
+            setAuditLogs(threadLogs);
+          }
           setActiveTasks(latestTasks);
         }
       } catch (err) {
@@ -72,13 +75,13 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     setDraft("");
 
     const intentType = inferChatIntent(trimmed);
-    const optimisticMessage: ChatMessage = {
+    const optimisticMessage: any = {
       id: `optimistic-${Date.now()}`,
-      threadId: thread.id,
+      thread_id: thread.id,
       sender: "human",
       body: trimmed,
-      intentType,
-      createdAt: new Date().toISOString()
+      intent_type: intentType,
+      created_at: new Date().toISOString()
     };
 
     setMessages((prev) => [...prev, optimisticMessage]);
@@ -86,18 +89,19 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     try {
       await sendChatMessage(thread.id, trimmed, intentType);
       
-      // Force a poll immediately after send
-      const [latestMessages, latestLogs, latestTasks] = await Promise.all([
-        pollChatMessages(thread.id),
-        pollAuditLogs(thread.id),
+      const [messagesRes, logsRes, latestTasks] = await Promise.all([
+        fetch(`/api/chat-messages?thread_id=${thread.id}`).then(r => r.json()),
+        fetch(`/api/audit-logs`).then(r => r.json()),
         pollActiveTasks()
       ]);
-      setMessages(latestMessages);
-      setAuditLogs(latestLogs);
+      if (messagesRes.chat_messages) setMessages(messagesRes.chat_messages);
+      if (logsRes.audit_logs) {
+        const threadLogs = logsRes.audit_logs.filter((l: AuditLog) => l.entity_id === thread.id && l.entity_type === 'chat_thread');
+        setAuditLogs(threadLogs);
+      }
       setActiveTasks(latestTasks);
     } catch (err) {
       console.error("Failed to send message", err);
-      // Rollback optimistic update
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
     } finally {
       setIsSending(false);
@@ -162,8 +166,8 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           <div className="mt-3 space-y-3 overflow-y-auto pr-2">
             {auditLogs.map((log) => (
               <div key={log.id} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 shrink-0">
-                <div className="text-xs uppercase tracking-[0.24em] text-slate-500">{log.action}</div>
-                <div className="mt-2 text-sm text-slate-200">{log.details}</div>
+                <div className="text-xs uppercase tracking-[0.24em] text-slate-500">{log.action_type}</div>
+                <div className="mt-2 text-sm text-slate-200">{log.metadata ? JSON.stringify(log.metadata) : "-"}</div>
               </div>
             ))}
           </div>

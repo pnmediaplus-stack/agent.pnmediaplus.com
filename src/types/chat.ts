@@ -2,19 +2,24 @@ import type { ChatIntentType } from "@/types/state";
 
 export type ChatMessage = {
   id: string;
-  threadId: string;
+  organization_id: string;
+  thread_id: string;
   sender: "human" | "system" | "agent";
   body: string;
-  intentType?: ChatIntentType;
-  targetDepartmentId?: string;
-  targetAgentId?: string;
-  createdAt: string;
+  intent_type?: ChatIntentType;
+  metadata?: any;
+  created_at: string;
+  updated_at: string;
 };
 
 export type ChatThread = {
   id: string;
+  organization_id: string;
   title: string;
-  purpose: string;
-  lastActivityAt: string;
+  purpose: string | null;
   status: "ACTIVE" | "WAITING_ON_HUMAN" | "CLOSED";
+  last_activity_at: string;
+  metadata?: any;
+  created_at: string;
+  updated_at: string;
 };

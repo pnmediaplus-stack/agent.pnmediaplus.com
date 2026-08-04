@@ -1,21 +1,36 @@
 "use client";
 
+import useSWR from "swr";
 import { PageFrame } from "@/components/shared/PageFrame";
 import { HumanCommandChat } from "@/components/chat/HumanCommandChat";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { ChatThread, ChatMessage } from "@/types/chat";
 import type { AuditLog } from "@/types/audit";
 
-export function ChatPageClient({ 
-  thread, 
-  messages, 
-  auditLogs 
-}: { 
-  thread?: ChatThread;
-  messages: ChatMessage[];
-  auditLogs: AuditLog[];
-}) {
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export function ChatPageClient() {
   const { t } = useI18n("chat");
+
+  const { data: threadsData, isLoading: isLoadingThreads } = useSWR<{ chat_threads: ChatThread[] }>("/api/chat-threads", fetcher);
+  const thread = threadsData?.chat_threads?.[0];
+
+  const { data: messagesData, isLoading: isLoadingMessages } = useSWR<{ chat_messages: ChatMessage[] }>(
+    thread ? `/api/chat-messages?thread_id=${thread.id}` : null,
+    fetcher
+  );
+
+  const { data: auditData, isLoading: isLoadingAudit } = useSWR<{ audit_logs: AuditLog[] }>("/api/audit-logs", fetcher);
+
+  const isLoading = isLoadingThreads || (thread && isLoadingMessages) || isLoadingAudit;
+
+  if (isLoading) {
+    return (
+      <PageFrame title={t("chat.page.title") ?? "Human Command Chat"} purpose="" statusLabel="Loading" statusValue="LOADING" allowedActions={[]} forbiddenActions={[]}>
+        <div className="flex h-64 items-center justify-center text-white/50">Loading chat...</div>
+      </PageFrame>
+    );
+  }
 
   if (!thread) {
     return (
@@ -31,6 +46,9 @@ export function ChatPageClient({
       </PageFrame>
     );
   }
+
+  // Filter audit logs for this specific thread
+  const threadAuditLogs = (auditData?.audit_logs ?? []).filter(log => log.entity_id === thread.id && log.entity_type === 'chat_thread');
 
   return (
     <PageFrame
@@ -50,7 +68,7 @@ export function ChatPageClient({
         t("chat.page.forbidden.deployProduction") ?? "Deploy production"
       ]}
     >
-      <HumanCommandChat thread={thread} initialMessages={messages} initialAuditLogs={auditLogs} />
+      <HumanCommandChat thread={thread} initialMessages={messagesData?.chat_messages ?? []} initialAuditLogs={threadAuditLogs} />
     </PageFrame>
   );
 }

@@ -1,12 +1,16 @@
 "use client";
 
+import useSWR from "swr";
 import { PageFrame } from "@/components/shared/PageFrame";
 import { OperationsExecutionSurface } from "@/components/operations/OperationsExecutionSurface";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { WorkflowRun } from "@/types/workflow";
 
-export function OperationsPageClient({ runs }: { runs: WorkflowRun[] }) {
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export function OperationsPageClient() {
   const { t } = useI18n("operations");
+  const { data, error, isLoading } = useSWR<{ runs: WorkflowRun[] }>("/api/workflow-runs", fetcher);
 
   return (
     <PageFrame
@@ -26,7 +30,17 @@ export function OperationsPageClient({ runs }: { runs: WorkflowRun[] }) {
         t("operations.page.forbidden.selfApprove") ?? "Self-approve"
       ]}
     >
-      <OperationsExecutionSurface workflowRuns={runs} />
+      {isLoading ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-white/50">Loading operations execution...</div>
+        </div>
+      ) : error ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-red-400">Failed to load operations execution</div>
+        </div>
+      ) : (
+        <OperationsExecutionSurface workflowRuns={data?.runs ?? []} />
+      )}
     </PageFrame>
   );
 }

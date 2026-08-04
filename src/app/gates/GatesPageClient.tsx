@@ -1,12 +1,16 @@
 "use client";
 
+import useSWR from "swr";
 import { PageFrame } from "@/components/shared/PageFrame";
 import { GateCard } from "@/components/gates/GateCard";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { Gate } from "@/types/gate";
 
-export function GatesPageClient({ gates }: { gates: Gate[] }) {
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export function GatesPageClient() {
   const { t } = useI18n("gates");
+  const { data, error, isLoading } = useSWR<{ gates: Gate[] }>("/api/gates", fetcher);
 
   return (
     <PageFrame
@@ -25,11 +29,21 @@ export function GatesPageClient({ gates }: { gates: Gate[] }) {
         t("gates.page.forbidden.deployProduction") ?? "Deploy production"
       ]}
     >
-      <div className="grid gap-4 lg:grid-cols-3">
-        {gates.map((gate) => (
-          <GateCard key={gate.id} gate={gate} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-white/50">Loading gates...</div>
+        </div>
+      ) : error ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-red-400">Failed to load gates</div>
+        </div>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-3">
+          {(data?.gates ?? []).map((gate) => (
+            <GateCard key={gate.id} gate={gate} />
+          ))}
+        </div>
+      )}
     </PageFrame>
   );
 }

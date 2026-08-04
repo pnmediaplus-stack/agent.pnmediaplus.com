@@ -1,6 +1,4 @@
-import { insertChatMessage, getPendingTasks, updateTaskFromWorker } from '@/lib/phase1-loader';
 import { NextResponse } from 'next/server';
-import { getSupabaseConfig } from '@/lib/supabase-client';
 import { z } from 'zod';
 
 const WorkerApiSchema = z.object({
@@ -26,15 +24,33 @@ export async function POST(req: Request) {
     }
 
     const { action, taskId, outputPayload, chatMessage, threadId } = parsed.data;
+    
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    const headers = {
+      'apikey': serviceRoleKey,
+      'Authorization': `Bearer ${serviceRoleKey}`,
+      'Accept-Profile': 'pn_os_ai_department',
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    };
 
     if (action === 'get_pending_tasks') {
-      const res = await getPendingTasks();
-      if (res.error) throw new Error(res.error);
-      const tasks = res.data || [];
+      const res = await fetch(`${supabaseUrl}/rest/v1/tasks?status=eq.PENDING&order=created_at.asc`, { headers });
+      if (!res.ok) throw new Error(await res.text());
+      const tasks = await res.json() || [];
       
-      // Mark them as PARTIAL immediately so other workers don't pick them up
       for (const t of tasks) {
-        await updateTaskFromWorker(t.id, { state: 'PARTIAL', started_at: new Date().toISOString() });
+        await fetch(`${supabaseUrl}/rest/v1/tasks?id=eq.${t.id}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ state: 'PARTIAL', started_at: new Date().toISOString() })
+        });
       }
       return NextResponse.json({ tasks });
     }
@@ -42,25 +58,33 @@ export async function POST(req: Request) {
     if (action === 'complete_task') {
       if (!taskId) return NextResponse.json({ error: 'Missing taskId' }, { status: 400 });
       
-      // Update task to PASS
-      const updateRes = await updateTaskFromWorker(taskId, { 
-        state: 'PASS', 
-        completed_at: new Date().toISOString(), 
-        metadata: outputPayload || {} 
+      const updateRes = await fetch(`${supabaseUrl}/rest/v1/tasks?id=eq.${taskId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ 
+          state: 'PASS', 
+          completed_at: new Date().toISOString(), 
+          metadata: outputPayload || {} 
+        })
       });
-      if (updateRes.error) throw new Error(updateRes.error);
+      if (!updateRes.ok) throw new Error(await updateRes.text());
+      const updatedTask = (await updateRes.json())[0];
 
-      // If there is a chat message to send back to the user
-      if (chatMessage && threadId) {
-        const chatRes = await insertChatMessage({
-          threadId: threadId,
-          sender: 'agent',
-          body: chatMessage,
-          intentType: 'unknown'
+      if (chatMessage && threadId && updatedTask) {
+        const chatRes = await fetch(`${supabaseUrl}/rest/v1/chat_messages`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            organization_id: updatedTask.organization_id, // Extract org from task
+            thread_id: threadId,
+            sender: 'agent',
+            body: chatMessage,
+            intent_type: 'unknown'
+          })
         });
         
-        if (chatRes.error) {
-          console.error("Failed to insert chat message in worker API:", chatRes.error);
+        if (!chatRes.ok) {
+          console.error("Failed to insert chat message in worker API:", await chatRes.text());
         }
       }
 

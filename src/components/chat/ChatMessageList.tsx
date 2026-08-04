@@ -51,7 +51,7 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
                         : (t("chat.message.sender.system") ?? "System")}
                   </span>
                 </div>
-                <div className="font-mono text-[10px] text-slate-500">{new Date(message.createdAt).toLocaleTimeString()}</div>
+                <div className="font-mono text-[10px] text-slate-500">{new Date(message.created_at).toLocaleTimeString()}</div>
               </div>
               
               <div className="text-sm leading-relaxed text-slate-200 prose prose-invert prose-sm max-w-none">
@@ -60,11 +60,11 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
                 </ReactMarkdown>
               </div>
               
-              {message.intentType ? (
+              {message.intent_type ? (
                 <div className="mt-4 flex items-center gap-1.5 rounded bg-black/20 px-2.5 py-1 w-fit border border-white/5">
                   <Activity className="h-3.5 w-3.5 text-indigo-400" />
                   <span className="font-mono text-[10px] text-slate-400">
-                    {t("chat.message.intentPrefix") ?? "INTENT"}: <span className="text-indigo-300">{message.intentType}</span>
+                    {t("chat.message.intentPrefix") ?? "INTENT"}: <span className="text-indigo-300">{message.intent_type}</span>
                   </span>
                 </div>
               ) : null}

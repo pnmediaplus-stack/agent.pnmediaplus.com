@@ -1,37 +1,37 @@
 "use server";
 
-import { insertAuditLog, insertChatMessage, loadChatMessages, loadThreadAuditLogs, deleteChatMessage, deleteAuditLog, loadActiveTasks } from "@/lib/phase1-loader";
 import { postN8nWebhook } from "@/lib/n8n-client";
 import type { ChatIntentType } from "@/types/state";
-
 import { verifyActionAuth } from "@/lib/action-auth-guard";
 import { invokeLlm } from "@/lib/llm-client";
+import { 
+  dbInsertChatMessage, 
+  dbInsertAuditLog, 
+  dbLoadChatMessages, 
+  dbDeleteChatMessage, 
+  dbDeleteAuditLog, 
+  dbLoadActiveTasks 
+} from "@/lib/governance-api";
 
 export async function sendChatMessage(threadId: string, body: string, intentType?: ChatIntentType) {
-  // 1. Authentication (Fail-closed)
   const auth = await verifyActionAuth();
   if (!auth.ok) {
     throw new Error(`Auth failed: ${auth.message}`);
   }
 
+  const organizationId = auth.tenantId;
   const requestId = crypto.randomUUID();
 
-  // 2. Insert human message into DB
-  const messageResult = await insertChatMessage({
+  const messageResult = await dbInsertChatMessage(organizationId, {
     threadId,
     sender: "human",
     body,
     intentType
   });
 
-  if (messageResult.error || !messageResult.data) {
-    throw new Error(`Failed to insert chat message: ${messageResult.error}`);
-  }
-
   const humanMessageId = messageResult.data.id;
 
-  // 3. Insert audit log for Human
-  const auditResult = await insertAuditLog({
+  const auditResult = await dbInsertAuditLog(organizationId, {
     entityId: threadId,
     entityType: "chat_thread",
     action: "message_received",
@@ -43,11 +43,9 @@ export async function sendChatMessage(threadId: string, body: string, intentType
   let agentMessageId: string | undefined;
 
   try {
-    // 4. Context Loading
-    const historyRes = await loadChatMessages(threadId);
+    const historyRes = await dbLoadChatMessages(organizationId, threadId);
     if (historyRes.error) throw new Error(historyRes.error);
     
-    // 5. LLM Invocation
     const messages = (historyRes.data || []).map(m => ({
       role: m.sender === "human" ? "user" : m.sender === "agent" ? "assistant" : "system",
       content: m.body
@@ -65,20 +63,16 @@ export async function sendChatMessage(threadId: string, body: string, intentType
 
     const aiText = llmResponse?.choices?.[0]?.message?.content || "No response generated.";
 
-    // 6. Insert Agent reply
-    const agentMsgResult = await insertChatMessage({
+    const agentMsgResult = await dbInsertChatMessage(organizationId, {
       threadId,
       sender: "agent",
       body: aiText,
-      intentType: "create_content" // simplified for MVP
+      intentType: "create_content"
     });
 
-    if (agentMsgResult.error || !agentMsgResult.data) throw new Error(agentMsgResult.error || "Missing agent message data");
-    
     agentMessageId = agentMsgResult.data.id;
 
-    // 7. Insert Audit for Agent
-    await insertAuditLog({
+    await dbInsertAuditLog(organizationId, {
       entityId: threadId,
       entityType: "chat_thread",
       action: "agent_replied",
@@ -86,8 +80,6 @@ export async function sendChatMessage(threadId: string, body: string, intentType
       details: `requestId=${requestId}`
     });
 
-    // 7.5. Fire async n8n webhook (True Fire-and-Forget Side-effect)
-    // We do NOT await this promise so it doesn't block the UI response.
     postN8nWebhook("webhook/chat", {
       threadId,
       humanMessageId,
@@ -105,20 +97,13 @@ export async function sendChatMessage(threadId: string, body: string, intentType
     };
 
   } catch (error) {
-    // 8. TRUE Rollback/Compensate: Delete all inserted records (Human message, Agent message, and initial Audit log)
-    if (humanMessageId) {
-      await deleteChatMessage(humanMessageId).catch(() => {});
-    }
-    if (agentMessageId) {
-      await deleteChatMessage(agentMessageId).catch(() => {});
-    }
-    if (auditLogId) {
-      await deleteAuditLog(auditLogId).catch(() => {});
-    }
+    if (humanMessageId) await dbDeleteChatMessage(organizationId, humanMessageId).catch(() => {});
+    if (agentMessageId) await dbDeleteChatMessage(organizationId, agentMessageId).catch(() => {});
+    if (auditLogId) await dbDeleteAuditLog(organizationId, auditLogId).catch(() => {});
     
     const errMessage = error instanceof Error ? error.message : String(error);
     
-    await insertAuditLog({
+    await dbInsertAuditLog(organizationId, {
       entityId: threadId,
       entityType: "chat_thread",
       action: "llm_invocation_failed",
@@ -126,7 +111,7 @@ export async function sendChatMessage(threadId: string, body: string, intentType
       details: `requestId=${requestId} error=${errMessage} (Rollback Applied)`
     });
 
-    await insertChatMessage({
+    await dbInsertChatMessage(organizationId, {
       threadId,
       sender: "system",
       body: `Hệ thống gặp lỗi trong quá trình kết nối AI Broker: ${errMessage}. Lệnh của bạn đã được hủy bỏ an toàn (Rollback).`,
@@ -137,25 +122,9 @@ export async function sendChatMessage(threadId: string, body: string, intentType
   }
 }
 
-export async function pollChatMessages(threadId: string) {
-  const result = await loadChatMessages(threadId);
-  if (result.error) {
-    throw new Error(`Failed to poll chat messages: ${result.error}`);
-  }
-  return result.data;
-}
-
-export async function pollAuditLogs(threadId: string) {
-  const result = await loadThreadAuditLogs(threadId);
-  if (result.error) {
-    throw new Error(`Failed to poll audit logs: ${result.error}`);
-  }
-  return result.data;
-}
-
 export async function pollActiveTasks() {
   const auth = await verifyActionAuth();
   if (!auth.ok) return [];
-  const result = await loadActiveTasks(auth.actorId);
+  const result = await dbLoadActiveTasks(auth.tenantId, auth.actorId);
   return result.data || [];
 }

@@ -35,13 +35,13 @@ export function AuditLogTable({ logs }: { logs: AuditLog[] }) {
         <tbody className="divide-y divide-slate-800">
           {logs.map((log) => (
             <tr key={log.id} className="text-slate-300">
-              <td className="px-5 py-4 text-xs text-slate-500">{log.createdAt}</td>
+              <td className="px-5 py-4 text-xs text-slate-500">{new Date(log.created_at).toLocaleString()}</td>
               <td className="px-5 py-4">
-                {log.entityType} / {log.entityId}
+                {log.entity_type} / <span className="font-mono text-[10px] text-slate-500 truncate max-w-[150px] inline-block align-bottom" title={log.entity_id}>{log.entity_id}</span>
               </td>
-              <td className="px-5 py-4">{log.action}</td>
-              <td className="px-5 py-4">{log.actor}</td>
-              <td className="px-5 py-4">{log.details}</td>
+              <td className="px-5 py-4">{log.action_type}</td>
+              <td className="px-5 py-4">{log.external_ref || log.actor_type}</td>
+              <td className="px-5 py-4 font-mono text-[10px] text-slate-400 break-words max-w-sm">{log.metadata ? JSON.stringify(log.metadata) : "-"}</td>
             </tr>
           ))}
         </tbody>

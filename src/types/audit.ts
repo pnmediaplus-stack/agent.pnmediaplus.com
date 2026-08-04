@@ -1,9 +1,13 @@
 export type AuditLog = {
   id: string;
-  entityType: "task" | "artifact" | "approval" | "workflow" | "chat" | "chat_thread" | "gate";
-  entityId: string;
-  action: string;
-  actor: string;
-  details: string;
-  createdAt: string;
+  organization_id: string;
+  entity_type: string;
+  entity_id: string;
+  actor_type: string;
+  agent_id: string | null;
+  external_ref: string | null;
+  action_type: string;
+  metadata: any;
+  created_at: string;
+  updated_at: string;
 };
