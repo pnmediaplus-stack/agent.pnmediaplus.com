@@ -27,8 +27,8 @@ export function TaskTable({ tasks }: { tasks: Task[] }) {
     return (
       <div className="flex flex-col items-center justify-center py-12 rounded-2xl border border-slate-700/50 bg-slate-900/30 backdrop-blur-xl">
         <ClipboardList className="h-10 w-10 text-slate-500 mb-4" />
-        <h3 className="text-lg font-semibold text-slate-300">{t("tasks.empty.title") ?? "No Tasks Found"}</h3>
-        <p className="text-sm text-slate-500">{t("tasks.empty.description") ?? "Your task queue is currently empty."}</p>
+        <h3 className="text-lg font-semibold text-slate-300">{t("tasks.empty.title") ?? "Không tìm thấy tác vụ nào."}</h3>
+        <p className="text-sm text-slate-500">{t("tasks.empty.description") ?? "Hàng đợi tác vụ hiện đang trống."}</p>
       </div>
     );
   }

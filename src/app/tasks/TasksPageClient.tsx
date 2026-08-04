@@ -53,7 +53,7 @@ export function TasksPageClient() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to load task board data.");
+      toast.error("Không thể tải dữ liệu bảng tác vụ.");
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +66,7 @@ export function TasksPageClient() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!deptId) {
-      toast.error("Please select a department.");
+      toast.error("Vui lòng chọn phòng ban.");
       return;
     }
 
@@ -90,17 +90,17 @@ export function TasksPageClient() {
       if (!res.ok) {
         // Red toast for 403 or other errors
         if (res.status === 403) {
-           toast.error(data.message || "FORBIDDEN: You do not have permission to assign tasks.", {
+           toast.error(data.message || "TỪ CHỐI: Bạn không có quyền giao tác vụ.", {
              style: { background: '#ef4444', color: '#fff', border: 'none' }
            });
         } else {
-           toast.error(data.error || "Failed to create task");
+           toast.error(data.error || "Không thể tạo tác vụ.");
         }
         setIsSubmitting(false);
         return;
       }
 
-      toast.success("Task assigned successfully!");
+      toast.success("Đã giao tác vụ thành công!");
       setShowForm(false);
       setTaskKey("");
       setTitle("");
@@ -148,43 +148,43 @@ export function TasksPageClient() {
 
       {showForm && (
         <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-700/50 bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-6 text-lg font-bold text-slate-200">{t("tasks.form.title") ?? "Assign New Task"}</h3>
+          <h3 className="mb-6 text-lg font-bold text-slate-200">{t("tasks.form.title") ?? "Giao tác vụ mới"}</h3>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <div className="lg:col-span-1">
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.keyLabel") ?? "Task Key (Unique identifier)"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.keyLabel") ?? "Mã tác vụ (định danh duy nhất)"}</label>
               <input
                 type="text"
                 required
                 pattern="[a-z0-9_]+"
                 value={taskKey}
                 onChange={(e) => setTaskKey(e.target.value)}
-                placeholder={t("tasks.form.keyPlaceholder") ?? "e.g. generate_report_1"}
+                placeholder={t("tasks.form.keyPlaceholder") ?? "vd: generate_report_1"}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div className="lg:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.titleLabel") ?? "Title"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.titleLabel") ?? "Tiêu đề"}</label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={t("tasks.form.titlePlaceholder") ?? "e.g. Generate Q3 Financial Report"}
+                placeholder={t("tasks.form.titlePlaceholder") ?? "vd: Tạo báo cáo tài chính Q3"}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div className="lg:col-span-3">
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.summaryLabel") ?? "Summary (Optional)"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.summaryLabel") ?? "Tóm tắt (tùy chọn)"}</label>
               <textarea
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
-                placeholder={t("tasks.form.summaryPlaceholder") ?? "Details about what needs to be done..."}
+                placeholder={t("tasks.form.summaryPlaceholder") ?? "Chi tiết công việc cần làm..."}
                 rows={2}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.priorityLabel") ?? "Priority (1-100)"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.priorityLabel") ?? "Độ ưu tiên (1-100)"}</label>
               <input
                 type="number"
                 min="1"
@@ -196,7 +196,7 @@ export function TasksPageClient() {
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.departmentLabel") ?? "Department"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.departmentLabel") ?? "Phòng ban"}</label>
               <select
                 required
                 value={deptId}
@@ -212,13 +212,13 @@ export function TasksPageClient() {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.agentLabel") ?? "Assign to Agent (Optional)"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.agentLabel") ?? "Giao cho Agent (tùy chọn)"}</label>
               <select
                 value={agentId}
                 onChange={(e) => setAgentId(e.target.value)}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
-                <option value="" className="bg-slate-900">{t("tasks.form.agentUnassigned") ?? "-- Unassigned --"}</option>
+                <option value="" className="bg-slate-900">{t("tasks.form.agentUnassigned") ?? "-- Chưa giao --"}</option>
                 {availableAgents.map(a => (
                   <option key={a.id} value={a.id} className="bg-slate-900">{a.canonical_name}</option>
                 ))}
@@ -232,7 +232,7 @@ export function TasksPageClient() {
               className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-indigo-500 disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              {t("tasks.form.submit") ?? "Dispatch Task"}
+              {t("tasks.form.submit") ?? "Gửi tác vụ"}
             </button>
           </div>
         </form>
