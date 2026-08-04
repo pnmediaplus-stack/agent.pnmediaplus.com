@@ -8,7 +8,7 @@ export const chat = {
   "chat.page.allowed.requestClarification": "Yêu cầu làm rõ",
   "chat.page.forbidden.publishNow": "Xuất bản ngay",
   "chat.page.forbidden.launchNow": "Khởi chạy ngay",
-  "chat.page.forbidden.deployProduction": "Triển khai Production",
+  "chat.page.forbidden.deployProduction": "Triển khai môi trường sản xuất",
   "chat.composer.label": "Lệnh từ Người dùng",
   "chat.composer.placeholder": "Nhập lệnh, hỏi trạng thái, hoặc yêu cầu tạo tác vụ...",
   "chat.composer.send": "Gửi lệnh",

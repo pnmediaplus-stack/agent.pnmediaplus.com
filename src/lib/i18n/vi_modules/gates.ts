@@ -7,7 +7,7 @@ export const gates = {
   "gates.page.allowed.reject": "Từ chối",
   "gates.page.forbidden.approveAutomatically": "Tự động phê duyệt",
   "gates.page.forbidden.launchNow": "Khởi chạy ngay",
-  "gates.page.forbidden.deployProduction": "Triển khai Production",
+  "gates.page.forbidden.deployProduction": "Triển khai môi trường sản xuất",
   "gates.card.owner": "Chủ sở hữu",
   "gates.card.rationale": "Lý do",
   "gates.approvalPanel.title": "Bảng phê duyệt",

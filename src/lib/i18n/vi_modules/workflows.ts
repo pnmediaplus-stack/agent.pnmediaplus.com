@@ -6,7 +6,7 @@ export const workflows = {
   "workflows.page.allowed.viewCheckpoints": "Xem điểm kiểm tra",
   "workflows.page.allowed.holdForHuman": "Giữ để kiểm duyệt",
   "workflows.page.forbidden.autoLaunch": "Khởi chạy tự động",
-  "workflows.page.forbidden.deployProd": "Triển khai production",
+  "workflows.page.forbidden.deployProd": "Triển khai môi trường sản xuất",
   "workflows.page.forbidden.skipGate": "Bỏ qua trạng thái",
   "workflows.table.title": "Các lượt chạy quy trình",
   "workflows.table.description": "Bảng chạy an toàn với mục tiêu, thời lượng và pha thực thi hiện tại.",

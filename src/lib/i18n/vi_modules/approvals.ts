@@ -9,7 +9,7 @@ export const approvals = {
   "approvals.page.allowed.requestChanges": "Yêu cầu chỉnh sửa",
   "approvals.page.forbidden.launchNow": "Khởi chạy ngay",
   "approvals.page.forbidden.autoPublish": "Tự động xuất bản",
-  "approvals.page.forbidden.deployProduction": "Triển khai production",
+  "approvals.page.forbidden.deployProduction": "Triển khai môi trường sản xuất",
   "approvals.panel.title": "Bảng phê duyệt",
   "approvals.panel.description": "Chỉ dành cho Human. Các hành động dưới đây là điều khiển review, không phải trigger automation.",
   "approvals.panel.requestedBy": "Được yêu cầu bởi",
