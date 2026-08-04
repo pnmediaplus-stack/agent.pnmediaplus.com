@@ -15,27 +15,28 @@ export function QaReviewsPageClient() {
   return (
     <PageFrame
       title={t("qa.page.title") ?? "QA Reviews"}
-      purpose={t("qa.page.purpose") ?? "QA review panel with pass, hold, and block outcomes for internal governance."}
+      purpose={t("qa.page.purpose") ?? "Bảng review QA với kết quả pass, hold, block cho governance nội bộ."}
       statusLabel={t("qa.page.statusLabel") ?? "QA review panel"}
       statusValue="REVIEW"
+      statusDisplayValue={t("qa.state.REVIEW") ?? "Đang duyệt"}
       allowedActions={[
-        t("qa.page.allowed.submitForQA") ?? "Submit for QA",
-        t("qa.page.allowed.markReadyHumanReview") ?? "Mark ready for human review",
-        t("qa.page.allowed.requestChanges") ?? "Request changes"
+        t("qa.page.allowed.submitForQA") ?? "Gửi cho QA",
+        t("qa.page.allowed.markReadyHumanReview") ?? "Đánh dấu sẵn sàng cho Human review",
+        t("qa.page.allowed.requestChanges") ?? "Yêu cầu chỉnh sửa"
       ]}
       forbiddenActions={[
-        t("qa.page.forbidden.approveWithoutReview") ?? "Approve without review",
-        t("qa.page.forbidden.launchNow") ?? "Launch now",
-        t("qa.page.forbidden.publishNow") ?? "Publish now"
+        t("qa.page.forbidden.approveWithoutReview") ?? "Duyệt khi chưa review",
+        t("qa.page.forbidden.launchNow") ?? "Khởi chạy ngay",
+        t("qa.page.forbidden.publishNow") ?? "Xuất bản ngay"
       ]}
     >
       {isLoading ? (
         <div className="flex h-64 items-center justify-center">
-          <div className="text-white/50">Loading QA reviews...</div>
+          <div className="text-white/50">{t("qa.loading") ?? "Đang tải dữ liệu QA..."}</div>
         </div>
       ) : error ? (
         <div className="flex h-64 items-center justify-center">
-          <div className="text-red-400">Failed to load QA reviews</div>
+          <div className="text-red-400">{t("qa.error") ?? "Không thể tải dữ liệu QA"}</div>
         </div>
       ) : (
         <QAReviewTable reviews={data?.qa_reviews ?? []} />

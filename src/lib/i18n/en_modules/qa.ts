@@ -13,5 +13,13 @@ export const qa = {
   "qa.table.artifact": "Artifact",
   "qa.table.reviewer": "Reviewer",
   "qa.table.status": "Status",
-  "qa.table.notes": "Notes"
+  "qa.table.notes": "Notes",
+  "qa.loading": "Loading QA data...",
+  "qa.error": "Failed to load QA data",
+  "qa.state.REVIEW": "Review",
+  "qa.verdict.PENDING": "Pending",
+  "qa.verdict.REVIEW": "Review",
+  "qa.verdict.PASS": "Pass",
+  "qa.verdict.BLOCKED": "Blocked",
+  "qa.verdict.HOLD": "Hold"
 } as const;

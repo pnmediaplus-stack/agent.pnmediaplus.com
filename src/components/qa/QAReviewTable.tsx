@@ -11,15 +11,15 @@ export function QAReviewTable({ reviews }: { reviews: QAReview[] }) {
     <div className="overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-xl shadow-xl shadow-black/20">
       <div className="border-b border-slate-800/60 px-5 py-4 flex items-center gap-2">
         <ShieldCheck className="h-5 w-5 text-indigo-400" />
-        <span className="text-sm font-semibold text-white">{t("qa.table.title") ?? "QA reviews"}</span>
+        <span className="text-sm font-semibold text-white">{t("qa.table.title") ?? "Đánh giá QA"}</span>
       </div>
       <table className="min-w-full divide-y divide-slate-800 text-left text-sm">
         <thead className="bg-slate-900/70 text-xs uppercase tracking-[0.22em] text-slate-400">
           <tr>
             <th className="px-5 py-3">{t("qa.table.artifact") ?? "Artifact"}</th>
-            <th className="px-5 py-3">{t("qa.table.reviewer") ?? "Reviewer"}</th>
-            <th className="px-5 py-3">{t("qa.table.status") ?? "Status"}</th>
-            <th className="px-5 py-3">{t("qa.table.notes") ?? "Notes"}</th>
+            <th className="px-5 py-3">{t("qa.table.reviewer") ?? "Người review"}</th>
+            <th className="px-5 py-3">{t("qa.table.status") ?? "Trạng thái"}</th>
+            <th className="px-5 py-3">{t("qa.table.notes") ?? "Ghi chú"}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800/60">
@@ -35,7 +35,7 @@ export function QAReviewTable({ reviews }: { reviews: QAReview[] }) {
                 </div>
               </td>
               <td className="px-5 py-4">
-                <StateBadge label={review.verdict} />
+                <StateBadge label={review.verdict} displayLabel={t(`qa.verdict.${review.verdict}`) ?? review.verdict} />
               </td>
               <td className="px-5 py-4">
                 <div className="flex items-start gap-2">
