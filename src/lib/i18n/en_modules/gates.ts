@@ -12,5 +12,16 @@ export const gates = {
   "gates.card.rationale": "Rationale",
   "gates.approvalPanel.title": "Approval Panel",
   "gates.card.type": "Gate Type",
-  "gates.card.appliesTo": "Applies To"
+  "gates.card.appliesTo": "Applies To",
+  "gates.loading": "Loading gates data...",
+  "gates.error": "Failed to load gates",
+  "gates.state.REVIEW_REQUIRED": "Review Required",
+  "gates.state.REVIEW": "Review",
+  "gates.state.APPROVED": "Approved",
+  "gates.state.BLOCKED": "Blocked",
+  "gates.kind.APPROVAL": "Approval",
+  "gates.kind.REVIEW": "Review",
+  "gates.kind.RUNTIME": "Runtime",
+  "gates.entity.TASK": "Task",
+  "gates.entity.ARTIFACT_VERSION": "Artifact Version"
 } as const;

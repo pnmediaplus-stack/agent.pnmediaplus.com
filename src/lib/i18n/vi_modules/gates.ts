@@ -12,5 +12,16 @@ export const gates = {
   "gates.card.rationale": "Lý do",
   "gates.approvalPanel.title": "Approval panel",
   "gates.card.type": "Loại Gate",
-  "gates.card.appliesTo": "Áp dụng cho"
+  "gates.card.appliesTo": "Áp dụng cho",
+  "gates.loading": "Đang tải dữ liệu cổng...",
+  "gates.error": "Không thể tải dữ liệu cổng",
+  "gates.state.REVIEW_REQUIRED": "Cần phê duyệt",
+  "gates.state.REVIEW": "Đang duyệt",
+  "gates.state.APPROVED": "Đã duyệt",
+  "gates.state.BLOCKED": "Bị chặn",
+  "gates.kind.APPROVAL": "Phê duyệt",
+  "gates.kind.REVIEW": "Đánh giá",
+  "gates.kind.RUNTIME": "Runtime",
+  "gates.entity.TASK": "Tác vụ",
+  "gates.entity.ARTIFACT_VERSION": "Phiên bản Artifact"
 } as const;
