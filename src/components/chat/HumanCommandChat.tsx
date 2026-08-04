@@ -167,7 +167,19 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
             {auditLogs.map((log) => (
               <div key={log.id} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 shrink-0">
                 <div className="text-xs uppercase tracking-[0.24em] text-slate-500">{log.action_type}</div>
-                <div className="mt-2 text-sm text-slate-200">{log.metadata ? JSON.stringify(log.metadata) : "-"}</div>
+                <div className="mt-2 text-sm text-slate-200">
+                  {log.metadata ? (
+                    <div className="space-y-1">
+                      {log.metadata.reason && <div><span className="text-slate-400">Chi tiết:</span> {log.metadata.reason}</div>}
+                      {log.metadata.before && log.metadata.after && (
+                        <div><span className="text-slate-400">Trạng thái:</span> <span className="font-mono text-xs">{log.metadata.before}</span> &rarr; <span className="font-mono text-xs">{log.metadata.after}</span></div>
+                      )}
+                      {(!log.metadata.reason && !log.metadata.before) && (
+                        <div className="font-mono text-[10px] break-all">{JSON.stringify(log.metadata)}</div>
+                      )}
+                    </div>
+                  ) : "-"}
+                </div>
               </div>
             ))}
           </div>
