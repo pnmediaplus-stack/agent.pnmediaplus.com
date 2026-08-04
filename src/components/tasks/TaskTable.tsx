@@ -37,16 +37,16 @@ export function TaskTable({ tasks }: { tasks: Task[] }) {
     <div className="overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-900/30 backdrop-blur-xl shadow-2xl">
       <div className="border-b border-slate-700/50 bg-slate-800/40 px-5 py-4 text-sm font-semibold text-white flex items-center gap-2">
         <ClipboardList className="h-4 w-4 text-indigo-400" />
-        {t("tasks.table.title") ?? "Active tasks"}
+        {t("tasks.table.title") ?? "Tác vụ đang chạy"}
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-700/50 text-left text-sm">
           <thead className="bg-slate-800/60 text-xs uppercase tracking-[0.1em] text-slate-400">
             <tr>
-              <th className="px-6 py-4 font-semibold">{t("tasks.table.task") ?? "Task"}</th>
-              <th className="px-6 py-4 font-semibold text-center">{t("tasks.table.status") ?? "Status"}</th>
-              <th className="px-6 py-4 font-semibold">{t("tasks.table.assignee") ?? "Assignee"}</th>
-              <th className="px-6 py-4 font-semibold">{t("tasks.table.timeline") ?? "Timeline"}</th>
+              <th className="px-6 py-4 font-semibold">{t("tasks.table.task") ?? "Tác vụ"}</th>
+              <th className="px-6 py-4 font-semibold text-center">{t("tasks.table.status") ?? "Trạng thái"}</th>
+              <th className="px-6 py-4 font-semibold">{t("tasks.table.assignee") ?? "Người thực hiện"}</th>
+              <th className="px-6 py-4 font-semibold">{t("tasks.table.timeline") ?? "Thời gian"}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
@@ -62,19 +62,19 @@ export function TaskTable({ tasks }: { tasks: Task[] }) {
                   )}
                 </td>
                 <td className="px-6 py-4 text-center">
-                  <StateBadge label={task.state} />
+                  <StateBadge label={task.state} displayLabel={t(`tasks.state.${task.state}`) ?? task.state} />
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex flex-col gap-1">
                     <span className="text-xs text-slate-400">
-                      Dept: <span className="font-mono text-slate-300">{task.department_id.split('-')[0]}</span>
+                      {t("tasks.table.dept") ?? "Phòng ban"}: <span className="font-mono text-slate-300">{task.department_id.split('-')[0]}</span>
                     </span>
                     {task.owner_agent_id ? (
                       <span className="text-xs text-indigo-400 font-semibold">
-                        Agent: <span className="font-mono">{task.owner_agent_id.split('-')[0]}</span>
+                        {t("tasks.table.agent") ?? "Agent"}: <span className="font-mono">{task.owner_agent_id.split('-')[0]}</span>
                       </span>
                     ) : (
-                      <span className="text-xs text-amber-500 font-semibold">Unassigned</span>
+                      <span className="text-xs text-amber-500 font-semibold">{t("tasks.table.unassigned") ?? "Chưa giao"}</span>
                     )}
                   </div>
                 </td>

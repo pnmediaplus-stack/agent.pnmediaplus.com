@@ -119,30 +119,30 @@ export function TasksPageClient() {
 
   return (
     <PageFrame
-      title={t("tasks.page.title") ?? "Tasks"}
-      purpose={t("tasks.page.purpose") ?? "Central queue for all active and pending reasoning tasks."}
-      statusLabel={t("tasks.page.statusLabel") ?? "Task queue"}
+      title={t("tasks.page.title") ?? "Tác vụ"}
+      purpose={t("tasks.page.purpose") ?? "Hàng đợi trung tâm cho tất cả các tác vụ đang hoạt động và chờ xử lý."}
+      statusLabel={t("tasks.page.statusLabel") ?? "Hàng đợi tác vụ"}
       statusValue="PASS"
       statusDisplayValue={t("tasks.state.ready") ?? "Sẵn sàng"}
       allowedActions={[
-        t("tasks.page.allowed.viewTasks") ?? "View task queue",
-        t("tasks.page.allowed.submitReview") ?? "Submit tasks for review",
-        t("tasks.page.allowed.checkStatus") ?? "Check status"
+        t("tasks.page.allowed.viewTasks") ?? "Xem hàng đợi tác vụ",
+        t("tasks.page.allowed.submitReview") ?? "Gửi tác vụ để review",
+        t("tasks.page.allowed.checkStatus") ?? "Kiểm tra trạng thái"
       ]}
       forbiddenActions={[
-        t("tasks.page.forbidden.approveBypass") ?? "Approve without review",
-        t("tasks.page.forbidden.changePriority") ?? "Change priority of critical tasks",
-        t("tasks.page.forbidden.deleteTasks") ?? "Delete active tasks"
+        t("tasks.page.forbidden.approveBypass") ?? "Duyệt không qua review",
+        t("tasks.page.forbidden.changePriority") ?? "Đổi ưu tiên tác vụ quan trọng",
+        t("tasks.page.forbidden.deleteTasks") ?? "Xóa tác vụ đang chạy"
       ]}
     >
       <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">{t("tasks.board.title") ?? "Task Board"}</h2>
+        <h2 className="text-xl font-bold text-white">{t("tasks.board.title") ?? "Bảng tác vụ"}</h2>
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-400 border border-indigo-500/30 transition-all hover:bg-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]"
         >
           <Plus className="h-4 w-4" />
-          {showForm ? (t("tasks.form.cancel") ?? "Cancel") : (t("tasks.form.assign") ?? "Assign Task")}
+          {showForm ? (t("tasks.form.cancel") ?? "Hủy") : (t("tasks.form.assign") ?? "Giao việc")}
         </button>
       </div>
 
