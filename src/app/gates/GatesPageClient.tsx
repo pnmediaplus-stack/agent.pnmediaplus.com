@@ -26,8 +26,8 @@ export function GatesPageClient() {
       ]}
       forbiddenActions={[
         t("gates.page.forbidden.approveAutomatically") ?? "Tự động phê duyệt",
-        t("gates.page.forbidden.launchNow") ?? "Launch now",
-        t("gates.page.forbidden.deployProduction") ?? "Deploy production"
+        t("gates.page.forbidden.launchNow") ?? "Khởi chạy ngay",
+        t("gates.page.forbidden.deployProduction") ?? "Triển khai Production"
       ]}
     >
       {isLoading ? (
