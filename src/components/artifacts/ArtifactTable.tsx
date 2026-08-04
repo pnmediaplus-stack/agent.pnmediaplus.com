@@ -23,15 +23,15 @@ export function ArtifactTable({ artifacts }: { artifacts: Artifact[] }) {
           {artifacts.map((artifact) => (
             <tr key={artifact.id} className="text-slate-300">
               <td className="px-5 py-4">
-                <div className="font-medium text-white">{artifact.title}</div>
-                <div className="text-xs text-slate-500">{artifact.updatedAt}</div>
+                <div className="font-medium text-white">{artifact.canonical_name}</div>
+                <div className="text-xs text-slate-500">{new Date(artifact.updated_at).toLocaleString()}</div>
               </td>
-              <td className="px-5 py-4">{artifact.type}</td>
-              <td className="px-5 py-4">{artifact.departmentId}</td>
+              <td className="px-5 py-4">{artifact.artifact_type}</td>
+              <td className="px-5 py-4 truncate max-w-xs" title={artifact.department_id}>{artifact.department_id}</td>
               <td className="px-5 py-4">
                 <StateBadge label={artifact.state} />
               </td>
-              <td className="px-5 py-4">{artifact.version}</td>
+              <td className="px-5 py-4">{artifact.version_label}</td>
             </tr>
           ))}
         </tbody>

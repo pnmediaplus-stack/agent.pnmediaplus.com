@@ -33,16 +33,16 @@ export function ApprovalPanel({ approvals }: { approvals: Approval[] }) {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="rounded bg-slate-800/80 px-2 py-0.5 text-xs font-medium uppercase tracking-wider text-slate-300 border border-slate-700/50">
-                    {approval.targetType}
+                    {approval.entity_type}
                   </span>
-                  <span className="font-mono text-sm text-white group-hover:text-emerald-300 transition-colors">{approval.targetId}</span>
+                  <span className="font-mono text-sm text-white group-hover:text-emerald-300 transition-colors">{approval.entity_id}</span>
                 </div>
                 <div className="text-xs text-slate-400">
-                  {t("approvals.panel.requestedBy") ?? "Requested by"} <span className="font-medium text-slate-200">{approval.requestedBy}</span> at{" "}
-                  <span className="font-mono text-slate-300">{new Date(approval.requestedAt).toLocaleString()}</span>
+                  {t("approvals.panel.requestedBy") ?? "Requested by"} <span className="font-medium text-slate-200">{approval.requested_by_external_ref || approval.requested_by_actor_type}</span> at{" "}
+                  <span className="font-mono text-slate-300">{new Date(approval.requested_at).toLocaleString()}</span>
                 </div>
               </div>
-              <StateBadge label={approval.status} />
+              <StateBadge label={approval.approval_status} />
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
               <ActionButton label={t("approvals.page.allowed.requestApproval") ?? "Request Approval"} />

@@ -1,12 +1,16 @@
 "use client";
 
+import useSWR from "swr";
 import { PageFrame } from "@/components/shared/PageFrame";
 import { QAReviewTable } from "@/components/qa/QAReviewTable";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { QAReview } from "@/types/qa";
 
-export function QaReviewsPageClient({ reviews }: { reviews: QAReview[] }) {
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export function QaReviewsPageClient() {
   const { t } = useI18n("qa");
+  const { data, error, isLoading } = useSWR<{ qa_reviews: QAReview[] }>("/api/qa-reviews", fetcher);
 
   return (
     <PageFrame
@@ -25,7 +29,17 @@ export function QaReviewsPageClient({ reviews }: { reviews: QAReview[] }) {
         t("qa.page.forbidden.publishNow") ?? "Publish now"
       ]}
     >
-      <QAReviewTable reviews={reviews} />
+      {isLoading ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-white/50">Loading QA reviews...</div>
+        </div>
+      ) : error ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-red-400">Failed to load QA reviews</div>
+        </div>
+      ) : (
+        <QAReviewTable reviews={data?.qa_reviews ?? []} />
+      )}
     </PageFrame>
   );
 }

@@ -1,12 +1,16 @@
 "use client";
 
+import useSWR from "swr";
 import { PageFrame } from "@/components/shared/PageFrame";
 import { ApprovalPanel } from "@/components/gates/ApprovalPanel";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { Approval } from "@/types/approval";
 
-export function ApprovalsPageClient({ approvals }: { approvals: Approval[] }) {
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export function ApprovalsPageClient() {
   const { t } = useI18n("approvals");
+  const { data, error, isLoading } = useSWR<{ approvals: Approval[] }>("/api/approvals", fetcher);
 
   return (
     <PageFrame
@@ -26,7 +30,17 @@ export function ApprovalsPageClient({ approvals }: { approvals: Approval[] }) {
         t("approvals.page.forbidden.deployProduction") ?? "Deploy Production"
       ]}
     >
-      <ApprovalPanel approvals={approvals} />
+      {isLoading ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-white/50">Loading approvals...</div>
+        </div>
+      ) : error ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-red-400">Failed to load approvals</div>
+        </div>
+      ) : (
+        <ApprovalPanel approvals={data?.approvals ?? []} />
+      )}
     </PageFrame>
   );
 }

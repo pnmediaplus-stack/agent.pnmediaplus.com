@@ -26,23 +26,23 @@ export function QAReviewTable({ reviews }: { reviews: QAReview[] }) {
           {reviews.map((review) => (
             <tr key={review.id} className="text-slate-300 transition-colors hover:bg-slate-900/40 group">
               <td className="px-5 py-4">
-                <div className="font-medium text-white group-hover:text-indigo-300 transition-colors">{review.artifactId}</div>
+                <div className="font-medium text-white group-hover:text-indigo-300 transition-colors truncate max-w-[200px]" title={review.artifact_version_id}>{review.artifact_version_id}</div>
                 <div className="font-mono text-[10px] text-slate-500 truncate max-w-[150px]" title={review.id}>{review.id}</div>
               </td>
               <td className="px-5 py-4">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-slate-200">{review.reviewer}</span>
+                  <span className="font-medium text-slate-200">{review.reviewer_external_ref || review.reviewer_actor_type}</span>
                 </div>
               </td>
               <td className="px-5 py-4">
-                <StateBadge label={review.status} />
+                <StateBadge label={review.verdict} />
               </td>
               <td className="px-5 py-4">
                 <div className="flex items-start gap-2">
-                  {review.status === "BLOCKED" || review.status === "HOLD" ? (
+                  {review.verdict === "BLOCKED" || review.verdict === "HOLD" ? (
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
                   ) : null}
-                  <span className="text-sm leading-relaxed text-slate-400 group-hover:text-slate-300 transition-colors">{review.notes}</span>
+                  <span className="text-sm leading-relaxed text-slate-400 group-hover:text-slate-300 transition-colors">{review.notes || "-"}</span>
                 </div>
               </td>
             </tr>
