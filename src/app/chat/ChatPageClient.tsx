@@ -26,8 +26,8 @@ export function ChatPageClient() {
 
   if (isLoading) {
     return (
-      <PageFrame title={t("chat.page.title") ?? "Human Command Chat"} purpose="" statusLabel="Loading" statusValue="LOADING" allowedActions={[]} forbiddenActions={[]}>
-        <div className="flex h-64 items-center justify-center text-white/50">Loading chat...</div>
+      <PageFrame title={t("chat.page.title") ?? "Trò chuyện mệnh lệnh Human"} purpose="" statusLabel="Đang tải" statusValue="LOADING" allowedActions={[]} forbiddenActions={[]}>
+        <div className="flex h-64 items-center justify-center text-white/50">Đang tải trò chuyện...</div>
       </PageFrame>
     );
   }
@@ -35,14 +35,15 @@ export function ChatPageClient() {
   if (!thread) {
     return (
       <PageFrame
-        title={t("chat.page.title") ?? "Human Command Chat"}
-        purpose={t("chat.page.purpose") ?? "Capture commands, create tasks, request clarification, and route safe actions to the right department."}
-        statusLabel={t("chat.page.statusLabel") ?? "Command intake"}
+      <PageFrame
+        title={t("chat.page.title") ?? "Trò chuyện mệnh lệnh Human"}
+        purpose={t("chat.page.purpose") ?? "Tiếp nhận lệnh, tạo tác vụ, yêu cầu làm rõ, và định tuyến các hành động an toàn đến đúng phòng ban."}
+        statusLabel={t("chat.page.statusLabel") ?? "Tiếp nhận lệnh"}
         statusValue="NO_THREAD"
         allowedActions={[]}
         forbiddenActions={[]}
       >
-        <div className="p-4 text-sm text-slate-400">No active thread found.</div>
+        <div className="p-4 text-sm text-slate-400">Không tìm thấy luồng nào đang hoạt động.</div>
       </PageFrame>
     );
   }
@@ -52,20 +53,20 @@ export function ChatPageClient() {
 
   return (
     <PageFrame
-      title={t("chat.page.title") ?? "Human Command Chat"}
-      purpose={t("chat.page.purpose") ?? "Capture commands, create tasks, request clarification, and route safe actions to the right department."}
-      statusLabel={t("chat.page.statusLabel") ?? "Command intake"}
+      title={t("chat.page.title") ?? "Trò chuyện mệnh lệnh Human"}
+      purpose={t("chat.page.purpose") ?? "Tiếp nhận lệnh, tạo tác vụ, yêu cầu làm rõ, và định tuyến các hành động an toàn đến đúng phòng ban."}
+      statusLabel={t("chat.page.statusLabel") ?? "Tiếp nhận lệnh"}
       statusValue={thread.status}
       allowedActions={[
-        t("chat.page.allowed.createTaskFromMessage") ?? "Create task from message",
-        t("chat.page.allowed.attachIntentType") ?? "Attach intent type",
-        t("chat.page.allowed.routeToDepartment") ?? "Route to department",
-        t("chat.page.allowed.requestClarification") ?? "Request clarification"
+        t("chat.page.allowed.createTaskFromMessage") ?? "Tạo tác vụ từ tin nhắn",
+        t("chat.page.allowed.attachIntentType") ?? "Đính kèm loại ý định",
+        t("chat.page.allowed.routeToDepartment") ?? "Định tuyến đến phòng ban",
+        t("chat.page.allowed.requestClarification") ?? "Yêu cầu làm rõ"
       ]}
       forbiddenActions={[
-        t("chat.page.forbidden.publishNow") ?? "Publish now",
-        t("chat.page.forbidden.launchNow") ?? "Launch now",
-        t("chat.page.forbidden.deployProduction") ?? "Deploy production"
+        t("chat.page.forbidden.publishNow") ?? "Xuất bản ngay",
+        t("chat.page.forbidden.launchNow") ?? "Khởi chạy ngay",
+        t("chat.page.forbidden.deployProduction") ?? "Triển khai Production"
       ]}
     >
       <HumanCommandChat thread={thread} initialMessages={messagesData?.chat_messages ?? []} initialAuditLogs={threadAuditLogs} />

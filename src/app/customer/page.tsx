@@ -9,20 +9,20 @@ export default function CustomerPage() {
 
   return (
     <PageFrame
-      title={t("customer.page.title") ?? "Customer execution"}
-      purpose={t("customer.page.purpose") ?? "Read-only customer surface for intake, triage, escalation, feedback summary, and issue status."}
-      statusLabel={t("customer.page.statusLabel") ?? "Customer surface"}
+      title={t("customer.page.title") ?? "Vận hành Customer"}
+      purpose={t("customer.page.purpose") ?? "Surface Customer chỉ đọc cho intake, triage, escalation, feedback summary và issue status."}
+      statusLabel={t("customer.page.statusLabel") ?? "Bề mặt Customer"}
       statusValue="REVIEW"
-      statusDisplayValue={t("customer.page.statusValue") ?? "Read-only"}
+      statusDisplayValue={t("customer.page.statusValue") ?? "Chỉ đọc"}
       allowedActions={[
-        t("customer.page.allowed.inspectIntake") ?? "Inspect intake",
-        t("customer.page.allowed.reviewEscalations") ?? "Review escalations",
-        t("customer.page.allowed.traceFeedback") ?? "Trace feedback loop"
+        t("customer.page.allowed.inspectIntake") ?? "Xem intake",
+        t("customer.page.allowed.reviewEscalations") ?? "Xem escalation",
+        t("customer.page.allowed.traceFeedback") ?? "Theo dõi vòng phản hồi"
       ]}
       forbiddenActions={[
-        t("customer.page.forbidden.editOffers") ?? "Edit offers",
-        t("customer.page.forbidden.changePricing") ?? "Change pricing",
-        t("customer.page.forbidden.selfResolve") ?? "Self-resolve truth"
+        t("customer.page.forbidden.editOffers") ?? "Sửa offer",
+        t("customer.page.forbidden.changePricing") ?? "Đổi pricing",
+        t("customer.page.forbidden.selfResolve") ?? "Tự giải truth"
       ]}
     >
       <CustomerExecutionSurface />

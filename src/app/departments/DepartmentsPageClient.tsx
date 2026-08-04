@@ -29,7 +29,7 @@ export function DepartmentsPageClient() {
         fetch("/api/departments"),
         fetch("/api/agents")
       ]);
-      if (!deptRes.ok) throw new Error("Failed to load departments");
+      if (!deptRes.ok) throw new Error("Tải phòng ban thất bại");
       
       const deptData = await deptRes.json();
       if (deptData.departments) {
@@ -48,7 +48,7 @@ export function DepartmentsPageClient() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Could not load departments");
+      toast.error("Không thể tải phòng ban");
     } finally {
       setIsLoading(false);
     }
@@ -75,10 +75,10 @@ export function DepartmentsPageClient() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Failed to create department");
+        throw new Error(data.error || "Tạo phòng ban thất bại");
       }
 
-      toast.success("Department created successfully!");
+      toast.success("Tạo phòng ban thành công!");
       setShowForm(false);
       setKey("");
       setName("");
@@ -100,36 +100,36 @@ export function DepartmentsPageClient() {
 
   return (
     <PageFrame
-      title={t("departments.page.title") ?? "Departments"}
-      purpose={t("departments.page.purpose") ?? "Internal department directory with ownership, purpose, and active task counts."}
-      statusLabel={t("departments.page.statusLabel") ?? "Department registry"}
+      title={t("departments.page.title") ?? "Phòng ban"}
+      purpose={t("departments.page.purpose") ?? "Danh bạ phòng ban nội bộ với quyền sở hữu, mục đích và số tác vụ đang mở."}
+      statusLabel={t("departments.page.statusLabel") ?? "Danh bạ phòng ban"}
       statusValue="PASS"
       statusDisplayValue={t("departments.state.ready") ?? "Sẵn sàng"}
       allowedActions={[
-        t("departments.page.allowed.inspectOwnership") ?? "Inspect department ownership",
-        t("departments.page.allowed.viewOpenTasks") ?? "View open tasks",
-        t("departments.page.allowed.routeIncomingWork") ?? "Route incoming work"
+        t("departments.page.allowed.inspectOwnership") ?? "Xem quyền sở hữu phòng ban",
+        t("departments.page.allowed.viewOpenTasks") ?? "Xem tác vụ đang mở",
+        t("departments.page.allowed.routeIncomingWork") ?? "Định tuyến công việc đầu vào"
       ]}
       forbiddenActions={[
-        t("departments.page.forbidden.createTenant") ?? "Create tenant",
-        t("departments.page.forbidden.exposePublicAccount") ?? "Expose public account",
-        t("departments.page.forbidden.changeAuthority") ?? "Change authority"
+        t("departments.page.forbidden.createTenant") ?? "Tạo khách hàng",
+        t("departments.page.forbidden.exposePublicAccount") ?? "Công khai tài khoản",
+        t("departments.page.forbidden.changeAuthority") ?? "Đổi quyền hạn"
       ]}
     >
       <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">{t("departments.title") ?? "Organization Structure"}</h2>
+        <h2 className="text-xl font-bold text-white">{t("departments.title") ?? "Cấu trúc tổ chức"}</h2>
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-400 border border-emerald-500/30 transition-all hover:bg-emerald-500/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)]"
         >
           <Plus className="h-4 w-4" />
-          {showForm ? (t("departments.form.cancel") ?? "Cancel") : (t("departments.form.add") ?? "Add Department")}
+          {showForm ? (t("departments.form.cancel") ?? "Hủy bỏ") : (t("departments.form.add") ?? "Thêm phòng ban")}
         </button>
       </div>
 
       {!isLoading && chartData.length > 0 && chartData.some(d => d.agents > 0) && (
         <div className="mb-8 h-[200px] rounded-2xl border border-slate-700/50 bg-slate-900/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">{t("departments.chart.title") ?? "Agent Distribution"}</h3>
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">{t("departments.chart.title") ?? "Phân bổ đặc vụ"}</h3>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
               <XAxis dataKey="name" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
@@ -151,38 +151,38 @@ export function DepartmentsPageClient() {
 
       {showForm && (
         <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-700/50 bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-6 text-lg font-bold text-slate-200">{t("departments.form.title") ?? "Create New Department"}</h3>
+          <h3 className="mb-6 text-lg font-bold text-slate-200">{t("departments.form.title") ?? "Tạo phòng ban mới"}</h3>
           <div className="grid gap-6 md:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("departments.form.keyLabel") ?? "Department Key (Unique identifier)"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("departments.form.keyLabel") ?? "Mã phòng ban (ID duy nhất)"}</label>
               <input
                 type="text"
                 required
                 pattern="[a-z0-9_]+"
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                placeholder={t("departments.form.keyPlaceholder") ?? "e.g. sales_team"}
+                placeholder={t("departments.form.keyPlaceholder") ?? "vd: sales_team"}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
               />
-              <p className="mt-1 text-xs text-slate-500">{t("departments.form.keyHint") ?? "Only lowercase letters, numbers, and underscores."}</p>
+              <p className="mt-1 text-xs text-slate-500">{t("departments.form.keyHint") ?? "Chỉ sử dụng chữ cái viết thường, số, và dấu gạch dưới."}</p>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("departments.form.nameLabel") ?? "Display Name"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("departments.form.nameLabel") ?? "Tên hiển thị"}</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={t("departments.form.namePlaceholder") ?? "e.g. Global Sales"}
+                placeholder={t("departments.form.namePlaceholder") ?? "vd: Khối Kinh doanh"}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("departments.form.descLabel") ?? "Purpose / Description"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("departments.form.descLabel") ?? "Mục đích / Mô tả"}</label>
               <textarea
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
-                placeholder={t("departments.form.descPlaceholder") ?? "What does this department do?"}
+                placeholder={t("departments.form.descPlaceholder") ?? "Phòng ban này đảm nhận chức năng gì?"}
                 rows={2}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
               />
@@ -195,7 +195,7 @@ export function DepartmentsPageClient() {
               className="flex items-center gap-2 rounded-lg bg-cyan-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-cyan-500 disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              {t("departments.form.submit") ?? "Create Department"}
+              {t("departments.form.submit") ?? "Tạo phòng ban"}
             </button>
           </div>
         </form>
@@ -207,8 +207,8 @@ export function DepartmentsPageClient() {
         </div>
       ) : departments.length === 0 ? (
         <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/50 text-slate-400">
-          <p>{t("departments.empty.title") ?? "No departments found."}</p>
-          <p className="text-sm">{t("departments.empty.hint") ?? "Click \"Add Department\" to create one."}</p>
+          <p>{t("departments.empty.title") ?? "Không tìm thấy phòng ban nào."}</p>
+          <p className="text-sm">{t("departments.empty.hint") ?? "Nhấn \"Thêm phòng ban\" để tạo mới."}</p>
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">

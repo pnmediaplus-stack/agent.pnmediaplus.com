@@ -25,13 +25,13 @@ function formatNullableText(value: string | null, fallback: string) {
 
 export function Phase4TraceTable({ traces }: Phase4TraceTableProps) {
   const { t } = useI18n("phase4");
-  const pendingNotAvailable = t("phase4.common.pendingNotAvailable") ?? "Pending/N/A";
+  const pendingNotAvailable = t("phase4.common.pendingNotAvailable") ?? "Đang chờ/Không có";
 
   if (!traces.length) {
     return (
       <EmptyState
-        title={t("phase4.traces.empty.title") ?? "No execution traces"}
-        description={t("phase4.traces.empty.description") ?? "Runtime read model is not available yet, so traces fail closed."}
+        title={t("phase4.traces.empty.title") ?? "Không có dấu vết thực thi"}
+        description={t("phase4.traces.empty.description") ?? "Mô hình đọc runtime chưa có sẵn, do đó các dấu vết bị đóng."}
       />
     );
   }
@@ -39,27 +39,27 @@ export function Phase4TraceTable({ traces }: Phase4TraceTableProps) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-700/80 bg-slate-950/70">
       <div className="border-b border-slate-700/80 px-5 py-4">
-        <div className="text-sm font-semibold text-white">{t("phase4.traces.title") ?? "Execution trace"}</div>
+        <div className="text-sm font-semibold text-white">{t("phase4.traces.title") ?? "Dấu vết thực thi"}</div>
         <p className="mt-1 text-xs leading-5 text-slate-400">
-          {t("phase4.traces.description") ?? "Trace every execution from request to receipt to terminal state."}
+          {t("phase4.traces.description") ?? "Theo dõi mọi lượt thực thi từ yêu cầu đến biên lai cho đến trạng thái cuối."}
         </p>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-[1540px] divide-y divide-slate-800 text-left text-sm">
           <thead className="bg-slate-900/70 text-xs uppercase tracking-[0.2em] text-slate-400">
             <tr>
-              <th className="px-5 py-3">{t("phase4.traces.request") ?? "Request"}</th>
-              <th className="px-5 py-3">{t("phase4.traces.workflow") ?? "Workflow"}</th>
-              <th className="px-5 py-3">{t("phase4.traces.task") ?? "Task"}</th>
-              <th className="px-5 py-3">{t("phase4.traces.receipt") ?? "Receipt"}</th>
-              <th className="px-5 py-3">{t("phase4.traces.state") ?? "State"}</th>
-              <th className="px-5 py-3">{t("phase4.traces.retry") ?? "Retry"}</th>
-              <th className="px-5 py-3">{t("phase4.traces.maxAttempts") ?? "Max attempts"}</th>
-              <th className="px-5 py-3">{t("phase4.traces.nextRetryAt") ?? "Next retry"}</th>
-              <th className="px-5 py-3">{t("phase4.traces.retryPolicy") ?? "Retry policy"}</th>
-              <th className="px-5 py-3">{t("phase4.traces.latency") ?? "Latency"}</th>
-              <th className="px-5 py-3">{t("phase4.traces.queue") ?? "Queue"}</th>
-              <th className="px-5 py-3">{t("phase4.traces.error") ?? "Error"}</th>
+              <th className="px-5 py-3">{t("phase4.traces.request") ?? "Yêu cầu"}</th>
+              <th className="px-5 py-3">{t("phase4.traces.workflow") ?? "Quy trình"}</th>
+              <th className="px-5 py-3">{t("phase4.traces.task") ?? "Tác vụ"}</th>
+              <th className="px-5 py-3">{t("phase4.traces.receipt") ?? "Biên lai"}</th>
+              <th className="px-5 py-3">{t("phase4.traces.state") ?? "Trạng thái"}</th>
+              <th className="px-5 py-3">{t("phase4.traces.retry") ?? "Thử lại"}</th>
+              <th className="px-5 py-3">{t("phase4.traces.maxAttempts") ?? "Số lần tối đa"}</th>
+              <th className="px-5 py-3">{t("phase4.traces.nextRetryAt") ?? "Lần thử tới"}</th>
+              <th className="px-5 py-3">{t("phase4.traces.retryPolicy") ?? "Chính sách thử lại"}</th>
+              <th className="px-5 py-3">{t("phase4.traces.latency") ?? "Độ trễ"}</th>
+              <th className="px-5 py-3">{t("phase4.traces.queue") ?? "Hàng đợi"}</th>
+              <th className="px-5 py-3">{t("phase4.traces.error") ?? "Lỗi"}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800">
@@ -76,9 +76,9 @@ export function Phase4TraceTable({ traces }: Phase4TraceTableProps) {
                 <td className="px-5 py-4">{formatNullableNumber(trace.maxAttempts, pendingNotAvailable)}</td>
                 <td className="px-5 py-4">{formatNullableText(trace.nextRetryAt, pendingNotAvailable)}</td>
                 <td className="px-5 py-4">{formatNullableText(trace.retryPolicyRef, pendingNotAvailable)}</td>
-                <td className="px-5 py-4">{formatLatency(trace.latencyMs, t("phase4.common.pending") ?? "pending / incomplete")}</td>
+                <td className="px-5 py-4">{formatLatency(trace.latencyMs, t("phase4.common.pending") ?? "đang chờ / chưa hoàn tất")}</td>
                 <td className="px-5 py-4">{trace.queueState}</td>
-                <td className="px-5 py-4">{trace.errorSummary ?? (t("phase4.common.none") ?? "None")}</td>
+                <td className="px-5 py-4">{trace.errorSummary ?? (t("phase4.common.none") ?? "Không có")}</td>
               </tr>
             ))}
           </tbody>

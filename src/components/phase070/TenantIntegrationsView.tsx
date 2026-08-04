@@ -206,7 +206,7 @@ export function TenantIntegrationsView() {
 
   if (loading) {
     return (
-      <Panel title={t("phase070.loading.title") ?? "Loading tenant integrations"} description={t("phase070.loading.description") ?? "Reading provider catalog and tenant integration metadata."}>
+      <Panel title={t("phase070.loading.title") ?? "Đang tải tích hợp khách hàng"} description={t("phase070.loading.description") ?? "Đang đọc danh mục nhà cung cấp và siêu dữ liệu tích hợp của khách hàng."}>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
              <div key={i} className="h-64 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/60" />
@@ -218,7 +218,7 @@ export function TenantIntegrationsView() {
 
   if (!response?.data) {
     return (
-      <Panel title={t("phase070.blocked.title") ?? "Tenant integrations blocked"} description={t("phase070.blocked.description") ?? "Phase 070 fails closed until portal session, membership, and read surfaces are ready."}>
+      <Panel title={t("phase070.blocked.title") ?? "Tích hợp khách hàng bị chặn"} description={t("phase070.blocked.description") ?? "Phase 070 đóng cho đến khi phiên cổng, thành viên và bề mặt đọc sẵn sàng."}>
         <div className="rounded-xl border border-rose-900/50 bg-rose-950/30 p-6">
           <div className="text-sm font-medium text-rose-400">Response State: {response?.state ?? "Unknown"}</div>
           <div className="mt-2 text-sm text-slate-300">Reason: {response?.reason ?? "No data received from API"}</div>
@@ -251,7 +251,7 @@ export function TenantIntegrationsView() {
       )}
 
       {/* Tenant Context */}
-      <Panel title={t("phase070.summary.organization") ?? "Organization Context"} description={t("phase070.summary.modeValue") ?? "Verified claims from the active portal session"}>
+      <Panel title={t("phase070.summary.organization") ?? "Ngữ cảnh tổ chức"} description={t("phase070.summary.modeValue") ?? "Các claims được xác thực từ phiên cổng đang hoạt động"}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <MetadataRow label="Organization Name" value={organization.organization_name} />
           <MetadataRow label="Organization Key" value={organization.organization_key} />
@@ -262,8 +262,8 @@ export function TenantIntegrationsView() {
       {/* Dynamic Catalog */}
       <section>
         <div className="mb-6">
-           <h2 className="text-xl font-semibold text-slate-100">{t("phase070.providers.title") ?? "AI Provider Catalog"}</h2>
-           <p className="mt-1 text-sm text-slate-400">{t("phase070.writeOnly.description") ?? "Configure BYOK (Bring Your Own Key) access for your tenant. Secrets are write-only and instantly vaulted."}</p>
+           <h2 className="text-xl font-semibold text-slate-100">{t("phase070.providers.title") ?? "Danh mục nhà cung cấp AI"}</h2>
+           <p className="mt-1 text-sm text-slate-400">{t("phase070.writeOnly.description") ?? "Cấu hình quyền truy cập BYOK (Bring Your Own Key) cho khách hàng của bạn. Bí mật chỉ ghi và được lưu trữ ngay lập tức."}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {providers.map((provider) => {
@@ -284,7 +284,7 @@ export function TenantIntegrationsView() {
         </div>
         {providers.length === 0 && (
            <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-12 text-center">
-              <p className="text-sm text-slate-400">{t("phase070.providers.noCapabilities") ?? "No active AI providers found in the catalog."}</p>
+              <p className="text-sm text-slate-400">{t("phase070.providers.noCapabilities") ?? "Không tìm thấy nhà cung cấp AI đang hoạt động nào trong danh mục."}</p>
            </div>
         )}
       </section>

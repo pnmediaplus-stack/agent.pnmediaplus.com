@@ -50,7 +50,7 @@ export function AgentsPageClient() {
         fetch("/api/departments")
       ]);
       
-      if (!agRes.ok || !dpRes.ok) throw new Error("Failed to load data");
+      if (!agRes.ok || !dpRes.ok) throw new Error("Tải dữ liệu thất bại");
       
       const agData = await agRes.json();
       const dpData = await dpRes.json();
@@ -64,7 +64,7 @@ export function AgentsPageClient() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Could not load agents data");
+      toast.error("Không thể tải dữ liệu đặc vụ");
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +77,7 @@ export function AgentsPageClient() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!deptId) {
-      toast.error("Please create a department first!");
+      toast.error("Vui lòng tạo phòng ban trước!");
       return;
     }
     
@@ -98,10 +98,10 @@ export function AgentsPageClient() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Failed to create agent");
+        throw new Error(data.error || "Tạo đặc vụ thất bại");
       }
 
-      toast.success("Agent assigned successfully!");
+      toast.success("Phân công đặc vụ thành công!");
       setShowForm(false);
       setKey("");
       setName("");
@@ -119,20 +119,20 @@ export function AgentsPageClient() {
 
   return (
     <PageFrame
-      title={t("agents.page.title") ?? "Agents"}
-      purpose={t("agents.page.purpose") ?? "Directory of reasoning and artifact workers, grouped by department and current focus."}
-      statusLabel={t("agents.page.statusLabel") ?? "Agent directory"}
+      title={t("agents.page.title") ?? "Đặc vụ"}
+      purpose={t("agents.page.purpose") ?? "Danh bạ các đặc vụ, nhóm theo phòng ban và trọng tâm."}
+      statusLabel={t("agents.page.statusLabel") ?? "Danh bạ đặc vụ"}
       statusValue="PASS"
       statusDisplayValue={t("agents.state.ready") ?? "Sẵn sàng"}
       allowedActions={[
-        t("agents.page.allowed.inspectFocus") ?? "Inspect agent focus",
-        t("agents.page.allowed.checkStatus") ?? "Check status",
-        t("agents.page.allowed.reviewDepartmentMapping") ?? "Review department mapping"
+        t("agents.page.allowed.inspectFocus") ?? "Xem trọng tâm đặc vụ",
+        t("agents.page.allowed.checkStatus") ?? "Kiểm tra trạng thái",
+        t("agents.page.allowed.reviewDepartmentMapping") ?? "Xem xét phân bổ phòng ban"
       ]}
       forbiddenActions={[
-        t("agents.page.forbidden.assignDestructiveWork") ?? "Assign destructive work",
-        t("agents.page.forbidden.overrideAuthority") ?? "Override authority",
-        t("agents.page.forbidden.publishArtifacts") ?? "Publish artifacts"
+        t("agents.page.forbidden.assignDestructiveWork") ?? "Giao việc phá hoại",
+        t("agents.page.forbidden.overrideAuthority") ?? "Ghi đè thẩm quyền",
+        t("agents.page.forbidden.publishArtifacts") ?? "Xuất bản tài nguyên"
       ]}
     >
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -143,7 +143,7 @@ export function AgentsPageClient() {
             onChange={(e) => setFilterDept(e.target.value)}
             className="bg-transparent p-1.5 text-sm text-slate-200 outline-none"
           >
-            <option value="ALL" className="bg-slate-900">{t("agents.filter.allDepartments") ?? "All Departments"}</option>
+            <option value="ALL" className="bg-slate-900">{t("agents.filter.allDepartments") ?? "Tất cả phòng ban"}</option>
             {departments.map(d => (
               <option key={d.id} value={d.id} className="bg-slate-900">{d.canonical_name}</option>
             ))}
@@ -154,16 +154,16 @@ export function AgentsPageClient() {
           className="flex items-center gap-2 rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-400 border border-indigo-500/30 transition-all hover:bg-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]"
         >
           <Plus className="h-4 w-4" />
-          {showForm ? (t("agents.form.cancel") ?? "Cancel") : (t("agents.form.assign") ?? "Assign Agent")}
+          {showForm ? (t("agents.form.cancel") ?? "Hủy bỏ") : (t("agents.form.assign") ?? "Phân công đặc vụ")}
         </button>
       </div>
 
       {showForm && (
         <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-700/50 bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-6 text-lg font-bold text-slate-200">{t("agents.form.title") ?? "Assign New Agent"}</h3>
+          <h3 className="mb-6 text-lg font-bold text-slate-200">{t("agents.form.title") ?? "Phân công đặc vụ mới"}</h3>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <div className="lg:col-span-1">
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.keyLabel") ?? "Agent Key"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.keyLabel") ?? "Mã đặc vụ"}</label>
               <input
                 type="text"
                 required
@@ -175,7 +175,7 @@ export function AgentsPageClient() {
               />
             </div>
             <div className="lg:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.nameLabel") ?? "Display Name"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.nameLabel") ?? "Tên hiển thị"}</label>
               <input
                 type="text"
                 required
@@ -186,7 +186,7 @@ export function AgentsPageClient() {
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.departmentLabel") ?? "Department"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.departmentLabel") ?? "Phòng ban"}</label>
               <select
                 required
                 value={deptId}
@@ -199,7 +199,7 @@ export function AgentsPageClient() {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.roleLabel") ?? "Role"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.roleLabel") ?? "Vai trò"}</label>
               <select
                 required
                 value={role}
@@ -212,7 +212,7 @@ export function AgentsPageClient() {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.scopeLabel") ?? "Authority Scope"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.scopeLabel") ?? "Phạm vi quyền hạn"}</label>
               <select
                 required
                 value={scope}
@@ -232,7 +232,7 @@ export function AgentsPageClient() {
               className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-indigo-500 disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              {t("agents.form.submit") ?? "Assign Agent"}
+              {t("agents.form.submit") ?? "Phân công đặc vụ"}
             </button>
           </div>
         </form>
@@ -244,8 +244,8 @@ export function AgentsPageClient() {
         </div>
       ) : filteredAgents.length === 0 ? (
         <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/50 text-slate-400">
-          <p>{t("agents.empty.title") ?? "No agents found."}</p>
-          <p className="text-sm">{t("agents.empty.hint") ?? "Click \"Assign Agent\" to onboard one."}</p>
+          <p>{t("agents.empty.title") ?? "Không tìm thấy đặc vụ nào."}</p>
+          <p className="text-sm">{t("agents.empty.hint") ?? "Nhấn \"Phân công đặc vụ\" để thêm mới."}</p>
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">

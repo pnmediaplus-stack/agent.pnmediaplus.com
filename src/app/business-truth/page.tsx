@@ -9,20 +9,20 @@ export default function BusinessTruthPage() {
 
   return (
     <PageFrame
-      title={t("businessTruth.page.title") ?? "Business Truth execution"}
-      purpose={t("businessTruth.page.purpose") ?? "Read-only Business Truth surface for billing, auth, identity, offer, and package truth."}
-      statusLabel={t("businessTruth.page.statusLabel") ?? "Business Truth surface"}
+      title={t("businessTruth.page.title") ?? "Vận hành Business Truth"}
+      purpose={t("businessTruth.page.purpose") ?? "Surface Business Truth chỉ đọc cho billing, auth, identity, offer và package truth."}
+      statusLabel={t("businessTruth.page.statusLabel") ?? "Bề mặt Business Truth"}
       statusValue="APPROVED"
-      statusDisplayValue={t("businessTruth.page.statusValue") ?? "Read-only"}
+      statusDisplayValue={t("businessTruth.page.statusValue") ?? "Chỉ đọc"}
       allowedActions={[
-        t("businessTruth.page.allowed.inspectTruth") ?? "Inspect truth",
-        t("businessTruth.page.allowed.reviewHandoffs") ?? "Review handoff from Customer",
-        t("businessTruth.page.allowed.previewCoreGovernance") ?? "Preview Core Governance boundary"
+        t("businessTruth.page.allowed.inspectTruth") ?? "Xem truth",
+        t("businessTruth.page.allowed.reviewHandoffs") ?? "Xem handoff từ Customer",
+        t("businessTruth.page.allowed.previewCoreGovernance") ?? "Xem boundary Core Governance"
       ]}
       forbiddenActions={[
-        t("businessTruth.page.forbidden.editBilling") ?? "Edit billing",
-        t("businessTruth.page.forbidden.editIdentity") ?? "Edit identity",
-        t("businessTruth.page.forbidden.selfMutate") ?? "Self-mutate truth"
+        t("businessTruth.page.forbidden.editBilling") ?? "Sửa billing",
+        t("businessTruth.page.forbidden.editIdentity") ?? "Sửa identity",
+        t("businessTruth.page.forbidden.selfMutate") ?? "Tự mutation truth"
       ]}
     >
       <BusinessTruthExecutionSurface />

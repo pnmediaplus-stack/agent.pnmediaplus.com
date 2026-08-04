@@ -35,7 +35,7 @@ export function PageHeader({
           <p className="max-w-3xl text-sm leading-6 text-slate-300">{purpose}</p>
         </div>
         <div className="shrink-0 rounded-xl border border-slate-700 bg-slate-900/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-          <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{t("shared.page.currentStatus") ?? "Current Status"}</div>
+          <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{t("shared.page.currentStatus") ?? "Trạng thái hiện tại"}</div>
           <div className="mt-2">
             <StateBadge label={statusValue} displayLabel={statusDisplayValue} />
           </div>
@@ -44,16 +44,16 @@ export function PageHeader({
       </div>
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         <ActionGroup
-          title={t("shared.page.allowedActions") ?? "Allowed actions"}
+          title={t("shared.page.allowedActions") ?? "Hành động được phép"}
           items={allowedActions}
           tone="emerald"
-          emptyLabel={t("shared.none") ?? "None"}
+          emptyLabel={t("shared.none") ?? "Không có"}
         />
         <ActionGroup
-          title={t("shared.page.forbiddenActions") ?? "Forbidden actions"}
+          title={t("shared.page.forbiddenActions") ?? "Hành động bị cấm"}
           items={forbiddenActions}
           tone="rose"
-          emptyLabel={t("shared.none") ?? "None"}
+          emptyLabel={t("shared.none") ?? "Không có"}
         />
       </div>
     </div>

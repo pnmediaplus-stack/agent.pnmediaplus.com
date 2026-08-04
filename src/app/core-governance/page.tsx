@@ -9,20 +9,20 @@ export default function CoreGovernancePage() {
 
   return (
     <PageFrame
-      title={t("coreGovernance.page.title") ?? "Core Governance execution"}
-      purpose={t("coreGovernance.page.purpose") ?? "Read-only boundary surface for routing, normalization, reconciliation, blocking, and escalation."}
-      statusLabel={t("coreGovernance.page.statusLabel") ?? "Core Governance surface"}
+      title={t("coreGovernance.page.title") ?? "Vận hành Core Governance"}
+      purpose={t("coreGovernance.page.purpose") ?? "Surface boundary chỉ đọc cho routing, normalization, reconciliation, block và escalation."}
+      statusLabel={t("coreGovernance.page.statusLabel") ?? "Bề mặt Core Governance"}
       statusValue="BLOCKED"
-      statusDisplayValue={t("coreGovernance.page.statusValue") ?? "Boundary layer"}
+      statusDisplayValue={t("coreGovernance.page.statusValue") ?? "Lớp ranh giới"}
       allowedActions={[
-        t("coreGovernance.page.allowed.inspectBoundary") ?? "Inspect boundary",
-        t("coreGovernance.page.allowed.reviewEscalations") ?? "Review escalations",
-        t("coreGovernance.page.allowed.previewFinality") ?? "Preview final human finality"
+        t("coreGovernance.page.allowed.inspectBoundary") ?? "Xem boundary",
+        t("coreGovernance.page.allowed.reviewEscalations") ?? "Xem escalations",
+        t("coreGovernance.page.allowed.previewFinality") ?? "Xem final human finality"
       ]}
       forbiddenActions={[
-        t("coreGovernance.page.forbidden.selfApprove") ?? "Self-approve",
-        t("coreGovernance.page.forbidden.mutateTruth") ?? "Mutate truth",
-        t("coreGovernance.page.forbidden.overrideBoundary") ?? "Override boundary"
+        t("coreGovernance.page.forbidden.selfApprove") ?? "Tự phê duyệt",
+        t("coreGovernance.page.forbidden.mutateTruth") ?? "Mutation truth",
+        t("coreGovernance.page.forbidden.overrideBoundary") ?? "Vượt boundary"
       ]}
     >
       <CoreGovernanceExecutionSurface />

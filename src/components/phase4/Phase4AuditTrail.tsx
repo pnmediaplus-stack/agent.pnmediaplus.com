@@ -14,8 +14,8 @@ export function Phase4AuditTrail({ events }: Phase4AuditTrailProps) {
   if (!events.length) {
     return (
       <EmptyState
-        title={t("phase4.audit.empty.title") ?? "No execution audit events"}
-        description={t("phase4.audit.empty.description") ?? "Audit trail will render only after the read model is available."}
+        title={t("phase4.audit.empty.title") ?? "Không có sự kiện kiểm toán nào"}
+        description={t("phase4.audit.empty.description") ?? "Nhật ký kiểm toán chỉ hiển thị sau khi mô hình đọc sẵn sàng."}
       />
     );
   }
@@ -23,7 +23,7 @@ export function Phase4AuditTrail({ events }: Phase4AuditTrailProps) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-700/80 bg-slate-950/70">
       <div className="border-b border-slate-700/80 px-5 py-4">
-        <div className="text-sm font-semibold text-white">{t("phase4.audit.title") ?? "Execution audit trail"}</div>
+        <div className="text-sm font-semibold text-white">{t("phase4.audit.title") ?? "Nhật ký kiểm toán thực thi"}</div>
       </div>
       <div className="divide-y divide-slate-800">
         {events.map((event) => (
