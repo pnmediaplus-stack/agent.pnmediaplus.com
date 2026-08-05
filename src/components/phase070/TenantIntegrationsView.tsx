@@ -259,10 +259,11 @@ export function TenantIntegrationsView() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {providers.map((provider) => {
-             const integration = integrations.find(i => i.provider_code === provider.provider_code);
-             return (
+             const providerIntegrations = integrations.filter(i => i.provider_code === provider.provider_code);
+             
+             const cards = providerIntegrations.map((integration) => (
                <IntegrationCard 
-                 key={provider.provider_code}
+                 key={integration.integration_key}
                  provider={provider}
                  integration={integration}
                  actionLoading={actionLoading}
@@ -271,7 +272,24 @@ export function TenantIntegrationsView() {
                  onSubmitRevoke={submitRevoke}
                  onSubmitTest={submitBrokerCall}
                />
-             );
+             ));
+
+             if (providerIntegrations.length === 0 || provider.provider_code === "facebook_page") {
+                cards.push(
+                  <IntegrationCard 
+                    key={`${provider.provider_code}_new`}
+                    provider={provider}
+                    integration={undefined}
+                    actionLoading={actionLoading}
+                    onSubmitCreate={submitCreate}
+                    onSubmitRotate={submitRotateSecret}
+                    onSubmitRevoke={submitRevoke}
+                    onSubmitTest={submitBrokerCall}
+                  />
+                );
+             }
+
+             return cards;
           })}
         </div>
         {providers.length === 0 && (
