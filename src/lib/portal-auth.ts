@@ -1,5 +1,5 @@
-const PORTAL_ACCESS_COOKIE = "pn_portal_access_token";
-const PORTAL_REFRESH_COOKIE = "pn_portal_refresh_token";
+export const PORTAL_ACCESS_COOKIE = "pn_portal_access_token";
+export const PORTAL_REFRESH_COOKIE = "pn_portal_refresh_token";
 
 type SupabaseAuthConfig = {
   url: string;
@@ -423,4 +423,4 @@ export async function requireAuthContext() {
   };
 }
 
-export { PORTAL_ACCESS_COOKIE, PORTAL_REFRESH_COOKIE };
+// Cookie constants are now exported at the top of the file
