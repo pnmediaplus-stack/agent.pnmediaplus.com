@@ -50,6 +50,13 @@ function buildEncryptedSecretPayload(secretMaterial: string): EncryptedSecretPay
   };
 }
 
+function decodeSecret(secret: string): string {
+  if (secret.startsWith("B64:")) {
+    return Buffer.from(secret.substring(4), "base64").toString("utf8");
+  }
+  return secret;
+}
+
 export async function createTenantIntegration(
   providerCode: string,
   integrationKey: string,
@@ -59,12 +66,12 @@ export async function createTenantIntegration(
   try {
     const authContext = await requireAuthContext();
 
-    if (authContext.role !== "admin" && authContext.role !== "approver") {
+    if (authContext.role !== "admin" && authContext.role !== "approver" && authContext.role !== "owner") {
       return { ok: false, state: "blocked", reason: "UNAUTHORIZED_ROLE" };
     }
 
     const supabase = createServiceRoleClient();
-    const encryptedPayload = buildEncryptedSecretPayload(secretMaterial);
+    const encryptedPayload = buildEncryptedSecretPayload(decodeSecret(secretMaterial));
 
     const payload = {
       organization_id: authContext.organizationId,
@@ -109,7 +116,7 @@ export async function rotateTenantIntegration(
     }
 
     const supabase = createServiceRoleClient();
-    const encryptedPayload = buildEncryptedSecretPayload(secretMaterial);
+    const encryptedPayload = buildEncryptedSecretPayload(decodeSecret(secretMaterial));
     
     const payload = {
       organization_id: authContext.organizationId,

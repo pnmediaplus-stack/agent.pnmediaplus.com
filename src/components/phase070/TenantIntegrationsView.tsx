@@ -143,10 +143,11 @@ export function TenantIntegrationsView() {
     
     // For BYOT facebook_page, combine access_token and page_id into JSON
     if (providerCode === "facebook_page" && pageId) {
-        secretMaterial = JSON.stringify({
+        const jsonPayload = JSON.stringify({
             access_token: secretMaterial,
             page_id: pageId
         });
+        secretMaterial = "B64:" + btoa(jsonPayload);
     }
 
     await executeAction(providerCode, () => 
@@ -171,10 +172,11 @@ export function TenantIntegrationsView() {
     if (providerCode === "facebook_page") {
        const pageId = String(formData.get("page_id") || "").trim();
        if (pageId) {
-          secretMaterial = JSON.stringify({
+          const jsonPayload = JSON.stringify({
              access_token: secretMaterial,
              page_id: pageId
           });
+          secretMaterial = "B64:" + btoa(jsonPayload);
        }
     }
 
