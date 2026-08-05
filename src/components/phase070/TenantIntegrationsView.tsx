@@ -221,6 +221,7 @@ export function TenantIntegrationsView() {
   }
 
   const { organization, providers, integrations } = response.data;
+  const activeIntegrations = integrations.filter(i => i.credential_configured && i.status !== 'revoked');
 
   return (
     <div className="space-y-8">
@@ -253,14 +254,14 @@ export function TenantIntegrationsView() {
       </Panel>
 
       {/* Connected Accounts Dashboard */}
-      {integrations.length > 0 && (
+      {activeIntegrations.length > 0 && (
         <section className="mb-8">
           <div className="mb-4">
             <h2 className="text-xl font-semibold text-slate-100">{t("phase070.dashboard.title") ?? "Bảng Tổng Quan Fanpage & Tích Hợp"}</h2>
             <p className="mt-1 text-sm text-slate-400">{t("phase070.dashboard.description") ?? "Quản lý trạng thái kết nối và thay đổi cấu hình mã truy cập."}</p>
           </div>
           <div className="space-y-3">
-            {integrations.map((integration) => {
+            {activeIntegrations.map((integration) => {
               const provider = providers.find((p) => p.provider_code === integration.provider_code);
               if (!provider) return null;
               return (
@@ -299,7 +300,7 @@ export function TenantIntegrationsView() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {providers.map((provider) => {
-             const providerIntegrations = integrations.filter(i => i.provider_code === provider.provider_code);
+             const providerIntegrations = activeIntegrations.filter(i => i.provider_code === provider.provider_code);
              
              // Only show the 'Add New' card if the provider supports multiple (e.g. facebook) OR if it has 0 integrations
              if (providerIntegrations.length === 0 || provider.provider_code === "facebook_page") {
