@@ -5,6 +5,7 @@ import { StateBadge } from "@/components/shared/StateBadge";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { Phase070ProviderCatalogItem, Phase070TenantIntegrationStatus } from "@/lib/tenant-integrations";
 import { IntegrationCard } from "@/components/ui/IntegrationCard";
+import { ConnectedAccountRow } from "./ConnectedAccountRow";
 
 type TenantIntegrationsResponse = {
   ok: boolean;
@@ -251,6 +252,45 @@ export function TenantIntegrationsView() {
         </div>
       </Panel>
 
+      {/* Connected Accounts Dashboard */}
+      {integrations.length > 0 && (
+        <section className="mb-8">
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-slate-100">Bảng Tổng Quan Fanpage & Tích Hợp</h2>
+            <p className="mt-1 text-sm text-slate-400">Quản lý trạng thái kết nối và thay đổi cấu hình mã truy cập.</p>
+          </div>
+          <div className="space-y-3">
+            {integrations.map((integration) => {
+              const provider = providers.find((p) => p.provider_code === integration.provider_code);
+              if (!provider) return null;
+              return (
+                <ConnectedAccountRow
+                  key={integration.integration_key}
+                  provider={provider}
+                  integration={integration}
+                  actionLoading={actionLoading}
+                  onRotate={async (integrationKey, secretMaterial, pageId) => {
+                    await executeAction(provider.provider_code, () =>
+                      rotateTenantIntegration(integrationKey, secretMaterial, pageId)
+                    );
+                  }}
+                  onRevoke={async (integrationKey) => {
+                    await executeAction(provider.provider_code, () =>
+                      revokeTenantIntegration(integrationKey)
+                    );
+                  }}
+                  onTest={async (integrationKey) => {
+                    await executeAction(provider.provider_code, () =>
+                      issueReferenceToken(integrationKey, provider.provider_code)
+                    );
+                  }}
+                />
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Dynamic Catalog */}
       <section>
         <div className="mb-6">
@@ -261,21 +301,9 @@ export function TenantIntegrationsView() {
           {providers.map((provider) => {
              const providerIntegrations = integrations.filter(i => i.provider_code === provider.provider_code);
              
-             const cards = providerIntegrations.map((integration) => (
-               <IntegrationCard 
-                 key={integration.integration_key}
-                 provider={provider}
-                 integration={integration}
-                 actionLoading={actionLoading}
-                 onSubmitCreate={submitCreate}
-                 onSubmitRotate={submitRotateSecret}
-                 onSubmitRevoke={submitRevoke}
-                 onSubmitTest={submitBrokerCall}
-               />
-             ));
-
+             // Only show the 'Add New' card if the provider supports multiple (e.g. facebook) OR if it has 0 integrations
              if (providerIntegrations.length === 0 || provider.provider_code === "facebook_page") {
-                cards.push(
+                return (
                   <IntegrationCard 
                     key={`${provider.provider_code}_new`}
                     provider={provider}
@@ -288,8 +316,7 @@ export function TenantIntegrationsView() {
                   />
                 );
              }
-
-             return cards;
+             return null;
           })}
         </div>
         {providers.length === 0 && (

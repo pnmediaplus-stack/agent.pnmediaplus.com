@@ -77,6 +77,26 @@ export async function createTenantIntegration(
     }
 
     const supabase = createServiceRoleClient();
+
+    let facebookMetadata: any = null;
+    if (providerCode === "facebook_page") {
+      try {
+        const fbRes = await fetch(`https://graph.facebook.com/v19.0/me?fields=name,picture.type(large)&access_token=${accessToken}`);
+        if (!fbRes.ok) {
+           return { ok: false, state: "blocked", reason: "INVALID_FACEBOOK_TOKEN" };
+        }
+        const fbData = await fbRes.json();
+        facebookMetadata = {
+           page_name: fbData.name,
+           page_id: fbData.id,
+           page_avatar_url: fbData.picture?.data?.url,
+           provider_code: "facebook_page"
+        };
+      } catch (err) {
+        return { ok: false, state: "blocked", reason: "FACEBOOK_API_ERROR" };
+      }
+    }
+
     const secretInput = buildSecretInput(accessToken, pageId);
     
     // In a real BYOK flow, secretInput would be sent securely to the KMS Broker.
@@ -109,6 +129,15 @@ export async function createTenantIntegration(
       return { ok: false, state: "blocked", reason: error.message };
     }
 
+    if (facebookMetadata) {
+      await (supabase as any)
+        .schema("tenant_integration_vault")
+        .from("tenant_integrations")
+        .update({ public_metadata: facebookMetadata })
+        .eq("organization_id", authContext.organizationId)
+        .eq("integration_key", integrationKey);
+    }
+
     return { ok: true, state: "ready", reason: "SUCCESS", data: { receipt: data } };
   } catch (err: any) {
     return { ok: false, state: "blocked", reason: err.message };
@@ -128,6 +157,26 @@ export async function rotateTenantIntegration(
     }
 
     const supabase = createServiceRoleClient();
+
+    let facebookMetadata: any = null;
+    if (pageId) { // If pageId is provided, it's a facebook_page rotate
+      try {
+        const fbRes = await fetch(`https://graph.facebook.com/v19.0/me?fields=name,picture.type(large)&access_token=${accessToken}`);
+        if (!fbRes.ok) {
+           return { ok: false, state: "blocked", reason: "INVALID_FACEBOOK_TOKEN" };
+        }
+        const fbData = await fbRes.json();
+        facebookMetadata = {
+           page_name: fbData.name,
+           page_id: fbData.id,
+           page_avatar_url: fbData.picture?.data?.url,
+           provider_code: "facebook_page"
+        };
+      } catch (err) {
+        return { ok: false, state: "blocked", reason: "FACEBOOK_API_ERROR" };
+      }
+    }
+
     const secretInput = buildSecretInput(accessToken, pageId);
     const secretMaterialString = pageId ? JSON.stringify(secretInput) : accessToken;
     const encryptedPayload = buildEncryptedSecretPayload(secretMaterialString);
@@ -152,6 +201,15 @@ export async function rotateTenantIntegration(
     if (error) {
       console.error("Vault rotate error:", error);
       return { ok: false, state: "blocked", reason: error.message };
+    }
+
+    if (facebookMetadata) {
+      await (supabase as any)
+        .schema("tenant_integration_vault")
+        .from("tenant_integrations")
+        .update({ public_metadata: facebookMetadata })
+        .eq("organization_id", authContext.organizationId)
+        .eq("integration_key", integrationKey);
     }
 
     return { ok: true, state: "ready", reason: "SUCCESS", data: { receipt: data } };
