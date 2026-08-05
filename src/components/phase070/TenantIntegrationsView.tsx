@@ -139,19 +139,10 @@ export function TenantIntegrationsView() {
         integrationName = `${providerName} Chính thức`;
     }
 
-    let secretMaterial = String(formData.get("secret_material") || "");
-    
-    // For BYOT facebook_page, combine access_token and page_id into JSON
-    if (providerCode === "facebook_page" && pageId) {
-        const jsonPayload = JSON.stringify({
-            access_token: secretMaterial,
-            page_id: pageId
-        });
-        secretMaterial = "B64:" + btoa(jsonPayload);
-    }
+    const accessToken = String(formData.get("secret_material") || "").trim();
 
     await executeAction(providerCode, () => 
-      createTenantIntegration(providerCode, integrationKey, integrationName, secretMaterial)
+      createTenantIntegration(providerCode, integrationKey, integrationName, accessToken, pageId)
     );
     form.reset();
   }
@@ -165,23 +156,12 @@ export function TenantIntegrationsView() {
       setOperationResult({ ok: false, state: "blocked", reason: "PHASE074_INTEGRATION_KEY_REQUIRED" });
       return;
     }
-    const providerCode = String(formData.get("provider_code") || "rotate");
-    let secretMaterial = String(formData.get("secret_material") || "");
-
-    // For BYOT facebook_page, combine access_token and page_id into JSON
-    if (providerCode === "facebook_page") {
-       const pageId = String(formData.get("page_id") || "").trim();
-       if (pageId) {
-          const jsonPayload = JSON.stringify({
-             access_token: secretMaterial,
-             page_id: pageId
-          });
-          secretMaterial = "B64:" + btoa(jsonPayload);
-       }
-    }
+    const providerCode = String(formData.get("provider_code") || "");
+    const accessToken = String(formData.get("secret_material") || "").trim();
+    const pageId = String(formData.get("page_id") || "").trim();
 
     await executeAction(providerCode, () => 
-      rotateTenantIntegration(integrationKey, secretMaterial)
+      rotateTenantIntegration(integrationKey, accessToken, pageId)
     );
     form.reset();
   }

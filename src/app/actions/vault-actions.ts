@@ -50,18 +50,24 @@ function buildEncryptedSecretPayload(secretMaterial: string): EncryptedSecretPay
   };
 }
 
-function decodeSecret(secret: string): string {
-  if (secret.startsWith("B64:")) {
-    return Buffer.from(secret.substring(4), "base64").toString("utf8");
-  }
-  return secret;
+type FacebookPageSecretInput = {
+  access_token: string;
+  page_id?: string;
+};
+
+function buildSecretInput(accessToken: string, pageId?: string): FacebookPageSecretInput {
+  return {
+    access_token: accessToken.trim(),
+    ...(pageId?.trim() ? { page_id: pageId.trim() } : {})
+  };
 }
 
 export async function createTenantIntegration(
   providerCode: string,
   integrationKey: string,
   integrationName: string,
-  secretMaterial: string
+  accessToken: string,
+  pageId?: string
 ): Promise<VaultActionResponse> {
   try {
     const authContext = await requireAuthContext();
@@ -71,7 +77,12 @@ export async function createTenantIntegration(
     }
 
     const supabase = createServiceRoleClient();
-    const encryptedPayload = buildEncryptedSecretPayload(decodeSecret(secretMaterial));
+    const secretInput = buildSecretInput(accessToken, pageId);
+    
+    // In a real BYOK flow, secretInput would be sent securely to the KMS Broker.
+    // For local dev, we stringify it before passing to our mock encrypter.
+    const secretMaterialString = providerCode === "facebook_page" ? JSON.stringify(secretInput) : accessToken;
+    const encryptedPayload = buildEncryptedSecretPayload(secretMaterialString);
 
     const payload = {
       organization_id: authContext.organizationId,
@@ -106,7 +117,8 @@ export async function createTenantIntegration(
 
 export async function rotateTenantIntegration(
   integrationKey: string,
-  secretMaterial: string
+  accessToken: string,
+  pageId?: string
 ): Promise<VaultActionResponse> {
   try {
     const authContext = await requireAuthContext();
@@ -116,7 +128,9 @@ export async function rotateTenantIntegration(
     }
 
     const supabase = createServiceRoleClient();
-    const encryptedPayload = buildEncryptedSecretPayload(decodeSecret(secretMaterial));
+    const secretInput = buildSecretInput(accessToken, pageId);
+    const secretMaterialString = pageId ? JSON.stringify(secretInput) : accessToken;
+    const encryptedPayload = buildEncryptedSecretPayload(secretMaterialString);
     
     const payload = {
       organization_id: authContext.organizationId,
