@@ -142,9 +142,17 @@ export function TenantIntegrationsView() {
 
     const accessToken = String(formData.get("secret_material") || "").trim();
 
-    await executeAction(providerCode, () => 
-      createTenantIntegration(providerCode, integrationKey, integrationName, accessToken, pageId)
-    );
+    const existingIntegration = response?.data?.integrations.find(i => i.integration_key === integrationKey);
+
+    if (existingIntegration) {
+      await executeAction(providerCode, () => 
+        rotateTenantIntegration(integrationKey, accessToken, pageId)
+      );
+    } else {
+      await executeAction(providerCode, () => 
+        createTenantIntegration(providerCode, integrationKey, integrationName, accessToken, pageId)
+      );
+    }
     form.reset();
   }
 
