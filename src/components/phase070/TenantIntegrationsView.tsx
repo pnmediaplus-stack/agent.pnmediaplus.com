@@ -142,16 +142,21 @@ export function TenantIntegrationsView() {
 
     const accessToken = String(formData.get("secret_material") || "").trim();
 
-    const existingIntegration = response?.data?.integrations.find(i => i.integration_key === integrationKey);
+    let existingIntegration = response?.data?.integrations.find(i => i.integration_key === integrationKey);
 
     if (existingIntegration) {
       await executeAction(providerCode, () => 
         rotateTenantIntegration(integrationKey, accessToken, pageId)
       );
     } else {
-      await executeAction(providerCode, () => 
-        createTenantIntegration(providerCode, integrationKey, integrationName, accessToken, pageId)
-      );
+      await executeAction(providerCode, async () => {
+        let result = await createTenantIntegration(providerCode, integrationKey, integrationName, accessToken, pageId);
+        if (!result.ok && result.reason && result.reason.includes("ALREADY_EXISTS")) {
+           // Fallback to rotate if it exists but was hidden from the view
+           result = await rotateTenantIntegration(integrationKey, accessToken, pageId);
+        }
+        return result;
+      });
     }
     form.reset();
   }
