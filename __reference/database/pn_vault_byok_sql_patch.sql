@@ -786,6 +786,52 @@ begin
 end;
 $$;
 
+create or replace function public.byok_create_credential(
+  p_credential_ref text,
+  p_owner_ref text,
+  p_provider_code text,
+  p_credential_name text,
+  p_created_by_actor_type pn_vault.vault_actor_type,
+  p_created_by_actor_ref text,
+  p_secret_kind text default 'API_KEY'
+)
+returns table (
+  id uuid,
+  credential_ref text
+)
+language plpgsql
+security definer
+set search_path = pn_vault, pg_temp
+as $$
+begin
+  return query
+  insert into pn_vault.vault_credentials as vc (
+    credential_ref,
+    owner_ref,
+    provider_code,
+    credential_name,
+    secret_kind,
+    state,
+    created_by_actor_type,
+    created_by_actor_ref
+  )
+  values (
+    p_credential_ref,
+    p_owner_ref,
+    p_provider_code,
+    p_credential_name,
+    p_secret_kind,
+    'ACTIVE',
+    p_created_by_actor_type,
+    p_created_by_actor_ref
+  )
+  on conflict on constraint vault_credentials_credential_ref_key do update
+    set credential_name = excluded.credential_name,
+        updated_at = now()
+  returning vc.id, vc.credential_ref;
+end;
+$$;
+
 do $$
 begin
   if exists (select 1 from pg_roles where rolname = 'service_role') then
@@ -796,12 +842,14 @@ begin
     execute 'grant execute on function pn_vault.consume_reference_token(text, pn_vault.vault_actor_type, text, uuid) to service_role';
     execute 'grant execute on function public.byok_issue_reference_token(text, text, pn_vault.vault_actor_type, text, uuid, timestamptz) to service_role';
     execute 'grant execute on function public.byok_consume_reference_token(text, pn_vault.vault_actor_type, text, uuid) to service_role';
+    execute 'grant execute on function public.byok_create_credential(text, text, text, text, pn_vault.vault_actor_type, text, text) to service_role';
   end if;
 end $$;
 
 revoke execute on all functions in schema pn_vault from public, anon, authenticated;
 revoke execute on function public.byok_issue_reference_token(text, text, pn_vault.vault_actor_type, text, uuid, timestamptz) from public, anon, authenticated;
 revoke execute on function public.byok_consume_reference_token(text, pn_vault.vault_actor_type, text, uuid) from public, anon, authenticated;
+revoke execute on function public.byok_create_credential(text, text, text, text, pn_vault.vault_actor_type, text, text) from public, anon, authenticated;
 
 alter table pn_vault.vault_master_keys enable row level security;
 alter table pn_vault.vault_credentials enable row level security;

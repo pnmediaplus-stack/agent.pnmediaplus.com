@@ -195,7 +195,8 @@ export async function revokeTenantIntegration(
 }
 
 export async function issueReferenceToken(
-  integrationKey: string
+  integrationKey: string,
+  providerCode: string
 ): Promise<VaultActionResponse> {
   try {
     const authContext = await requireAuthContext();
@@ -205,27 +206,42 @@ export async function issueReferenceToken(
     }
 
     const supabase = createServiceRoleClient();
-    
-    // Fetch the mapping
-    const { data: mappingData, error: mappingError } = await supabase
-      .from("tenant_integration_vault.tenant_integrations")
-      .select("vault_credential_ref")
-      .eq("organization_id", authContext.organizationId)
-      .eq("integration_key", integrationKey)
-      .single();
-
-    if (mappingError || !mappingData || !mappingData.vault_credential_ref) {
+    const normalizedProviderCode = providerCode.trim();
+    const normalizedIntegrationKey = integrationKey.trim();
+    if (!normalizedProviderCode || !normalizedIntegrationKey) {
       return { ok: false, state: "blocked", reason: "CREDENTIAL_MAPPING_NOT_FOUND" };
     }
 
-    const { data, error } = await supabase.rpc("byok_issue_reference_token", {
-      p_credential_ref: mappingData.vault_credential_ref,
+    const vaultCredentialRef = `${authContext.organizationId.replace(/-/g, "")}__${normalizedProviderCode}__${normalizedIntegrationKey}`;
+    const issueToken = async () =>
+      supabase.rpc("byok_issue_reference_token", {
+      p_credential_ref: vaultCredentialRef,
       p_scope: "n8n_dispatch",
       p_requested_by_actor_type: "HUMAN",
       p_requested_by_actor_ref: authContext.userId,
       p_request_id: randomUUID(),
       p_expires_at: new Date(Date.now() + 5 * 60000).toISOString() // 5 minutes
-    });
+      });
+
+    let { data, error } = await issueToken();
+
+    if (error && String(error.message || "").includes("CREDENTIAL_NOT_FOUND")) {
+      const createCredential = await supabase.rpc("byok_create_credential", {
+        p_credential_ref: vaultCredentialRef,
+        p_owner_ref: authContext.organizationId,
+        p_provider_code: normalizedProviderCode,
+        p_credential_name: `${normalizedProviderCode} ${normalizedIntegrationKey}`,
+        p_created_by_actor_type: "HUMAN",
+        p_created_by_actor_ref: authContext.userId,
+        p_secret_kind: "API_KEY"
+      });
+
+      if (createCredential.error) {
+        return { ok: false, state: "blocked", reason: `CREDENTIAL_CREATE_FAILED: ${createCredential.error.message}` };
+      }
+
+      ({ data, error } = await issueToken());
+    }
 
     if (error) {
       console.error("Vault issue token error:", error);

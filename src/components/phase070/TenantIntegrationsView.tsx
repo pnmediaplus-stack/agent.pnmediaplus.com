@@ -191,8 +191,8 @@ export function TenantIntegrationsView() {
       return;
     }
     const providerCode = String(formData.get("provider_code") || "test");
-    await executeAction(providerCode, () => 
-      issueReferenceToken(integrationKey)
+    await executeAction(providerCode, () =>
+      issueReferenceToken(integrationKey, providerCode)
     );
   }
 

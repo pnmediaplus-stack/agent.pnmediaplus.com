@@ -55,7 +55,7 @@ export async function dispatchToN8n(approvalId: string, integrationKey: string):
     // 3. Verify Integration Status
     const { data: statusView, error: statusError } = await supabase
       .from("public.phase070_tenant_integration_status")
-      .select("connection_state, credential_configured")
+      .select("connection_state, credential_configured, provider_code")
       .eq("organization_id", authContext.organizationId)
       .eq("integration_key", integrationKey)
       .single();
@@ -76,7 +76,7 @@ export async function dispatchToN8n(approvalId: string, integrationKey: string):
     }
 
     // 4. Issue BYOK Reference Token
-    const tokenResponse = await issueReferenceToken(integrationKey);
+    const tokenResponse = await issueReferenceToken(integrationKey, statusView.provider_code);
     if (!tokenResponse.ok || !tokenResponse.data?.receipt?.lease_token) {
       return { ok: false, state: "blocked", reason: `FAILED_TO_ISSUE_TOKEN: ${tokenResponse.reason}` };
     }
