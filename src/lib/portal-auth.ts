@@ -99,8 +99,12 @@ function getCookieValue(cookieHeader: string | null, name: string) {
   return decodeURIComponent(match.slice(name.length + 1));
 }
 
-export function readPortalAccessToken(headers: Headers | HeadersInit) {
+export function readPortalAccessToken(headers: HeadersInit | Headers) {
   return getCookieValue(new Headers(headers).get("cookie"), PORTAL_ACCESS_COOKIE);
+}
+
+export function readPortalRefreshToken(headers: HeadersInit | Headers) {
+  return getCookieValue(new Headers(headers).get("cookie"), PORTAL_REFRESH_COOKIE);
 }
 
 export async function loginWithSupabasePassword(email: string, password: string) {
@@ -184,6 +188,44 @@ export async function verifySupabaseAccessToken(accessToken: string | null): Pro
     return {
       id: user.id,
       email: user.email
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function refreshSupabaseToken(refreshToken: string | null) {
+  if (!refreshToken) return null;
+  const config = getSupabaseAuthConfig();
+  if (!config) return null;
+
+  try {
+    const response = await fetch(`${config.url.replace(/\/$/, "")}/auth/v1/token?grant_type=refresh_token`, {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        apikey: config.anonKey,
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    });
+
+    if (!response.ok) return null;
+
+    const payload = (await response.json().catch(() => null)) as SupabaseLoginResponse | null;
+    if (!payload?.access_token || !payload.refresh_token || !payload.user?.id || !payload.user.email) {
+      return null;
+    }
+
+    return {
+      accessToken: payload.access_token,
+      refreshToken: payload.refresh_token,
+      expiresIn: typeof payload.expires_in === "number" ? payload.expires_in : 3600,
+      user: {
+        id: payload.user.id,
+        email: payload.user.email
+      }
     };
   } catch {
     return null;
