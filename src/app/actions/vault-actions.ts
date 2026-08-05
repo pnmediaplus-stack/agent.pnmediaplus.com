@@ -136,6 +136,13 @@ export async function createTenantIntegration(
 
     if (error) {
       if (isAlreadyExistsError(error)) {
+        await (supabase as any)
+          .schema("tenant_integration_vault")
+          .from("tenant_integrations")
+          .update({ status: "configured", connection_state: "unverified" })
+          .eq("organization_id", authContext.organizationId)
+          .eq("integration_key", integrationKey);
+          
         return rotateTenantIntegration(integrationKey, accessToken, pageId);
       }
       console.error("Vault create error:", error);
@@ -212,9 +219,6 @@ export async function rotateTenantIntegration(
     });
 
     if (error) {
-      if (isNotRotatableError(error) && pageId) {
-        return createTenantIntegration("facebook_page", integrationKey, integrationKey, accessToken, pageId);
-      }
       console.error("Vault rotate error:", error);
       return { ok: false, state: "blocked", reason: error.message };
     }
