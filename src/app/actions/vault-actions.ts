@@ -123,7 +123,7 @@ export async function rotateTenantIntegration(
   try {
     const authContext = await requireAuthContext();
 
-    if (authContext.role !== "admin" && authContext.role !== "approver") {
+    if (authContext.role !== "admin" && authContext.role !== "approver" && authContext.role !== "owner") {
       return { ok: false, state: "blocked", reason: "UNAUTHORIZED_ROLE" };
     }
 
@@ -166,7 +166,7 @@ export async function revokeTenantIntegration(
   try {
     const authContext = await requireAuthContext();
 
-    if (authContext.role !== "admin" && authContext.role !== "approver") {
+    if (authContext.role !== "admin" && authContext.role !== "approver" && authContext.role !== "owner") {
       return { ok: false, state: "blocked", reason: "UNAUTHORIZED_ROLE" };
     }
 
@@ -200,7 +200,7 @@ export async function issueReferenceToken(
   try {
     const authContext = await requireAuthContext();
 
-    if (authContext.role !== "admin" && authContext.role !== "approver") {
+    if (authContext.role !== "admin" && authContext.role !== "approver" && authContext.role !== "owner") {
       return { ok: false, state: "blocked", reason: "UNAUTHORIZED_ROLE" };
     }
 
