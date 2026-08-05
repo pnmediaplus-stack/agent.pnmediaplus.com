@@ -1,7 +1,7 @@
-import React from "react";
 import { StateBadge } from "@/components/shared/StateBadge";
 import { RotateCcw, Trash2, Play } from "lucide-react";
 import type { Phase070ProviderCatalogItem, Phase070TenantIntegrationStatus } from "@/lib/tenant-integrations";
+import { useI18n } from "@/lib/i18n/useI18n";
 
 interface ConnectedAccountRowProps {
   provider: Phase070ProviderCatalogItem;
@@ -20,11 +20,12 @@ export function ConnectedAccountRow({
   onRevoke,
   onTest,
 }: ConnectedAccountRowProps) {
+  const { t } = useI18n("phase070");
   const meta = integration.public_metadata as any;
   const isFacebook = provider.provider_code === "facebook_page";
   
   // Facebook-specific metadata
-  const pageName = isFacebook ? (meta?.page_name || "Unknown Page") : integration.integration_name;
+  const pageName = isFacebook ? (meta?.page_name || (t("phase070.dashboard.unknownPage") ?? "Unknown Page")) : integration.integration_name;
   const avatarUrl = isFacebook ? meta?.page_avatar_url : null;
   const pageId = isFacebook ? meta?.page_id : null;
 
@@ -67,14 +68,14 @@ export function ConnectedAccountRow({
 
   const handleRevoke = () => {
     if (actionLoading) return;
-    if (confirm("Are you sure you want to revoke this access token?")) {
+    if (confirm(t("phase070.dashboard.confirmRevoke") ?? "Are you sure you want to revoke this access token?")) {
       onRevoke(integration.integration_key);
     }
   };
 
   const handleRotate = () => {
     if (actionLoading) return;
-    const newToken = prompt("Enter the new Access Token:");
+    const newToken = prompt(t("phase070.dashboard.promptNewToken") ?? "Enter the new Access Token:");
     if (!newToken) return;
     onRotate(integration.integration_key, newToken, pageId);
   };
@@ -101,7 +102,7 @@ export function ConnectedAccountRow({
             onClick={handleTest}
             disabled={!!actionLoading}
             className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
-            title="Test Connection"
+            title={t("phase070.dashboard.test") ?? "Test Connection"}
           >
             <Play size={16} className={actionLoading ? "opacity-50" : ""} />
           </button>
@@ -110,7 +111,7 @@ export function ConnectedAccountRow({
             onClick={handleRotate}
             disabled={!!actionLoading}
             className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
-            title="Update Token"
+            title={t("phase070.dashboard.rotate") ?? "Update Token"}
           >
             <RotateCcw size={16} className={actionLoading ? "opacity-50" : ""} />
           </button>
@@ -119,7 +120,7 @@ export function ConnectedAccountRow({
             onClick={handleRevoke}
             disabled={!!actionLoading}
             className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-colors"
-            title="Revoke Token"
+            title={t("phase070.dashboard.revoke") ?? "Revoke Token"}
           >
             <Trash2 size={16} className={actionLoading ? "opacity-50" : ""} />
           </button>

@@ -50,5 +50,13 @@ export const phase070 = {
   "phase070.actions.revoking": "Revoking",
   "phase070.actions.brokerTitle": "Broker call",
   "phase070.actions.broker": "Broker call",
-  "phase070.actions.brokering": "Calling"
+  "phase070.actions.brokering": "Calling",
+  "phase070.dashboard.title": "Fanpage & Integration Dashboard",
+  "phase070.dashboard.description": "Manage connection states and update access token configurations.",
+  "phase070.dashboard.test": "Test Connection",
+  "phase070.dashboard.rotate": "Update Token",
+  "phase070.dashboard.revoke": "Revoke Token",
+  "phase070.dashboard.confirmRevoke": "Are you sure you want to revoke this access token?",
+  "phase070.dashboard.promptNewToken": "Enter the new Access Token:",
+  "phase070.dashboard.unknownPage": "Unknown Page"
 } as const;

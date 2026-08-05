@@ -256,8 +256,8 @@ export function TenantIntegrationsView() {
       {integrations.length > 0 && (
         <section className="mb-8">
           <div className="mb-4">
-            <h2 className="text-xl font-semibold text-slate-100">Bảng Tổng Quan Fanpage & Tích Hợp</h2>
-            <p className="mt-1 text-sm text-slate-400">Quản lý trạng thái kết nối và thay đổi cấu hình mã truy cập.</p>
+            <h2 className="text-xl font-semibold text-slate-100">{t("phase070.dashboard.title") ?? "Bảng Tổng Quan Fanpage & Tích Hợp"}</h2>
+            <p className="mt-1 text-sm text-slate-400">{t("phase070.dashboard.description") ?? "Quản lý trạng thái kết nối và thay đổi cấu hình mã truy cập."}</p>
           </div>
           <div className="space-y-3">
             {integrations.map((integration) => {

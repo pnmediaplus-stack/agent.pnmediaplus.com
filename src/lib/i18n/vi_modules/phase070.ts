@@ -50,5 +50,13 @@ export const phase070 = {
   "phase070.actions.revoking": "Đang thu hồi...",
   "phase070.actions.brokerTitle": "Kiểm tra kết nối",
   "phase070.actions.broker": "Kiểm tra",
-  "phase070.actions.brokering": "Đang kiểm tra..."
+  "phase070.actions.brokering": "Đang kiểm tra...",
+  "phase070.dashboard.title": "Bảng Tổng Quan Fanpage & Tích Hợp",
+  "phase070.dashboard.description": "Quản lý trạng thái kết nối và thay đổi cấu hình mã truy cập.",
+  "phase070.dashboard.test": "Kiểm tra kết nối",
+  "phase070.dashboard.rotate": "Cập nhật mã (Token)",
+  "phase070.dashboard.revoke": "Xóa cấu hình",
+  "phase070.dashboard.confirmRevoke": "Bạn có chắc chắn muốn xóa mã truy cập này không?",
+  "phase070.dashboard.promptNewToken": "Nhập mã Access Token mới:",
+  "phase070.dashboard.unknownPage": "Trang không xác định"
 } as const;
