@@ -229,14 +229,14 @@ export function TenantIntegrationsView() {
           <div className="flex items-center space-x-3">
             <StateBadge label={operationResult.state === "ready" ? "pass" : "blocked"} displayLabel={operationResult.state} />
             <div className={`text-sm font-medium ${operationResult.state === "ready" ? "text-emerald-400" : "text-rose-400"}`}>
-              {operationResult.state === "ready" ? "Operation Successful" : "Operation Failed"}
+              {operationResult.state === "ready" ? "Thao tác thành công" : "Thao tác thất bại"}
             </div>
           </div>
-          <div className="mt-1 text-sm text-slate-400">Reason: {operationResult.reason}</div>
+          <div className="mt-1 text-sm text-slate-400">Lý do: {operationResult.reason}</div>
           {operationResult.data?.receipt && (
             <div className="mt-3 text-xs text-slate-500 font-mono space-y-1">
-               <p>Receipt Ref: {operationResult.data.receipt.receipt_ref}</p>
-               <p>Broker Status: {operationResult.data.receipt.broker_status}</p>
+               <p>Biên lai mã hóa: {operationResult.data.receipt.receipt_ref}</p>
+               <p>Trạng thái Broker: {operationResult.data.receipt.broker_status}</p>
             </div>
           )}
         </div>
