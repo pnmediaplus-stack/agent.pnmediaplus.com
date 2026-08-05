@@ -30,6 +30,30 @@ function isNotRotatableError(error: unknown): boolean {
   return message.includes("PHASE074_TENANT_INTEGRATION_NOT_ROTATABLE") || message.includes("NOT_ROTATABLE");
 }
 
+async function updateTenantIntegrationRest(organizationId: string, integrationKey: string, payload: any) {
+  const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/\/$/, '');
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
+  const organizationFilter = `organization_id=eq.${encodeURIComponent(organizationId)}`;
+  const integrationFilter = `integration_key=eq.${encodeURIComponent(integrationKey)}`;
+  
+  const response = await fetch(`${supabaseUrl}/rest/v1/tenant_integrations?${organizationFilter}&${integrationFilter}`, {
+    method: "PATCH",
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+      "Accept-Profile": "tenant_integration_vault",
+      "Content-Profile": "tenant_integration_vault"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`TENANT_INTEGRATION_REST_UPDATE_FAILED: ${response.status} ${body}`.trim());
+  }
+}
+
 /**
  * TODO: TEMPORARY MOCK FOR LOCAL PROTOTYPE
  * In the final Phase 16/17 Production BYOK design, the Next.js backend MUST NOT perform envelope encryption locally using a dummy key.
@@ -136,12 +160,7 @@ export async function createTenantIntegration(
 
     if (error) {
       if (isAlreadyExistsError(error)) {
-        await (supabase as any)
-          .schema("tenant_integration_vault")
-          .from("tenant_integrations")
-          .update({ status: "configured", connection_state: "unverified" })
-          .eq("organization_id", authContext.organizationId)
-          .eq("integration_key", integrationKey);
+        await updateTenantIntegrationRest(authContext.organizationId, integrationKey, { status: "configured", connection_state: "unverified" });
           
         return rotateTenantIntegration(integrationKey, accessToken, pageId);
       }
@@ -150,12 +169,7 @@ export async function createTenantIntegration(
     }
 
     if (facebookMetadata) {
-      await (supabase as any)
-        .schema("tenant_integration_vault")
-        .from("tenant_integrations")
-        .update({ public_metadata: facebookMetadata })
-        .eq("organization_id", authContext.organizationId)
-        .eq("integration_key", integrationKey);
+      await updateTenantIntegrationRest(authContext.organizationId, integrationKey, { public_metadata: facebookMetadata });
     }
 
     return { ok: true, state: "ready", reason: "SUCCESS", data: { receipt: data } };
@@ -219,12 +233,7 @@ export async function rotateTenantIntegration(
     });
 
     if (error && isNotRotatableError(error)) {
-      await (supabase as any)
-        .schema("tenant_integration_vault")
-        .from("tenant_integrations")
-        .update({ status: "configured", connection_state: "unverified" })
-        .eq("organization_id", authContext.organizationId)
-        .eq("integration_key", integrationKey);
+      await updateTenantIntegrationRest(authContext.organizationId, integrationKey, { status: "configured", connection_state: "unverified" });
         
       const retry = await supabase.rpc("phase074_rotate_tenant_integration", {
         payload
@@ -239,12 +248,7 @@ export async function rotateTenantIntegration(
     }
 
     if (facebookMetadata) {
-      await (supabase as any)
-        .schema("tenant_integration_vault")
-        .from("tenant_integrations")
-        .update({ public_metadata: facebookMetadata })
-        .eq("organization_id", authContext.organizationId)
-        .eq("integration_key", integrationKey);
+      await updateTenantIntegrationRest(authContext.organizationId, integrationKey, { public_metadata: facebookMetadata });
     }
 
     return { ok: true, state: "ready", reason: "SUCCESS", data: { receipt: data } };
