@@ -20,6 +20,16 @@ export type EncryptedSecretPayload = {
   raw_auth_tag_b64?: string;
 };
 
+function isAlreadyExistsError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return message.includes("PHASE074_TENANT_INTEGRATION_ALREADY_EXISTS") || message.includes("ALREADY_EXISTS");
+}
+
+function isNotRotatableError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return message.includes("PHASE074_TENANT_INTEGRATION_NOT_ROTATABLE") || message.includes("NOT_ROTATABLE");
+}
+
 /**
  * TODO: TEMPORARY MOCK FOR LOCAL PROTOTYPE
  * In the final Phase 16/17 Production BYOK design, the Next.js backend MUST NOT perform envelope encryption locally using a dummy key.
@@ -125,6 +135,9 @@ export async function createTenantIntegration(
     });
 
     if (error) {
+      if (isAlreadyExistsError(error)) {
+        return rotateTenantIntegration(integrationKey, accessToken, pageId);
+      }
       console.error("Vault create error:", error);
       return { ok: false, state: "blocked", reason: error.message };
     }
@@ -199,6 +212,9 @@ export async function rotateTenantIntegration(
     });
 
     if (error) {
+      if (isNotRotatableError(error) && pageId) {
+        return createTenantIntegration("facebook_page", integrationKey, integrationKey, accessToken, pageId);
+      }
       console.error("Vault rotate error:", error);
       return { ok: false, state: "blocked", reason: error.message };
     }
