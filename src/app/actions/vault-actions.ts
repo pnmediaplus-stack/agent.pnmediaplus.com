@@ -214,9 +214,24 @@ export async function rotateTenantIntegration(
       encrypted_secret_payload: encryptedPayload
     };
 
-    const { data, error } = await supabase.rpc("phase074_rotate_tenant_integration", {
+    let { data, error } = await supabase.rpc("phase074_rotate_tenant_integration", {
       payload
     });
+
+    if (error && isNotRotatableError(error)) {
+      await (supabase as any)
+        .schema("tenant_integration_vault")
+        .from("tenant_integrations")
+        .update({ status: "configured", connection_state: "unverified" })
+        .eq("organization_id", authContext.organizationId)
+        .eq("integration_key", integrationKey);
+        
+      const retry = await supabase.rpc("phase074_rotate_tenant_integration", {
+        payload
+      });
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error("Vault rotate error:", error);
