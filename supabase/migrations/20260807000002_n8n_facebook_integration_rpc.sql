@@ -9,12 +9,14 @@ as $$
 declare
   v_integration record;
 begin
-  select id, organization_id, integration_key, vault_credential_ref
+  select ti.id, ti.organization_id, ti.integration_key, ti.vault_credential_ref
   into v_integration
-  from tenant_integration_vault.tenant_integrations
-  where integration_key like 'facebook_page_%'
-    and status in ('active', 'configured')
-  order by created_at desc
+  from tenant_integration_vault.tenant_integrations ti
+  inner join pn_vault.vault_credentials vc
+    on ti.vault_credential_ref = vc.credential_ref
+  where ti.integration_key like 'facebook_page_%'
+    and ti.status in ('active', 'configured')
+  order by ti.created_at desc
   limit 1;
   
   if v_integration is null then
