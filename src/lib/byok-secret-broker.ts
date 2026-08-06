@@ -5,6 +5,7 @@ import {
   readControlPlaneSessionCookie,
   verifyControlPlaneSessionCookieValue
 } from "@/lib/control-plane-session";
+import { createServiceRoleClient } from "@/lib/supabase-server";
 import type {
   ByokBrokerEnvelope,
   ByokIssueTokenRequest,
@@ -271,23 +272,20 @@ export async function redeemReferenceToken(
   const consumed = await consumeReferenceToken(referenceToken, actor);
 
   // 2. Validate tenant scope
-  const config = getSupabaseVaultConfig();
-  const response = await fetch(`${config.url}/rest/v1/tenant_integrations?organization_id=eq.${organizationId}&integration_key=eq.${integrationKey}&select=vault_credential_ref`, {
-    headers: {
-      apikey: config.serviceRoleKey,
-      Authorization: `Bearer ${config.serviceRoleKey}`,
-      Accept: "application/json",
-      "Accept-Profile": "tenant_integration_vault"
-    },
-    cache: "no-store"
-  });
+  const supabase = createServiceRoleClient();
+  const { data: credentialRef, error: lookupError } = await supabase.rpc(
+    "phase075_get_tenant_vault_credential_ref",
+    {
+      p_organization_id: organizationId,
+      p_integration_key: integrationKey
+    }
+  );
 
-  if (!response.ok) {
-     throw new ByokBrokerError(500, "TENANT_LOOKUP_FAILED", "Failed to query tenant_integrations.");
+  if (lookupError) {
+     throw new ByokBrokerError(500, "TENANT_LOOKUP_FAILED", `Failed to query tenant_integrations: ${lookupError.message}`);
   }
   
-  const rows = await response.json();
-  if (!rows || rows.length === 0 || rows[0].vault_credential_ref !== consumed.credential_ref) {
+  if (!credentialRef || credentialRef !== consumed.credential_ref) {
      throw new ByokBrokerError(403, "TENANT_SCOPE_MISMATCH", "Token does not match the provided organization and integration context.");
   }
 

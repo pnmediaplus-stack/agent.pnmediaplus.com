@@ -351,3 +351,38 @@ begin
     grant execute on function public.phase075_reset_tenant_integration_state(jsonb) to service_role;
   end if;
 end $$;
+
+create or replace function public.phase075_get_tenant_vault_credential_ref(p_organization_id uuid, p_integration_key text)
+returns text
+language plpgsql
+security definer
+set search_path = public, tenant_integration_vault
+as $$
+declare
+  v_ref text;
+begin
+  select vault_credential_ref into v_ref
+  from tenant_integration_vault.tenant_integrations
+  where organization_id = p_organization_id
+    and integration_key = p_integration_key;
+    
+  return v_ref;
+end;
+$$;
+
+do $$
+begin
+  revoke all on function public.phase075_get_tenant_vault_credential_ref(uuid, text) from public;
+
+  if exists (select 1 from pg_roles where rolname = 'anon') then
+    revoke all on function public.phase075_get_tenant_vault_credential_ref(uuid, text) from anon;
+  end if;
+
+  if exists (select 1 from pg_roles where rolname = 'authenticated') then
+    revoke all on function public.phase075_get_tenant_vault_credential_ref(uuid, text) from authenticated;
+  end if;
+
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant execute on function public.phase075_get_tenant_vault_credential_ref(uuid, text) to service_role;
+  end if;
+end $$;
