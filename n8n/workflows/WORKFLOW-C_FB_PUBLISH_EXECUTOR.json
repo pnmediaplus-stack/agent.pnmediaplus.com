@@ -212,20 +212,6 @@
         100,
         300
       ]
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "fb-publish-executor",
-        "options": {}
-      },
-      "name": "Webhook Trigger",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1.1,
-      "position": [
-        100,
-        300
-      ]
     }
   ],
   "connections": {

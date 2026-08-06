@@ -32,6 +32,9 @@ begin
 end;
 $$;
 
+REVOKE ALL ON FUNCTION public.phase076_find_tenant_integration(uuid, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.phase076_find_tenant_integration(uuid, text) TO service_role;
+
 -- Drop the old insecure functions
 drop function if exists public.phase075_find_facebook_integration();
 drop function if exists public.phase075_find_tenant_integration();

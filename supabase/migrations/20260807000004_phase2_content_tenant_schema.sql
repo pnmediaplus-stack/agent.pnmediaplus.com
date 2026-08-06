@@ -3,61 +3,106 @@
 
 DO $$
 BEGIN
-  -- Ensure phase2_content_items has tenant routing columns
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'phase2_content_items' AND column_name = 'organization_id') THEN
-    ALTER TABLE public.phase2_content_items ADD COLUMN organization_id uuid;
+  -- Alter the base table pn_content_phase2.content_items
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'pn_content_phase2' AND table_name = 'content_items' AND column_name = 'organization_id') THEN
+    ALTER TABLE pn_content_phase2.content_items ADD COLUMN organization_id uuid;
   END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'phase2_content_items' AND column_name = 'target_integration_key') THEN
-    ALTER TABLE public.phase2_content_items ADD COLUMN target_integration_key text;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'pn_content_phase2' AND table_name = 'content_items' AND column_name = 'target_integration_key') THEN
+    ALTER TABLE pn_content_phase2.content_items ADD COLUMN target_integration_key text;
   END IF;
 
-  -- Add mapping for artifact_version_id sent by Dispatcher
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'phase2_content_items' AND column_name = 'artifact_version_id') THEN
-    ALTER TABLE public.phase2_content_items ADD COLUMN artifact_version_id uuid;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'pn_content_phase2' AND table_name = 'content_items' AND column_name = 'artifact_version_id') THEN
+    ALTER TABLE pn_content_phase2.content_items ADD COLUMN artifact_version_id uuid;
   END IF;
 END $$;
 
--- Drop any previous row level security on phase2_content_items if it existed and redefine strictly
-ALTER TABLE public.phase2_content_items ENABLE ROW LEVEL SECURITY;
+-- Backfill organization_id safely (fallback to a known organization if necessary)
+DO $$
+DECLARE
+  v_default_org uuid;
+BEGIN
+  -- Select a default org for backfilling existing rows to prevent NOT NULL constraint violations
+  SELECT organization_id INTO v_default_org FROM public.portal_organizations LIMIT 1;
+  
+  IF v_default_org IS NOT NULL THEN
+    UPDATE pn_content_phase2.content_items SET organization_id = v_default_org WHERE organization_id IS NULL;
+  END IF;
+END $$;
 
-DROP POLICY IF EXISTS "Tenant isolation for phase2_content_items" ON public.phase2_content_items;
-CREATE POLICY "Tenant isolation for phase2_content_items"
-ON public.phase2_content_items
+-- Set NOT NULL if there are no orphans
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pn_content_phase2.content_items WHERE organization_id IS NULL) THEN
+    ALTER TABLE pn_content_phase2.content_items ALTER COLUMN organization_id SET NOT NULL;
+  END IF;
+END $$;
+
+-- Strict RLS for pn_content_phase2.content_items
+ALTER TABLE pn_content_phase2.content_items ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Tenant isolation for content_items" ON pn_content_phase2.content_items;
+CREATE POLICY "Tenant isolation for content_items"
+ON pn_content_phase2.content_items
 FOR ALL
 USING (
-  organization_id IS NULL OR -- fallback for old records
-  organization_id IN (
-    SELECT organization_id FROM public.portal_organizations
+  organization_id IN (SELECT organization_id FROM public.portal_organizations)
+)
+WITH CHECK (
+  organization_id IN (SELECT organization_id FROM public.portal_organizations)
 );
 
+-- Recreate public.phase2_content_items View
+DROP VIEW IF EXISTS public.phase2_content_items;
+CREATE OR REPLACE VIEW public.phase2_content_items AS
+SELECT
+  id,
+  content_key,
+  owner_ref,
+  title,
+  brief,
+  state,
+  scheduled_at,
+  published_at,
+  created_at,
+  updated_at,
+  organization_id,
+  target_integration_key,
+  artifact_version_id
+FROM pn_content_phase2.content_items;
+
 -- Mock Data RPC for Testing (Secure, Tenant-Scoped)
-create or replace function public.phase076_mock_scheduled_content(
+CREATE OR REPLACE FUNCTION public.phase076_mock_scheduled_content(
   p_organization_id uuid,
   p_integration_key text,
   p_content_key text,
   p_owner_ref text,
   p_title text,
-  p_brief text
-) returns uuid
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
+  p_brief text,
+  p_artifact_version_id uuid
+) RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pn_content_phase2
+AS $$
+DECLARE
   v_item_id uuid;
-begin
+BEGIN
   -- Ensure organization exists
-  if not exists (select 1 from public.portal_organizations where organization_id = p_organization_id) then
-    raise exception 'INVALID_ORGANIZATION';
-  end if;
+  IF NOT EXISTS (SELECT 1 FROM public.portal_organizations WHERE organization_id = p_organization_id) THEN
+    RAISE EXCEPTION 'INVALID_ORGANIZATION';
+  END IF;
 
-  insert into public.phase2_content_items (
-    organization_id, target_integration_key, content_key, owner_ref, title, brief, state
-  ) values (
-    p_organization_id, p_integration_key, p_content_key, p_owner_ref, p_title, p_brief, 'scheduled'
-  ) returning id into v_item_id;
+  -- Insert with initial state 'idea' to trigger SSOT accurately
+  INSERT INTO pn_content_phase2.content_items (
+    organization_id, target_integration_key, artifact_version_id, content_key, owner_ref, title, brief, state
+  ) VALUES (
+    p_organization_id, p_integration_key, p_artifact_version_id, p_content_key, p_owner_ref, p_title, p_brief, 'idea'
+  ) RETURNING id INTO v_item_id;
 
-  return v_item_id;
-end;
+  -- Since test bypasses SSOT transitions, forcefully update to scheduled
+  UPDATE pn_content_phase2.content_items SET state = 'scheduled' WHERE id = v_item_id;
+
+  RETURN v_item_id;
+END;
 $$;
