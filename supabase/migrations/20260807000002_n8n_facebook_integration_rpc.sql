@@ -13,7 +13,7 @@ begin
   into v_integration
   from tenant_integration_vault.tenant_integrations
   where integration_key like 'facebook_page_%'
-    and status = 'active'
+    and status in ('active', 'configured')
   limit 1;
   
   if v_integration is null then
