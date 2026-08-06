@@ -1,0 +1,315 @@
+{
+  "name": "WORKFLOW-C - FB Publish Executor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/5 * * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/phase2_content_items?state=eq.scheduled",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Fetch Scheduled Items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/tenant_integrations?integration_key=like.facebook_page_*&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Fetch Facebook Integration",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent.pnmediaplus.com/api/byok/redeem",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-broker-internal-secret",
+              "value": "pn_media_os_super_secret_key_2026_xyz"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "reference_token",
+              "value": "={{ $json.vault_credential_ref }}"
+            },
+            {
+              "name": "organization_id",
+              "value": "={{ $json.organization_id }}"
+            },
+            {
+              "name": "integration_key",
+              "value": "={{ $json.integration_key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Redeem BYOK Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/phase2_assets?content_item_id=eq.{{ $('Fetch Scheduled Items').item.json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Fetch Assets",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const assets = $input.all().map(item => item.json);\nconst caption = assets.find(a => a.asset_type === 'caption_output')?.asset_uri || '';\nconst image = assets.find(a => a.asset_type === 'visual_asset')?.asset_uri || '';\nconst accessToken = $('Redeem BYOK Token').item.json.data.access_token;\nconst pageId = $('Redeem BYOK Token').item.json.data.page_id;\nconst contentItemId = $('Fetch Scheduled Items').item.json.id;\n\nreturn {\n  caption: caption,\n  image: image,\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId\n};"
+      },
+      "name": "Extract FB Assets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $json.pageId }}/photos",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.image }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.caption }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $json.accessToken }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Publish to Facebook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent.pnmediaplus.com/api/n8n/publish-callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-api-key",
+              "value": "pn_media_os_super_secret_key_2026_xyz"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "job_id",
+              "value": "={{ $('Extract FB Assets').item.json.contentItemId }}"
+            },
+            {
+              "name": "status",
+              "value": "success"
+            },
+            {
+              "name": "fb_id",
+              "value": "={{ $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Callback Success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1500,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Scheduled Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Scheduled Items": {
+      "main": [
+        [
+          {
+            "node": "Fetch Facebook Integration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Facebook Integration": {
+      "main": [
+        [
+          {
+            "node": "Redeem BYOK Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redeem BYOK Token": {
+      "main": [
+        [
+          {
+            "node": "Fetch Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Assets": {
+      "main": [
+        [
+          {
+            "node": "Extract FB Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract FB Assets": {
+      "main": [
+        [
+          {
+            "node": "Publish to Facebook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Facebook": {
+      "main": [
+        [
+          {
+            "node": "Callback Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
