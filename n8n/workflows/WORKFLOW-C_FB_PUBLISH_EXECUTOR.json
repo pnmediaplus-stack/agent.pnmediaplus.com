@@ -29,11 +29,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
+              "value": "={{ $env["SUPABASE_SERVICE_ROLE_KEY"] }}"
             },
             {
               "name": "Authorization",
-              "value": "Bearer sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
+              "value": "Bearer ={{ $env["SUPABASE_SERVICE_ROLE_KEY"] }}"
             }
           ]
         },
@@ -56,11 +56,15 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
+              "value": "={{ $env["SUPABASE_SERVICE_ROLE_KEY"] }}"
             },
             {
               "name": "Authorization",
-              "value": "Bearer sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
+              "value": "Bearer ={{ $env["SUPABASE_SERVICE_ROLE_KEY"] }}"
+            },
+            {
+              "name": "Accept-Profile",
+              "value": "tenant_integration_vault"
             }
           ]
         },
@@ -127,11 +131,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
+              "value": "={{ $env["SUPABASE_SERVICE_ROLE_KEY"] }}"
             },
             {
               "name": "Authorization",
-              "value": "Bearer sb_publishable_gGztlsTgCYmzn_JvkEBteQ_jueGATy4"
+              "value": "Bearer ={{ $env["SUPABASE_SERVICE_ROLE_KEY"] }}"
             }
           ]
         },
