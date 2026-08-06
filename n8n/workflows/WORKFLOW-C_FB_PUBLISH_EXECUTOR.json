@@ -87,8 +87,8 @@
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/phase2_content_items?organization_id=eq.{{ $('Webhook Trigger').item.json.body.organization_id }}&artifact_version_id=eq.{{ $('Webhook Trigger').item.json.body.artifact_version_id }}",
+        "method": "POST",
+        "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/rpc/phase076_get_publish_payload",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -102,7 +102,28 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_organization_id",
+              "value": "={{ $('Webhook Trigger').item.json.body.organization_id }}"
+            },
+            {
+              "name": "p_content_item_id",
+              "value": "={{ $('Webhook Trigger').item.json.body.content_item_id }}"
+            },
+            {
+              "name": "p_artifact_version_id",
+              "value": "={{ $('Webhook Trigger').item.json.body.artifact_version_id }}"
+            },
+            {
+              "name": "p_integration_key",
+              "value": "={{ $('Webhook Trigger').item.json.body.integration_key }}"
+            }
+          ]
+        }
       },
       "name": "Fetch Assets",
       "type": "n8n-nodes-base.httpRequest",
@@ -114,7 +135,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const assets = $input.all().map(item => item.json);\nconst caption = assets.find(a => a.asset_type === 'caption_output')?.asset_uri || '';\nconst image = assets.find(a => a.asset_type === 'visual_asset')?.asset_uri || '';\nconst accessToken = $('Redeem BYOK Token').item.json.data.access_token;\nconst pageId = $('Redeem BYOK Token').item.json.data.page_id;\nconst contentItemId = $('Webhook Trigger').item.json.body.content_item_id;\n\nreturn {\n  caption: caption,\n  image: image,\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId\n};"
+        "jsCode": "const payload = $('Fetch Assets').item.json;\nconst accessToken = $('Redeem BYOK Token').item.json.data.access_token;\nconst pageId = $('Redeem BYOK Token').item.json.data.page_id;\nconst contentItemId = $('Webhook Trigger').item.json.body.content_item_id;\n\nreturn {\n  caption: payload.caption || '',\n  image: payload.image || '',\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId\n};"
       },
       "name": "Extract FB Assets",
       "type": "n8n-nodes-base.code",

@@ -1,6 +1,5 @@
 import fs from 'fs';
 import dotenv from 'dotenv';
-import crypto from 'crypto';
 
 if (fs.existsSync('.env.local')) {
   dotenv.config({ path: '.env.local' });
@@ -10,9 +9,15 @@ if (fs.existsSync('.env.local')) {
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const artifactVersionId = process.env.ARTIFACT_VERSION_ID;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error("❌ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+  process.exit(1);
+}
+
+if (!artifactVersionId) {
+  console.error("❌ Missing ARTIFACT_VERSION_ID. Gatekeeper requirement: Muốn test thật phải map SSOT ID thật qua biến môi trường.");
   process.exit(1);
 }
 
@@ -24,7 +29,7 @@ const headers = {
 };
 
 async function seedData() {
-  console.log("🌱 Đang chuẩn bị nguyên liệu (Data) cho bộ máy N8N qua Dispatcher Pattern...");
+  console.log("🌱 Đang chuẩn bị Fixture (Data) cho luồng N8N Publish...");
 
   // 1. Lấy 1 organization hợp lệ
   const orgRes = await fetch(`${supabaseUrl}/rest/v1/portal_organizations?limit=1`, { headers });
@@ -34,21 +39,28 @@ async function seedData() {
     return;
   }
   const organizationId = orgs[0].organization_id;
-  const targetIntegrationKey = 'facebook_page_721220557289262';
-  const artifactVersionId = crypto.randomUUID();
+  
+  // 2. Lấy 1 integration hợp lệ (để pass mock RPC validation)
+  const intRes = await fetch(`${supabaseUrl}/rest/v1/tenant_integrations?organization_id=eq.${organizationId}&limit=1`, { headers });
+  const ints = await intRes.json();
+  if (!ints || ints.length === 0) {
+    console.error("❌ Tenant này không có integration nào! Hãy cấu hình Fanpage cho Tenant trước.");
+    return;
+  }
+  const targetIntegrationKey = ints[0].integration_key;
 
-  // 2. Tạo Content Item qua RPC bảo mật
+  // 3. Tạo Content Item & Assets Fixture qua RPC bảo mật
   const rpcBody = {
     p_organization_id: organizationId,
     p_integration_key: targetIntegrationKey,
     p_content_key: 'n8n_test_publish_' + Date.now(),
     p_owner_ref: 'test_user',
-    p_title: 'Post Facebook Tự Động bằng N8N & BYOK Vault',
-    p_brief: 'Test luồng end-to-end từ Scheduled -> Publish',
+    p_title: 'Post Facebook Tự Động bằng N8N',
+    p_brief: 'Test luồng end-to-end',
     p_artifact_version_id: artifactVersionId
   };
 
-  const contentRes = await fetch(`${supabaseUrl}/rest/v1/rpc/phase076_mock_scheduled_content`, {
+  const contentRes = await fetch(`${supabaseUrl}/rest/v1/rpc/phase076_prepare_test_fixture`, {
     method: 'POST',
     headers,
     body: JSON.stringify(rpcBody)
@@ -60,13 +72,14 @@ async function seedData() {
   }
   
   const itemId = (await contentRes.text()).replace(/"/g, '');
-  console.log(`✅ [1] Đã tạo Content Item ID: ${itemId}`);
-  console.log(`✅ [1b] Đã map Artifact Version ID: ${artifactVersionId}`);
+  console.log(`✅ [1] Đã tạo Fixture Content Item ID: ${itemId}`);
+  console.log(`✅ [1b] Đã map Artifact Version ID (SSOT): ${artifactVersionId}`);
   console.log(`✅ [2] Organization ID: ${organizationId}`);
   console.log(`✅ [3] Target Integration: ${targetIntegrationKey}`);
-  console.log("✅ [4] Giả lập luồng duyệt content (idea -> scheduled)");
+  console.log("✅ [4] Fixture đã chèn đầy đủ image & caption, trạng thái hiện tại: 'idea'");
+  console.log("⚠️ Lưu ý: Fixture chưa đạt trạng thái 'scheduled' nên N8N sẽ từ chối Publish (Gatekeeper Rule). Bạn cần mô phỏng duyệt bài trên UI hoặc gọi RPC Approval.");
 
-  // 3. Dry-Run Dispatcher
+  // 4. Dry-Run Dispatcher
   const webhookUrl = 'http://localhost:5678/webhook/fb-publish-executor';
   const dispatchPayload = {
     organization_id: organizationId,
@@ -78,8 +91,7 @@ async function seedData() {
   };
 
   console.log(`\n🚀 [DRY-RUN] Test script complete. N8N Webhook NOT automatically fired.`);
-  console.log(`Gatekeeper Constraint: Muốn test thật phải issue token thật qua dispatcher/BYOK.`);
-  console.log(`\n💡 Gợi ý: Hãy kích hoạt thật trên Frontend để lấy token, hoặc tự gọi cURL với token hợp lệ:`);
+  console.log(`\n💡 Lệnh cURL tham khảo (Hãy thay thế token thật):`);
   console.log(`curl -X POST ${webhookUrl} -H "Content-Type: application/json" -d '${JSON.stringify(dispatchPayload, null, 2)}'`);
 
   console.log("\n🎉 HOÀN TẤT CHUẨN BỊ FIXTURE!");

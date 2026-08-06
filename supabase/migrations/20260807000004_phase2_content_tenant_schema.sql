@@ -29,6 +29,20 @@ BEGIN
   END IF;
 END $$;
 
+-- Check for duplicates before dropping global constraint
+DO $$
+DECLARE
+  v_duplicate_count integer;
+BEGIN
+  SELECT count(*) INTO v_duplicate_count FROM (
+    SELECT content_key FROM pn_content_phase2.content_items GROUP BY content_key HAVING count(*) > 1
+  ) dupes;
+
+  IF v_duplicate_count > 0 THEN
+    RAISE EXCEPTION 'Migration failed: Found % duplicate content_keys. Cannot safely alter unique constraints.', v_duplicate_count;
+  END IF;
+END $$;
+
 -- Set NOT NULL and Constraints
 ALTER TABLE pn_content_phase2.content_items ALTER COLUMN organization_id SET NOT NULL;
 
@@ -39,6 +53,10 @@ BEGIN
       ADD CONSTRAINT content_items_org_fk FOREIGN KEY (organization_id) REFERENCES portal_auth.organizations(id) ON DELETE RESTRICT;
   END IF;
   
+  IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'content_items_content_key_key') THEN
+    ALTER TABLE pn_content_phase2.content_items DROP CONSTRAINT content_items_content_key_key;
+  END IF;
+
   IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'content_items_org_key_unq') THEN
     ALTER TABLE pn_content_phase2.content_items
       ADD CONSTRAINT content_items_org_key_unq UNIQUE (organization_id, content_key);
@@ -70,7 +88,7 @@ WITH CHECK (
   )
 );
 
--- Recreate public.phase2_content_items View and regrant privileges
+-- Recreate public.phase2_content_items View and regrant privileges strictly
 DROP VIEW IF EXISTS public.phase2_content_items;
 CREATE OR REPLACE VIEW public.phase2_content_items AS
 SELECT
@@ -89,10 +107,60 @@ SELECT
   artifact_version_id
 FROM pn_content_phase2.content_items;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.phase2_content_items TO anon, authenticated, service_role;
+-- Revoke all write permissions to enforce server boundary, grant only SELECT
+REVOKE ALL ON public.phase2_content_items FROM PUBLIC, anon, authenticated, service_role;
+GRANT SELECT ON public.phase2_content_items TO anon, authenticated, service_role;
+
+-- RPC for N8N payload resolution (SSOT)
+CREATE OR REPLACE FUNCTION public.phase076_get_publish_payload(
+  p_organization_id uuid,
+  p_content_item_id uuid,
+  p_artifact_version_id uuid,
+  p_integration_key text
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pn_content_phase2
+AS $$
+DECLARE
+  v_item record;
+  v_caption text;
+  v_image text;
+BEGIN
+  -- Strict validation of tenant, integration, artifact, and state
+  SELECT * INTO v_item FROM pn_content_phase2.content_items
+  WHERE id = p_content_item_id
+    AND organization_id = p_organization_id
+    AND artifact_version_id = p_artifact_version_id
+    AND target_integration_key = p_integration_key;
+
+  IF v_item IS NULL THEN
+    RAISE EXCEPTION 'Payload rejected: Contract mismatch or unauthorized tenant access.';
+  END IF;
+
+  IF v_item.state NOT IN ('scheduled', 'published') THEN
+    RAISE EXCEPTION 'Payload rejected: Content state % is not valid for publishing.', v_item.state;
+  END IF;
+
+  -- Fetch assets securely
+  SELECT asset_uri INTO v_caption FROM pn_content_phase2.assets 
+  WHERE content_item_id = p_content_item_id AND asset_type = 'caption_output' LIMIT 1;
+  
+  SELECT asset_uri INTO v_image FROM pn_content_phase2.assets 
+  WHERE content_item_id = p_content_item_id AND asset_type = 'visual_asset' LIMIT 1;
+
+  RETURN jsonb_build_object(
+    'caption', COALESCE(v_caption, ''),
+    'image', COALESCE(v_image, '')
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.phase076_get_publish_payload(uuid, uuid, uuid, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.phase076_get_publish_payload(uuid, uuid, uuid, text) TO service_role;
 
 -- Mock Data RPC for Testing (Secure, Tenant-Scoped)
-CREATE OR REPLACE FUNCTION public.phase076_mock_scheduled_content(
+CREATE OR REPLACE FUNCTION public.phase076_prepare_test_fixture(
   p_organization_id uuid,
   p_integration_key text,
   p_content_key text,
@@ -103,27 +171,38 @@ CREATE OR REPLACE FUNCTION public.phase076_mock_scheduled_content(
 ) RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pn_content_phase2
+SET search_path = public, pn_content_phase2, tenant_integration_vault
 AS $$
 DECLARE
   v_item_id uuid;
 BEGIN
-  -- Ensure organization exists
-  IF NOT EXISTS (SELECT 1 FROM portal_auth.organizations WHERE id = p_organization_id) THEN
-    RAISE EXCEPTION 'INVALID_ORGANIZATION';
+  -- 1. Ensure integration key belongs to organization
+  IF NOT EXISTS (
+    SELECT 1 FROM tenant_integration_vault.tenant_integrations 
+    WHERE organization_id = p_organization_id AND integration_key = p_integration_key
+  ) THEN
+    RAISE EXCEPTION 'INVALID_INTEGRATION_OR_TENANT';
   END IF;
 
-  -- Insert with initial state 'idea' to trigger SSOT accurately
+  -- 2. Insert with initial state 'idea' to trigger SSOT accurately
   INSERT INTO pn_content_phase2.content_items (
     organization_id, target_integration_key, artifact_version_id, content_key, owner_ref, title, brief, state
   ) VALUES (
     p_organization_id, p_integration_key, p_artifact_version_id, p_content_key, p_owner_ref, p_title, p_brief, 'idea'
   ) RETURNING id INTO v_item_id;
 
-  -- Do NOT forcefully update to scheduled. Return strictly in 'idea' state.
+  -- 3. Insert required assets for publish payload
+  INSERT INTO pn_content_phase2.assets (content_item_id, asset_key, owner_ref, asset_type, asset_uri)
+  VALUES 
+    (v_item_id, p_content_key || '_caption', p_owner_ref, 'caption_output', 'This is a mock caption for testing.'),
+    (v_item_id, p_content_key || '_image', p_owner_ref, 'visual_asset', 'https://example.com/mock_image.jpg');
+
+  -- 4. Do NOT forcefully update to scheduled. Return strictly in 'idea' state.
+  -- The test script will output the fixture payload, but N8N execution will be blocked
+  -- if the webhook expects 'scheduled'. True E2E requires state transitions.
   RETURN v_item_id;
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.phase076_mock_scheduled_content(uuid, text, text, text, text, text, uuid) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.phase076_mock_scheduled_content(uuid, text, text, text, text, text, uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.phase076_prepare_test_fixture(uuid, text, text, text, text, text, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.phase076_prepare_test_fixture(uuid, text, text, text, text, text, uuid) TO service_role;
