@@ -33,7 +33,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer ={{ $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
+              "value": "Bearer {{ $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
             }
           ]
         },
@@ -88,7 +88,7 @@
             },
             {
               "name": "x-broker-internal-secret",
-              "value": "pn_media_os_super_secret_key_2026_xyz"
+              "value": "={{ $env[\"BROKER_INTERNAL_SECRET\"] }}"
             }
           ]
         },
@@ -132,7 +132,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer ={{ $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
+              "value": "Bearer {{ $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
             }
           ]
         },
@@ -198,7 +198,7 @@
           "parameters": [
             {
               "name": "x-n8n-api-key",
-              "value": "pn_media_os_super_secret_key_2026_xyz"
+              "value": "={{ $env[\"BROKER_INTERNAL_SECRET\"] }}"
             },
             {
               "name": "Content-Type",
