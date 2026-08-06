@@ -64,15 +64,7 @@
             }
           ]
         },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "p_organization_id",
-              "value": "={{ $('Fetch Scheduled Items').item.json.owner_ref }}"
-            }
-          ]
-        },
+        "sendBody": false,
         "options": {}
       },
       "name": "Fetch Facebook Integration",

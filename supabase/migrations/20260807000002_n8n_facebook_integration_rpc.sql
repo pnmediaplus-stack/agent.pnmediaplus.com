@@ -1,6 +1,6 @@
 begin;
 
-create or replace function public.phase075_find_facebook_integration(p_organization_id uuid)
+create or replace function public.phase075_find_facebook_integration()
 returns jsonb
 language plpgsql
 security definer
@@ -12,8 +12,7 @@ begin
   select id, organization_id, integration_key, vault_credential_ref
   into v_integration
   from tenant_integration_vault.tenant_integrations
-  where organization_id = p_organization_id
-    and integration_key like 'facebook_page_%'
+  where integration_key like 'facebook_page_%'
     and status = 'active'
   limit 1;
   
@@ -30,7 +29,7 @@ begin
 end;
 $$;
 
-revoke all on function public.phase075_find_facebook_integration(uuid) from public, anon, authenticated;
-grant execute on function public.phase075_find_facebook_integration(uuid) to service_role;
+revoke all on function public.phase075_find_facebook_integration() from public, anon, authenticated;
+grant execute on function public.phase075_find_facebook_integration() to service_role;
 
 commit;
