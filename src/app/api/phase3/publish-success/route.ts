@@ -5,6 +5,7 @@ import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
 export const dynamic = 'force-dynamic';
 
 const PublishSuccessPayloadSchema = z.object({
+  organizationId: z.string().uuid(),
   contentItemId: z.string().uuid(),
   channel: z.string().min(1),
   externalId: z.string().min(1),
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
   }
 
   const { payload, logCompletion } = guard;
-  const { contentItemId, channel, externalId, externalUrl } = payload;
+  const { organizationId, contentItemId, channel, externalId, externalUrl } = payload;
 
   const supabaseUrl = process.env.SUPABASE_URL?.trim();
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
@@ -41,37 +42,22 @@ export async function POST(req: Request) {
   };
 
   try {
-    // 2. Update State to published
-    const updateRes = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${contentItemId}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ state: 'published', published_at: new Date().toISOString() })
-    });
-
-    if (!updateRes.ok) {
-      const errorMsg = await updateRes.text();
-      await logCompletion('FAILED', `Update state failed: ${errorMsg}`);
-      return NextResponse.json({ error: 'DB_ERROR', message: `Update state failed: ${errorMsg}` }, { status: 500 });
-    }
-
-    // 3. Create Publish Record via public view
-    const publishPayload = {
-      content_item_id: contentItemId,
-      channel: channel,
-      external_id: externalId,
-      external_url: externalUrl || '',
-      status: 'published',
-      published_at: new Date().toISOString()
-    };
-
-    const publishRes = await fetch(`${supabaseUrl}/rest/v1/phase2_publish_records`, {
+    // Keep the public view read-only. The RPC atomically enforces tenant scope,
+    // lifecycle state, and publish replay protection.
+    const recordRes = await fetch(`${supabaseUrl}/rest/v1/rpc/phase076_record_facebook_publish`, {
       method: 'POST',
       headers,
-      body: JSON.stringify(publishPayload)
+      body: JSON.stringify({
+        p_organization_id: organizationId,
+        p_content_item_id: contentItemId,
+        p_channel: channel,
+        p_external_id: externalId,
+        p_external_url: externalUrl || null
+      })
     });
 
-    if (!publishRes.ok) {
-      const errorMsg = await publishRes.text();
+    if (!recordRes.ok) {
+      const errorMsg = await recordRes.text();
       await logCompletion('FAILED', `Insert publish record failed: ${errorMsg}`);
       return NextResponse.json({ error: 'DB_ERROR', message: `Insert publish record failed: ${errorMsg}` }, { status: 500 });
     }

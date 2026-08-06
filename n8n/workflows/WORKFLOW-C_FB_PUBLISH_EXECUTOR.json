@@ -4,7 +4,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/rpc/phase076_find_tenant_integration",
+        "url": "={{ ($env[\"SUPABASE_URL\"] || '').replace(new RegExp('/$'), '') + '/rest/v1/rpc/phase076_find_tenant_integration' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -44,7 +44,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://agent.pnmediaplus.com/api/byok/redeem",
+        "url": "={{ ($env[\"NEXTJS_CONTROL_PLANE_BASE_URL\"] || '').replace(new RegExp('/$'), '') + '/api/byok/redeem' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -63,15 +63,15 @@
           "parameters": [
             {
               "name": "reference_token",
-              "value": "={{ $json.vault_credential_ref }}"
+              "value": "={{ $('Webhook Trigger').item.json.body.reference_token }}"
             },
             {
               "name": "organization_id",
-              "value": "={{ $json.organization_id }}"
+              "value": "={{ $('Webhook Trigger').item.json.body.organization_id }}"
             },
             {
               "name": "integration_key",
-              "value": "={{ $json.integration_key }}"
+              "value": "={{ $('Webhook Trigger').item.json.body.integration_key }}"
             }
           ]
         },
@@ -88,7 +88,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/rpc/phase076_get_publish_payload",
+        "url": "={{ ($env[\"SUPABASE_URL\"] || '').replace(new RegExp('/$'), '') + '/rest/v1/rpc/phase076_get_publish_payload' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -135,7 +135,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const payload = $('Fetch Assets').item.json;\nconst accessToken = $('Redeem BYOK Token').item.json.data.access_token;\nconst pageId = $('Redeem BYOK Token').item.json.data.page_id;\nconst contentItemId = $('Webhook Trigger').item.json.body.content_item_id;\n\nreturn {\n  caption: payload.caption || '',\n  image: payload.image || '',\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId\n};"
+        "jsCode": "const payload = $('Fetch Assets').item.json;\nconst accessToken = $('Redeem BYOK Token').item.json.data.access_token;\nconst pageId = $('Redeem BYOK Token').item.json.data.page_id;\nconst contentItemId = $('Webhook Trigger').item.json.body.content_item_id;\nconst organizationId = $('Webhook Trigger').item.json.body.organization_id;\n\nreturn {\n  caption: payload.caption || '',\n  image: payload.image || '',\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId,\n  organizationId: organizationId\n};"
       },
       "name": "Extract FB Assets",
       "type": "n8n-nodes-base.code",
@@ -148,7 +148,47 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://graph.facebook.com/v19.0/{{ $json.pageId }}/photos",
+        "url": "={{ ($env[\"SUPABASE_URL\"] || '').replace(new RegExp('/$'), '') + '/rest/v1/rpc/phase076_claim_facebook_publish' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_organization_id",
+              "value": "={{ $('Extract FB Assets').item.json.organizationId }}"
+            },
+            {
+              "name": "p_content_item_id",
+              "value": "={{ $('Extract FB Assets').item.json.contentItemId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Claim Facebook Publish",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1200,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/v19.0/' + $json.pageId + '/photos' }}",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -179,13 +219,17 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://agent.pnmediaplus.com/api/n8n/publish-callback",
+        "url": "={{ ($env[\"NEXTJS_CONTROL_PLANE_BASE_URL\"] || '').replace(new RegExp('/$'), '') + '/api/phase3/publish-success' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
-              "name": "x-n8n-api-key",
-              "value": "={{ $env[\"BROKER_INTERNAL_SECRET\"] }}"
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env[\"CONTROL_PLANE_SECRET\"] }}"
+            },
+            {
+              "name": "x-request-id",
+              "value": "=phase3-fb-{{$('Extract FB Assets').item.json.contentItemId}}-{{$json.id}}"
             },
             {
               "name": "Content-Type",
@@ -197,16 +241,24 @@
         "bodyParameters": {
           "parameters": [
             {
-              "name": "job_id",
+              "name": "organizationId",
+              "value": "={{ $('Extract FB Assets').item.json.organizationId }}"
+            },
+            {
+              "name": "contentItemId",
               "value": "={{ $('Extract FB Assets').item.json.contentItemId }}"
             },
             {
-              "name": "status",
-              "value": "success"
+              "name": "channel",
+              "value": "facebook"
             },
             {
-              "name": "fb_id",
+              "name": "externalId",
               "value": "={{ $json.id }}"
+            },
+            {
+              "name": "externalUrl",
+              "value": ""
             }
           ]
         },
@@ -270,6 +322,17 @@
       ]
     },
     "Extract FB Assets": {
+      "main": [
+        [
+          {
+            "node": "Claim Facebook Publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim Facebook Publish": {
       "main": [
         [
           {

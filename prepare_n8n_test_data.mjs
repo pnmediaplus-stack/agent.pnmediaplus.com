@@ -10,6 +10,8 @@ if (fs.existsSync('.env.local')) {
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const artifactVersionId = process.env.ARTIFACT_VERSION_ID;
+const organizationId = process.env.ORGANIZATION_ID;
+const targetIntegrationKey = process.env.FACEBOOK_INTEGRATION_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error("❌ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
@@ -18,6 +20,11 @@ if (!supabaseUrl || !supabaseKey) {
 
 if (!artifactVersionId) {
   console.error("❌ Missing ARTIFACT_VERSION_ID. Gatekeeper requirement: Muốn test thật phải map SSOT ID thật qua biến môi trường.");
+  process.exit(1);
+}
+
+if (!organizationId || !targetIntegrationKey) {
+  console.error("❌ Missing ORGANIZATION_ID or FACEBOOK_INTEGRATION_KEY. Fixture must use explicit tenant scope.");
   process.exit(1);
 }
 
@@ -31,25 +38,7 @@ const headers = {
 async function seedData() {
   console.log("🌱 Đang chuẩn bị Fixture (Data) cho luồng N8N Publish...");
 
-  // 1. Lấy 1 organization hợp lệ
-  const orgRes = await fetch(`${supabaseUrl}/rest/v1/portal_organizations?limit=1`, { headers });
-  const orgs = await orgRes.json();
-  if (!orgs || orgs.length === 0) {
-    console.error("❌ Không tìm thấy tenant/organization hợp lệ!");
-    return;
-  }
-  const organizationId = orgs[0].organization_id;
-  
-  // 2. Lấy 1 integration hợp lệ (để pass mock RPC validation)
-  const intRes = await fetch(`${supabaseUrl}/rest/v1/tenant_integrations?organization_id=eq.${organizationId}&limit=1`, { headers });
-  const ints = await intRes.json();
-  if (!ints || ints.length === 0) {
-    console.error("❌ Tenant này không có integration nào! Hãy cấu hình Fanpage cho Tenant trước.");
-    return;
-  }
-  const targetIntegrationKey = ints[0].integration_key;
-
-  // 3. Tạo Content Item & Assets Fixture qua RPC bảo mật
+  // Tạo Content Item & Assets Fixture qua RPC bảo mật, với tenant scope tường minh.
   const rpcBody = {
     p_organization_id: organizationId,
     p_integration_key: targetIntegrationKey,
@@ -76,10 +65,10 @@ async function seedData() {
   console.log(`✅ [1b] Đã map Artifact Version ID (SSOT): ${artifactVersionId}`);
   console.log(`✅ [2] Organization ID: ${organizationId}`);
   console.log(`✅ [3] Target Integration: ${targetIntegrationKey}`);
-  console.log("✅ [4] Fixture đã chèn đầy đủ image & caption, trạng thái hiện tại: 'idea'");
-  console.log("⚠️ Lưu ý: Fixture chưa đạt trạng thái 'scheduled' nên N8N sẽ từ chối Publish (Gatekeeper Rule). Bạn cần mô phỏng duyệt bài trên UI hoặc gọi RPC Approval.");
+  console.log("✅ [4] Fixture đã chèn research, image, caption và QA pass; trạng thái hiện tại: 'scheduled'");
+  console.log("⚠️ Đây là fixture tổng hợp cho E2E có kiểm soát; script không tự gọi webhook N8N và không tự đăng Facebook.");
 
-  // 4. Dry-Run Dispatcher
+  // Dry-Run Dispatcher
   const webhookUrl = 'http://localhost:5678/webhook/fb-publish-executor';
   const dispatchPayload = {
     organization_id: organizationId,
