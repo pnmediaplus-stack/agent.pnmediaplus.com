@@ -66,34 +66,23 @@ async function seedData() {
   console.log(`✅ [3] Target Integration: ${targetIntegrationKey}`);
   console.log("✅ [4] Giả lập luồng duyệt content (idea -> scheduled)");
 
-  // 3. Dispatch tới N8N
+  // 3. Dry-Run Dispatcher
   const webhookUrl = 'http://localhost:5678/webhook/fb-publish-executor';
   const dispatchPayload = {
     organization_id: organizationId,
     artifact_version_id: artifactVersionId,
     content_item_id: itemId,
     integration_key: targetIntegrationKey,
-    lease_token: 'mock_lease_token_123',
-    broker_receipt_ref: 'mock_broker_receipt_456'
+    lease_token: '<REAL_LEASE_TOKEN_REQUIRED>',
+    broker_receipt_ref: '<REAL_BROKER_RECEIPT_REQUIRED>'
   };
 
-  console.log(`\n🚀 Đang bắn Dispatcher (Webhook) tới N8N tại ${webhookUrl}...`);
-  try {
-    const webhookRes = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dispatchPayload)
-    });
-    console.log(`✅ Kết quả Webhook: ${webhookRes.status} ${webhookRes.statusText}`);
-    console.log(`✅ Phản hồi:`, await webhookRes.text());
-  } catch (err) {
-    console.error(`❌ Không thể gọi N8N Webhook! Lỗi: ${err.message}`);
-    console.log(`\n💡 Gợi ý: Hãy chắc chắn bạn đang bật luồng N8N (hoặc bấm "Execute Workflow" chờ Webhook)`);
-    console.log(`Hoặc tự giả lập lệnh cURL sau:\n`);
-    console.log(`curl -X POST ${webhookUrl} -H "Content-Type: application/json" -d '${JSON.stringify(dispatchPayload)}'`);
-  }
+  console.log(`\n🚀 [DRY-RUN] Test script complete. N8N Webhook NOT automatically fired.`);
+  console.log(`Gatekeeper Constraint: Muốn test thật phải issue token thật qua dispatcher/BYOK.`);
+  console.log(`\n💡 Gợi ý: Hãy kích hoạt thật trên Frontend để lấy token, hoặc tự gọi cURL với token hợp lệ:`);
+  console.log(`curl -X POST ${webhookUrl} -H "Content-Type: application/json" -d '${JSON.stringify(dispatchPayload, null, 2)}'`);
 
-  console.log("\n🎉 HOÀN TẤT DISPATCHER FLOW!");
+  console.log("\n🎉 HOÀN TẤT CHUẨN BỊ FIXTURE!");
 }
 
 seedData();

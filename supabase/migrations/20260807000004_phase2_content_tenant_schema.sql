@@ -17,28 +17,40 @@ BEGIN
   END IF;
 END $$;
 
--- Backfill organization_id safely (fallback to a known organization if necessary)
+-- Stop migration and fail-closed if there are orphaned rows
 DO $$
 DECLARE
-  v_default_org uuid;
+  v_orphan_count integer;
 BEGIN
-  -- Select a default org for backfilling existing rows to prevent NOT NULL constraint violations
-  SELECT organization_id INTO v_default_org FROM public.portal_organizations LIMIT 1;
+  SELECT count(*) INTO v_orphan_count FROM pn_content_phase2.content_items WHERE organization_id IS NULL;
   
-  IF v_default_org IS NOT NULL THEN
-    UPDATE pn_content_phase2.content_items SET organization_id = v_default_org WHERE organization_id IS NULL;
+  IF v_orphan_count > 0 THEN
+    RAISE EXCEPTION 'Migration failed: Found % orphaned content_items without organization_id. Manual backfill required.', v_orphan_count;
   END IF;
 END $$;
 
--- Set NOT NULL if there are no orphans
+-- Set NOT NULL and Constraints
+ALTER TABLE pn_content_phase2.content_items ALTER COLUMN organization_id SET NOT NULL;
+
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pn_content_phase2.content_items WHERE organization_id IS NULL) THEN
-    ALTER TABLE pn_content_phase2.content_items ALTER COLUMN organization_id SET NOT NULL;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'content_items_org_fk') THEN
+    ALTER TABLE pn_content_phase2.content_items
+      ADD CONSTRAINT content_items_org_fk FOREIGN KEY (organization_id) REFERENCES portal_auth.organizations(id) ON DELETE RESTRICT;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'content_items_org_key_unq') THEN
+    ALTER TABLE pn_content_phase2.content_items
+      ADD CONSTRAINT content_items_org_key_unq UNIQUE (organization_id, content_key);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'content_items_artifact_unq') THEN
+    ALTER TABLE pn_content_phase2.content_items
+      ADD CONSTRAINT content_items_artifact_unq UNIQUE (artifact_version_id);
   END IF;
 END $$;
 
--- Strict RLS for pn_content_phase2.content_items
+-- Strict RLS for pn_content_phase2.content_items via portal_auth.organization_memberships
 ALTER TABLE pn_content_phase2.content_items ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Tenant isolation for content_items" ON pn_content_phase2.content_items;
@@ -46,13 +58,19 @@ CREATE POLICY "Tenant isolation for content_items"
 ON pn_content_phase2.content_items
 FOR ALL
 USING (
-  organization_id IN (SELECT organization_id FROM public.portal_organizations)
+  organization_id IN (
+    SELECT organization_id FROM portal_auth.organization_memberships 
+    WHERE user_id = auth.uid() AND status = 'active'
+  )
 )
 WITH CHECK (
-  organization_id IN (SELECT organization_id FROM public.portal_organizations)
+  organization_id IN (
+    SELECT organization_id FROM portal_auth.organization_memberships 
+    WHERE user_id = auth.uid() AND status = 'active'
+  )
 );
 
--- Recreate public.phase2_content_items View
+-- Recreate public.phase2_content_items View and regrant privileges
 DROP VIEW IF EXISTS public.phase2_content_items;
 CREATE OR REPLACE VIEW public.phase2_content_items AS
 SELECT
@@ -70,6 +88,8 @@ SELECT
   target_integration_key,
   artifact_version_id
 FROM pn_content_phase2.content_items;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.phase2_content_items TO anon, authenticated, service_role;
 
 -- Mock Data RPC for Testing (Secure, Tenant-Scoped)
 CREATE OR REPLACE FUNCTION public.phase076_mock_scheduled_content(
@@ -89,7 +109,7 @@ DECLARE
   v_item_id uuid;
 BEGIN
   -- Ensure organization exists
-  IF NOT EXISTS (SELECT 1 FROM public.portal_organizations WHERE organization_id = p_organization_id) THEN
+  IF NOT EXISTS (SELECT 1 FROM portal_auth.organizations WHERE id = p_organization_id) THEN
     RAISE EXCEPTION 'INVALID_ORGANIZATION';
   END IF;
 
@@ -100,9 +120,10 @@ BEGIN
     p_organization_id, p_integration_key, p_artifact_version_id, p_content_key, p_owner_ref, p_title, p_brief, 'idea'
   ) RETURNING id INTO v_item_id;
 
-  -- Since test bypasses SSOT transitions, forcefully update to scheduled
-  UPDATE pn_content_phase2.content_items SET state = 'scheduled' WHERE id = v_item_id;
-
+  -- Do NOT forcefully update to scheduled. Return strictly in 'idea' state.
   RETURN v_item_id;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.phase076_mock_scheduled_content(uuid, text, text, text, text, text, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.phase076_mock_scheduled_content(uuid, text, text, text, text, text, uuid) TO service_role;
