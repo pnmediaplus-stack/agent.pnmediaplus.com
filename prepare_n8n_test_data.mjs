@@ -23,21 +23,32 @@ const headers = {
 };
 
 async function seedData() {
-  console.log("🌱 Đang chuẩn bị nguyên liệu (Data) cho bộ máy N8N...");
+  console.log("🌱 Đang chuẩn bị nguyên liệu (Data) cho bộ máy N8N qua Dispatcher Pattern...");
 
-  // 1. Tạo Content Item
-  const contentBody = [{
-    content_key: 'n8n_test_publish_' + Date.now(),
-    owner_ref: 'agent', // Actor
-    title: 'Post Facebook Tự Động bằng N8N & BYOK Vault',
-    brief: 'Test luồng end-to-end từ Scheduled -> Publish',
-    state: 'idea' // Bắt đầu từ idea
-  }];
+  // 1. Lấy 1 organization hợp lệ
+  const orgRes = await fetch(`${supabaseUrl}/rest/v1/portal_organizations?limit=1`, { headers });
+  const orgs = await orgRes.json();
+  if (!orgs || orgs.length === 0) {
+    console.error("❌ Không tìm thấy tenant/organization hợp lệ!");
+    return;
+  }
+  const organizationId = orgs[0].organization_id;
+  const targetIntegrationKey = 'facebook_page_721220557289262';
 
-  const contentRes = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items`, {
+  // 2. Tạo Content Item qua RPC bảo mật (không đụng trực tiếp View)
+  const rpcBody = {
+    p_organization_id: organizationId,
+    p_integration_key: targetIntegrationKey,
+    p_content_key: 'n8n_test_publish_' + Date.now(),
+    p_owner_ref: 'test_user',
+    p_title: 'Post Facebook Tự Động bằng N8N & BYOK Vault',
+    p_brief: 'Test luồng end-to-end từ Scheduled -> Publish'
+  };
+
+  const contentRes = await fetch(`${supabaseUrl}/rest/v1/rpc/phase076_mock_scheduled_content`, {
     method: 'POST',
     headers,
-    body: JSON.stringify(contentBody)
+    body: JSON.stringify(rpcBody)
   });
 
   if (!contentRes.ok) {
@@ -45,73 +56,40 @@ async function seedData() {
     return;
   }
   
-  const contentData = (await contentRes.json())[0];
-  const itemId = contentData.id;
-  console.log(`✅ [1] Đã tạo Content Item ID: ${itemId}`);
+  const itemId = (await contentRes.text()).replace(/"/g, '');
+  console.log(`✅ [1] Đã tạo Content Item ID (Scoped): ${itemId}`);
+  console.log(`✅ [2] Organization ID: ${organizationId}`);
+  console.log(`✅ [3] Target Integration: ${targetIntegrationKey}`);
+  console.log("✅ [4] Giả lập luồng duyệt content (QA -> Passed -> Scheduled)");
 
-  // Hàm helper update state
-  async function updateState(newState) {
-    const res = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${itemId}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ state: newState })
-    });
-    if (!res.ok) throw new Error(`Lỗi update state ${newState}: ${await res.text()}`);
-    console.log(`✅ Chuyển trạng thái -> ${newState}`);
-  }
+  // 3. Dispatch tới N8N
+  const webhookUrl = 'http://localhost:5678/webhook/fb-publish-executor';
+  const dispatchPayload = {
+    organization_id: organizationId,
+    artifact_version_id: itemId, // Mapping the content_item_id as artifact_version_id per the new schema
+    content_item_id: itemId,
+    integration_key: targetIntegrationKey,
+    lease_token: 'mock_lease_token_123',
+    broker_receipt_ref: 'mock_broker_receipt_456'
+  };
 
+  console.log(`\n🚀 Đang bắn Dispatcher (Webhook) tới N8N tại ${webhookUrl}...`);
   try {
-    // 2. Chuyển qua các bước sản xuất
-    await updateState('research_ready');
-    await updateState('visual_ready');
-    await updateState('caption_ready');
-
-    // 3. Tạo Assets (Hình ảnh và nội dung)
-    const captionContent = "🚀 Chào mừng đến với kỷ nguyên AI! Đây là bài post được đăng hoàn toàn tự động bằng hệ thống N8N kết hợp với bảo mật BYOK Vault của hệ điều hành PN OS.\n\n#PNMedia #AIAgent #Automation";
-    const imageUrl = "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1000&auto=format&fit=crop";
-
-    const assetsBody = [
-      { content_item_id: itemId, owner_ref: 'agent', asset_type: 'viral_research_packet', asset_key: 'res_' + Date.now(), asset_uri: 'http://test/res' },
-      { content_item_id: itemId, owner_ref: 'agent', asset_type: 'visual_asset', asset_key: 'img_' + Date.now(), asset_uri: imageUrl },
-      { content_item_id: itemId, owner_ref: 'agent', asset_type: 'caption_output', asset_key: 'cap_' + Date.now(), asset_uri: captionContent }
-    ];
-    
-    const assetsRes = await fetch(`${supabaseUrl}/rest/v1/phase2_assets`, { method: 'POST', headers, body: JSON.stringify(assetsBody) });
-    if (!assetsRes.ok) throw new Error(`Lỗi tạo Assets: ${await assetsRes.text()}`);
-    console.log("✅ [2] Đã đính kèm Assets (Hình ảnh & Caption).");
-
-    await updateState('QA_ready');
-
-    // 4. Giả lập QA Pass
-    const qaBody = [{
-      content_item_id: itemId,
-      reviewer_ref: 'human_qa',
-      verdict: 'pass',
-      average_score: 10,
-      overclaim_risk: 0,
-      missing_asset: false,
-      evidence_ref: 'qa_evidence_pass',
-      reviewed_at: new Date().toISOString()
-    }];
-    const qaRes = await fetch(`${supabaseUrl}/rest/v1/phase2_qa_reviews`, { method: 'POST', headers, body: JSON.stringify(qaBody) });
-    if (!qaRes.ok) throw new Error(`Lỗi tạo QA: ${await qaRes.text()}`);
-    console.log("✅ [3] Giả lập duyệt QA (Điểm 10/10).");
-
-    await updateState('QA_passed');
-    
-    // 5. Đưa vào trạng thái Scheduled để N8N lấy đi Publish
-    await updateState('scheduled');
-
-    console.log("\n🎉 NGUYÊN LIỆU ĐÃ SẴN SÀNG!");
-    console.log("=============================================");
-    console.log(`📌 ID Bài Viết (Item ID): ${itemId}`);
-    console.log(`📌 Trạng thái hiện tại: scheduled`);
-    console.log(`📌 Bước tiếp theo: Chạy N8N để fetch bài viết này và Publish lên Facebook!`);
-    console.log("=============================================");
-
+    const webhookRes = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dispatchPayload)
+    });
+    console.log(`✅ Kết quả Webhook: ${webhookRes.status} ${webhookRes.statusText}`);
+    console.log(`✅ Phản hồi:`, await webhookRes.text());
   } catch (err) {
-    console.error("❌ Lỗi trong quá trình chuẩn bị:", err.message);
+    console.error(`❌ Không thể gọi N8N Webhook! Lỗi: ${err.message}`);
+    console.log(`\n💡 Gợi ý: Hãy chắc chắn bạn đang bật luồng N8N (hoặc bấm "Execute Workflow" chờ Webhook)`);
+    console.log(`Hoặc tự giả lập lệnh cURL sau:\n`);
+    console.log(`curl -X POST ${webhookUrl} -H "Content-Type: application/json" -d '${JSON.stringify(dispatchPayload)}'`);
   }
+
+  console.log("\n🎉 HOÀN TẤT DISPATCHER FLOW!");
 }
 
 seedData();

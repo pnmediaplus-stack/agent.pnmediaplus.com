@@ -3,54 +3,8 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "*/5 * * * *"
-            }
-          ]
-        }
-      },
-      "name": "Schedule Trigger",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
-      "position": [
-        100,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "method": "GET",
-        "url": "https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/phase2_content_items?state=eq.scheduled",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "Bearer {{ $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "name": "Fetch Scheduled Items",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        300,
-        300
-      ]
-    },
-    {
-      "parameters": {
         "method": "POST",
-        "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/rpc/phase075_find_facebook_integration",
+        "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/rpc/phase076_find_tenant_integration",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -64,14 +18,26 @@
             }
           ]
         },
-        "sendBody": false,
-        "options": {}
+        "sendBody": true,
+        "options": {},
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_organization_id",
+              "value": "={{ $json.body.organization_id }}"
+            },
+            {
+              "name": "p_integration_key",
+              "value": "={{ $json.body.integration_key }}"
+            }
+          ]
+        }
       },
       "name": "Fetch Facebook Integration",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        500,
+        300,
         300
       ]
     },
@@ -122,7 +88,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/phase2_assets?content_item_id=eq.{{ $('Fetch Scheduled Items').item.json.id }}",
+        "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/phase2_assets?content_item_id=eq.{{ $('Webhook Trigger').item.json.body.content_item_id }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -148,7 +114,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const assets = $input.all().map(item => item.json);\nconst caption = assets.find(a => a.asset_type === 'caption_output')?.asset_uri || '';\nconst image = assets.find(a => a.asset_type === 'visual_asset')?.asset_uri || '';\nconst accessToken = $('Redeem BYOK Token').item.json.data.access_token;\nconst pageId = $('Redeem BYOK Token').item.json.data.page_id;\nconst contentItemId = $('Fetch Scheduled Items').item.json.id;\n\nreturn {\n  caption: caption,\n  image: image,\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId\n};"
+        "jsCode": "const assets = $input.all().map(item => item.json);\nconst caption = assets.find(a => a.asset_type === 'caption_output')?.asset_uri || '';\nconst image = assets.find(a => a.asset_type === 'visual_asset')?.asset_uri || '';\nconst accessToken = $('Redeem BYOK Token').item.json.data.access_token;\nconst pageId = $('Redeem BYOK Token').item.json.data.page_id;\nconst contentItemId = $('Webhook Trigger').item.json.body.content_item_id;\n\nreturn {\n  caption: caption,\n  image: image,\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId\n};"
       },
       "name": "Extract FB Assets",
       "type": "n8n-nodes-base.code",
@@ -232,31 +198,37 @@
         1500,
         300
       ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fb-publish-executor",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fb-publish-executor",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        100,
+        300
+      ]
     }
   ],
   "connections": {
-    "Schedule Trigger": {
-      "main": [
-        [
-          {
-            "node": "Fetch Scheduled Items",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fetch Scheduled Items": {
-      "main": [
-        [
-          {
-            "node": "Fetch Facebook Integration",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Fetch Facebook Integration": {
       "main": [
         [
@@ -306,6 +278,17 @@
         [
           {
             "node": "Callback Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Facebook Integration",
             "type": "main",
             "index": 0
           }
