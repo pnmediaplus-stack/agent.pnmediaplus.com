@@ -49,22 +49,27 @@
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/tenant_integrations?integration_key=like.facebook_page_*&limit=1",
+        "method": "POST",
+        "url": "=https://jrgkpbjsqefvnhbiiutz.supabase.co/rest/v1/rpc/phase075_find_facebook_integration",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $env["SUPABASE_SERVICE_ROLE_KEY"] }}"
+              "value": "={{ $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
             },
             {
               "name": "Authorization",
-              "value": "Bearer ={{ $env["SUPABASE_SERVICE_ROLE_KEY"] }}"
-            },
+              "value": "Bearer {{$env[\"SUPABASE_SERVICE_ROLE_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
             {
-              "name": "Accept-Profile",
-              "value": "tenant_integration_vault"
+              "name": "p_organization_id",
+              "value": "={{ $('Fetch Scheduled Items').item.json.owner_ref }}"
             }
           ]
         },
