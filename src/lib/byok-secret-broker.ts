@@ -318,13 +318,6 @@ export async function redeemReferenceToken(
   };
 }
 
-function decodeByteaToString(value: string) {
-  const trimmed = value.trim();
-  if (trimmed.includes(":")) return trimmed;
-  if (trimmed.startsWith("\\x")) return Buffer.from(trimmed.slice(2), "hex").toString("utf8");
-  return Buffer.from(trimmed, "base64").toString("utf8");
-}
-
 function decodeStrictBase64(value: string, label: string) {
   const normalized = value.trim();
   if (!normalized || !/^[A-Za-z0-9+/]+={0,2}$/.test(normalized) || normalized.length % 4 !== 0) {
@@ -334,40 +327,49 @@ function decodeStrictBase64(value: string, label: string) {
   return Buffer.from(normalized, "base64");
 }
 
-function parseCipherPackage(value: string): VaultCipherPackage {
-  const packageText = decodeByteaToString(value);
-  const parts = packageText.split(":");
+function decodeByteaToBuffer(value: string): Buffer {
+  const trimmed = value.trim();
+  if (trimmed.startsWith("\\x")) return Buffer.from(trimmed.slice(2), "hex");
+  return Buffer.from(trimmed, "base64");
+}
 
-  if (parts.length !== 4) {
-    throw new ByokBrokerError(
-      502,
-      "VAULT_CIPHER_PACKAGE_INVALID",
-      "Cipher package must use [version]:[iv_base64]:[ciphertext_base64]:[auth_tag_base64] format."
-    );
+function parseCipherPackage(ciphertextStr: string, nonceStr: string, version: string = "v1"): VaultCipherPackage {
+  if (!ciphertextStr) {
+    throw new ByokBrokerError(502, "VAULT_CIPHER_PACKAGE_INVALID", "Cipher package ciphertext must not be empty.");
   }
 
-  const [version, ivBase64, ciphertextBase64, authTagBase64] = parts.map((part) => part.trim());
-  if (!version) {
-    throw new ByokBrokerError(502, "VAULT_CIPHER_PACKAGE_INVALID", "Cipher package version is required.");
+  // Support old string-based format for backwards compatibility
+  const decodedString = Buffer.from(ciphertextStr.startsWith("\\x") ? ciphertextStr.slice(2) : ciphertextStr, ciphertextStr.startsWith("\\x") ? "hex" : "base64").toString("utf8");
+  if (decodedString.startsWith("v1:")) {
+    const parts = decodedString.split(":");
+    if (parts.length === 4) {
+      const [parsedVersion, ivBase64, ciphertextBase64, authTagBase64] = parts.map((part) => part.trim());
+      return {
+        version: parsedVersion,
+        iv: Buffer.from(ivBase64, "base64"),
+        ciphertext: Buffer.from(ciphertextBase64, "base64"),
+        authTag: Buffer.from(authTagBase64, "base64")
+      };
+    }
   }
 
-  const iv = decodeStrictBase64(ivBase64, "Cipher package IV");
-  const ciphertext = decodeStrictBase64(ciphertextBase64, "Cipher package ciphertext");
-  const authTag = decodeStrictBase64(authTagBase64, "Cipher package auth tag");
+  // Modern bytea format: auth_tag (16 bytes) is appended to ciphertext bytea
+  const ciphertextBytes = decodeByteaToBuffer(ciphertextStr);
+  const iv = decodeByteaToBuffer(nonceStr);
 
   if (iv.byteLength !== 12) {
     iv.fill(0);
-    ciphertext.fill(0);
-    authTag.fill(0);
     throw new ByokBrokerError(502, "VAULT_CIPHER_PACKAGE_INVALID", "AES-256-GCM IV must be 12 bytes.");
   }
 
-  if (authTag.byteLength !== 16) {
+  if (ciphertextBytes.byteLength < 16) {
     iv.fill(0);
-    ciphertext.fill(0);
-    authTag.fill(0);
-    throw new ByokBrokerError(502, "VAULT_CIPHER_PACKAGE_INVALID", "AES-256-GCM auth tag must be 16 bytes.");
+    ciphertextBytes.fill(0);
+    throw new ByokBrokerError(502, "VAULT_CIPHER_PACKAGE_INVALID", "Cipher package ciphertext too short to contain auth tag.");
   }
+
+  const authTag = ciphertextBytes.subarray(ciphertextBytes.length - 16);
+  const ciphertext = ciphertextBytes.subarray(0, ciphertextBytes.length - 16);
 
   if (ciphertext.byteLength === 0) {
     iv.fill(0);
@@ -383,7 +385,7 @@ function parseCipherPackage(value: string): VaultCipherPackage {
   };
 }
 
-function parseMasterKeysEnv(): VaultMasterKeysEnv {
+export function parseMasterKeysEnv(): VaultMasterKeysEnv {
   const keyMapText = process.env.PN_VAULT_MASTER_KEYS_JSON?.trim() || "";
   if (!keyMapText) {
     throw new ByokBrokerError(
@@ -421,7 +423,7 @@ function parseMasterKeysEnv(): VaultMasterKeysEnv {
   };
 }
 
-function decodeMasterKey(version: string) {
+export function decodeMasterKey(version: string) {
   const keyMap = parseMasterKeysEnv();
   const encoded = keyMap.keys[version]?.trim();
 
@@ -440,7 +442,7 @@ function decodeMasterKey(version: string) {
 }
 
 export function decryptSecretPackage(consumed: Awaited<ReturnType<typeof consumeReferenceToken>>) {
-  const cipherPackage = parseCipherPackage(consumed.ciphertext);
+  const cipherPackage = parseCipherPackage(consumed.ciphertext || "", consumed.ciphertext_nonce || "");
   const key = decodeMasterKey(cipherPackage.version);
 
   try {

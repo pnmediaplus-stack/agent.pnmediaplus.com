@@ -50,6 +50,8 @@ async function resetTenantIntegrationState(organizationId: string, integrationKe
   }
 }
 
+import { parseMasterKeysEnv, decodeMasterKey } from "@/lib/byok-secret-broker";
+
 /**
  * TODO: TEMPORARY MOCK FOR LOCAL PROTOTYPE
  * In the final Phase 16/17 Production BYOK design, the Next.js backend MUST NOT perform envelope encryption locally using a dummy key.
@@ -58,7 +60,10 @@ async function resetTenantIntegrationState(organizationId: string, integrationKe
  * When the real Broker API is available, replace the internal logic of this helper without changing the action signature.
  */
 function buildEncryptedSecretPayload(secretMaterial: string): EncryptedSecretPayload {
-  const key = Buffer.alloc(32, "dummy_master_key_for_local_dev_123");
+  // Enforce fail-closed behavior: only encrypt if valid server-side master key is present.
+  const keyMap = parseMasterKeysEnv();
+  const key = decodeMasterKey(keyMap.active);
+
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
   const encrypted = Buffer.concat([cipher.update(secretMaterial, "utf8"), cipher.final()]);

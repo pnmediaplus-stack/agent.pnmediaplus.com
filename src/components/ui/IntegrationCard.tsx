@@ -1,7 +1,6 @@
 import { FormEvent, useState } from "react";
-import { StateBadge } from "@/components/shared/StateBadge";
 import type { Phase070ProviderCatalogItem, Phase070TenantIntegrationStatus } from "@/lib/tenant-integrations";
-import { Key, CheckCircle, RefreshCw, Play, Trash2, PlusCircle, Settings } from "lucide-react";
+import { Key, CheckCircle, RefreshCw, Play, Trash2, PlusCircle, Settings, Globe, Shield, Lock } from "lucide-react";
 import { useI18n } from "@/lib/i18n/useI18n";
 
 interface IntegrationCardProps {
@@ -29,27 +28,37 @@ export function IntegrationCard({
   const [showConfig, setShowConfig] = useState(!isConfigured);
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-900/40 backdrop-blur-md transition-all duration-300 hover:border-cyan-500/30 hover:bg-slate-800/60 hover:shadow-2xl hover:shadow-cyan-900/10">
-      {/* Glow effect on hover */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-cyan-500/5 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/5 bg-slate-950/40 backdrop-blur-2xl transition-all duration-500 hover:shadow-2xl hover:shadow-cyan-900/20">
+      {/* Animated gradient border on hover */}
+      <div className="absolute inset-0 z-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 overflow-hidden rounded-2xl">
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] h-[200%] animate-[spin_4s_linear_infinite] bg-[conic-gradient(from_0deg,transparent_0_340deg,rgba(6,182,212,0.8)_360deg)]" />
+      </div>
+      <div className="absolute inset-[1px] z-0 rounded-[15px] bg-slate-950/90 backdrop-blur-3xl" />
       
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-700/50 bg-slate-800/30 px-6 py-4">
-        <div className="flex items-center space-x-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 border border-slate-700 text-cyan-400">
-             {/* Logo placeholder, replace with real logo if available */}
-             <Settings className="h-6 w-6" />
+      {/* Content */}
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/5 bg-slate-900/40 px-6 py-5">
+          <div className="flex items-center space-x-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 border border-white/10 text-cyan-400 shadow-inner">
+               {provider.provider_code === "facebook_page" ? <Globe className="h-6 w-6" /> : <Settings className="h-6 w-6" />}
+            </div>
+            <div>
+              <h3 className="text-base font-semibold tracking-wide text-slate-100">{provider.provider_name}</h3>
+              <p className="text-xs text-slate-400">{provider.provider_category}</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base font-medium text-slate-200">{provider.provider_name}</h3>
-            <p className="text-xs text-slate-400">{provider.provider_category}</p>
+          
+          <div className={`inline-flex items-center space-x-2 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${isConfigured ? (integration.status === "ACTIVE" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]" : "border-rose-500/30 bg-rose-500/10 text-rose-400") : "border-white/10 bg-white/5 text-slate-400"}`}>
+            {isConfigured && integration.status === "ACTIVE" && (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+            )}
+            <span>{isConfigured ? integration.status : (t("phase070.integrations.credentialMissing") ?? "NOT CONFIGURED")}</span>
           </div>
         </div>
-        <StateBadge 
-          label={isConfigured ? (integration.status === "ACTIVE" ? "ready" : "blocked") : "blocked"} 
-          displayLabel={isConfigured ? integration.status : (t("phase070.integrations.credentialMissing") ?? "NOT CONFIGURED")} 
-        />
-      </div>
 
       {/* Body */}
       <div className="flex flex-1 flex-col p-6">
@@ -131,42 +140,45 @@ export function IntegrationCard({
                  <input type="hidden" name="integration_key" value={integration.integration_key} />
               )}
               
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-400 flex justify-between">
+              <div className="space-y-1.5 mt-2">
+                <label className="text-xs font-semibold text-slate-300 flex justify-between items-center">
                   <span>{provider.provider_code === "facebook_page" ? "Page Access Token (BYOT)" : (t("phase070.writeOnly.secret") ?? "Secret Material (API Key)")}</span>
-                  <span className="text-rose-400/80 text-[10px] uppercase tracking-widest">Write-Only</span>
+                  <span className="flex items-center space-x-1 text-cyan-400/80 text-[10px] uppercase tracking-widest bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-900/50">
+                    <Shield className="h-3 w-3" />
+                    <span>Write-Only</span>
+                  </span>
                 </label>
-                <div className="relative">
+                <div className="relative group/input">
                   <input 
                     required
                     type="password"
                     name="secret_material"
-                    placeholder={provider.provider_code === "facebook_page" ? "EAA..." : "sk-..."}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900/50 pl-10 pr-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    placeholder={provider.provider_code === "facebook_page" ? "••••••••••••••••••••••••" : "••••••••••••••••••••••••"}
+                    className="w-full rounded-xl border border-white/10 bg-black/40 pl-10 pr-4 py-3 text-sm text-emerald-400 tracking-[0.2em] placeholder-slate-600 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 shadow-inner transition-colors"
                   />
-                  <Key className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                  <Lock className="absolute left-3 top-3.5 h-4 w-4 text-slate-500 group-focus-within/input:text-cyan-400 transition-colors" />
                 </div>
               </div>
 
               {provider.provider_code === "facebook_page" && (
-                <div className="space-y-1.5 mt-3">
-                  <label className="text-xs font-medium text-slate-400">Fanpage ID (bắt buộc)</label>
+                <div className="space-y-1.5 mt-4">
+                  <label className="text-xs font-semibold text-slate-300">Fanpage ID (bắt buộc)</label>
                   <input 
                     required
                     type="text"
                     name="page_id"
                     placeholder="e.g. 10023456789"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-slate-200 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-slate-200 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 shadow-inner transition-colors"
                   />
                 </div>
               )}
 
-              <div className="mt-auto pt-4 flex items-center justify-between">
+              <div className="mt-auto pt-6 flex items-center justify-between">
                  {isConfigured && (
                    <button 
                      type="button" 
                      onClick={() => setShowConfig(false)}
-                     className="text-sm text-slate-400 hover:text-slate-200"
+                     className="text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
                    >
                      Cancel
                    </button>
@@ -174,7 +186,7 @@ export function IntegrationCard({
                  <button 
                    type="submit"
                    disabled={isConnecting}
-                   className="ml-auto flex items-center space-x-2 rounded-lg bg-cyan-600/20 px-4 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-600/30 hover:text-cyan-300 disabled:opacity-50"
+                   className="ml-auto flex items-center space-x-2 rounded-xl bg-cyan-500/20 px-5 py-2.5 text-sm font-bold tracking-wide text-cyan-400 transition-all hover:bg-cyan-500/30 hover:text-cyan-300 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] disabled:opacity-50"
                  >
                    <PlusCircle className="h-4 w-4" />
                    <span>{isConfigured ? (t("phase070.writeOnly.submit") ?? 'Save New Key') : (t("phase070.writeOnly.submit") ?? 'Configure Provider')}</span>
@@ -182,6 +194,7 @@ export function IntegrationCard({
               </div>
            </form>
         )}
+      </div>
       </div>
     </div>
   );

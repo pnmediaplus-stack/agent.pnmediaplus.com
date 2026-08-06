@@ -81,8 +81,8 @@ export function ConnectedAccountRow({
   };
 
   return (
-    <div className="flex items-center justify-between p-4 rounded-xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-sm transition-all hover:bg-slate-800/40">
-      <div className="flex items-center space-x-4">
+    <div className="group flex items-center justify-between p-5 rounded-2xl border border-white/5 bg-slate-950/40 backdrop-blur-2xl transition-all hover:bg-slate-900/60 hover:border-white/10 hover:shadow-xl hover:shadow-cyan-900/10">
+      <div className="flex items-center space-x-5">
         {renderAvatar()}
         <div>
           <h3 className="text-base font-semibold text-slate-200 tracking-tight">{pageName}</h3>
@@ -95,7 +95,15 @@ export function ConnectedAccountRow({
       </div>
 
       <div className="flex items-center space-x-6">
-        <StateBadge label={statusState === "ready" ? "pass" : "blocked"} displayLabel={statusText} />
+        <div className={`inline-flex items-center space-x-2 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${statusState === "ready" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]" : "border-rose-500/30 bg-rose-500/10 text-rose-400"}`}>
+          {statusState === "ready" && (
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+          )}
+          <span>{statusText}</span>
+        </div>
         
         <div className="flex items-center space-x-2 border-l border-slate-800 pl-4">
           <button 

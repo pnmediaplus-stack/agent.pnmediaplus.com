@@ -38,12 +38,15 @@ type TenantIntegrationActionResponse = {
 
 function Panel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/75">
-      <div className="border-b border-slate-800 bg-slate-900/60 px-6 py-5">
-        <div className="text-sm font-semibold text-white">{title}</div>
+    <section className="relative overflow-hidden rounded-2xl border border-white/5 bg-slate-950/40 backdrop-blur-2xl shadow-2xl ring-1 ring-white/10">
+      {/* Subtle top inner glow */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" />
+      
+      <div className="relative border-b border-white/5 bg-slate-900/40 px-6 py-5">
+        <div className="text-sm font-semibold text-slate-100 tracking-wide">{title}</div>
         <div className="mt-1 text-xs leading-5 text-slate-400">{description}</div>
       </div>
-      <div className="p-6">{children}</div>
+      <div className="relative p-6 z-10">{children}</div>
     </section>
   );
 }
@@ -237,7 +240,15 @@ export function TenantIntegrationsView() {
   const activeIntegrations = integrations.filter(i => i.credential_configured && i.status !== 'revoked');
 
   return (
-    <div className="space-y-8">
+    <div className="relative w-full text-slate-300">
+      {/* Background Mesh */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+        <div className="absolute -top-1/4 -left-1/4 h-1/2 w-1/2 rounded-full bg-indigo-900/20 blur-[120px] mix-blend-screen" />
+        <div className="absolute top-1/3 -right-1/4 h-1/2 w-1/2 rounded-full bg-emerald-900/10 blur-[120px] mix-blend-screen" />
+        <div className="absolute -bottom-1/4 left-1/3 h-1/2 w-1/2 rounded-full bg-blue-900/15 blur-[120px] mix-blend-screen" />
+      </div>
+      
+      <div className="relative z-10 space-y-8">
       {/* Operation Feedback */}
       {operationResult && (
         <div className={`rounded-xl border p-4 ${operationResult.state === "ready" ? "border-emerald-900/50 bg-emerald-950/30" : "border-rose-900/50 bg-rose-950/30"}`}>
@@ -339,6 +350,7 @@ export function TenantIntegrationsView() {
            </div>
         )}
       </section>
+      </div>
     </div>
   );
 }
