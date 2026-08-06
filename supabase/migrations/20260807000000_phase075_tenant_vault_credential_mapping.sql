@@ -283,3 +283,71 @@ end;
 $$;
 
 commit;
+
+create or replace function public.phase075_reset_tenant_integration_state(payload jsonb)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = public, tenant_integration_vault, pg_temp
+as $$
+declare
+  v_organization_id uuid;
+  v_integration_key text;
+  v_status text;
+  v_connection_state text;
+  v_public_metadata jsonb;
+  v_updated integer;
+begin
+  if payload is null or jsonb_typeof(payload) <> 'object' then
+    raise exception 'PHASE075_PAYLOAD_OBJECT_REQUIRED'
+      using errcode = 'P0001';
+  end if;
+
+  v_organization_id := (payload ->> 'organization_id')::uuid;
+  v_integration_key := payload ->> 'integration_key';
+  v_status := coalesce(payload ->> 'status', 'configured');
+  v_connection_state := coalesce(payload ->> 'connection_state', 'unverified');
+  v_public_metadata := payload -> 'public_metadata';
+
+  update tenant_integration_vault.tenant_integrations
+  set status = v_status,
+      connection_state = v_connection_state,
+      public_metadata = coalesce(v_public_metadata, public_metadata),
+      disabled_at = null
+  where organization_id = v_organization_id
+    and integration_key = v_integration_key;
+
+  get diagnostics v_updated = row_count;
+
+  if v_updated <> 1 then
+    raise exception 'PHASE075_RESET_FAILED: expected exactly 1 row updated, got %', v_updated
+      using errcode = 'P0001';
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'organization_id', v_organization_id,
+    'integration_key', v_integration_key,
+    'status', v_status,
+    'connection_state', v_connection_state
+  );
+end;
+$$;
+
+do $$
+begin
+  revoke all on function public.phase075_reset_tenant_integration_state(jsonb) from public;
+
+  if exists (select 1 from pg_roles where rolname = 'anon') then
+    revoke all on function public.phase075_reset_tenant_integration_state(jsonb) from anon;
+  end if;
+
+  if exists (select 1 from pg_roles where rolname = 'authenticated') then
+    revoke all on function public.phase075_reset_tenant_integration_state(jsonb) from authenticated;
+  end if;
+
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant execute on function public.phase075_reset_tenant_integration_state(jsonb) to service_role;
+  end if;
+end $$;
