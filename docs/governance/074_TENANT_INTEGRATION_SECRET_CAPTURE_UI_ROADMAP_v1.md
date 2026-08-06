@@ -94,3 +94,9 @@ Stop and review if:
 - Control-plane smoke evidence PASS on 2026-07-28: `state-update-request` accepted a valid HUMAN session, blocked no-op `DRAFT -> DRAFT` with `409 FORBIDDEN_TRANSITION`, and blocked `BOT` actor with `403 FORBIDDEN_ACTOR`.
 - Live secret write/broker behavior remains blocked until runtime authority is explicitly approved.
 - UI scaffold complete; runtime remains blocked by authority design.
+
+## Phase 075 Broker Security Update (2026-08-06)
+
+- Discovered a critical architecture flaw where the Broker attempted to query `tenant_integration_vault` via PostgREST, violating the fail-closed private schema contract (PGRST106).
+- **Resolution:** Replaced REST lookup with a strictly scoped `SECURITY DEFINER` RPC (`public.phase075_get_tenant_vault_credential_ref`), maintaining absolute schema opacity while unblocking the N8N Redeem flow.
+- Next phase (N8N Integration Testing) is formally unblocked upon migration deployment.
