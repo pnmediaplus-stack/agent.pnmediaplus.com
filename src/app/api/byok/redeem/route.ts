@@ -2,7 +2,8 @@ import {
   ByokBrokerError,
   authorizeBrokerRedeemRequest,
   byokEnvelope,
-  redeemReferenceToken
+  redeemReferenceToken,
+  issueReferenceToken
 } from "@/lib/byok-secret-broker";
 
 export async function POST(request: Request) {
@@ -25,8 +26,21 @@ export async function POST(request: Request) {
     // Auth verification for broker/n8n specifically
     const actor = await authorizeBrokerRedeemRequest(request.headers, payload);
 
+    let tokenToRedeem = payload.reference_token;
+    
+    // If the token is a raw vault_credential_ref (contains double underscore), 
+    // it was fetched directly from tenant integrations by a trusted system (like N8N).
+    // We automatically issue a lease token first before consuming it.
+    if (tokenToRedeem.includes("__")) {
+      const issued = await issueReferenceToken({
+        credential_ref: tokenToRedeem,
+        scope: "llm:n8n"
+      }, actor);
+      tokenToRedeem = issued.lease_token;
+    }
+
     const redeemed = await redeemReferenceToken(
-      payload.reference_token,
+      tokenToRedeem,
       payload.organization_id,
       payload.integration_key,
       actor
