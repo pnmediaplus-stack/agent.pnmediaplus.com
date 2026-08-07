@@ -18,7 +18,8 @@ const PHASE2_SCHEMA = "public";
 
 type SupabaseConfig = {
   url: string;
-  anonKey: string;
+  serviceKey: string;
+  organizationId: string;
 };
 
 type SupabaseTableResult<T> = {
@@ -113,11 +114,12 @@ type PerformanceRecordRow = {
 };
 
 function getSupabaseConfig(): SupabaseConfig | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL)?.trim();
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const organizationId = process.env.ORGANIZATION_ID?.trim();
 
-  if (!url || !anonKey) return null;
-  return { url, anonKey };
+  if (!url || !serviceKey || !organizationId) return null;
+  return { url, serviceKey, organizationId };
 }
 
 function toNumeric(value: unknown) {
@@ -141,6 +143,10 @@ async function fetchPhase2Table<T>(table: string, select: string, orderBy: strin
     const endpoint = new URL(`${config.url.replace(/\/$/, "")}/rest/v1/${table}`);
     endpoint.searchParams.set("select", select);
     endpoint.searchParams.set("order", orderBy);
+
+    if (table === "phase2_content_items") {
+      endpoint.searchParams.set("organization_id", `eq.${config.organizationId}`);
+    }
     
     if (extraFilters) {
       for (const [key, value] of Object.entries(extraFilters)) {
@@ -151,8 +157,8 @@ async function fetchPhase2Table<T>(table: string, select: string, orderBy: strin
     const response = await fetch(endpoint, {
       cache: "no-store",
       headers: {
-        apikey: config.anonKey,
-        Authorization: `Bearer ${config.anonKey}`,
+        apikey: config.serviceKey,
+        Authorization: `Bearer ${config.serviceKey}`,
         Accept: "application/json",
         "Accept-Profile": PHASE2_SCHEMA,
         "Content-Profile": PHASE2_SCHEMA
