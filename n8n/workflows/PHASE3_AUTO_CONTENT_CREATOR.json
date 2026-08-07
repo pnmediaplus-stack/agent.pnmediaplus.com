@@ -11,24 +11,16 @@
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
-      "position": [100, 100],
+      "position": [
+        100,
+        100
+      ],
       "webhookId": "generate-content-webhook-id"
     },
     {
       "parameters": {
-        "rule": {
-          "interval": [{ "field": "cronExpression", "expression": "*/5 * * * *" }]
-        }
-      },
-      "name": "Schedule Trigger",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
-      "position": [100, 300]
-    },
-    {
-      "parameters": {
         "method": "GET",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?id=eq.{{$json.body.contentItemId}}",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?id=eq.{{$json.body.contentItemId}}&tenant_id=eq.{{$json.body.tenant_id}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -36,7 +28,10 @@
       "name": "Get Item (Webhook)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [300, 100],
+      "position": [
+        300,
+        100
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "SupabaseAuth",
@@ -46,50 +41,15 @@
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?state=eq.idea",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {}
-      },
-      "name": "Get Ideas (Cron)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [300, 300],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "SupabaseAuth",
-          "name": "Header Auth"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "data",
-        "options": {}
-      },
-      "name": "Item Lists",
-      "type": "n8n-nodes-base.itemLists",
-      "typeVersion": 3.0,
-      "position": [500, 200]
-    },
-    {
-      "parameters": {
-        "jsCode": "const items = [];\nif ($('Get Item (Webhook)').item) {\n  items.push(...$('Get Item (Webhook)').item.json);\n}\nif ($('Get Ideas (Cron)').item) {\n  items.push(...$('Get Ideas (Cron)').item.json);\n}\nreturn { json: { data: items.filter(i => i.state === 'idea') } };"
-      },
-      "name": "Merge Streams",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [400, 200]
-    },
-    {
-      "parameters": {
-        "jsCode": "const item = $input.item.json;\nconst prompt = `You are an expert Social Media Content Creator.\\nBased on the following idea, generate a short, engaging social media post caption and a 3-point research summary.\\n\\nIdea Title: ${item.title}\\nBrief: ${item.brief || 'No brief provided.'}\\n\\nRespond in STRICT JSON format:\\n{\\n  \"research_packet\": \"- Point 1\\\\n- Point 2\\\\n- Point 3\",\\n  \"caption_output\": \"The engaging caption text here with emojis... #hashtag\",\\n  \"image_prompt\": \"A highly detailed, aesthetic midjourney style image prompt describing what the image should look like to accompany this post.\"\\n}`;\n\nconst webhookTenantId = $('Webhook Trigger').item?.json?.body?.tenant_id;\nconst itemTenantId = item.tenant_id;\nconst tenant_id = webhookTenantId || itemTenantId;\n\nif (!tenant_id) {\n  throw new Error('MISSING_TENANT_ID: Cannot proceed without a valid tenant_id for billing and isolation');\n}\n\nreturn { json: { prompt, item, tenant_id } };"
+        "jsCode": "\nconst ideaItem = $('Get Item (Webhook)').item.json[0];\nconst govData = $('Fetch Governance Registry').item.json.data;\n\nif (!ideaItem) {\n  throw new Error('CONTENT_ITEM_NOT_FOUND');\n}\n\n// Find agents\nconst agent1 = govData.agents.find(a => a.role_id === 'marketing_agent_1_viral_research_angle');\nconst agent2 = govData.agents.find(a => a.role_id === 'marketing_agent_2_social_caption_architect');\nconst agent3 = govData.agents.find(a => a.role_id === 'marketing_agent_3_image_prompt_architect');\n\nconst prompt = `You are an orchestration of 3 specialized AI Marketing Agents working in sequence.\nYou MUST respect the capabilities (MUST) and strictly avoid the prohibitions (MUST NOT) of each agent.\nThe governance rules are currently in DRAFT_METADATA_ONLY mode.\n\n[AGENT 1: VIRAL RESEARCH ANGLE]\nMUST: ${agent1.capability_boundary.must.join(', ')}\nMUST NOT: ${agent1.capability_boundary.must_not.join(', ')}\n\n[AGENT 2: SOCIAL CAPTION ARCHITECT]\nMUST: ${agent2.capability_boundary.must.join(', ')}\nMUST NOT: ${agent2.capability_boundary.must_not.join(', ')}\n\n[AGENT 3: IMAGE PROMPT ARCHITECT]\nMUST: ${agent3.capability_boundary.must.join(', ')}\nMUST NOT: ${agent3.capability_boundary.must_not.join(', ')}\n\n---\nIdea Title: ${ideaItem.title}\nBrief: ${ideaItem.brief || 'No brief provided.'}\n\nRespond in STRICT JSON format, fulfilling the exact outputs required by each agent without crossing boundaries:\n{\n  \"agent_1_research_packet\": \"Viral angles and pain points based on the brief...\",\n  \"agent_2_publish_ready_caption\": \"The engaging caption text...\",\n  \"agent_3_image_prompt\": \"A highly detailed image prompt...\"\n}\n`;\n\nreturn { json: { prompt: prompt, item: ideaItem, tenant_id: ideaItem.tenant_id } };\n"
       },
       "name": "Format Prompt",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [700, 200]
+      "typeVersion": 2,
+      "position": [
+        800,
+        100
+      ]
     },
     {
       "parameters": {
@@ -114,7 +74,10 @@
       "name": "AI Broker (Text)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [900, 200],
+      "position": [
+        900,
+        200
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "ControlPlaneAuth",
@@ -128,8 +91,11 @@
       },
       "name": "Parse Text",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [1100, 200]
+      "typeVersion": 2,
+      "position": [
+        1100,
+        200
+      ]
     },
     {
       "parameters": {
@@ -154,7 +120,10 @@
       "name": "AI Broker (Image)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1300, 200],
+      "position": [
+        1300,
+        200
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "ControlPlaneAuth",
@@ -168,8 +137,11 @@
       },
       "name": "Format Assets",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [1500, 200]
+      "typeVersion": 2,
+      "position": [
+        1500,
+        200
+      ]
     },
     {
       "parameters": {
@@ -185,7 +157,10 @@
       "name": "Insert Assets",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1700, 200],
+      "position": [
+        1700,
+        200
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "SupabaseAuth",
@@ -207,7 +182,10 @@
       "name": "Update State",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1900, 200],
+      "position": [
+        1900,
+        200
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "SupabaseAuth",
@@ -221,49 +199,143 @@
       },
       "name": "Format Output",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [2100, 200]
+      "typeVersion": 2,
+      "position": [
+        2100,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"API_BASE_URL\"] || 'http://localhost:3000'}}/api/governance/marketing-agents",
+        "authentication": "none",
+        "options": {}
+      },
+      "name": "Fetch Governance Registry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        400,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.state}}",
+              "value2": "ready"
+            }
+          ]
+        }
+      },
+      "name": "Validate Governance State",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        600,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Governance Registry is blocked: {{$json.reason}}"
+      },
+      "name": "Governance Blocked Escalate",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        800,
+        300
+      ]
     }
   ],
   "connections": {
     "Webhook Trigger": {
-      "main": [ [ { "node": "Get Item (Webhook)", "type": "main", "index": 0 } ] ]
-    },
-    "Schedule Trigger": {
-      "main": [ [ { "node": "Get Ideas (Cron)", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Get Item (Webhook)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Item (Webhook)": {
-      "main": [ [ { "node": "Merge Streams", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Fetch Governance Registry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Get Ideas (Cron)": {
-      "main": [ [ { "node": "Merge Streams", "type": "main", "index": 0 } ] ]
+    "Fetch Governance Registry": {
+      "main": [
+        [
+          {
+            "node": "Validate Governance State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Merge Streams": {
-      "main": [ [ { "node": "Item Lists", "type": "main", "index": 0 } ] ]
-    },
-    "Item Lists": {
-      "main": [ [ { "node": "Format Prompt", "type": "main", "index": 0 } ] ]
+    "Validate Governance State": {
+      "main": [
+        [
+          {
+            "node": "Format Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Governance Blocked Escalate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Format Prompt": {
-      "main": [ [ { "node": "AI Broker (Text)", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "AI Broker (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "AI Broker (Text)": {
-      "main": [ [ { "node": "Parse Text", "type": "main", "index": 0 } ] ]
+    "AI Broker (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Parse Text": {
-      "main": [ [ { "node": "AI Broker (Image)", "type": "main", "index": 0 } ] ]
-    },
-    "AI Broker (Image)": {
-      "main": [ [ { "node": "Format Assets", "type": "main", "index": 0 } ] ]
-    },
-    "Format Assets": {
-      "main": [ [ { "node": "Insert Assets", "type": "main", "index": 0 } ] ]
-    },
-    "Insert Assets": {
-      "main": [ [ { "node": "Update State", "type": "main", "index": 0 } ] ]
-    },
-    "Update State": {
-      "main": [ [ { "node": "Format Output", "type": "main", "index": 0 } ] ]
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Save Content Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
