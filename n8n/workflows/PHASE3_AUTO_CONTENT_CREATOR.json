@@ -20,7 +20,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?id=eq.{{$json.body.contentItemId}}&tenant_id=eq.{{$json.body.tenant_id}}",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?id=eq.{{$json.body.contentItemId}}&organization_id=eq.{{$json.body.organization_id}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -41,7 +41,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst ideaItem = $('Get Item (Webhook)').item.json[0];\nconst govData = $('Fetch Governance Registry').item.json.data;\n\nif (!ideaItem) {\n  throw new Error('CONTENT_ITEM_NOT_FOUND');\n}\n\n// Find agents\nconst agent1 = govData.agents.find(a => a.role_id === 'marketing_agent_1_viral_research_angle');\nconst agent2 = govData.agents.find(a => a.role_id === 'marketing_agent_2_social_caption_architect');\nconst agent3 = govData.agents.find(a => a.role_id === 'marketing_agent_3_image_prompt_architect');\n\nconst prompt = `You are an orchestration of 3 specialized AI Marketing Agents working in sequence.\nYou MUST respect the capabilities (MUST) and strictly avoid the prohibitions (MUST NOT) of each agent.\nThe governance rules are currently in DRAFT_METADATA_ONLY mode.\n\n[AGENT 1: VIRAL RESEARCH ANGLE]\nMUST: ${agent1.capability_boundary.must.join(', ')}\nMUST NOT: ${agent1.capability_boundary.must_not.join(', ')}\n\n[AGENT 2: SOCIAL CAPTION ARCHITECT]\nMUST: ${agent2.capability_boundary.must.join(', ')}\nMUST NOT: ${agent2.capability_boundary.must_not.join(', ')}\n\n[AGENT 3: IMAGE PROMPT ARCHITECT]\nMUST: ${agent3.capability_boundary.must.join(', ')}\nMUST NOT: ${agent3.capability_boundary.must_not.join(', ')}\n\n---\nIdea Title: ${ideaItem.title}\nBrief: ${ideaItem.brief || 'No brief provided.'}\n\nRespond in STRICT JSON format, fulfilling the exact outputs required by each agent without crossing boundaries:\n{\n  \"agent_1_research_packet\": \"Viral angles and pain points based on the brief...\",\n  \"agent_2_publish_ready_caption\": \"The engaging caption text...\",\n  \"agent_3_image_prompt\": \"A highly detailed image prompt...\"\n}\n`;\n\nreturn { json: { prompt: prompt, item: ideaItem, tenant_id: ideaItem.tenant_id } };\n"
+        "jsCode": "\nconst ideaItem = $('Get Item (Webhook)').item.json[0] || $('Get Item (Webhook)').item.json;\nconst govData = $('Fetch Governance Registry').item.json.data;\n\nif (!ideaItem) {\n  throw new Error('CONTENT_ITEM_NOT_FOUND');\n}\n\n// Find agents\nconst agent1 = govData.agents.find(a => a.role_id === 'marketing_agent_1_viral_research_angle');\nconst agent2 = govData.agents.find(a => a.role_id === 'marketing_agent_2_social_caption_architect');\nconst agent3 = govData.agents.find(a => a.role_id === 'marketing_agent_3_image_prompt_architect');\n\nconst prompt = `You are an orchestration of 3 specialized AI Marketing Agents working in sequence.\nYou MUST respect the capabilities (MUST) and strictly avoid the prohibitions (MUST NOT) of each agent.\nThe governance rules are currently in DRAFT_METADATA_ONLY mode.\n\n[AGENT 1: VIRAL RESEARCH ANGLE]\nMUST: ${agent1.capability_boundary.must.join(', ')}\nMUST NOT: ${agent1.capability_boundary.must_not.join(', ')}\n\n[AGENT 2: SOCIAL CAPTION ARCHITECT]\nMUST: ${agent2.capability_boundary.must.join(', ')}\nMUST NOT: ${agent2.capability_boundary.must_not.join(', ')}\n\n[AGENT 3: IMAGE PROMPT ARCHITECT]\nMUST: ${agent3.capability_boundary.must.join(', ')}\nMUST NOT: ${agent3.capability_boundary.must_not.join(', ')}\n\n---\nIdea Title: ${ideaItem.title}\nBrief: ${ideaItem.brief || 'No brief provided.'}\n\nRespond in STRICT JSON format, fulfilling the exact outputs required by each agent without crossing boundaries:\n{\n  \"agent_1_research_packet\": \"Viral angles and pain points based on the brief...\",\n  \"agent_2_publish_ready_caption\": \"The engaging caption text...\",\n  \"agent_3_image_prompt\": \"A highly detailed image prompt...\"\n}\n`;\n\nreturn { json: { prompt: prompt, item: ideaItem, organization_id: ideaItem.organization_id } };\n"
       },
       "name": "Format Prompt",
       "type": "n8n-nodes-base.code",
@@ -87,7 +87,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const aiResult = JSON.parse($input.item.json.choices[0].message.content);\nreturn { json: { textContent: aiResult, item: $('Format Prompt').item.json.item, tenant_id: $('Format Prompt').item.json.tenant_id } };"
+        "jsCode": "\nconst responseText = $input.item.json.response || '{}';\nconst item = $('Format Prompt').item.json.item;\nlet parsed = {};\ntry {\n  parsed = JSON.parse(responseText);\n} catch(e) {\n  throw new Error('AI Response was not valid JSON');\n}\n\nreturn { \n  json: { \n    id: item.id, \n    organization_id: item.organization_id,\n    textContent: {\n      agent_1_research_packet: parsed.agent_1_research_packet,\n      agent_2_publish_ready_caption: parsed.agent_2_publish_ready_caption,\n      agent_3_image_prompt: parsed.agent_3_image_prompt\n    },\n    item: item\n  } \n};\n  "
       },
       "name": "Parse Text",
       "type": "n8n-nodes-base.code",
@@ -105,7 +105,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"dall-e-3\",\n  \"prompt\": \"{{$json.textContent.image_prompt}}\",\n  \"n\": 1,\n  \"size\": \"1024x1024\",\n  \"tenant_id\": \"{{$json.tenant_id}}\",\n  \"endpointUrl\": \"https://api.openai.com/v1/images/generations\"\n}",
+        "jsonBody": "={ \"action\": \"generate_image\", \"prompt\": \"{{$json.textContent.agent_3_image_prompt}}\" }",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -133,7 +133,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const textContent = $('Parse Text').item.json.textContent;\nconst item = $('Parse Text').item.json.item;\nlet imageUrl = \"https://placehold.co/1024x1024?text=Image+Generation+Failed\";\nif ($input.item.json.data && $input.item.json.data[0] && $input.item.json.data[0].url) {\n  imageUrl = $input.item.json.data[0].url;\n}\n\nconst contentItemId = item.id;\nconst assetsBody = [\n  { content_item_id: contentItemId, owner_ref: 'agent_content_creator', asset_type: 'viral_research_packet', asset_key: 'res_' + Date.now(), asset_uri: textContent.research_packet },\n  { content_item_id: contentItemId, owner_ref: 'agent_content_creator', asset_type: 'visual_asset', asset_key: 'vis_' + Date.now(), asset_uri: imageUrl },\n  { content_item_id: contentItemId, owner_ref: 'agent_content_creator', asset_type: 'caption_output', asset_key: 'cap_' + Date.now(), asset_uri: textContent.caption_output }\n];\n\nreturn { json: { assetsBody, contentItemId } };"
+        "jsCode": "\nconst textContent = $('Parse Text').item.json.textContent;\nconst item = $('Parse Text').item.json.item;\nlet imageUrl = \"https://placehold.co/1024x1024?text=Image+Generation+Failed\";\nif ($input.item.json.data && $input.item.json.data[0] && $input.item.json.data[0].url) {\n  imageUrl = $input.item.json.data[0].url;\n}\n\nconst contentItemId = item.id;\nconst assetsBody = [\n  { content_item_id: contentItemId, owner_ref: 'agent_content_creator', asset_type: 'viral_research_packet', asset_key: 'res_' + Date.now(), asset_uri: textContent.agent_1_research_packet },\n  { content_item_id: contentItemId, owner_ref: 'agent_content_creator', asset_type: 'visual_asset', asset_key: 'vis_' + Date.now(), asset_uri: imageUrl },\n  { content_item_id: contentItemId, owner_ref: 'agent_content_creator', asset_type: 'caption_output', asset_key: 'cap_' + Date.now(), asset_uri: textContent.agent_2_publish_ready_caption }\n];\n\nreturn { json: { assetsBody, contentItemId } };\n"
       },
       "name": "Format Assets",
       "type": "n8n-nodes-base.code",
@@ -308,29 +308,73 @@
       "main": [
         [
           {
-            "node": "AI Broker (OpenAI)",
+            "node": "AI Broker (Text)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "AI Broker (OpenAI)": {
+    "AI Broker (Text)": {
       "main": [
         [
           {
-            "node": "Parse AI Response",
+            "node": "Parse Text",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Parse AI Response": {
+    "Parse Text": {
       "main": [
         [
           {
-            "node": "Save Content Item",
+            "node": "AI Broker (Image)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Broker (Image)": {
+      "main": [
+        [
+          {
+            "node": "Format Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Assets": {
+      "main": [
+        [
+          {
+            "node": "Insert Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Assets": {
+      "main": [
+        [
+          {
+            "node": "Update State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update State": {
+      "main": [
+        [
+          {
+            "node": "Format Output",
             "type": "main",
             "index": 0
           }
