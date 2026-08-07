@@ -30,16 +30,27 @@ function isNotRotatableError(error: unknown): boolean {
   return message.includes("PHASE074_TENANT_INTEGRATION_NOT_ROTATABLE") || message.includes("NOT_ROTATABLE");
 }
 
-async function resetTenantIntegrationState(organizationId: string, integrationKey: string, publicMetadata?: any) {
+type TenantIntegrationConnectionState = "unverified" | "verified";
+
+async function resetTenantIntegrationState(
+  organizationId: string,
+  integrationKey: string,
+  publicMetadata?: any,
+  connectionState: TenantIntegrationConnectionState = "unverified",
+  lastVerifiedAt?: string
+) {
   const supabase = createServiceRoleClient();
   const payload: any = {
     organization_id: organizationId,
     integration_key: integrationKey,
     status: "configured",
-    connection_state: "unverified"
+    connection_state: connectionState
   };
   if (publicMetadata) {
     payload.public_metadata = publicMetadata;
+  }
+  if (lastVerifiedAt) {
+    payload.last_verified_at = lastVerifiedAt;
   }
   const { error } = await supabase.rpc("phase075_reset_tenant_integration_state", {
     payload
@@ -170,7 +181,7 @@ export async function createTenantIntegration(
     }
 
     if (facebookMetadata) {
-      await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata);
+      await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata, "verified", new Date().toISOString());
     }
 
     return { ok: true, state: "ready", reason: "SUCCESS", data: { receipt: data } };
@@ -249,7 +260,7 @@ export async function rotateTenantIntegration(
     }
 
     if (facebookMetadata) {
-      await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata);
+      await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata, "verified", new Date().toISOString());
     }
 
     return { ok: true, state: "ready", reason: "SUCCESS", data: { receipt: data } };

@@ -297,6 +297,7 @@ declare
   v_status text;
   v_connection_state text;
   v_public_metadata jsonb;
+  v_last_verified_at timestamptz;
   v_updated integer;
 begin
   if payload is null or jsonb_typeof(payload) <> 'object' then
@@ -309,10 +310,12 @@ begin
   v_status := coalesce(payload ->> 'status', 'configured');
   v_connection_state := coalesce(payload ->> 'connection_state', 'unverified');
   v_public_metadata := payload -> 'public_metadata';
+  v_last_verified_at := nullif(payload ->> 'last_verified_at', '')::timestamptz;
 
   update tenant_integration_vault.tenant_integrations
   set status = v_status,
       connection_state = v_connection_state,
+      last_verified_at = coalesce(v_last_verified_at, last_verified_at),
       public_metadata = coalesce(v_public_metadata, public_metadata),
       disabled_at = null
   where organization_id = v_organization_id
@@ -330,7 +333,8 @@ begin
     'organization_id', v_organization_id,
     'integration_key', v_integration_key,
     'status', v_status,
-    'connection_state', v_connection_state
+    'connection_state', v_connection_state,
+    'last_verified_at', v_last_verified_at
   );
 end;
 $$;
