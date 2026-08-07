@@ -11,7 +11,7 @@ export async function GET() {
         reason: result.reason,
         data: null
       },
-      { status: 500 }
+      { status: 200 }
     );
   }
 
