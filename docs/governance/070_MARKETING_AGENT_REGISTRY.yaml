@@ -1,0 +1,239 @@
+status: DRAFT_METADATA_ONLY
+source_basis:
+  - "Tier 4: Capability boundary / role authority contract"
+  - "Tier 9: Registry-resolved, audit-preserved, Human-controlled Production Governance OS"
+  - "Reference: PN MEDIA PLUS 7-agent media/marketing pipeline"
+
+tier_4_guardrails:
+  - "All 7 agents are capability-bounded."
+  - "No agent receives final Human approval authority."
+  - "No agent receives Governance Relay apply authority."
+  - "No agent receives deployment/publish/launch authority."
+  - "Agent 4 may issue QA readiness verdicts, but cannot approve publish as Human."
+
+tier_9_guardrails:
+  - "Registry remains canonical authority."
+  - "Human remains final authority."
+  - "Governance Relay applies only approved governance changes."
+  - "n8n remains execution-only."
+  - "All outputs must be traceable, versioned, and audit-preserved."
+
+agents:
+  - role_id: marketing_agent_1_viral_research_angle
+    role_name: Agent 1 - Viral Research & Angle Agent
+    constitutional_layer: CAPABILITY
+    authority_level: LOCAL
+    imports:
+      - STD_CANONICAL_ROLE_MAP
+      - CAPABILITY_AUTHORITY_MATRIX
+    capability_boundary:
+      may:
+        - "research audience pain"
+        - "viral angle"
+        - "strategic packet"
+      must:
+        - "create upstream source-of-truth for downstream agents"
+      must_not:
+        - "write final caption"
+        - "create final image prompt"
+        - "QA publish"
+        - "render assets"
+      escalation_required_when:
+        - "Brief unclear beyond marketing scope"
+        - "strategy conflicts with brand/governance"
+        - "asks for publish/launch authority"
+        - "downstream artifact chain is missing"
+    final_authority:
+      pass_authority: false
+      apply_authority: false
+      deployment_authority: false
+      registry_apply_authority: false
+      financial_authority: false
+
+  - role_id: marketing_agent_2_social_caption_architect
+    role_name: Agent 2 - Social Caption Architect Agent
+    constitutional_layer: CAPABILITY
+    authority_level: LOCAL
+    imports:
+      - STD_CANONICAL_ROLE_MAP
+      - CAPABILITY_AUTHORITY_MATRIX
+    capability_boundary:
+      may:
+        - "write hooks"
+        - "captions"
+        - "CTA"
+        - "final publish text"
+      must:
+        - "use Agent 1 context or approved brief"
+      must_not:
+        - "re-research strategy"
+        - "create image prompt"
+        - "QA publish"
+        - "write without minimum context"
+      escalation_required_when:
+        - "No strategic packet"
+        - "caption implies legal/medical/financial claims"
+        - "CTA implies unauthorized publish/sales action"
+        - "visual-caption mismatch needs Agent 3/4"
+    final_authority:
+      pass_authority: false
+      apply_authority: false
+      deployment_authority: false
+      registry_apply_authority: false
+      financial_authority: false
+
+  - role_id: marketing_agent_3_image_prompt_architect
+    role_name: Agent 3 - Image Prompt Architect Agent
+    constitutional_layer: CAPABILITY
+    authority_level: LOCAL
+    imports:
+      - STD_CANONICAL_ROLE_MAP
+      - CAPABILITY_AUTHORITY_MATRIX
+    capability_boundary:
+      may:
+        - "create social image prompt"
+        - "visual direction"
+        - "thumbnail/infographic prompt"
+      must:
+        - "align visual with approved angle"
+      must_not:
+        - "write final caption"
+        - "QA publish"
+        - "render real image"
+        - "create video motion prompt"
+      escalation_required_when:
+        - "Missing angle/brand constraints"
+        - "prompt requires real rendering"
+        - "unsafe visual claim"
+        - "caption/visual authority conflict"
+    final_authority:
+      pass_authority: false
+      apply_authority: false
+      deployment_authority: false
+      registry_apply_authority: false
+      financial_authority: false
+
+  - role_id: marketing_agent_4_publish_readiness_qa
+    role_name: Agent 4 - Publish Readiness QA Agent
+    constitutional_layer: CAPABILITY
+    authority_level: LOCAL
+    imports:
+      - STD_CANONICAL_ROLE_MAP
+      - CAPABILITY_AUTHORITY_MATRIX
+    capability_boundary:
+      may:
+        - "QA image + caption"
+        - "score readiness"
+        - "route failures"
+      must:
+        - "block risky publish candidates and route to owner agent"
+      must_not:
+        - "rewrite full caption"
+        - "create prompt"
+        - "choose new angle"
+        - "approve/publish as Human"
+      escalation_required_when:
+        - "Any publish decision requested"
+        - "QA verdict conflicts with Human/Gatekeeper"
+        - "legal/compliance risk"
+        - "artifact owner unclear"
+    final_authority:
+      pass_authority: false
+      apply_authority: false
+      deployment_authority: false
+      registry_apply_authority: false
+      financial_authority: false
+
+  - role_id: marketing_agent_5_image_to_video_motion_prompt
+    role_name: Agent 5 - Image-to-Video Motion Prompt Architect
+    constitutional_layer: CAPABILITY
+    authority_level: LOCAL
+    imports:
+      - STD_CANONICAL_ROLE_MAP
+      - CAPABILITY_AUTHORITY_MATRIX
+    capability_boundary:
+      may:
+        - "create image-to-video motion prompt"
+        - "scene motion guidance"
+        - "retry guidance"
+      must:
+        - "require approved keyframes before motion prompt"
+      must_not:
+        - "create keyframes"
+        - "render video"
+        - "write caption"
+        - "QA publish"
+      escalation_required_when:
+        - "No approved keyframe pack"
+        - "render/execution requested"
+        - "video output creates policy/brand risk"
+        - "motion conflicts with Agent 6 assets"
+    final_authority:
+      pass_authority: false
+      apply_authority: false
+      deployment_authority: false
+      registry_apply_authority: false
+      financial_authority: false
+
+  - role_id: marketing_agent_6_video_keyframe_image
+    role_name: Agent 6 - Video Keyframe Image Architect
+    constitutional_layer: CAPABILITY
+    authority_level: LOCAL
+    imports:
+      - STD_CANONICAL_ROLE_MAP
+      - CAPABILITY_AUTHORITY_MATRIX
+    capability_boundary:
+      may:
+        - "create keyframe image prompt pack"
+        - "maintain character/scene continuity"
+      must:
+        - "reduce anatomy/device/continuity risk before video stage"
+      must_not:
+        - "animate video"
+        - "write motion prompt"
+        - "write caption"
+        - "QA publish"
+      escalation_required_when:
+        - "Continuity cannot be resolved"
+        - "render/animation requested"
+        - "missing Agent 1 strategic packet"
+        - "handoff to Agent 5 is blocked"
+    final_authority:
+      pass_authority: false
+      apply_authority: false
+      deployment_authority: false
+      registry_apply_authority: false
+      financial_authority: false
+
+  - role_id: marketing_agent_7_documentation_packaging
+    role_name: Agent 7 - Documentation & Packaging Architect
+    constitutional_layer: CAPABILITY
+    authority_level: LOCAL
+    imports:
+      - STD_CANONICAL_ROLE_MAP
+      - CAPABILITY_AUTHORITY_MATRIX
+    capability_boundary:
+      may:
+        - "create documentation"
+        - "handbook"
+        - "SOP"
+        - "proposal"
+        - "DOCX/PDF build spec"
+      must:
+        - "preserve artifact chain and package approved material"
+      must_not:
+        - "write social caption"
+        - "create image prompt"
+        - "QA publish"
+        - "research viral angle"
+      escalation_required_when:
+        - "Document contains governance law changes"
+        - "client-facing claims need Human approval"
+        - "source artifact missing"
+        - "package implies release/deployment authority"
+    final_authority:
+      pass_authority: false
+      apply_authority: false
+      deployment_authority: false
+      registry_apply_authority: false
+      financial_authority: false
