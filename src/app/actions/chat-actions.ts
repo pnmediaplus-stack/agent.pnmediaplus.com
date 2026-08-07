@@ -12,6 +12,33 @@ import {
   dbDeleteAuditLog, 
   dbLoadActiveTasks 
 } from "@/lib/governance-api";
+import { requiresCampaignScope, requiresPublishScope } from "@/lib/validators";
+
+const CHAT_ROUTER_SYSTEM_PROMPT = [
+  "You are the command router for a governed internal operations chat.",
+  "Follow these rules strictly:",
+  "- Do not act like a casual assistant or give open-ended advice.",
+  "- Only answer within the allowed intents: create_content, publish_content, plan_campaign, route_department, clarify_missing_scope, review_artifact, check_governance, request_status, approve_or_reject.",
+  "- If the user asks to publish but does not specify a page, ask for page_id or page_name before doing anything else.",
+  "- If the user asks to plan a campaign or route work to a department but does not specify the department, ask for department_id or department name before doing anything else.",
+  "- If the intent is unknown, return a short routing prompt that asks the user to choose one of the allowed intents.",
+  "- Never invent actions, never claim to have posted externally, and never expand scope beyond the user's command.",
+  "- Keep responses concise, operational, and contract-bound."
+].join(" ");
+
+function buildUnknownIntentReply() {
+  return "Mình chưa xác định được ý định. Bạn hãy chọn một trong các hướng sau: tạo nội dung, đăng nội dung, lập kế hoạch chiến dịch, định tuyến phòng ban, xem trạng thái, kiểm tra quản trị, xem xét tài nguyên, hoặc duyệt/từ chối.";
+}
+
+function buildMissingScopeReply(intentType?: ChatIntentType) {
+  if (intentType === "publish_content") {
+    return "Bạn muốn đăng lên page nào? Hãy cung cấp tên page hoặc page_id để mình chuyển đúng luồng publish.";
+  }
+  if (intentType === "plan_campaign" || intentType === "route_department") {
+    return "Bạn muốn giao việc cho phòng ban nào? Hãy cung cấp tên phòng ban hoặc department_id để mình route đúng agent.";
+  }
+  return "Thiếu scope bắt buộc. Hãy bổ sung page, phòng ban, hoặc mã định danh liên quan để mình route đúng.";
+}
 
 export async function sendChatMessage(threadId: string, body: string, intentType?: ChatIntentType) {
   let organizationId = "";
@@ -55,13 +82,157 @@ export async function sendChatMessage(threadId: string, body: string, intentType
 
     auditLogId = auditResult.data.id;
 
+    if (intentType === "unknown") {
+      const routerReply = buildUnknownIntentReply();
+      const routerMsgResult = await dbInsertChatMessage(organizationId, {
+        threadId,
+        sender: "system",
+        body: routerReply,
+        intentType: "request_status"
+      });
+
+      if (!routerMsgResult.data?.id) {
+        throw new Error("ROUTER_MESSAGE_INSERT_FAILED");
+      }
+
+      await dbInsertAuditLog(organizationId, {
+        entityId: threadId,
+        entityType: "chat_thread",
+        action: "intent_routed",
+        actor: "System AI",
+        details: `intent=unknown requestId=${requestId}`
+      });
+
+      postN8nWebhook("webhook/chat", {
+        threadId,
+        humanMessageId,
+        body,
+        tenantId: auth.tenantId,
+        actorId: auth.actorId,
+        routedIntent: "unknown"
+      }).catch(e => {
+        console.error("n8n webhook side-effect failed", e);
+      });
+
+      return {
+        success: true,
+        message: routerMsgResult.data,
+        webhook: { ok: true, route: "webhook/chat", status: 202, message: "n8n webhook fired asynchronously" }
+      };
+    }
+
+    if (intentType === "publish_content" && requiresPublishScope(body)) {
+      const clarifyReply = buildMissingScopeReply(intentType);
+      const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
+        threadId,
+        sender: "system",
+        body: clarifyReply,
+        intentType: "clarify_missing_scope"
+      });
+
+      if (!clarifyMsgResult.data?.id) {
+        throw new Error("CLARIFY_SCOPE_MESSAGE_INSERT_FAILED");
+      }
+
+      await dbInsertAuditLog(organizationId, {
+        entityId: threadId,
+        entityType: "chat_thread",
+        action: "scope_clarification_requested",
+        actor: "System AI",
+        details: `intent=publish_content requestId=${requestId}`
+      });
+
+      return {
+        success: true,
+        message: clarifyMsgResult.data,
+        webhook: { ok: true, route: "chat", status: 202, message: "scope clarification requested" }
+      };
+    }
+
+    if (intentType === "plan_campaign" || intentType === "route_department") {
+      if (requiresCampaignScope(body)) {
+        const clarifyReply = buildMissingScopeReply(intentType);
+        const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
+          threadId,
+          sender: "system",
+          body: clarifyReply,
+          intentType: "clarify_missing_scope"
+        });
+
+        if (!clarifyMsgResult.data?.id) {
+          throw new Error("CLARIFY_SCOPE_MESSAGE_INSERT_FAILED");
+        }
+
+        await dbInsertAuditLog(organizationId, {
+          entityId: threadId,
+          entityType: "chat_thread",
+          action: "scope_clarification_requested",
+          actor: "System AI",
+          details: `intent=${intentType} requestId=${requestId}`
+        });
+
+        return {
+          success: true,
+          message: clarifyMsgResult.data,
+          webhook: { ok: true, route: "chat", status: 202, message: "scope clarification requested" }
+        };
+      }
+
+      const routePayload = {
+        threadId,
+        humanMessageId,
+        body,
+        tenantId: auth.tenantId,
+        actorId: auth.actorId,
+        intentType,
+        routedIntent: intentType
+      };
+
+      const routed = await postN8nWebhook("webhook/human-task-intake", routePayload);
+      if (!routed.ok) {
+        throw new Error(`DEPARTMENT_ROUTE_FAILED: ${routed.status} ${routed.message}`);
+      }
+
+      const routedReply = `Đã chuyển yêu cầu "${intentType}" vào luồng điều phối theo phòng ban.`;
+      const routedMsgResult = await dbInsertChatMessage(organizationId, {
+        threadId,
+        sender: "system",
+        body: routedReply,
+        intentType: "route_department"
+      });
+
+      if (!routedMsgResult.data?.id) {
+        throw new Error("ROUTED_MESSAGE_INSERT_FAILED");
+      }
+
+      await dbInsertAuditLog(organizationId, {
+        entityId: threadId,
+        entityType: "chat_thread",
+        action: "department_route_requested",
+        actor: "System AI",
+        details: `intent=${intentType} requestId=${requestId}`
+      });
+
+      return {
+        success: true,
+        message: routedMsgResult.data,
+        webhook: { ok: true, route: "webhook/human-task-intake", status: routed.status, message: routed.message }
+      };
+    }
+
     const historyRes = await dbLoadChatMessages(organizationId, threadId);
     if (historyRes.error) throw new Error(historyRes.error);
     
-    const messages = (historyRes.data || []).map(m => ({
+    const messages = [
+      {
+        role: "system" as const,
+        content: CHAT_ROUTER_SYSTEM_PROMPT
+      },
+      ...(historyRes.data || []).map(m => ({
       role: m.sender === "human" ? "user" : m.sender === "agent" ? "assistant" : "system",
       content: m.body
-    }));
+      }))
+    ];
     
     const llmResponse: any = await invokeLlm({
       provider: "openai",

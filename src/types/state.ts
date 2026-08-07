@@ -18,6 +18,10 @@ export type ApprovalStatus = "PENDING" | "REQUESTED" | "APPROVED" | "REJECTED" |
 export type WorkflowRunStatus = "QUEUED" | "RUNNING" | "WAITING_ON_HUMAN" | "SUCCEEDED" | "FAILED";
 export type ChatIntentType =
   | "create_content"
+  | "publish_content"
+  | "plan_campaign"
+  | "route_department"
+  | "clarify_missing_scope"
   | "review_artifact"
   | "check_governance"
   | "request_status"

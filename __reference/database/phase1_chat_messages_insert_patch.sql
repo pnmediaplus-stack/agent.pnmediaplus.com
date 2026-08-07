@@ -28,8 +28,6 @@ begin
 
   v_id := coalesce(new.id, gen_random_uuid());
   v_created_at := coalesce(new."createdAt", now());
-  
-  -- SỬA LỖI Ở ĐÂY: Thêm ::text để tránh lỗi function public.safe_uuid(uuid) does not exist
   v_target_department_id := public.safe_uuid(coalesce(new."targetDepartmentId"::text, null));
   v_target_agent_id := public.safe_uuid(coalesce(new."targetAgentId"::text, null));
 

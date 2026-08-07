@@ -126,7 +126,7 @@ returns bytea
 language sql
 immutable
 as $$
-  select extensions.digest(p_token, 'sha256');
+  select extensions.digest(convert_to(p_token, 'utf8'), 'sha256'::text);
 $$;
 
 create table if not exists pn_vault.vault_master_keys (

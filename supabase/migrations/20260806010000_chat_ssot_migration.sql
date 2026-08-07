@@ -376,7 +376,7 @@ declare
   v_id uuid;
   v_message_kind text;
 begin
-  v_thread_id := coalesce(public.safe_uuid(new."threadId"::text), public.safe_uuid(new.threadId::text));
+  v_thread_id := public.safe_uuid(new."threadId"::text);
   if v_thread_id is null then
     raise exception 'PHASE1_CHAT_THREAD_ID_INVALID';
   end if;
@@ -388,8 +388,8 @@ begin
 
   v_id := coalesce(new.id, gen_random_uuid());
   v_created_at := coalesce(new."createdAt", now());
-  v_target_department_id := public.safe_uuid(coalesce(new."targetDepartmentId", null));
-  v_target_agent_id := public.safe_uuid(coalesce(new."targetAgentId", null));
+  v_target_department_id := public.safe_uuid(coalesce(new."targetDepartmentId"::text, null));
+  v_target_agent_id := public.safe_uuid(coalesce(new."targetAgentId"::text, null));
 
   case lower(coalesce(new.sender, 'human'))
     when 'agent' then
@@ -493,8 +493,8 @@ begin
   end if;
 
   v_event_hash := encode(
-    digest(
-      concat_ws(
+    extensions.digest(
+      convert_to(concat_ws(
         '|',
         v_actor_type::text,
         v_actor_external_ref,
@@ -503,8 +503,8 @@ begin
         v_entity_id::text,
         coalesce(new.details, ''),
         v_created_at::text
-      ),
-      'sha256'
+      ), 'utf8'),
+      'sha256'::text
     ),
     'hex'
   );
@@ -729,7 +729,7 @@ select
   'PARTIAL'::pn_os_ai_department.lifecycle_state,
   'Command intake created a review-ready task request.',
   gen_random_uuid(),
-  encode(digest(concat('phase1-chat-seed-', th.id::text), 'sha256'), 'hex'),
+  encode(extensions.digest(convert_to(concat('phase1-chat-seed-', th.id::text), 'utf8'), 'sha256'::text), 'hex'),
   now()
 from pn_os_ai_department.chat_threads th
 where th.thread_key = 'thread_001'
