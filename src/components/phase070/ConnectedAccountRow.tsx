@@ -34,7 +34,7 @@ export function ConnectedAccountRow({
   let statusText = "UNVERIFIED";
   let statusState = "blocked";
   
-  if (integration.connection_state === "verified") {
+  if (integration.connection_state === "verified" || integration.connection_state === "healthy") {
     glowColor = "border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
     statusText = "PASSED";
     statusState = "ready";

@@ -30,7 +30,7 @@ function isNotRotatableError(error: unknown): boolean {
   return message.includes("PHASE074_TENANT_INTEGRATION_NOT_ROTATABLE") || message.includes("NOT_ROTATABLE");
 }
 
-type TenantIntegrationConnectionState = "unverified" | "verified";
+type TenantIntegrationConnectionState = "unverified" | "healthy";
 
 async function resetTenantIntegrationState(
   organizationId: string,
@@ -181,7 +181,7 @@ export async function createTenantIntegration(
     }
 
     if (facebookMetadata) {
-      await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata, "verified", new Date().toISOString());
+      await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata, "healthy", new Date().toISOString());
     }
 
     return { ok: true, state: "ready", reason: "SUCCESS", data: { receipt: data } };
@@ -260,7 +260,7 @@ export async function rotateTenantIntegration(
     }
 
     if (facebookMetadata) {
-      await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata, "verified", new Date().toISOString());
+      await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata, "healthy", new Date().toISOString());
     }
 
     return { ok: true, state: "ready", reason: "SUCCESS", data: { receipt: data } };
