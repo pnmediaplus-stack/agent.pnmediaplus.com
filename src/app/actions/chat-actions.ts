@@ -14,35 +14,47 @@ import {
 } from "@/lib/governance-api";
 
 export async function sendChatMessage(threadId: string, body: string, intentType?: ChatIntentType) {
-  const auth = await verifyActionAuth();
-  if (!auth.ok) {
-    throw new Error(`Auth failed: ${auth.message}`);
-  }
-
-  const organizationId = auth.tenantId;
-  const requestId = crypto.randomUUID();
-
-  const messageResult = await dbInsertChatMessage(organizationId, {
-    threadId,
-    sender: "human",
-    body,
-    intentType
-  });
-
-  const humanMessageId = messageResult.data.id;
-
-  const auditResult = await dbInsertAuditLog(organizationId, {
-    entityId: threadId,
-    entityType: "chat_thread",
-    action: "message_received",
-    actor: auth.email,
-    details: `intent=${intentType ?? "unknown"}`
-  });
-  
-  const auditLogId = auditResult.data?.id;
+  let organizationId = "";
+  let humanMessageId: string | undefined;
+  let auditLogId: string | undefined;
   let agentMessageId: string | undefined;
-
+  let requestId = "unknown";
   try {
+    const auth = await verifyActionAuth();
+    if (!auth.ok) {
+      return { success: false, error: `Auth failed: ${auth.message}` };
+    }
+
+    organizationId = auth.tenantId;
+    requestId = crypto.randomUUID();
+
+    const messageResult = await dbInsertChatMessage(organizationId, {
+      threadId,
+      sender: "human",
+      body,
+      intentType
+    });
+
+    if (!messageResult.data?.id) {
+      throw new Error("CHAT_MESSAGE_INSERT_FAILED");
+    }
+
+    humanMessageId = messageResult.data.id;
+
+    const auditResult = await dbInsertAuditLog(organizationId, {
+      entityId: threadId,
+      entityType: "chat_thread",
+      action: "message_received",
+      actor: auth.email,
+      details: `intent=${intentType ?? "unknown"}`
+    });
+
+    if (!auditResult.data?.id) {
+      throw new Error("CHAT_AUDIT_INSERT_FAILED");
+    }
+
+    auditLogId = auditResult.data.id;
+
     const historyRes = await dbLoadChatMessages(organizationId, threadId);
     if (historyRes.error) throw new Error(historyRes.error);
     
@@ -69,6 +81,10 @@ export async function sendChatMessage(threadId: string, body: string, intentType
       body: aiText,
       intentType: "create_content"
     });
+
+    if (!agentMsgResult.data?.id) {
+      throw new Error("AGENT_MESSAGE_INSERT_FAILED");
+    }
 
     agentMessageId = agentMsgResult.data.id;
 
@@ -97,28 +113,44 @@ export async function sendChatMessage(threadId: string, body: string, intentType
     };
 
   } catch (error) {
-    if (humanMessageId) await dbDeleteChatMessage(organizationId, humanMessageId).catch(() => {});
-    if (agentMessageId) await dbDeleteChatMessage(organizationId, agentMessageId).catch(() => {});
-    if (auditLogId) await dbDeleteAuditLog(organizationId, auditLogId).catch(() => {});
-    
+    if (organizationId && humanMessageId) await dbDeleteChatMessage(organizationId, humanMessageId).catch(() => {});
+    if (organizationId && agentMessageId) await dbDeleteChatMessage(organizationId, agentMessageId).catch(() => {});
+    if (organizationId && auditLogId) await dbDeleteAuditLog(organizationId, auditLogId).catch(() => {});
+
     const errMessage = error instanceof Error ? error.message : String(error);
-    
-    await dbInsertAuditLog(organizationId, {
-      entityId: threadId,
-      entityType: "chat_thread",
-      action: "llm_invocation_failed",
-      actor: "System AI",
-      details: `requestId=${requestId} error=${errMessage} (Rollback Applied)`
-    });
 
-    await dbInsertChatMessage(organizationId, {
-      threadId,
-      sender: "system",
-      body: `Hệ thống gặp lỗi trong quá trình kết nối AI Broker: ${errMessage}. Lệnh của bạn đã được hủy bỏ an toàn (Rollback).`,
-      intentType: "request_status"
-    });
+    try {
+      if (organizationId) {
+        await dbInsertAuditLog(organizationId, {
+          entityId: threadId,
+          entityType: "chat_thread",
+          action: "llm_invocation_failed",
+          actor: "System AI",
+          details: `requestId=${requestId} error=${errMessage} (Rollback Applied)`
+        });
+      }
+    } catch (auditErr) {
+      console.error("Failed to persist rollback audit log", auditErr);
+    }
 
-    throw error;
+    try {
+      if (organizationId) {
+        await dbInsertChatMessage(organizationId, {
+          threadId,
+          sender: "system",
+          body: `Hệ thống gặp lỗi trong quá trình kết nối AI Broker: ${errMessage}. Lệnh của bạn đã được hủy bỏ an toàn (Rollback).`,
+          intentType: "request_status"
+        });
+      }
+    } catch (messageErr) {
+      console.error("Failed to persist rollback system message", messageErr);
+    }
+
+    return {
+      success: false,
+      error: errMessage,
+      message: `Hệ thống gặp lỗi trong quá trình kết nối AI Broker: ${errMessage}.`
+    };
   }
 }
 

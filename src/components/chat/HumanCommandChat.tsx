@@ -22,6 +22,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   const [auditLogs, setAuditLogs] = useState(initialAuditLogs);
   const [activeTasks, setActiveTasks] = useState<any[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const { t: tChat } = useI18n("chat");
   const { t: tShared } = useI18n("shared");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -72,6 +73,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     if (!trimmed || isSending) return;
 
     setIsSending(true);
+    setSendError(null);
     setDraft("");
 
     const intentType = inferChatIntent(trimmed);
@@ -87,7 +89,10 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     setMessages((prev) => [...prev, optimisticMessage]);
 
     try {
-      await sendChatMessage(thread.id, trimmed, intentType);
+      const result = await sendChatMessage(thread.id, trimmed, intentType);
+      if (!result?.success) {
+        throw new Error(result?.error || result?.message || "Failed to send chat message");
+      }
       
       const [messagesRes, logsRes, latestTasks] = await Promise.all([
         fetch(`/api/chat-messages?thread_id=${thread.id}`).then(r => r.json()),
@@ -102,6 +107,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
       setActiveTasks(latestTasks);
     } catch (err) {
       console.error("Failed to send message", err);
+      setSendError(err instanceof Error ? err.message : "Failed to send message");
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
     } finally {
       setIsSending(false);
@@ -143,6 +149,12 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{tShared("shared.thread.summary") ?? "Thread summary"}</div>
           <div className="mt-2 text-sm text-slate-200 line-clamp-3">{summary}</div>
         </div>
+
+        {sendError && (
+          <div className="rounded-2xl border border-rose-500/30 bg-rose-950/40 p-4 text-sm text-rose-200">
+            {sendError}
+          </div>
+        )}
         
         <div className="flex-1 min-h-0 overflow-y-auto rounded-2xl p-2">
           <ChatMessageList messages={messages} isTyping={isSending} />
