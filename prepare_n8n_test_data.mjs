@@ -12,6 +12,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const artifactVersionId = process.env.ARTIFACT_VERSION_ID;
 const organizationId = process.env.ORGANIZATION_ID;
 const targetIntegrationKey = process.env.FACEBOOK_INTEGRATION_KEY;
+const imageUrl = process.env.E2E_IMAGE_URL ||
+  'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80';
 
 if (!supabaseUrl || !supabaseKey) {
   console.error("❌ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
@@ -46,10 +48,11 @@ async function seedData() {
     p_owner_ref: 'test_user',
     p_title: 'Post Facebook Tự Động bằng N8N',
     p_brief: 'Test luồng end-to-end',
-    p_artifact_version_id: artifactVersionId
+    p_artifact_version_id: artifactVersionId,
+    p_image_url: imageUrl
   };
 
-  const contentRes = await fetch(`${supabaseUrl}/rest/v1/rpc/phase076_prepare_test_fixture`, {
+  const contentRes = await fetch(`${supabaseUrl}/rest/v1/rpc/phase076_prepare_test_fixture_with_image`, {
     method: 'POST',
     headers,
     body: JSON.stringify(rpcBody)
@@ -65,11 +68,14 @@ async function seedData() {
   console.log(`✅ [1b] Đã map Artifact Version ID (SSOT): ${artifactVersionId}`);
   console.log(`✅ [2] Organization ID: ${organizationId}`);
   console.log(`✅ [3] Target Integration: ${targetIntegrationKey}`);
-  console.log("✅ [4] Fixture đã chèn research, image, caption và QA pass; trạng thái hiện tại: 'scheduled'");
+  console.log(`✅ [4] Fixture đã chèn research, image (${imageUrl}), caption và QA pass; trạng thái hiện tại: 'scheduled'`);
   console.log("⚠️ Đây là fixture tổng hợp cho E2E có kiểm soát; script không tự gọi webhook N8N và không tự đăng Facebook.");
 
   // Dry-Run Dispatcher
-  const webhookUrl = 'http://localhost:5678/webhook/fb-publish-executor';
+  const webhookBaseUrl = process.env.N8N_WEBHOOK_BASE_URL;
+  const webhookUrl = webhookBaseUrl
+    ? `${webhookBaseUrl.replace(/\/$/, '')}/webhook/fb-publish-executor`
+    : '<N8N_WEBHOOK_BASE_URL_REQUIRED>/webhook/fb-publish-executor';
   const dispatchPayload = {
     organization_id: organizationId,
     artifact_version_id: artifactVersionId,

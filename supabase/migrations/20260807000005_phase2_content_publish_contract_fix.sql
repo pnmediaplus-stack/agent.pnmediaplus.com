@@ -124,6 +124,7 @@ AS
 SELECT
   id, content_key, owner_ref, title, brief, state,
   scheduled_at, published_at, created_at, updated_at,
+  campaign_id,
   organization_id, target_integration_key, artifact_version_id
 FROM pn_content_phase2.content_items;
 

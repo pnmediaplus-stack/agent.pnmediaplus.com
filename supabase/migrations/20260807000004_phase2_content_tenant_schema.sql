@@ -15,6 +15,11 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'pn_content_phase2' AND table_name = 'content_items' AND column_name = 'artifact_version_id') THEN
     ALTER TABLE pn_content_phase2.content_items ADD COLUMN artifact_version_id uuid;
   END IF;
+
+  -- Preserve the legacy view column used by the existing governance surface.
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'pn_content_phase2' AND table_name = 'content_items' AND column_name = 'campaign_id') THEN
+    ALTER TABLE pn_content_phase2.content_items ADD COLUMN campaign_id uuid;
+  END IF;
 END $$;
 
 -- Stop migration and fail-closed if there are orphaned rows
@@ -114,8 +119,7 @@ WITH CHECK (
   )
 );
 
--- Recreate public.phase2_content_items View and regrant privileges strictly
-DROP VIEW IF EXISTS public.phase2_content_items;
+-- Replace the view definition without dropping it; governance views depend on it.
 CREATE OR REPLACE VIEW public.phase2_content_items
 WITH (security_invoker = true)
 AS
@@ -130,6 +134,7 @@ SELECT
   published_at,
   created_at,
   updated_at,
+  campaign_id,
   organization_id,
   target_integration_key,
   artifact_version_id

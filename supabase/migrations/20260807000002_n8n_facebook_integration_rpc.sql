@@ -5,7 +5,7 @@ create or replace function public.phase076_find_tenant_integration(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, tenant_integration_vault
+set search_path = public, tenant_integration_vault, pn_vault, pg_temp
 as $$
 declare
   v_integration record;

@@ -14,7 +14,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer {{$env[\"SUPABASE_SERVICE_ROLE_KEY\"]}}"
+              "value": "={{ 'Bearer ' + $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
             }
           ]
         },
@@ -98,7 +98,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
+              "value": "={{ 'Bearer ' + $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
             }
           ]
         },
@@ -188,21 +188,21 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ 'https://graph.facebook.com/v19.0/' + $json.pageId + '/photos' }}",
+        "url": "={{ 'https://graph.facebook.com/v19.0/' + $('Extract FB Assets').item.json.pageId + '/photos' }}",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
             {
               "name": "url",
-              "value": "={{ $json.image }}"
+              "value": "={{ $('Extract FB Assets').item.json.image }}"
             },
             {
               "name": "message",
-              "value": "={{ $json.caption }}"
+              "value": "={{ $('Extract FB Assets').item.json.caption }}"
             },
             {
               "name": "access_token",
-              "value": "={{ $json.accessToken }}"
+              "value": "={{ $('Extract FB Assets').item.json.accessToken }}"
             }
           ]
         },
@@ -229,7 +229,7 @@
             },
             {
               "name": "x-request-id",
-              "value": "=phase3-fb-{{$('Extract FB Assets').item.json.contentItemId}}-{{$json.id}}"
+              "value": "={{ 'phase3-fb-' + $('Extract FB Assets').item.json.contentItemId + '-' + $json.id }}"
             },
             {
               "name": "Content-Type",
