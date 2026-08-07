@@ -62,7 +62,7 @@ agents:
         - "write hooks"
         - "captions"
         - "CTA"
-        - "final publish text"
+        - "publish-ready caption"
       must:
         - "use Agent 1 context or approved brief"
       must_not:
@@ -124,7 +124,7 @@ agents:
       may:
         - "QA image + caption"
         - "score readiness"
-        - "route failures"
+        - "escalate failures"
       must:
         - "block risky publish candidates and route to owner agent"
       must_not:
