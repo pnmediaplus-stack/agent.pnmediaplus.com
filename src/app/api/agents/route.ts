@@ -22,7 +22,8 @@ export async function GET(req: Request) {
   }
 
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/agents?organization_id=eq.${organizationId}&order=created_at.desc`, {
+    // Gatekeeper rule: Filter blocked agents, select only non-sensitive metadata for UI consumption.
+    const res = await fetch(`${supabaseUrl}/rest/v1/agents?organization_id=eq.${organizationId}&blocked=is.not.true&select=id,alias,role,created_at&order=created_at.desc`, {
       headers: {
         'apikey': serviceRoleKey,
         'Authorization': `Bearer ${serviceRoleKey}`,
