@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo } from "react";
 import { useI18n } from "@/lib/i18n/useI18n";
-import { Paperclip, X, Loader2, Bot, FileText, AlertTriangle } from "lucide-react";
+import { Paperclip, X, Loader2, Bot, FileText, AlertTriangle, Hash, Slash } from "lucide-react";
 
 type ChatComposerProps = {
   value: string;
@@ -19,13 +19,23 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
   // Autocomplete State
   const [agents, setAgents] = useState<any[]>([]);
   const [artifacts, setArtifacts] = useState<any[]>([]);
+  const [agentsStatus, setAgentsStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
+  const [agentsError, setAgentsError] = useState<string | null>(null);
   const [popupState, setPopupState] = useState<{
     isOpen: boolean;
-    type: 'agent' | 'artifact' | null;
+    type: 'agent' | 'artifact' | 'command' | null;
     searchTerm: string;
     startIndex: number;
   }>({ isOpen: false, type: null, searchTerm: '', startIndex: -1 });
   const [activeIndex, setActiveIndex] = useState(0);
+
+  const slashCommands = useMemo(() => ([
+    { id: "/auto_content", name: "/auto_content", description: "Tạo nội dung tự động" },
+    { id: "/viral_research", name: "/viral_research", description: "Nghiên cứu viral" },
+    { id: "/publish", name: "/publish", description: "Đăng nội dung lên page" },
+    { id: "/plan_campaign", name: "/plan_campaign", description: "Lập kế hoạch chiến dịch" },
+    { id: "/status", name: "/status", description: "Xem trạng thái" }
+  ]), []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -33,11 +43,31 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
   const loadAgents = async () => {
     if (agents.length > 0) return;
     try {
-      const res = await fetch('/api/agents');
+      setAgentsStatus("loading");
+      setAgentsError(null);
+      const res = await fetch('/api/governance/marketing-agents');
       const data = await res.json();
-      if (data.agents) setAgents(data.agents);
+      if (data.state === "blocked") {
+        setAgents([]);
+        setAgentsStatus("error");
+        setAgentsError(`Marketing registry blocked: ${data.reason || "unknown_reason"}.`);
+        return;
+      }
+
+      const registryAgents = Array.isArray(data?.data?.agents) ? data.data.agents : [];
+      if (registryAgents.length > 0) {
+        setAgents(registryAgents);
+        setAgentsStatus("ready");
+      } else {
+        setAgents([]);
+        setAgentsStatus("empty");
+        setAgentsError("Marketing registry hiện tại không có agent nào khả dụng.");
+      }
     } catch (e) {
       console.error("Failed to load agents", e);
+      setAgents([]);
+      setAgentsStatus("error");
+      setAgentsError("Không tải được marketing registry từ /api/governance/marketing-agents.");
     }
   };
 
@@ -58,8 +88,8 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
     const cursorPosition = textareaRef.current?.selectionStart || text.length;
     const textBeforeCursor = text.substring(0, cursorPosition);
 
-    // Match @agent or #data right before cursor
-    const match = textBeforeCursor.match(/(^|\s)([@#])([a-zA-Z0-9_-]*)$/);
+    // Match /command, @agent or #data right before cursor
+    const match = textBeforeCursor.match(/(^|\s)([\/@#])([a-zA-Z0-9_-]*)$/);
 
     if (match) {
       const trigger = match[2];
@@ -68,14 +98,14 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
 
       setPopupState({
         isOpen: true,
-        type: trigger === '@' ? 'agent' : 'artifact',
+        type: trigger === '/' ? 'command' : (trigger === '@' ? 'agent' : 'artifact'),
         searchTerm: term,
         startIndex
       });
       setActiveIndex(0);
 
       if (trigger === '@') loadAgents();
-      else loadArtifacts();
+      else if (trigger === '#') loadArtifacts();
     } else {
       setPopupState(prev => prev.isOpen ? { ...prev, isOpen: false } : prev);
     }
@@ -85,11 +115,20 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
     if (!popupState.isOpen) return [];
     const term = popupState.searchTerm.toLowerCase();
 
+    if (popupState.type === 'command') {
+      return slashCommands.filter(cmd =>
+        cmd.name.toLowerCase().includes(term) ||
+        cmd.description.toLowerCase().includes(term)
+      ).slice(0, 8);
+    }
+
     if (popupState.type === 'agent') {
       return agents.filter(a =>
-        (a.alias || '').toLowerCase().includes(term) ||
-        (a.id || '').toLowerCase().includes(term) ||
-        (a.role || '').toLowerCase().includes(term)
+        (a.role_id || '').toLowerCase().includes(term) ||
+        (a.role_name || '').toLowerCase().includes(term) ||
+        (a.capability_boundary?.must || []).join(" ").toLowerCase().includes(term) ||
+        (a.capability_boundary?.may || []).join(" ").toLowerCase().includes(term) ||
+        (a.capability_boundary?.must_not || []).join(" ").toLowerCase().includes(term)
       ).slice(0, 10); // Max 10 results
     } else {
       return artifacts.filter(a =>
@@ -102,8 +141,10 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
     if (!popupState.isOpen) return;
 
     let replacement = '';
-    if (popupState.type === 'agent') {
-      replacement = `@${item.alias || item.id} `;
+    if (popupState.type === 'command') {
+      replacement = `${item.name} `;
+    } else if (popupState.type === 'agent') {
+      replacement = `@${item.role_id} `;
     } else {
       replacement = `#${item.key || item.id || item.name || item.title} `;
     }
@@ -214,14 +255,24 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
       {popupState.isOpen && filteredSuggestions.length > 0 && (
         <div className="absolute bottom-full mb-2 left-4 w-80 max-h-64 overflow-y-auto rounded-xl border border-indigo-500/30 bg-slate-900/95 backdrop-blur-md p-2 shadow-2xl z-50">
           <div className="text-[10px] uppercase tracking-widest text-slate-500 px-2 pb-2 mb-1 border-b border-slate-800">
-            {popupState.type === 'agent' ? 'Select Agent' : 'Select Data Reference'}
+            {popupState.type === 'command' ? 'Select Command' : popupState.type === 'agent' ? 'Select Agent' : 'Select Data Reference'}
           </div>
           {filteredSuggestions.map((item, idx) => {
             const isActive = idx === activeIndex;
-            const Icon = popupState.type === 'agent' ? Bot : FileText;
-            const title = popupState.type === 'agent' ? (item.alias || item.id) : (item.key || item.title || item.name || item.id);
-            const subTitle = popupState.type === 'agent' ? item.role : item.type;
-            const isAmbiguous = popupState.type === 'agent' && !item.alias;
+            const Icon = popupState.type === 'command' ? Slash : popupState.type === 'agent' ? Bot : FileText;
+            const title =
+              popupState.type === 'command'
+                ? item.name
+                : popupState.type === 'agent'
+                  ? (item.role_name || item.role_id)
+                  : (item.name || item.title || item.key || item.id);
+            const subTitle =
+              popupState.type === 'command'
+                ? item.description
+                : popupState.type === 'agent'
+                  ? [item.role_id, item.authority_level, item.constitutional_layer].filter(Boolean).join(" • ")
+                  : item.type;
+            const isAmbiguous = popupState.type === 'agent' && !item.role_id;
 
             return (
               <button
@@ -236,8 +287,8 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
                 <div className="flex items-center gap-2">
                   <Icon className={`h-4 w-4 ${isActive ? 'text-indigo-400' : 'text-slate-400'}`} />
                   <span className="font-medium text-sm truncate">{title}</span>
-                  {isAmbiguous && (
-                    <span title="Missing alias, using ID instead" className="flex shrink-0">
+                  {popupState.type === 'agent' && isAmbiguous && (
+                    <span title="Missing role_id, mention will fail-closed" className="flex shrink-0">
                       <AlertTriangle className="h-3 w-3 text-amber-500" />
                     </span>
                   )}
@@ -248,6 +299,20 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
               </button>
             );
           })}
+        </div>
+      )}
+
+      {popupState.isOpen && popupState.type === "agent" && agentsStatus !== "ready" && (
+        <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-950/30 p-3 text-xs text-amber-200">
+          {agentsStatus === "loading" && "Đang tải danh sách agent..."}
+          {agentsStatus === "empty" && (agentsError ?? "Không có agent nào khả dụng.")}
+          {agentsStatus === "error" && (agentsError ?? "Không tải được danh sách agent.")}
+        </div>
+      )}
+
+      {popupState.isOpen && popupState.type === "agent" && agentsStatus === "empty" && (
+        <div className="mb-3 rounded-lg border border-slate-700 bg-slate-900/70 p-3 text-xs text-slate-300">
+          Registry governance rỗng hoặc chưa load được. Mention cần `@role_id` hợp lệ, nếu không hệ thống sẽ fail-closed.
         </div>
       )}
 
@@ -272,14 +337,14 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
         </div>
       )}
 
-      <textarea
+        <textarea
         ref={textareaRef}
         value={value}
         onChange={(event) => handleTextChange(event.target.value)}
         onKeyDown={handleKeyDown}
         rows={3}
         disabled={isUploading}
-        placeholder={t("chat.composer.placeholder") ?? "Type a command, ask for status, or request a task. Use @ to tag agents, # to reference data."}
+        placeholder={t("chat.composer.placeholder") ?? "Type a command, ask for status, or request a task. Use / for commands, @ to tag agents, # to reference data."}
         className="w-full rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-500/50 disabled:opacity-50"
       />
       <div className="mt-3 flex items-center justify-between">
