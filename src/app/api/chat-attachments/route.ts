@@ -4,10 +4,10 @@ import { readPortalAccessToken, loadPortalOrganizationContext } from '@/lib/port
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_MIME_TYPES = [
-  'image/png', 
-  'image/jpeg', 
-  'application/pdf', 
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+  'image/png',
+  'image/jpeg',
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'text/plain'
 ];
 
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     const token = readPortalAccessToken(req.headers);
     const orgContext = await loadPortalOrganizationContext(token || '', auth.user.id);
-    
+
     if (orgContext.state !== 'ready') {
       return NextResponse.json({ error: 'FORBIDDEN', message: 'Org context not ready' }, { status: 403 });
     }
@@ -38,13 +38,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'BAD_REQUEST', message: 'No file provided' }, { status: 400 });
     }
 
-    // 1. Validate Size & MIME Type (Gatekeeper requirement: don't strictly trust client, but we check what we get. Supabase also enforces on the bucket level.)
+    // 1. Validate Size, Name & MIME Type
+    if (file.size === 0) {
+      return NextResponse.json({ error: 'EMPTY_FILE', message: 'File cannot be empty' }, { status: 400 });
+    }
+
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json({ error: 'FILE_TOO_LARGE', message: 'File exceeds 50MB limit' }, { status: 400 });
     }
 
+    if (!file.name || file.name.trim() === '') {
+      return NextResponse.json({ error: 'INVALID_FILENAME', message: 'File name cannot be empty' }, { status: 400 });
+    }
+
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       return NextResponse.json({ error: 'INVALID_FILE_TYPE', message: 'File type not allowed' }, { status: 400 });
+    }
+
+    const fileBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(fileBuffer);
+    let isMagicValid = false;
+
+    if (file.type === 'application/pdf') {
+      isMagicValid = bytes.length >= 4 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46; // %PDF
+    } else if (file.type === 'image/png') {
+      isMagicValid = bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47; // PNG
+    } else if (file.type === 'image/jpeg') {
+      isMagicValid = bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF; // JPEG
+    } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      isMagicValid = bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4B && bytes[2] === 0x03 && bytes[3] === 0x04; // ZIP/DOCX
+    } else if (file.type === 'text/plain') {
+      isMagicValid = true; // Hard to validate txt via magic bytes, skip for now.
+    }
+
+    if (!isMagicValid) {
+      return NextResponse.json({ error: 'INVALID_FILE_SIGNATURE', message: 'File signature does not match declared type' }, { status: 400 });
     }
 
     // 2. Namespace the object name
@@ -55,9 +83,7 @@ export async function POST(req: NextRequest) {
 
     // 3. Upload to Supabase Storage via REST
     const uploadUrl = `${supabaseUrl}/storage/v1/object/phase1_chat_attachments/${objectPath}`;
-    
-    const fileBuffer = await file.arrayBuffer();
-    
+
     const uploadRes = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
@@ -83,7 +109,7 @@ export async function POST(req: NextRequest) {
         'apikey': serviceRoleKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ expiresIn: 3600 }) // 1 hour
+      body: JSON.stringify({ expiresIn: 300 }) // 5 minutes (Gatekeeper requirement)
     });
 
     if (!signRes.ok) {
@@ -94,8 +120,8 @@ export async function POST(req: NextRequest) {
 
     const signData = await signRes.json();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       path: objectPath,
       signedUrl: signData.signedURL
     });

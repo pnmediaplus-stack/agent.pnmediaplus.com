@@ -88,9 +88,35 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
                           <button
                             type="button"
                             className={`my-2 mr-2 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${colorClass}`}
-                            onClick={() => {
-                              // Trigger action. In real implementation, this could call server action or N8N webhook
-                              alert(`Trigger N8N Action: ${actionType} for ID: ${id}`);
+                            onClick={async (e) => {
+                              const btn = e.currentTarget;
+                              const originalText = btn.innerHTML;
+                              btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...`;
+                              btn.disabled = true;
+
+                              try {
+                                const res = await fetch('/api/runtime/execution-event', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    type: `human_action_${actionType}`,
+                                    payload: { targetId: id, action: actionType, timestamp: new Date().toISOString() }
+                                  })
+                                });
+
+                                if (!res.ok) throw new Error('Action failed');
+
+                                btn.innerHTML = `<svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Success`;
+                                btn.className = btn.className.replace(/border-.*-500\/30/, 'border-green-500/30 bg-green-500/10 text-green-300');
+                              } catch (err) {
+                                console.error('Action error', err);
+                                btn.innerHTML = `<svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg> Failed`;
+                                btn.className = btn.className.replace(/border-.*-500\/30/, 'border-red-500/30 bg-red-500/10 text-red-300');
+                                setTimeout(() => {
+                                  btn.innerHTML = originalText;
+                                  btn.disabled = false;
+                                }, 2000);
+                              }
                             }}
                           >
                             <Icon className="h-4 w-4" />
