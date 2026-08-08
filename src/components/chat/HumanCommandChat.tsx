@@ -89,9 +89,12 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
 
     try {
       const result = await sendChatMessage(thread.id, trimmed);
-      if (!result?.success) {
-        throw new Error(result?.error || result?.message || "Failed to send chat message");
+      // If result.error exists, it is a fatal server error
+      if (result?.error) {
+        throw new Error(result.error);
       }
+      // If success is false but there's no error string, it is a controlled rejection (e.g., missing scope).
+      // We continue to fetch the messages so the system's clarification message is displayed.
       
       const [messagesRes, logsRes, latestTasks] = await Promise.all([
         fetch(`/api/chat-messages?thread_id=${thread.id}`).then(r => r.json()),
