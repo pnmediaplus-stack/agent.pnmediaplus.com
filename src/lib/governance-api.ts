@@ -1,3 +1,4 @@
+import "server-only";
 import type { ChatMessage } from "@/types/chat";
 import type { AuditLog } from "@/types/audit";
 import type { Task } from "@/types/task";

@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { useI18n } from "@/lib/i18n/useI18n";
-import { inferChatIntent } from "@/lib/validators";
+// inferChatIntent removed, must be done on server
 import { sendChatMessage, pollActiveTasks } from "@/app/actions/chat-actions";
 import type { ChatMessage, ChatThread } from "@/types/chat";
 import type { AuditLog } from "@/types/audit";
@@ -76,20 +76,19 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     setSendError(null);
     setDraft("");
 
-    const intentType = inferChatIntent(trimmed);
     const optimisticMessage: any = {
       id: `optimistic-${Date.now()}`,
       thread_id: thread.id,
       sender: "human",
       body: trimmed,
-      intent_type: intentType,
+      intent_type: "unknown", // Client does not guess intent
       created_at: new Date().toISOString()
     };
 
     setMessages((prev) => [...prev, optimisticMessage]);
 
     try {
-      const result = await sendChatMessage(thread.id, trimmed, intentType);
+      const result = await sendChatMessage(thread.id, trimmed);
       if (!result?.success) {
         throw new Error(result?.error || result?.message || "Failed to send chat message");
       }

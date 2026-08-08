@@ -3,7 +3,7 @@
 import { postN8nWebhook } from "@/lib/n8n-client";
 import type { ChatIntentType } from "@/types/state";
 import { verifyActionAuth } from "@/lib/action-auth-guard";
-import { invokeLlm } from "@/lib/llm-client";
+
 import { loadMarketingAgentRegistry } from "@/lib/marketing-agent-loader";
 import {
   dbInsertChatMessage,
@@ -14,19 +14,9 @@ import {
   dbLoadActiveTasks,
   dbLoadContextData
 } from "@/lib/governance-api";
-import { requiresCampaignScope, requiresPublishScope } from "@/lib/validators";
+import { requiresCampaignScope, requiresPublishScope, inferChatIntent } from "@/lib/validators";
 
-const CHAT_ROUTER_SYSTEM_PROMPT = [
-  "You are the command router for a governed internal operations chat.",
-  "Follow these rules strictly:",
-  "- Do not act like a casual assistant or give open-ended advice.",
-  "- Only answer within the allowed intents: create_content, publish_content, plan_campaign, route_department, clarify_missing_scope, review_artifact, check_governance, request_status, approve_or_reject.",
-  "- If the user asks to publish but does not specify a page, ask for page_id or page_name before doing anything else.",
-  "- If the user asks to plan a campaign or route work to a department but does not specify the department, ask for department_id or department name before doing anything else.",
-  "- If the intent is unknown, return a short routing prompt that asks the user to choose one of the allowed intents.",
-  "- Never invent actions, never claim to have posted externally, and never expand scope beyond the user's command.",
-  "- Keep responses concise, operational, and contract-bound."
-].join(" ");
+
 
 function buildUnknownIntentReply() {
   return "Mình chưa xác định được ý định. Bạn hãy chọn một trong các hướng sau: tạo nội dung, đăng nội dung, lập kế hoạch chiến dịch, định tuyến phòng ban, xem trạng thái, kiểm tra quản trị, xem xét tài nguyên, hoặc duyệt/từ chối.";
@@ -42,7 +32,8 @@ function buildMissingScopeReply(intentType?: ChatIntentType) {
   return "Thiếu scope bắt buộc. Hãy bổ sung page, phòng ban, hoặc mã định danh liên quan để mình route đúng.";
 }
 
-export async function sendChatMessage(threadId: string, body: string, intentType?: ChatIntentType) {
+export async function sendChatMessage(threadId: string, body: string) {
+  const intentType = inferChatIntent(body);
   let organizationId = "";
   let humanMessageId: string | undefined;
   let auditLogId: string | undefined;
@@ -188,16 +179,8 @@ export async function sendChatMessage(threadId: string, body: string, intentType
         details: `intent=unknown requestId=${requestId}`
       });
 
-      postN8nWebhook("webhook/chat", {
-        threadId,
-        humanMessageId,
-        body,
-        tenantId: auth.tenantId,
-        actorId: auth.actorId,
-        routedIntent: "unknown"
-      }).catch(e => {
-        console.error("n8n webhook side-effect failed", e);
-      });
+      // Removed postN8nWebhook for "unknown" intent per Gatekeeper constraint:
+      // "Nếu là unknown thì chỉ trả phản hồi mẫu hoặc hỏi lại, không gọi LLM/workflow tự do"
 
       return {
         success: true,
@@ -312,8 +295,8 @@ export async function sendChatMessage(threadId: string, body: string, intentType
     const agentMatch = body.match(/@([a-zA-Z0-9_]+)/);
     const dataMatch = body.match(/#(content|idea):([a-zA-Z0-9_-]+)/);
 
-    let systemPromptOverride = CHAT_ROUTER_SYSTEM_PROMPT;
-
+    // The Orchestrator does not build System Prompts.
+    // It only validates scope and gates requests.
     if (agentMatch) {
       const agentId = agentMatch[1];
       const registry = await loadMarketingAgentRegistry();
@@ -349,15 +332,8 @@ export async function sendChatMessage(threadId: string, body: string, intentType
         return { success: true, message: rejectMsgResult.data };
       }
 
-      // Inject boundaries
-      systemPromptOverride = `[FORCED AGENT ROLE]
-You are now acting strictly as: ${agent.role_id}
-[CAPABILITY BOUNDARIES]
-MUST: ${agent.capability_boundary.must.join(', ')}
-MUST NOT: ${agent.capability_boundary.must_not.join(', ')}
-
-[STRICT EXECUTION CONTRACT]
-You are acting in READ-ONLY assist mode. You DO NOT have authority to route, publish, or execute any workflows. You can only provide consultation and draft outputs based on your MUST/MUST NOT rules. Do not claim to execute actions.`;
+      // Scope is validated. We do not need to inject boundaries here because
+      // we do not call the LLM in the Orchestrator layer.
     }
 
     if (dataMatch) {
@@ -375,43 +351,34 @@ You are acting in READ-ONLY assist mode. You DO NOT have authority to route, pub
         return { success: true, message: rejectMsgResult.data };
       }
 
-      systemPromptOverride += `\n\n[DATA CONTEXT (#${refType}:${refKey})]\nTitle: ${contextDataRes.data.title || 'N/A'}\nBrief: ${contextDataRes.data.brief || 'N/A'}\nState: ${contextDataRes.data.state || 'N/A'}`;
+      // Scope is validated. Data exists.
     }
     // === END @MENTION PARSER ===
 
 
-    const messages = [
-      {
-        role: "system" as const,
-        content: systemPromptOverride
-      },
-      ...(historyRes.data || []).map(m => ({
-      role: m.sender === "human" ? "user" : m.sender === "agent" ? "assistant" : "system",
-      content: m.body
-      }))
-    ];
-
-    const llmResponse: any = await invokeLlm({
-      provider: "openai",
-      model: "gpt-4o-mini",
-      messages
-    }, {
-      actorId: auth.actorId,
+    // GATE PASSED. Route to Workflow.
+    postN8nWebhook("webhook/chat", {
+      threadId,
+      humanMessageId,
+      body,
       tenantId: auth.tenantId,
-      requestId
+      actorId: auth.actorId,
+      intentType
+    }).catch(e => {
+      console.error("n8n webhook side-effect failed", e);
     });
 
-    const aiText = llmResponse?.choices?.[0]?.message?.content || "No response generated.";
+    const routeReply = `Yêu cầu "${intentType}" đã vượt qua cổng kiểm duyệt. Đang chuyển giao cho Workflow...`;
 
     const agentMsgResult = await dbInsertChatMessage(organizationId, {
       threadId,
-      sender: "agent",
-      body: aiText,
-      intentType: "create_content"
+      sender: "system",
+      body: routeReply,
+      intentType: "request_status"
     });
 
     if (!agentMsgResult.data?.id) {
-      throw new Error("AGENT_MESSAGE_INSERT_FAILED");
+      throw new Error("SYSTEM_MESSAGE_INSERT_FAILED");
     }
 
     agentMessageId = agentMsgResult.data.id;
@@ -419,19 +386,9 @@ You are acting in READ-ONLY assist mode. You DO NOT have authority to route, pub
     await dbInsertAuditLog(organizationId, {
       entityId: threadId,
       entityType: "chat_thread",
-      action: "agent_replied",
+      action: "webhook_dispatched",
       actor: "System AI",
-      details: `requestId=${requestId}`
-    });
-
-    postN8nWebhook("webhook/chat", {
-      threadId,
-      humanMessageId,
-      body,
-      tenantId: auth.tenantId,
-      actorId: auth.actorId
-    }).catch(e => {
-      console.error("n8n webhook side-effect failed", e);
+      details: `requestId=${requestId} intent=${intentType}`
     });
 
     return {
@@ -452,7 +409,7 @@ You are acting in READ-ONLY assist mode. You DO NOT have authority to route, pub
         await dbInsertAuditLog(organizationId, {
           entityId: threadId,
           entityType: "chat_thread",
-          action: "llm_invocation_failed",
+          action: "orchestrator_routing_failed",
           actor: "System AI",
           details: `requestId=${requestId} error=${errMessage} (Rollback Applied)`
         });
@@ -466,7 +423,7 @@ You are acting in READ-ONLY assist mode. You DO NOT have authority to route, pub
         await dbInsertChatMessage(organizationId, {
           threadId,
           sender: "system",
-          body: `Hệ thống gặp lỗi trong quá trình kết nối AI Broker: ${errMessage}. Lệnh của bạn đã được hủy bỏ an toàn (Rollback).`,
+          body: `Hệ thống gặp lỗi trong quá trình điều phối Workflow: ${errMessage}. Lệnh của bạn đã được hủy bỏ an toàn (Rollback).`,
           intentType: "request_status"
         });
       }
@@ -477,7 +434,7 @@ You are acting in READ-ONLY assist mode. You DO NOT have authority to route, pub
     return {
       success: false,
       error: errMessage,
-      message: `Hệ thống gặp lỗi trong quá trình kết nối AI Broker: ${errMessage}.`
+      message: `Hệ thống gặp lỗi trong quá trình điều phối Workflow: ${errMessage}.`
     };
   }
 }
