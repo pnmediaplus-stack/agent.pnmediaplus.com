@@ -114,3 +114,20 @@ export async function dbUpdateTask(organizationId: string, taskId: string, paylo
   const data = await res.json();
   return { data: data[0] };
 }
+
+export async function dbLoadContextData(organizationId: string, referenceType: 'content' | 'idea', referenceKey: string) {
+  let query = '';
+  if (referenceType === 'content') {
+    query = `id=eq.${referenceKey}`;
+  } else {
+    query = `content_key=eq.${referenceKey}`;
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?${query}&organization_id=eq.${organizationId}`, {
+    headers: getPublicHeaders(),
+    cache: 'no-store'
+  });
+  if (!res.ok) return { error: await res.text(), data: null };
+  const data = await res.json();
+  return { data: data[0] || null };
+}

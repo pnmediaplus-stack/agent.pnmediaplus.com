@@ -4,13 +4,15 @@ import { postN8nWebhook } from "@/lib/n8n-client";
 import type { ChatIntentType } from "@/types/state";
 import { verifyActionAuth } from "@/lib/action-auth-guard";
 import { invokeLlm } from "@/lib/llm-client";
-import { 
-  dbInsertChatMessage, 
-  dbInsertAuditLog, 
-  dbLoadChatMessages, 
-  dbDeleteChatMessage, 
-  dbDeleteAuditLog, 
-  dbLoadActiveTasks 
+import { loadMarketingAgentRegistry } from "@/lib/marketing-agent-loader";
+import {
+  dbInsertChatMessage,
+  dbInsertAuditLog,
+  dbLoadChatMessages,
+  dbDeleteChatMessage,
+  dbDeleteAuditLog,
+  dbLoadActiveTasks,
+  dbLoadContextData
 } from "@/lib/governance-api";
 import { requiresCampaignScope, requiresPublishScope } from "@/lib/validators";
 
@@ -75,7 +77,7 @@ export async function sendChatMessage(threadId: string, body: string, intentType
       const args = parts.slice(1);
 
       const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status'];
-      
+
       if (whitelist.includes(command)) {
         // Enforce args
         let missingArgsMsg = '';
@@ -305,18 +307,75 @@ export async function sendChatMessage(threadId: string, body: string, intentType
 
     const historyRes = await dbLoadChatMessages(organizationId, threadId);
     if (historyRes.error) throw new Error(historyRes.error);
-    
+
+    // === @MENTION & #DATA PARSER ===
+    const agentMatch = body.match(/@([a-zA-Z0-9_]+)/);
+    const dataMatch = body.match(/#(content|idea):([a-zA-Z0-9_-]+)/);
+
+    let systemPromptOverride = CHAT_ROUTER_SYSTEM_PROMPT;
+
+    if (agentMatch) {
+      const agentId = agentMatch[1];
+      const registry = await loadMarketingAgentRegistry();
+
+      if (registry.state === 'blocked') {
+        throw new Error('GOVERNANCE_REGISTRY_BLOCKED');
+      }
+
+      const agent = registry.data.agents.find(a => a.role_id === agentId);
+      if (!agent) {
+        // Fail-closed as per contract
+        const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+          threadId,
+          sender: "system",
+          body: `Agent @${agentId} không tồn tại hoặc không được phép truy cập.`,
+          intentType: "clarify_missing_scope"
+        });
+        return { success: true, message: rejectMsgResult.data };
+      }
+
+      // Inject boundaries
+      systemPromptOverride = `[FORCED AGENT ROLE]
+You are now acting strictly as: ${agent.role_id}
+[CAPABILITY BOUNDARIES]
+MUST: ${agent.capability_boundary.must.join(', ')}
+MUST NOT: ${agent.capability_boundary.must_not.join(', ')}
+
+[STRICT EXECUTION CONTRACT]
+You are acting in READ-ONLY assist mode. You DO NOT have authority to route, publish, or execute any workflows. You can only provide consultation and draft outputs based on your MUST/MUST NOT rules. Do not claim to execute actions.`;
+    }
+
+    if (dataMatch) {
+      const refType = dataMatch[1] as 'content' | 'idea';
+      const refKey = dataMatch[2];
+
+      const contextDataRes = await dbLoadContextData(organizationId, refType, refKey);
+      if (contextDataRes.error || !contextDataRes.data) {
+        const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+          threadId,
+          sender: "system",
+          body: `Không tìm thấy dữ liệu #${refType}:${refKey} trong scope của tổ chức.`,
+          intentType: "clarify_missing_scope"
+        });
+        return { success: true, message: rejectMsgResult.data };
+      }
+
+      systemPromptOverride += `\n\n[DATA CONTEXT (#${refType}:${refKey})]\nTitle: ${contextDataRes.data.title || 'N/A'}\nBrief: ${contextDataRes.data.brief || 'N/A'}\nState: ${contextDataRes.data.state || 'N/A'}`;
+    }
+    // === END @MENTION PARSER ===
+
+
     const messages = [
       {
         role: "system" as const,
-        content: CHAT_ROUTER_SYSTEM_PROMPT
+        content: systemPromptOverride
       },
       ...(historyRes.data || []).map(m => ({
       role: m.sender === "human" ? "user" : m.sender === "agent" ? "assistant" : "system",
       content: m.body
       }))
     ];
-    
+
     const llmResponse: any = await invokeLlm({
       provider: "openai",
       model: "gpt-4o-mini",
