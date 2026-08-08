@@ -68,6 +68,89 @@ export async function sendChatMessage(threadId: string, body: string, intentType
 
     humanMessageId = messageResult.data.id;
 
+    // === SLASH COMMAND PARSER ===
+    if (body.trim().startsWith('/')) {
+      const parts = body.trim().split(/\s+/);
+      const command = parts[0];
+      const args = parts.slice(1);
+
+      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status'];
+      
+      if (whitelist.includes(command)) {
+        // Enforce args
+        let missingArgsMsg = '';
+        if (command === '/auto_content' || command === '/viral_research' || command === '/status') {
+          if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> (Ví dụ: ${command} 12345)`;
+        } else if (command === '/publish') {
+          if (args.length < 2) missingArgsMsg = 'Lệnh /publish yêu cầu tham số: <page_id|page_name> <content_item_id>';
+        } else if (command === '/plan_campaign') {
+          if (args.length < 2) missingArgsMsg = 'Lệnh /plan_campaign yêu cầu tham số: <department_id|department_name> <brief>';
+        }
+
+        if (missingArgsMsg) {
+          // Reject
+          await dbInsertAuditLog(organizationId, {
+            entityId: threadId,
+            entityType: "chat_thread",
+            action: "command_rejected",
+            actor: auth.email,
+            details: `command=${command} reason=missing_args`
+          });
+
+          const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+            threadId,
+            sender: "system",
+            body: missingArgsMsg,
+            intentType: "clarify_missing_scope"
+          });
+
+          return {
+            success: true,
+            message: rejectMsgResult.data,
+            webhook: { ok: false, route: "parser", status: 400, message: "Missing command arguments" }
+          };
+        }
+
+        // Route successfully
+        await dbInsertAuditLog(organizationId, {
+          entityId: threadId,
+          entityType: "chat_thread",
+          action: "command_routed",
+          actor: auth.email,
+          details: `command=${command} args=${args.join(' ')}`
+        });
+
+        // Fire mock/real webhook depending on command
+        // For /auto_content we hit our newly integrated workflow "generate-content" endpoint
+        let webhookResult;
+        if (command === '/auto_content') {
+           webhookResult = await postN8nWebhook("webhook/generate-content", {
+             contentItemId: args[0],
+             organization_id: organizationId,
+             tenant_id: organizationId
+           });
+        } else {
+           webhookResult = { ok: true, status: 202, message: "Command mapped and routed to placeholder endpoint." };
+        }
+
+        const routedMsgResult = await dbInsertChatMessage(organizationId, {
+          threadId,
+          sender: "system",
+          body: `Đã nhận và điều phối lệnh: ${command} ${args.join(' ')}`,
+          intentType: "route_department"
+        });
+
+        return {
+          success: true,
+          message: routedMsgResult.data,
+          webhook: { ok: webhookResult.ok, route: "webhook/command", status: webhookResult.status || 202, message: webhookResult.message }
+        };
+      }
+      // If not in whitelist, falls through to normal chat as per contract "Không có slash command hợp lệ: xử lý như chat thường"
+    }
+    // === END SLASH COMMAND PARSER ===
+
+
     const auditResult = await dbInsertAuditLog(organizationId, {
       entityId: threadId,
       entityType: "chat_thread",
