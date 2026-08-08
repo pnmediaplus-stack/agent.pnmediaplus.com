@@ -322,7 +322,22 @@ export async function sendChatMessage(threadId: string, body: string, intentType
         throw new Error('GOVERNANCE_REGISTRY_BLOCKED');
       }
 
-      const agent = registry.data.agents.find(a => a.role_id === agentId || a.role_id.endsWith(`_${agentId}`));
+      let agent = registry.data.agents.find(a => a.role_id === agentId);
+      if (!agent) {
+        const aliasMatches = registry.data.agents.filter(a => a.role_id.endsWith(`_${agentId}`));
+        if (aliasMatches.length === 1) {
+          agent = aliasMatches[0];
+        } else if (aliasMatches.length > 1) {
+          const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+            threadId,
+            sender: "system",
+            body: `Tên Alias @${agentId} trùng khớp với nhiều Agent. Vui lòng ghi rõ tên đầy đủ để tránh nhầm lẫn quyền hạn.`,
+            intentType: "clarify_missing_scope"
+          });
+          return { success: true, message: rejectMsgResult.data };
+        }
+      }
+
       if (!agent) {
         // Fail-closed as per contract
         const rejectMsgResult = await dbInsertChatMessage(organizationId, {
