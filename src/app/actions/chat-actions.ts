@@ -36,6 +36,14 @@ function buildMissingScopeReply(intentType?: ChatIntentType) {
   return "Thiếu scope bắt buộc. Hãy bổ sung page, phòng ban, hoặc mã định danh liên quan để mình route đúng.";
 }
 
+function buildReadOnlyReferenceReply(referenceType: "agent" | "data") {
+  if (referenceType === "agent") {
+    return "Mình đã nhận tham chiếu agent, nhưng mention chỉ được dùng để nạp ngữ cảnh đọc-tham-chiếu. Chat không thể tự kích hoạt agent execution.";
+  }
+
+  return "Mình đã nhận tham chiếu dữ liệu, nhưng reference này chỉ dùng để nạp ngữ cảnh đọc-tham-chiếu. Chat không thể tự biến reference thành workflow execution.";
+}
+
 type DepartmentScopeHint = {
   departmentId?: string;
   departmentName?: string;
@@ -351,7 +359,35 @@ export async function sendChatMessage(threadId: string, body: string) {
 
       const departmentGovernance = await loadDepartmentGovernanceBundle();
       if (departmentGovernance.state === "blocked") {
-        throw new Error(departmentGovernance.reason);
+        const blockedMsgResult = await dbInsertChatMessage(organizationId, {
+          threadId,
+          sender: "system",
+          body: "Luồng điều phối phòng ban hiện đang bị chặn bởi governance registry. Hãy thử lại khi registry sẵn sàng.",
+          intentType: "request_status"
+        });
+
+        if (!blockedMsgResult.data?.id) {
+          throw new Error("GOVERNANCE_BLOCKED_MESSAGE_INSERT_FAILED");
+        }
+
+        await dbInsertAuditLog(organizationId, {
+          entityId: threadId,
+          entityType: "chat_thread",
+          action: "department_governance_blocked",
+          actor: "System AI",
+          details: `intent=${intentType} requestId=${requestId} reason=${departmentGovernance.reason}`
+        });
+
+        return {
+          success: false,
+          message: blockedMsgResult.data,
+          webhook: {
+            ok: false,
+            route: "not_routed",
+            status: 503,
+            message: departmentGovernance.reason
+          }
+        };
       }
 
       const departmentRecord = matchDepartmentRegistryRecord(
@@ -447,7 +483,35 @@ export async function sendChatMessage(threadId: string, body: string) {
       const registry = await loadMarketingAgentRegistry();
 
       if (registry.state === 'blocked') {
-        throw new Error('GOVERNANCE_REGISTRY_BLOCKED');
+        const blockedMsgResult = await dbInsertChatMessage(organizationId, {
+          threadId,
+          sender: "system",
+          body: "Danh mục agent marketing hiện đang bị chặn bởi governance registry. Hãy thử lại khi registry sẵn sàng.",
+          intentType: "request_status"
+        });
+
+        if (!blockedMsgResult.data?.id) {
+          throw new Error("GOVERNANCE_REGISTRY_BLOCKED_MESSAGE_INSERT_FAILED");
+        }
+
+        await dbInsertAuditLog(organizationId, {
+          entityId: threadId,
+          entityType: "chat_thread",
+          action: "marketing_governance_blocked",
+          actor: "System AI",
+          details: `requestId=${requestId} reason=${registry.reason}`
+        });
+
+        return {
+          success: false,
+          message: blockedMsgResult.data,
+          webhook: {
+            ok: false,
+            route: "not_routed",
+            status: 503,
+            message: registry.reason
+          }
+        };
       }
 
       let agent = registry.data.agents.find(a => a.role_id === agentId);
@@ -477,8 +541,31 @@ export async function sendChatMessage(threadId: string, body: string) {
         return { success: true, message: rejectMsgResult.data };
       }
 
-      // Scope is validated. We do not need to inject boundaries here because
-      // we do not call the LLM in the Orchestrator layer.
+      const mentionReply = buildReadOnlyReferenceReply("agent");
+      const mentionMsgResult = await dbInsertChatMessage(organizationId, {
+        threadId,
+        sender: "system",
+        body: mentionReply,
+        intentType: "request_status"
+      });
+
+      if (!mentionMsgResult.data?.id) {
+        throw new Error("MENTION_MESSAGE_INSERT_FAILED");
+      }
+
+      await dbInsertAuditLog(organizationId, {
+        entityId: threadId,
+        entityType: "chat_thread",
+        action: "agent_reference_received",
+        actor: "System AI",
+        details: `agent=${agent.role_id} requestId=${requestId}`
+      });
+
+      return {
+        success: false,
+        message: mentionMsgResult.data,
+        webhook: { ok: false, route: "not_routed", status: 200, message: "agent mention handled as read-only reference" }
+      };
     }
 
     if (dataMatch) {
@@ -496,7 +583,31 @@ export async function sendChatMessage(threadId: string, body: string) {
         return { success: true, message: rejectMsgResult.data };
       }
 
-      // Scope is validated. Data exists.
+      const dataReply = buildReadOnlyReferenceReply("data");
+      const dataMsgResult = await dbInsertChatMessage(organizationId, {
+        threadId,
+        sender: "system",
+        body: dataReply,
+        intentType: "request_status"
+      });
+
+      if (!dataMsgResult.data?.id) {
+        throw new Error("DATA_REFERENCE_MESSAGE_INSERT_FAILED");
+      }
+
+      await dbInsertAuditLog(organizationId, {
+        entityId: threadId,
+        entityType: "chat_thread",
+        action: "data_reference_received",
+        actor: "System AI",
+        details: `refType=${refType} refKey=${refKey} requestId=${requestId}`
+      });
+
+      return {
+        success: false,
+        message: dataMsgResult.data,
+        webhook: { ok: false, route: "not_routed", status: 200, message: "data reference handled as read-only context" }
+      };
     }
     // === END @MENTION PARSER ===
 
