@@ -322,7 +322,7 @@ export async function sendChatMessage(threadId: string, body: string, intentType
         throw new Error('GOVERNANCE_REGISTRY_BLOCKED');
       }
 
-      const agent = registry.data.agents.find(a => a.role_id === agentId);
+      const agent = registry.data.agents.find(a => a.role_id === agentId || a.role_id.endsWith(`_${agentId}`));
       if (!agent) {
         // Fail-closed as per contract
         const rejectMsgResult = await dbInsertChatMessage(organizationId, {
