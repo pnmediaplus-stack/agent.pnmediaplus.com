@@ -2,7 +2,7 @@
 
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { ChatMessage } from "@/types/chat";
-import { User, Bot, LayoutTemplate, Activity } from "lucide-react";
+import { User, Bot, LayoutTemplate, Activity, ExternalLink, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -53,13 +53,78 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
                 </div>
                 <div className="font-mono text-[10px] text-slate-500">{new Date(message.created_at).toLocaleTimeString()}</div>
               </div>
-              
+
               <div className="text-sm leading-relaxed text-slate-200 prose prose-invert prose-sm max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    img: ({ node, ...props }) => {
+                      return (
+                        <div className="my-4 overflow-hidden rounded-xl border border-white/10 shadow-lg max-h-[300px] flex items-center justify-center bg-black/50">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img {...props} className="max-h-[300px] w-auto object-contain" alt={props.alt || 'Chat media'} />
+                        </div>
+                      );
+                    },
+                    a: ({ node, ...props }) => {
+                      const href = props.href || '';
+
+                      // Action buttons mapping: [Duyệt](action:approve:123)
+                      if (href.startsWith('action:')) {
+                        const [, actionType, id] = href.split(':');
+
+                        let Icon = RefreshCw;
+                        let colorClass = "border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20";
+
+                        if (actionType === 'approve') {
+                          Icon = CheckCircle;
+                          colorClass = "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20";
+                        } else if (actionType === 'reject') {
+                          Icon = XCircle;
+                          colorClass = "border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20";
+                        }
+
+                        return (
+                          <button
+                            type="button"
+                            className={`my-2 mr-2 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${colorClass}`}
+                            onClick={() => {
+                              // Trigger action. In real implementation, this could call server action or N8N webhook
+                              alert(`Trigger N8N Action: ${actionType} for ID: ${id}`);
+                            }}
+                          >
+                            <Icon className="h-4 w-4" />
+                            {props.children}
+                          </button>
+                        );
+                      }
+
+                      const isAttachment = Array.isArray(props.children)
+                        ? typeof props.children[0] === 'string' && props.children[0].includes('📎')
+                        : typeof props.children === 'string' && props.children.includes('📎');
+
+                      // File attachments link
+                      if (isAttachment) {
+                        return (
+                          <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded bg-cyan-500/10 border border-cyan-500/20 px-2 py-1 text-xs font-semibold text-cyan-300 no-underline hover:bg-cyan-500/20">
+                            {props.children}
+                          </a>
+                        );
+                      }
+
+                      // Normal link
+                      return (
+                        <a href={href} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-1 underline underline-offset-2">
+                          {props.children} <ExternalLink className="h-3 w-3 inline" />
+                        </a>
+                      );
+                    }
+                  }}
+                >
                   {message.body}
                 </ReactMarkdown>
               </div>
-              
+
               {message.intent_type ? (
                 <div className="mt-4 flex items-center gap-1.5 rounded bg-black/20 px-2.5 py-1 w-fit border border-white/5">
                   <Activity className="h-3.5 w-3.5 text-indigo-400" />
@@ -72,7 +137,7 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
           </div>
         );
       })}
-      
+
       {isTyping && (
         <div className="flex w-full justify-start">
           <div className="relative max-w-[85%] overflow-hidden rounded-2xl border p-4 shadow-xl backdrop-blur-xl border-emerald-500/30 bg-emerald-950/40 shadow-emerald-900/20 rounded-tl-sm animate-pulse">
