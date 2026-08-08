@@ -115,8 +115,8 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]" style={{ height: 'calc(100vh - 200px)' }}>
-      <div className="space-y-4 flex flex-col h-full min-h-0">
+    <div className="grid gap-6 lg:grid-cols-[2fr_1fr]" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="space-y-4 flex flex-col h-full min-h-0 min-w-0">
         {activeTasks.length > 0 && (
           <div className="rounded-2xl border border-indigo-500/30 bg-indigo-950/20 p-4 shadow-lg shadow-indigo-900/10 shrink-0">
             <div className="flex items-center gap-2 mb-3">
@@ -165,8 +165,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           <ChatComposer value={draft} onChange={setDraft} onSubmit={handleSubmit} />
         </div>
       </div>
-      
-      <div className="space-y-4 flex flex-col h-full min-h-0">
+      <div className="space-y-4 flex flex-col h-full min-h-0 min-w-0">
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shrink-0">
           <div className="text-sm font-semibold text-white">{thread.title}</div>
           <p className="mt-2 text-sm leading-6 text-slate-400">{thread.purpose}</p>
