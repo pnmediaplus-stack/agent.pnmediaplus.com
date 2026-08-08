@@ -122,24 +122,48 @@ export async function sendChatMessage(threadId: string, body: string) {
              organization_id: organizationId,
              tenant_id: organizationId
            });
-        } else {
-           webhookResult = { ok: false, route: "not_routed", status: 400, message: "Lệnh hợp lệ nhưng chưa có workflow xử lý (Not Implemented)." };
-        }
 
-        const routedMsgResult = await dbInsertChatMessage(organizationId, {
+           const routedMsgResult = await dbInsertChatMessage(organizationId, {
+             threadId,
+             sender: "system",
+             body: `Đã nhận và điều phối lệnh: ${command} ${args.join(' ')}`,
+             intentType: "route_department"
+           });
+
+           return {
+             success: true,
+             message: routedMsgResult.data,
+             webhook: { ok: webhookResult.ok, route: "webhook/command", status: webhookResult.status || 202, message: webhookResult.message }
+           };
+        } else {
+           const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+             threadId,
+             sender: "system",
+             body: `Lệnh ${command} hợp lệ nhưng chưa có Workflow xử lý (Not Implemented).`,
+             intentType: "clarify_missing_scope"
+           });
+
+           return {
+             success: true,
+             message: rejectMsgResult.data,
+             webhook: { ok: false, route: "not_routed", status: 400, message: "Lệnh hợp lệ nhưng chưa có workflow xử lý (Not Implemented)." }
+           };
+        }
+      } else {
+        // If not in whitelist, reject fail-closed instead of falling through
+        const rejectMsgResult = await dbInsertChatMessage(organizationId, {
           threadId,
           sender: "system",
-          body: `Đã nhận và điều phối lệnh: ${command} ${args.join(' ')}`,
-          intentType: "route_department"
+          body: `Lệnh ${command} không hợp lệ. Vui lòng sử dụng tính năng chat thường hoặc các lệnh có trong hệ thống.`,
+          intentType: "clarify_missing_scope"
         });
 
         return {
           success: true,
-          message: routedMsgResult.data,
-          webhook: { ok: webhookResult.ok, route: "webhook/command", status: webhookResult.status || 202, message: webhookResult.message }
+          message: rejectMsgResult.data,
+          webhook: { ok: false, route: "not_routed", status: 400, message: "Unknown slash command rejected" }
         };
       }
-      // If not in whitelist, falls through to normal chat as per contract "Không có slash command hợp lệ: xử lý như chat thường"
     }
     // === END SLASH COMMAND PARSER ===
 
