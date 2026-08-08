@@ -30,11 +30,11 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   const slashCommands = useMemo(() => ([
-    { id: "/auto_content", name: "/auto_content", description: "Tạo nội dung tự động" },
-    { id: "/viral_research", name: "/viral_research", description: "Nghiên cứu viral" },
-    { id: "/publish", name: "/publish", description: "Đăng nội dung lên page" },
-    { id: "/plan_campaign", name: "/plan_campaign", description: "Lập kế hoạch chiến dịch" },
-    { id: "/status", name: "/status", description: "Xem trạng thái" }
+    { id: "auto_content", name: "auto_content", description: "Tạo nội dung tự động" },
+    { id: "viral_research", name: "viral_research", description: "Nghiên cứu viral" },
+    { id: "publish", name: "publish", description: "Đăng nội dung lên page" },
+    { id: "plan_campaign", name: "plan_campaign", description: "Lập kế hoạch chiến dịch" },
+    { id: "status", name: "status", description: "Xem trạng thái" }
   ]), []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -132,21 +132,23 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
       ).slice(0, 10); // Max 10 results
     } else {
       return artifacts.filter(a =>
-        (a.name || a.title || a.key || a.id || '').toLowerCase().includes(term)
+        (a.artifact_key || '').toLowerCase().includes(term) ||
+        (a.canonical_name || '').toLowerCase().includes(term) ||
+        (a.id || '').toLowerCase().includes(term)
       ).slice(0, 10);
     }
-  }, [popupState, agents, artifacts]);
+  }, [popupState, agents, artifacts, slashCommands]);
 
   const selectSuggestion = (item: any) => {
     if (!popupState.isOpen) return;
 
     let replacement = '';
     if (popupState.type === 'command') {
-      replacement = `${item.name} `;
+      replacement = `/${item.name} `;
     } else if (popupState.type === 'agent') {
       replacement = `@${item.role_id} `;
     } else {
-      replacement = `#${item.key || item.id || item.name || item.title} `;
+      replacement = `#${item.artifact_key || item.canonical_name || item.id} `;
     }
 
     const before = value.substring(0, popupState.startIndex);
@@ -265,13 +267,13 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
                 ? item.name
                 : popupState.type === 'agent'
                   ? (item.role_name || item.role_id)
-                  : (item.name || item.title || item.key || item.id);
+                  : (item.canonical_name || item.artifact_key || item.id);
             const subTitle =
               popupState.type === 'command'
                 ? item.description
                 : popupState.type === 'agent'
                   ? [item.role_id, item.authority_level, item.constitutional_layer].filter(Boolean).join(" • ")
-                  : item.type;
+                  : item.artifact_type;
             const isAmbiguous = popupState.type === 'agent' && !item.role_id;
 
             return (
