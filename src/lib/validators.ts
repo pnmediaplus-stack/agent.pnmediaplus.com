@@ -75,12 +75,12 @@ export function requiresPublishScope(body: string) {
 
 export function requiresCampaignScope(body: string) {
   const normalized = body.toLowerCase();
-  // Check for explicit department mention or @agent mention
+  // Check for explicit department ID/Name reference
   const hasScope =
-    normalized.includes("phòng ban") ||
-    normalized.includes("department") ||
-    normalized.includes("agent") ||
-    /@[a-z0-9_]+/.test(normalized); // @agent reference
+    /department[_\s-]?id\b/.test(normalized) ||
+    /department[_\s-]?name\b/.test(normalized) ||
+    /phòng\s*ban\s*[:=]/.test(normalized) ||
+    /phòng\s*ban\s+[a-z0-9_]+/.test(normalized);
 
   return !hasScope;
 }

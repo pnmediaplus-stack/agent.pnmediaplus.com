@@ -98,7 +98,7 @@ export async function sendChatMessage(threadId: string, body: string) {
           });
 
           return {
-            success: true,
+            success: false,
             message: rejectMsgResult.data,
             webhook: { ok: false, route: "parser", status: 400, message: "Missing command arguments" }
           };
@@ -144,7 +144,7 @@ export async function sendChatMessage(threadId: string, body: string) {
            });
 
            return {
-             success: true,
+             success: false,
              message: rejectMsgResult.data,
              webhook: { ok: false, route: "not_routed", status: 400, message: "Lệnh hợp lệ nhưng chưa có workflow xử lý (Not Implemented)." }
            };
@@ -159,7 +159,7 @@ export async function sendChatMessage(threadId: string, body: string) {
         });
 
         return {
-          success: true,
+          success: false,
           message: rejectMsgResult.data,
           webhook: { ok: false, route: "not_routed", status: 400, message: "Unknown slash command rejected" }
         };
@@ -207,7 +207,7 @@ export async function sendChatMessage(threadId: string, body: string) {
       // "Nếu là unknown thì chỉ trả phản hồi mẫu hoặc hỏi lại, không gọi LLM/workflow tự do"
 
       return {
-        success: true,
+        success: false,
         message: routerMsgResult.data,
         webhook: { ok: false, route: "not_routed", status: 400, message: "Intent unknown, webhook not fired" }
       };
@@ -235,9 +235,9 @@ export async function sendChatMessage(threadId: string, body: string) {
       });
 
       return {
-        success: true,
+        success: false,
         message: clarifyMsgResult.data,
-        webhook: { ok: true, route: "chat", status: 202, message: "scope clarification requested" }
+        webhook: { ok: false, route: "not_routed", status: 400, message: "scope clarification requested" }
       };
     }
 
@@ -264,9 +264,9 @@ export async function sendChatMessage(threadId: string, body: string) {
         });
 
         return {
-          success: true,
+          success: false,
           message: clarifyMsgResult.data,
-          webhook: { ok: true, route: "chat", status: 202, message: "scope clarification requested" }
+          webhook: { ok: false, route: "not_routed", status: 400, message: "scope clarification requested" }
         };
       }
 
