@@ -123,7 +123,7 @@ export async function sendChatMessage(threadId: string, body: string) {
              tenant_id: organizationId
            });
         } else {
-           webhookResult = { ok: true, status: 202, message: "Command mapped and routed to placeholder endpoint." };
+           webhookResult = { ok: false, route: "not_routed", status: 400, message: "Lệnh hợp lệ nhưng chưa có workflow xử lý (Not Implemented)." };
         }
 
         const routedMsgResult = await dbInsertChatMessage(organizationId, {
@@ -185,7 +185,7 @@ export async function sendChatMessage(threadId: string, body: string) {
       return {
         success: true,
         message: routerMsgResult.data,
-        webhook: { ok: true, route: "webhook/chat", status: 202, message: "n8n webhook fired asynchronously" }
+        webhook: { ok: false, route: "not_routed", status: 400, message: "Intent unknown, webhook not fired" }
       };
     }
 

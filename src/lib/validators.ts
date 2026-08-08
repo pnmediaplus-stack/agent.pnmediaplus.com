@@ -30,11 +30,9 @@ export function inferChatIntent(body: string): ChatIntentType {
     normalized.includes("route department") ||
     normalized.includes("định tuyến phòng ban") ||
     normalized.includes("chuyển phòng ban") ||
-    normalized.includes("phòng ban") ||
     normalized.includes("giao việc") ||
     normalized.includes("chuyển việc") ||
-    normalized.includes("phân công") ||
-    /@[a-z0-9_]+/.test(normalized) // Any @mention implies routing to that agent
+    normalized.includes("phân công")
   ) {
     return "route_department";
   }
@@ -69,7 +67,8 @@ export function requiresPublishScope(body: string) {
     /fanpage[_\s-]?name\b/.test(normalized) ||
     /page\s*[:=]/.test(normalized) ||
     /fanpage\s*[:=]/.test(normalized) ||
-    /#[a-z0-9_]+/.test(normalized); // #data reference
+    /#page[_\s-]?\w+/.test(normalized) ||
+    /#fanpage[_\s-]?\w+/.test(normalized);
 
   return !hasExplicitPageScope;
 }
