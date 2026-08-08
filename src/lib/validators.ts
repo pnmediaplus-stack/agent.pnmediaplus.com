@@ -75,12 +75,14 @@ export function requiresPublishScope(body: string) {
 
 export function requiresCampaignScope(body: string) {
   const normalized = body.toLowerCase();
-  // Check for explicit department ID/Name reference
+  // Only explicit department scope markers are accepted here.
+  // Natural language like "phòng ban marketing" must be rejected upstream.
   const hasScope =
-    /department[_\s-]?id\b/.test(normalized) ||
-    /department[_\s-]?name\b/.test(normalized) ||
-    /phòng\s*ban\s*[:=]/.test(normalized) ||
-    /phòng\s*ban\s+[a-z0-9_]+/.test(normalized);
+    /department[_\s-]?id\b\s*[:=]/.test(normalized) ||
+    /department[_\s-]?name\b\s*[:=]/.test(normalized) ||
+    /dept[_\s-]?id\b\s*[:=]/.test(normalized) ||
+    /dept[_\s-]?name\b\s*[:=]/.test(normalized) ||
+    /#department:[a-z0-9_-]+/.test(normalized);
 
   return !hasScope;
 }

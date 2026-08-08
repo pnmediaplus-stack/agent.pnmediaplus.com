@@ -6,6 +6,10 @@ import { verifyActionAuth } from "@/lib/action-auth-guard";
 
 import { loadMarketingAgentRegistry } from "@/lib/marketing-agent-loader";
 import {
+  loadDepartmentGovernanceBundle,
+  type DepartmentRegistryRecord
+} from "@/lib/department-governance-loader";
+import {
   dbInsertChatMessage,
   dbInsertAuditLog,
   dbLoadChatMessages,
@@ -27,9 +31,55 @@ function buildMissingScopeReply(intentType?: ChatIntentType) {
     return "Bạn muốn đăng lên page nào? Hãy cung cấp tên page hoặc page_id để mình chuyển đúng luồng publish.";
   }
   if (intentType === "plan_campaign" || intentType === "route_department") {
-    return "Bạn muốn giao việc cho phòng ban nào? Hãy cung cấp tên phòng ban hoặc department_id để mình route đúng agent.";
+    return "Bạn muốn giao việc cho phòng ban nào? Hãy cung cấp department_id hoặc department_name khớp đúng registry để mình route đúng agent.";
   }
   return "Thiếu scope bắt buộc. Hãy bổ sung page, phòng ban, hoặc mã định danh liên quan để mình route đúng.";
+}
+
+type DepartmentScopeHint = {
+  departmentId?: string;
+  departmentName?: string;
+};
+
+function extractDepartmentScopeHint(body: string): DepartmentScopeHint {
+  const normalized = body.trim();
+  const departmentId =
+    normalized.match(/\bdepartment[_\s-]?id\b\s*[:=]\s*([a-z0-9_-]+)\b/i)?.[1] ??
+    normalized.match(/#department:([a-z0-9_-]+)\b/i)?.[1] ??
+    normalized.match(/\bdept[_\s-]?id\b\s*[:=]\s*([a-z0-9_-]+)\b/i)?.[1];
+  const departmentName =
+    normalized.match(/\bdepartment[_\s-]?name\b\s*[:=]\s*([a-z0-9][a-z0-9 _-]*?)\s*(?:$|[,;|])/i)?.[1]?.trim() ??
+    normalized.match(/\bdept[_\s-]?name\b\s*[:=]\s*([a-z0-9][a-z0-9 _-]*?)\s*(?:$|[,;|])/i)?.[1]?.trim();
+
+  return {
+    departmentId: departmentId?.trim(),
+    departmentName: departmentName?.trim()
+  };
+}
+
+function matchDepartmentRegistryRecord(
+  records: DepartmentRegistryRecord[],
+  hint: DepartmentScopeHint
+): DepartmentRegistryRecord | null {
+  if (hint.departmentId) {
+    const byId = records.find((record) => record.department_id === hint.departmentId);
+    if (byId) return byId;
+  }
+
+  if (hint.departmentName) {
+    const normalizedName = hint.departmentName.toLowerCase();
+    const byName = records.filter(
+      (record) => record.department_name.toLowerCase() === normalizedName
+    );
+    if (byName.length === 1) return byName[0];
+    if (byName.length > 1) {
+      throw new Error(
+        `DEPARTMENT_SCOPE_AMBIGUOUS: ${hint.departmentName} matches multiple registry records`
+      );
+    }
+  }
+
+  return null;
 }
 
 export async function sendChatMessage(threadId: string, body: string) {
@@ -270,6 +320,74 @@ export async function sendChatMessage(threadId: string, body: string) {
         };
       }
 
+      const departmentScopeHint = extractDepartmentScopeHint(body);
+      if (!departmentScopeHint.departmentId && !departmentScopeHint.departmentName) {
+        const clarifyReply = buildMissingScopeReply(intentType);
+        const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
+          threadId,
+          sender: "system",
+          body: clarifyReply,
+          intentType: "clarify_missing_scope"
+        });
+
+        if (!clarifyMsgResult.data?.id) {
+          throw new Error("CLARIFY_SCOPE_MESSAGE_INSERT_FAILED");
+        }
+
+        await dbInsertAuditLog(organizationId, {
+          entityId: threadId,
+          entityType: "chat_thread",
+          action: "scope_clarification_requested",
+          actor: "System AI",
+          details: `intent=${intentType} requestId=${requestId} reason=missing_department_id_or_registry_match`
+        });
+
+        return {
+          success: false,
+          message: clarifyMsgResult.data,
+          webhook: { ok: false, route: "not_routed", status: 400, message: "scope clarification requested" }
+        };
+      }
+
+      const departmentGovernance = await loadDepartmentGovernanceBundle();
+      if (departmentGovernance.state === "blocked") {
+        throw new Error(departmentGovernance.reason);
+      }
+
+      const departmentRecord = matchDepartmentRegistryRecord(
+        departmentGovernance.data.registryJson.department_records,
+        departmentScopeHint
+      );
+
+      if (!departmentRecord) {
+        const clarifyReply =
+          "Không tìm thấy phòng ban khớp registry. Hãy cung cấp department_id hoặc department_name đúng theo registry để mình route.";
+        const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
+          threadId,
+          sender: "system",
+          body: clarifyReply,
+          intentType: "clarify_missing_scope"
+        });
+
+        if (!clarifyMsgResult.data?.id) {
+          throw new Error("CLARIFY_SCOPE_MESSAGE_INSERT_FAILED");
+        }
+
+        await dbInsertAuditLog(organizationId, {
+          entityId: threadId,
+          entityType: "chat_thread",
+          action: "scope_clarification_requested",
+          actor: "System AI",
+          details: `intent=${intentType} requestId=${requestId} reason=department_registry_miss`
+        });
+
+        return {
+          success: false,
+          message: clarifyMsgResult.data,
+          webhook: { ok: false, route: "not_routed", status: 400, message: "department registry scope not found" }
+        };
+      }
+
       const routePayload = {
         threadId,
         humanMessageId,
@@ -277,7 +395,10 @@ export async function sendChatMessage(threadId: string, body: string) {
         tenantId: auth.tenantId,
         actorId: auth.actorId,
         intentType,
-        routedIntent: intentType
+        routedIntent: intentType,
+        departmentId: departmentRecord.department_id,
+        departmentName: departmentRecord.department_name,
+        departmentPack: departmentRecord.department_pack
       };
 
       const routed = await postN8nWebhook("webhook/human-task-intake", routePayload);
