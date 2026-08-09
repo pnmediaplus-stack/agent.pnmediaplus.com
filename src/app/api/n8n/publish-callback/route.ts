@@ -28,14 +28,9 @@ const BasePayloadSchema = z.object({
 export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('x-n8n-api-key') || request.headers.get('authorization')?.replace('Bearer ', '');
-    const validKey = process.env.N8N_API_KEY;
-    if (validKey && authHeader !== validKey) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const rawPayload = await request.json().catch(() => ({}));
     
-    // Check if action exists
+    // We parse action here to do Auth Lane Separation
+    const rawPayload = await request.json().catch(() => ({}));
     const baseParse = BasePayloadSchema.safeParse(rawPayload);
     if (!baseParse.success) {
       return NextResponse.json({ ok: false, error: "Invalid JSON format" }, { status: 400 });
@@ -43,13 +38,29 @@ export async function POST(request: Request) {
 
     let action = baseParse.data.action;
     if (!action) {
-      // Legacy fallback for old N8N workflows that don't send action yet
       if (rawPayload.job_id && rawPayload.status) {
         action = "publish_status";
         rawPayload.action = "publish_status";
       } else {
-        return NextResponse.json({ ok: false, error: "Missing or invalid action" }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "Missing action" }, { status: 400 });
       }
+    }
+
+    // Auth Lane Separation (Gatekeeper Constraint #3)
+    let validKey = process.env.N8N_API_KEY; // Default legacy key
+    
+    if (action === "chat_append") {
+      // Require a dedicated lane key for agent responses
+      const campaignKey = process.env.N8N_CAMPAIGN_PLANNER_API_KEY;
+      if (!campaignKey) {
+        return NextResponse.json({ error: 'N8N_CAMPAIGN_PLANNER_API_KEY is not configured on the server' }, { status: 500 });
+      }
+      validKey = campaignKey;
+    }
+
+    if (!validKey || authHeader !== validKey) {
+      console.warn(`[N8N_CALLBACK] Auth Lane rejected for action: ${action}`);
+      return NextResponse.json({ error: 'Unauthorized for this lane' }, { status: 401 });
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
