@@ -104,7 +104,7 @@ export async function POST(request: Request) {
 
       // 1. Verify thread ownership and organization active state
       const [threadRes, orgRes] = await Promise.all([
-        fetch(`${supabaseUrl}/rest/v1/chat_threads?id=eq.${thread_id}&select=organization_id`, {
+        fetch(`${supabaseUrl}/rest/v1/chat_threads?id=eq.${thread_id}&select=departments!inner(organization_id)`, {
           method: 'GET',
           headers: {
             'apikey': serviceKey,
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
 
       const [threadData, orgData] = await Promise.all([threadRes.json(), orgRes.json()]);
 
-      if (!threadData || threadData.length === 0 || threadData[0].organization_id !== organization_id) {
+      if (!threadData || threadData.length === 0 || threadData[0].departments?.organization_id !== organization_id) {
         console.warn(`[N8N_CALLBACK:CHAT] Thread ownership mismatch or not found for thread ${thread_id}`);
         return NextResponse.json({ ok: false, error: "Thread not found or ownership mismatch" }, { status: 403 });
       }
@@ -141,8 +141,6 @@ export async function POST(request: Request) {
       }
 
       // 2. Insert new message (Append-only) with atomic Idempotency Key check
-      const finalMetadata = { ...metadata, idempotency_key };
-
       const insertRes = await fetch(`${supabaseUrl}/rest/v1/chat_messages`, {
         method: 'POST',
         headers: {
@@ -154,11 +152,10 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           thread_id,
-          organization_id,
+          idempotency_key,
           actor_type: sender,
           content: body,
-          intent_type,
-          metadata: finalMetadata
+          intent_type
         })
       });
 
