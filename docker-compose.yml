@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      labels:
+        - "com.pnmediaplus.project=agent.pnmediaplus.com"
     container_name: agent_pnmedia
     restart: unless-stopped
     ports:
