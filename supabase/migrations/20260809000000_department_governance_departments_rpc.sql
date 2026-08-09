@@ -8,7 +8,7 @@ RETURNS TABLE (
 )
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public, department_governance
+SET search_path = public, department_governance, pg_temp
 AS $$
   SELECT
     e.department_id,
@@ -20,6 +20,5 @@ AS $$
 $$;
 
 -- Grant execute permissions
-GRANT EXECUTE ON FUNCTION public.department_governance_departments() TO authenticated;
-GRANT EXECUTE ON FUNCTION public.department_governance_departments() TO anon;
+REVOKE ALL ON FUNCTION public.department_governance_departments() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.department_governance_departments() TO service_role;
