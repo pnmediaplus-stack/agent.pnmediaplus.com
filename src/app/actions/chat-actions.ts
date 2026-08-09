@@ -18,7 +18,7 @@ import {
   dbLoadActiveTasks,
   dbLoadContextData
 } from "@/lib/governance-api";
-import { requiresCampaignScope, requiresPublishScope, inferChatIntent } from "@/lib/validators";
+import { requiresCampaignScope, requiresPublishScope } from "@/lib/validators";
 
 
 
@@ -91,12 +91,24 @@ function matchDepartmentRegistryRecord(
 }
 
 export async function sendChatMessage(threadId: string, body: string) {
-  const intentType = inferChatIntent(body);
+  let intentType: import('@/types/state').ChatIntentType = "unknown";
+  
+  const trimmedBody = body.trim();
+  if (trimmedBody.startsWith('/')) {
+    const cmd = trimmedBody.split(/\s+/)[0];
+    if (cmd === '/auto_content') intentType = 'create_content';
+    else if (cmd === '/viral_research') intentType = 'create_content';
+    else if (cmd === '/publish') intentType = 'publish_content';
+    else if (cmd === '/plan_campaign') intentType = 'plan_campaign';
+    else if (cmd === '/status') intentType = 'request_status';
+  }
+
   let organizationId = "";
   let humanMessageId: string | undefined;
   let auditLogId: string | undefined;
   let agentMessageId: string | undefined;
   let requestId = "unknown";
+
   try {
     const auth = await verifyActionAuth();
     if (!auth.ok) {
@@ -120,8 +132,8 @@ export async function sendChatMessage(threadId: string, body: string) {
     humanMessageId = messageResult.data.id;
 
     // === SLASH COMMAND PARSER ===
-    if (body.trim().startsWith('/')) {
-      const parts = body.trim().split(/\s+/);
+    if (trimmedBody.startsWith('/')) {
+      const parts = trimmedBody.split(/\s+/);
       const command = parts[0];
       const args = parts.slice(1);
 
@@ -299,7 +311,7 @@ export async function sendChatMessage(threadId: string, body: string) {
       };
     }
 
-    if (intentType === "plan_campaign" || intentType === "route_department") {
+    if (intentType === "plan_campaign") {
       if (requiresCampaignScope(body)) {
         const clarifyReply = buildMissingScopeReply(intentType);
         const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
