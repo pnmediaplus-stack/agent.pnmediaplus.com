@@ -174,11 +174,11 @@ export async function sendChatMessage(threadId: string, body: string) {
           };
         }
 
-        // Route successfully
+        // Command received (routing happens below)
         await dbInsertAuditLog(organizationId, {
           entityId: threadId,
           entityType: "chat_thread",
-          action: "command_routed",
+          action: "command_received",
           actor: auth.email,
           details: `command=${command} args=${args.join(' ')}`
         });
@@ -641,6 +641,8 @@ async function routePlanCampaignCommand(
     humanMessageId,
     body,
     tenantId: auth.tenantId,
+    organization_id: organizationId,
+    tenant_id: organizationId,
     actorId: auth.actorId,
     intentType,
     routedIntent: intentType,
