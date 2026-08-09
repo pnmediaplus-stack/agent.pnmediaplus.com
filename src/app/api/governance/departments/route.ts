@@ -25,12 +25,11 @@ export async function GET(req: Request) {
     );
   }
 
-  const registry = loaded.data.snapshot.registry || {};
-  const department_records = Array.isArray(registry.department_records) ? registry.department_records : [];
+  const packs = Array.isArray(loaded.data.snapshot.packs) ? loaded.data.snapshot.packs : [];
 
-  const departments = department_records.map((record: any) => ({
-    department_id: record.department_id,
-    department_name: record.department_name
+  const departments = packs.map((pack: any) => ({
+    department_id: pack.pack_key,
+    department_name: pack.pack_name ? pack.pack_name.replace(" Pack", "") : pack.pack_key
   }));
 
   return Response.json(
