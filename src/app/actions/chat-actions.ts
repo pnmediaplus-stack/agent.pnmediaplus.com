@@ -238,6 +238,145 @@ export async function sendChatMessage(threadId: string, body: string) {
     // === END SLASH COMMAND PARSER ===
 
 
+    // === @MENTION & #DATA PARSER ===
+    const agentMatch = body.match(/@([a-zA-Z0-9_]+)/);
+    const dataMatch = body.match(/#(content|idea):([a-zA-Z0-9_-]+)/);
+
+    // The Orchestrator does not build System Prompts.
+    // It only validates scope and gates requests.
+    if (agentMatch) {
+      const agentId = agentMatch[1];
+      const registry = await loadMarketingAgentRegistry();
+
+      if (registry.state === 'blocked') {
+        const blockedMsgResult = await dbInsertChatMessage(organizationId, {
+          threadId,
+          sender: "system",
+          body: "Danh mục agent marketing hiện đang bị chặn bởi governance registry. Hãy thử lại khi registry sẵn sàng.",
+          intentType: "request_status"
+        });
+
+        if (!blockedMsgResult.data?.id) {
+          throw new Error("GOVERNANCE_REGISTRY_BLOCKED_MESSAGE_INSERT_FAILED");
+        }
+
+        await dbInsertAuditLog(organizationId, {
+          entityId: threadId,
+          entityType: "chat_thread",
+          action: "marketing_governance_blocked",
+          actor: "System AI",
+          details: `requestId=${requestId} reason=${registry.reason}`
+        });
+
+        return {
+          success: false,
+          message: blockedMsgResult.data,
+          webhook: {
+            ok: false,
+            route: "not_routed",
+            status: 503,
+            message: registry.reason
+          }
+        };
+      }
+
+      let agent = registry.data.agents.find(a => a.role_id === agentId);
+      if (!agent) {
+        const aliasMatches = registry.data.agents.filter(a => a.role_id.endsWith(`_${agentId}`));
+        if (aliasMatches.length === 1) {
+          agent = aliasMatches[0];
+        } else if (aliasMatches.length > 1) {
+          const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+            threadId,
+            sender: "system",
+            body: `Tên Alias @${agentId} trùng khớp với nhiều Agent. Vui lòng ghi rõ tên đầy đủ để tránh nhầm lẫn quyền hạn.`,
+            intentType: "clarify_missing_scope"
+          });
+          return { success: true, message: rejectMsgResult.data };
+        }
+      }
+
+      if (!agent) {
+        // Fail-closed as per contract
+        const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+          threadId,
+          sender: "system",
+          body: `Agent @${agentId} không tồn tại hoặc không được phép truy cập.`,
+          intentType: "clarify_missing_scope"
+        });
+        return { success: true, message: rejectMsgResult.data };
+      }
+
+      const mentionReply = buildReadOnlyReferenceReply("agent");
+      const mentionMsgResult = await dbInsertChatMessage(organizationId, {
+        threadId,
+        sender: "system",
+        body: mentionReply,
+        intentType: "request_status"
+      });
+
+      if (!mentionMsgResult.data?.id) {
+        throw new Error("MENTION_MESSAGE_INSERT_FAILED");
+      }
+
+      await dbInsertAuditLog(organizationId, {
+        entityId: threadId,
+        entityType: "chat_thread",
+        action: "agent_reference_received",
+        actor: "System AI",
+        details: `agent=${agent.role_id} requestId=${requestId}`
+      });
+
+      return {
+        success: false,
+        message: mentionMsgResult.data,
+        webhook: { ok: false, route: "not_routed", status: 200, message: "agent mention handled as read-only reference" }
+      };
+    }
+
+    if (dataMatch) {
+      const refType = dataMatch[1] as 'content' | 'idea';
+      const refKey = dataMatch[2];
+
+      const contextDataRes = await dbLoadContextData(organizationId, refType, refKey);
+      if (contextDataRes.error || !contextDataRes.data) {
+        const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+          threadId,
+          sender: "system",
+          body: `Không tìm thấy dữ liệu #${refType}:${refKey} trong scope của tổ chức.`,
+          intentType: "clarify_missing_scope"
+        });
+        return { success: true, message: rejectMsgResult.data };
+      }
+
+      const dataReply = buildReadOnlyReferenceReply("data");
+      const dataMsgResult = await dbInsertChatMessage(organizationId, {
+        threadId,
+        sender: "system",
+        body: dataReply,
+        intentType: "request_status"
+      });
+
+      if (!dataMsgResult.data?.id) {
+        throw new Error("DATA_REFERENCE_MESSAGE_INSERT_FAILED");
+      }
+
+      await dbInsertAuditLog(organizationId, {
+        entityId: threadId,
+        entityType: "chat_thread",
+        action: "data_reference_received",
+        actor: "System AI",
+        details: `refType=${refType} refKey=${refKey} requestId=${requestId}`
+      });
+
+      return {
+        success: false,
+        message: dataMsgResult.data,
+        webhook: { ok: false, route: "not_routed", status: 200, message: "data reference handled as read-only context" }
+      };
+    }
+    // === END @MENTION PARSER ===
+
     const auditResult = await dbInsertAuditLog(organizationId, {
       entityId: threadId,
       entityType: "chat_thread",
@@ -484,180 +623,8 @@ export async function sendChatMessage(threadId: string, body: string) {
     const historyRes = await dbLoadChatMessages(organizationId, threadId);
     if (historyRes.error) throw new Error(historyRes.error);
 
-    // === @MENTION & #DATA PARSER ===
-    const agentMatch = body.match(/@([a-zA-Z0-9_]+)/);
-    const dataMatch = body.match(/#(content|idea):([a-zA-Z0-9_-]+)/);
+    
 
-    // The Orchestrator does not build System Prompts.
-    // It only validates scope and gates requests.
-    if (agentMatch) {
-      const agentId = agentMatch[1];
-      const registry = await loadMarketingAgentRegistry();
-
-      if (registry.state === 'blocked') {
-        const blockedMsgResult = await dbInsertChatMessage(organizationId, {
-          threadId,
-          sender: "system",
-          body: "Danh mục agent marketing hiện đang bị chặn bởi governance registry. Hãy thử lại khi registry sẵn sàng.",
-          intentType: "request_status"
-        });
-
-        if (!blockedMsgResult.data?.id) {
-          throw new Error("GOVERNANCE_REGISTRY_BLOCKED_MESSAGE_INSERT_FAILED");
-        }
-
-        await dbInsertAuditLog(organizationId, {
-          entityId: threadId,
-          entityType: "chat_thread",
-          action: "marketing_governance_blocked",
-          actor: "System AI",
-          details: `requestId=${requestId} reason=${registry.reason}`
-        });
-
-        return {
-          success: false,
-          message: blockedMsgResult.data,
-          webhook: {
-            ok: false,
-            route: "not_routed",
-            status: 503,
-            message: registry.reason
-          }
-        };
-      }
-
-      let agent = registry.data.agents.find(a => a.role_id === agentId);
-      if (!agent) {
-        const aliasMatches = registry.data.agents.filter(a => a.role_id.endsWith(`_${agentId}`));
-        if (aliasMatches.length === 1) {
-          agent = aliasMatches[0];
-        } else if (aliasMatches.length > 1) {
-          const rejectMsgResult = await dbInsertChatMessage(organizationId, {
-            threadId,
-            sender: "system",
-            body: `Tên Alias @${agentId} trùng khớp với nhiều Agent. Vui lòng ghi rõ tên đầy đủ để tránh nhầm lẫn quyền hạn.`,
-            intentType: "clarify_missing_scope"
-          });
-          return { success: true, message: rejectMsgResult.data };
-        }
-      }
-
-      if (!agent) {
-        // Fail-closed as per contract
-        const rejectMsgResult = await dbInsertChatMessage(organizationId, {
-          threadId,
-          sender: "system",
-          body: `Agent @${agentId} không tồn tại hoặc không được phép truy cập.`,
-          intentType: "clarify_missing_scope"
-        });
-        return { success: true, message: rejectMsgResult.data };
-      }
-
-      const mentionReply = buildReadOnlyReferenceReply("agent");
-      const mentionMsgResult = await dbInsertChatMessage(organizationId, {
-        threadId,
-        sender: "system",
-        body: mentionReply,
-        intentType: "request_status"
-      });
-
-      if (!mentionMsgResult.data?.id) {
-        throw new Error("MENTION_MESSAGE_INSERT_FAILED");
-      }
-
-      await dbInsertAuditLog(organizationId, {
-        entityId: threadId,
-        entityType: "chat_thread",
-        action: "agent_reference_received",
-        actor: "System AI",
-        details: `agent=${agent.role_id} requestId=${requestId}`
-      });
-
-      return {
-        success: false,
-        message: mentionMsgResult.data,
-        webhook: { ok: false, route: "not_routed", status: 200, message: "agent mention handled as read-only reference" }
-      };
-    }
-
-    if (dataMatch) {
-      const refType = dataMatch[1] as 'content' | 'idea';
-      const refKey = dataMatch[2];
-
-      const contextDataRes = await dbLoadContextData(organizationId, refType, refKey);
-      if (contextDataRes.error || !contextDataRes.data) {
-        const rejectMsgResult = await dbInsertChatMessage(organizationId, {
-          threadId,
-          sender: "system",
-          body: `Không tìm thấy dữ liệu #${refType}:${refKey} trong scope của tổ chức.`,
-          intentType: "clarify_missing_scope"
-        });
-        return { success: true, message: rejectMsgResult.data };
-      }
-
-      const dataReply = buildReadOnlyReferenceReply("data");
-      const dataMsgResult = await dbInsertChatMessage(organizationId, {
-        threadId,
-        sender: "system",
-        body: dataReply,
-        intentType: "request_status"
-      });
-
-      if (!dataMsgResult.data?.id) {
-        throw new Error("DATA_REFERENCE_MESSAGE_INSERT_FAILED");
-      }
-
-      await dbInsertAuditLog(organizationId, {
-        entityId: threadId,
-        entityType: "chat_thread",
-        action: "data_reference_received",
-        actor: "System AI",
-        details: `refType=${refType} refKey=${refKey} requestId=${requestId}`
-      });
-
-      return {
-        success: false,
-        message: dataMsgResult.data,
-        webhook: { ok: false, route: "not_routed", status: 200, message: "data reference handled as read-only context" }
-      };
-    }
-    // === END @MENTION PARSER ===
-
-
-    // GATE PASSED. Route to Workflow.
-    postN8nWebhook("webhook/chat", {
-      threadId,
-      humanMessageId,
-      body,
-      tenantId: auth.tenantId,
-      actorId: auth.actorId,
-      intentType
-    }).catch(e => {
-      console.error("n8n webhook side-effect failed", e);
-    });
-
-    const routeReply = `Yêu cầu "${intentType}" đã vượt qua cổng kiểm duyệt. Đang chuyển giao cho Workflow...`;
-
-    const agentMsgResult = await dbInsertChatMessage(organizationId, {
-      threadId,
-      sender: "system",
-      body: routeReply,
-      intentType: "request_status"
-    });
-
-    if (!agentMsgResult.data?.id) {
-      throw new Error("SYSTEM_MESSAGE_INSERT_FAILED");
-    }
-
-    agentMessageId = agentMsgResult.data.id;
-
-    await dbInsertAuditLog(organizationId, {
-      entityId: threadId,
-      entityType: "chat_thread",
-      action: "webhook_dispatched",
-      actor: "System AI",
-      details: `requestId=${requestId} intent=${intentType}`
-    });
 
     return {
       success: true,
