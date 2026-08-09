@@ -205,6 +205,8 @@ export async function sendChatMessage(threadId: string, body: string) {
              message: routedMsgResult.data,
              webhook: { ok: webhookResult.ok, route: "webhook/command", status: webhookResult.status || 202, message: webhookResult.message }
            };
+        } else if (command === '/plan_campaign') {
+          return await routePlanCampaignCommand(organizationId, threadId, requestId, auth, humanMessageId, body);
         } else {
            const rejectMsgResult = await dbInsertChatMessage(organizationId, {
              threadId,
@@ -450,176 +452,6 @@ export async function sendChatMessage(threadId: string, body: string) {
       };
     }
 
-    if (intentType === "plan_campaign") {
-      if (requiresCampaignScope(body)) {
-        const clarifyReply = buildMissingScopeReply(intentType);
-        const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
-          threadId,
-          sender: "system",
-          body: clarifyReply,
-          intentType: "clarify_missing_scope"
-        });
-
-        if (!clarifyMsgResult.data?.id) {
-          throw new Error("CLARIFY_SCOPE_MESSAGE_INSERT_FAILED");
-        }
-
-        await dbInsertAuditLog(organizationId, {
-          entityId: threadId,
-          entityType: "chat_thread",
-          action: "scope_clarification_requested",
-          actor: "System AI",
-          details: `intent=${intentType} requestId=${requestId}`
-        });
-
-        return {
-          success: false,
-          message: clarifyMsgResult.data,
-          webhook: { ok: false, route: "not_routed", status: 400, message: "scope clarification requested" }
-        };
-      }
-
-      const departmentScopeHint = extractDepartmentScopeHint(body);
-      if (!departmentScopeHint.departmentId && !departmentScopeHint.departmentName) {
-        const clarifyReply = buildMissingScopeReply(intentType);
-        const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
-          threadId,
-          sender: "system",
-          body: clarifyReply,
-          intentType: "clarify_missing_scope"
-        });
-
-        if (!clarifyMsgResult.data?.id) {
-          throw new Error("CLARIFY_SCOPE_MESSAGE_INSERT_FAILED");
-        }
-
-        await dbInsertAuditLog(organizationId, {
-          entityId: threadId,
-          entityType: "chat_thread",
-          action: "scope_clarification_requested",
-          actor: "System AI",
-          details: `intent=${intentType} requestId=${requestId} reason=missing_department_id_or_registry_match`
-        });
-
-        return {
-          success: false,
-          message: clarifyMsgResult.data,
-          webhook: { ok: false, route: "not_routed", status: 400, message: "scope clarification requested" }
-        };
-      }
-
-      const departmentGovernance = await loadDepartmentGovernanceBundle();
-      if (departmentGovernance.state === "blocked") {
-        const blockedMsgResult = await dbInsertChatMessage(organizationId, {
-          threadId,
-          sender: "system",
-          body: "Luồng điều phối phòng ban hiện đang bị chặn bởi governance registry. Hãy thử lại khi registry sẵn sàng.",
-          intentType: "request_status"
-        });
-
-        if (!blockedMsgResult.data?.id) {
-          throw new Error("GOVERNANCE_BLOCKED_MESSAGE_INSERT_FAILED");
-        }
-
-        await dbInsertAuditLog(organizationId, {
-          entityId: threadId,
-          entityType: "chat_thread",
-          action: "department_governance_blocked",
-          actor: "System AI",
-          details: `intent=${intentType} requestId=${requestId} reason=${departmentGovernance.reason}`
-        });
-
-        return {
-          success: false,
-          message: blockedMsgResult.data,
-          webhook: {
-            ok: false,
-            route: "not_routed",
-            status: 503,
-            message: departmentGovernance.reason
-          }
-        };
-      }
-
-      const departmentRecord = matchDepartmentRegistryRecord(
-        departmentGovernance.data.registryJson.department_records,
-        departmentScopeHint
-      );
-
-      if (!departmentRecord) {
-        const clarifyReply =
-          "Không tìm thấy phòng ban khớp registry. Hãy cung cấp department_id hoặc department_name đúng theo registry để mình route.";
-        const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
-          threadId,
-          sender: "system",
-          body: clarifyReply,
-          intentType: "clarify_missing_scope"
-        });
-
-        if (!clarifyMsgResult.data?.id) {
-          throw new Error("CLARIFY_SCOPE_MESSAGE_INSERT_FAILED");
-        }
-
-        await dbInsertAuditLog(organizationId, {
-          entityId: threadId,
-          entityType: "chat_thread",
-          action: "scope_clarification_requested",
-          actor: "System AI",
-          details: `intent=${intentType} requestId=${requestId} reason=department_registry_miss`
-        });
-
-        return {
-          success: false,
-          message: clarifyMsgResult.data,
-          webhook: { ok: false, route: "not_routed", status: 400, message: "department registry scope not found" }
-        };
-      }
-
-      const routePayload = {
-        threadId,
-        humanMessageId,
-        body,
-        tenantId: auth.tenantId,
-        actorId: auth.actorId,
-        intentType,
-        routedIntent: intentType,
-        departmentId: departmentRecord.department_id,
-        departmentName: departmentRecord.department_name,
-        departmentPack: departmentRecord.department_pack
-      };
-
-      const routed = await postN8nWebhook("webhook/human-task-intake", routePayload);
-      if (!routed.ok) {
-        throw new Error(`DEPARTMENT_ROUTE_FAILED: ${routed.status} ${routed.message}`);
-      }
-
-      const routedReply = `Đã chuyển yêu cầu "${intentType}" vào luồng điều phối theo phòng ban.`;
-      const routedMsgResult = await dbInsertChatMessage(organizationId, {
-        threadId,
-        sender: "system",
-        body: routedReply,
-        intentType: "route_department"
-      });
-
-      if (!routedMsgResult.data?.id) {
-        throw new Error("ROUTED_MESSAGE_INSERT_FAILED");
-      }
-
-      await dbInsertAuditLog(organizationId, {
-        entityId: threadId,
-        entityType: "chat_thread",
-        action: "department_route_requested",
-        actor: "System AI",
-        details: `intent=${intentType} requestId=${requestId}`
-      });
-
-      return {
-        success: true,
-        message: routedMsgResult.data,
-        webhook: { ok: true, route: "webhook/human-task-intake", status: routed.status, message: routed.message }
-      };
-    }
-
     // Fail-closed fallback (Should be unreachable)
     throw new Error("UNHANDLED_INTENT_REACHED_END_OF_ROUTER");
   } catch (error) {
@@ -669,4 +501,182 @@ export async function pollActiveTasks() {
   if (!auth.ok) return [];
   const result = await dbLoadActiveTasks(auth.tenantId, auth.actorId);
   return result.data || [];
+}
+
+async function routePlanCampaignCommand(
+  organizationId: string,
+  threadId: string,
+  requestId: string,
+  auth: any,
+  humanMessageId: string | undefined,
+  body: string
+) {
+  const intentType = "plan_campaign";
+  if (requiresCampaignScope(body)) {
+    const clarifyReply = buildMissingScopeReply(intentType);
+    const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
+      threadId,
+      sender: "system",
+      body: clarifyReply,
+      intentType: "clarify_missing_scope"
+    });
+
+    if (!clarifyMsgResult.data?.id) {
+      throw new Error("CLARIFY_SCOPE_MESSAGE_INSERT_FAILED");
+    }
+
+    await dbInsertAuditLog(organizationId, {
+      entityId: threadId,
+      entityType: "chat_thread",
+      action: "scope_clarification_requested",
+      actor: "System AI",
+      details: `intent=${intentType} requestId=${requestId}`
+    });
+
+    return {
+      success: false,
+      message: clarifyMsgResult.data,
+      webhook: { ok: false, route: "not_routed", status: 400, message: "scope clarification requested" }
+    };
+  }
+
+  const departmentScopeHint = extractDepartmentScopeHint(body);
+  if (!departmentScopeHint.departmentId && !departmentScopeHint.departmentName) {
+    const clarifyReply = buildMissingScopeReply(intentType);
+    const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
+      threadId,
+      sender: "system",
+      body: clarifyReply,
+      intentType: "clarify_missing_scope"
+    });
+
+    if (!clarifyMsgResult.data?.id) {
+      throw new Error("CLARIFY_SCOPE_MESSAGE_INSERT_FAILED");
+    }
+
+    await dbInsertAuditLog(organizationId, {
+      entityId: threadId,
+      entityType: "chat_thread",
+      action: "scope_clarification_requested",
+      actor: "System AI",
+      details: `intent=${intentType} requestId=${requestId} reason=missing_department_id_or_registry_match`
+    });
+
+    return {
+      success: false,
+      message: clarifyMsgResult.data,
+      webhook: { ok: false, route: "not_routed", status: 400, message: "scope clarification requested" }
+    };
+  }
+
+  const departmentGovernance = await loadDepartmentGovernanceBundle();
+  if (departmentGovernance.state === "blocked") {
+    const blockedMsgResult = await dbInsertChatMessage(organizationId, {
+      threadId,
+      sender: "system",
+      body: "Luồng điều phối phòng ban hiện đang bị chặn bởi governance registry. Hãy thử lại khi registry sẵn sàng.",
+      intentType: "request_status"
+    });
+
+    if (!blockedMsgResult.data?.id) {
+      throw new Error("GOVERNANCE_BLOCKED_MESSAGE_INSERT_FAILED");
+    }
+
+    await dbInsertAuditLog(organizationId, {
+      entityId: threadId,
+      entityType: "chat_thread",
+      action: "department_governance_blocked",
+      actor: "System AI",
+      details: `intent=${intentType} requestId=${requestId} reason=${departmentGovernance.reason}`
+    });
+
+    return {
+      success: false,
+      message: blockedMsgResult.data,
+      webhook: {
+        ok: false,
+        route: "not_routed",
+        status: 503,
+        message: departmentGovernance.reason
+      }
+    };
+  }
+
+  const departmentRecord = matchDepartmentRegistryRecord(
+    departmentGovernance.data.registryJson.department_records,
+    departmentScopeHint
+  );
+
+  if (!departmentRecord) {
+    const clarifyReply =
+      "Không tìm thấy phòng ban khớp registry. Hãy cung cấp department_id hoặc department_name đúng theo registry để mình route.";
+    const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
+      threadId,
+      sender: "system",
+      body: clarifyReply,
+      intentType: "clarify_missing_scope"
+    });
+
+    if (!clarifyMsgResult.data?.id) {
+      throw new Error("CLARIFY_SCOPE_MESSAGE_INSERT_FAILED");
+    }
+
+    await dbInsertAuditLog(organizationId, {
+      entityId: threadId,
+      entityType: "chat_thread",
+      action: "scope_clarification_requested",
+      actor: "System AI",
+      details: `intent=${intentType} requestId=${requestId} reason=department_registry_miss`
+    });
+
+    return {
+      success: false,
+      message: clarifyMsgResult.data,
+      webhook: { ok: false, route: "not_routed", status: 400, message: "department registry scope not found" }
+    };
+  }
+
+  const routePayload = {
+    threadId,
+    humanMessageId,
+    body,
+    tenantId: auth.tenantId,
+    actorId: auth.actorId,
+    intentType,
+    routedIntent: intentType,
+    departmentId: departmentRecord.department_id,
+    departmentName: departmentRecord.department_name,
+    departmentPack: departmentRecord.department_pack
+  };
+
+  const routed = await postN8nWebhook("webhook/human-task-intake", routePayload);
+  if (!routed.ok) {
+    throw new Error(`DEPARTMENT_ROUTE_FAILED: ${routed.status} ${routed.message}`);
+  }
+
+  const routedReply = `Đã chuyển yêu cầu "${intentType}" vào luồng điều phối theo phòng ban.`;
+  const routedMsgResult = await dbInsertChatMessage(organizationId, {
+    threadId,
+    sender: "system",
+    body: routedReply,
+    intentType: "route_department"
+  });
+
+  if (!routedMsgResult.data?.id) {
+    throw new Error("ROUTED_MESSAGE_INSERT_FAILED");
+  }
+
+  await dbInsertAuditLog(organizationId, {
+    entityId: threadId,
+    entityType: "chat_thread",
+    action: "department_route_requested",
+    actor: "System AI",
+    details: `intent=${intentType} requestId=${requestId}`
+  });
+
+  return {
+    success: true,
+    message: routedMsgResult.data,
+    webhook: { ok: true, route: "webhook/human-task-intake", status: routed.status, message: routed.message }
+  };
 }
