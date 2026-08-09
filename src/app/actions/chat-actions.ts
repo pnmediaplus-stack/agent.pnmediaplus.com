@@ -620,18 +620,8 @@ export async function sendChatMessage(threadId: string, body: string) {
       };
     }
 
-    const historyRes = await dbLoadChatMessages(organizationId, threadId);
-    if (historyRes.error) throw new Error(historyRes.error);
-
-    
-
-
-    return {
-      success: true,
-      message: agentMsgResult.data,
-      webhook: { ok: true, route: "webhook/chat", status: 202, message: "n8n webhook fired asynchronously" }
-    };
-
+    // Fail-closed fallback (Should be unreachable)
+    throw new Error("UNHANDLED_INTENT_REACHED_END_OF_ROUTER");
   } catch (error) {
     if (organizationId && humanMessageId) await dbDeleteChatMessage(organizationId, humanMessageId).catch(() => {});
     if (organizationId && agentMessageId) await dbDeleteChatMessage(organizationId, agentMessageId).catch(() => {});

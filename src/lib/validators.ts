@@ -1,3 +1,5 @@
+import type { LifecycleState } from "@/types/state";
+import { canTransition } from "@/lib/state-machine";
 
 export function requiresPublishScope(body: string) {
   const normalized = body.toLowerCase();
