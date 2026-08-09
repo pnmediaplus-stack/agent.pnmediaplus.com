@@ -1,0 +1,288 @@
+{
+  "name": "Phase 075 - Campaign Planner AI (Strict Contract)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Phase 075 Campaign Planner Contract\n\n**1. Trigger + Enrich**\n- Phải có bước enrich tối thiểu để lấy đủ: thread_id, organization_id, brief/body.\n- Nếu thiếu organization_id hoặc không resolve được thread context, workflow phải fail-closed.\n\n**2. Scope Resolve Before LLM**\n- Trước khi gọi LLM, workflow phải resolve chính xác department scope.\n- Chỉ chấp nhận: department_id, department_name.\n- Nếu thiếu scope, phải trả về chat_append để hỏi lại người dùng.\n\n**3. Callback Output Must Preserve Markdown**\n- Kết quả từ LLM phải được giữ nguyên dạng raw Markdown string.\n- Không dùng JSON.stringify cho body callback.",
+        "height": 450,
+        "width": 450
+      },
+      "name": "Contract Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        100,
+        -150
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "plan-campaign-intake",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        100,
+        300
+      ],
+      "webhookId": "plan-campaign-intake-webhook-id"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"API_BASE_URL\"] || 'http://localhost:3000'}}/api/governance/departments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Fetch Registry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $('Webhook Trigger').item.json.body || {};\nconst registry = $input.item.json.departments || $input.item.json || [];\n\nif (!body.organization_id || !body.threadId) {\n  return { json: { valid: false, reason: 'Thiếu thông tin thread_id hoặc organization_id' } };\n}\n\nlet matchedDept = null;\nif (body.departmentId) {\n  matchedDept = registry.find(d => d.department_id === body.departmentId);\n} else if (body.departmentName) {\n  matchedDept = registry.find(d => d.department_name === body.departmentName);\n}\n\nif (!matchedDept) {\n  return { json: { valid: false, reason: 'Department not found in registry (Phòng ban chưa được cấp phép)' } };\n}\n\nreturn { \n  json: { \n    valid: true, \n    threadId: body.threadId,\n    organization_id: body.organization_id,\n    body: body.body,\n    departmentId: matchedDept.department_id, \n    departmentName: matchedDept.department_name \n  } \n};"
+      },
+      "name": "Scope Resolve",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.valid}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Valid Scope?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"API_BASE_URL\"] || 'http://localhost:3000'}}/api/n8n/publish-callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-api-key",
+              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Webhook Trigger'].json.body.threadId,\n  organization_id: $node['Webhook Trigger'].json.body.organization_id,\n  idempotency_key: $execution.id + '_error',\n  sender: 'agent_campaign_planner',\n  body: 'Lỗi Gatekeeper: ' + $json.reason,\n  intent_type: 'clarify_missing_scope'\n} }}",
+        "options": {}
+      },
+      "name": "Clarify Error (chat_append)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        900,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"API_BASE_URL\"] || 'http://localhost:3000'}}/api/n8n/publish-callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-api-key",
+              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.threadId,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_ack',\n  sender: 'agent_campaign_planner',\n  body: 'Marketing Agent thuộc phòng `' + ($json.departmentName || $json.departmentId) + '` đã nhận yêu cầu lập kế hoạch truyền thông. Đang tiến hành phân tích theo Brief của bạn...',\n  intent_type: 'agent_progress'\n} }}",
+        "options": {}
+      },
+      "name": "Acknowledge (chat_append)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        900,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env[\"OPENAI_API_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: 'You are an expert Marketing Campaign Planner. The user will provide a brief. You must output a detailed Campaign Plan in Markdown format. The plan should include Objectives, Target Audience, 3-Phase Strategy, and Key Deliverables. Do not output JSON. Output pure Markdown string.'\n    },\n    {\n      role: 'user',\n      content: 'Brief from user: ' + $json.body + '\\nDepartment: ' + ($json.departmentName || $json.departmentId)\n    }\n  ]\n} }}",
+        "options": {}
+      },
+      "name": "AI Agent (LLM)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1100,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"API_BASE_URL\"] || 'http://localhost:3000'}}/api/n8n/publish-callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-api-key",
+              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Scope Resolve'].json.threadId,\n  organization_id: $node['Scope Resolve'].json.organization_id,\n  idempotency_key: $execution.id + '_done',\n  sender: 'agent_campaign_planner',\n  body: $json.choices[0].message.content,\n  intent_type: 'agent_response'\n} }}",
+        "options": {}
+      },
+      "name": "Delivery (chat_append)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1300,
+        150
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Registry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Registry": {
+      "main": [
+        [
+          {
+            "node": "Scope Resolve",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scope Resolve": {
+      "main": [
+        [
+          {
+            "node": "Valid Scope?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Scope?": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Clarify Error (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge (chat_append)": {
+      "main": [
+        [
+          {
+            "node": "AI Agent (LLM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent (LLM)": {
+      "main": [
+        [
+          {
+            "node": "Delivery (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
