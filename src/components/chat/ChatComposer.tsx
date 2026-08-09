@@ -20,6 +20,8 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
   const [agents, setAgents] = useState<any[]>([]);
   const [artifacts, setArtifacts] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  const [departmentsStatus, setDepartmentsStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
+  const [departmentsError, setDepartmentsError] = useState<string | null>(null);
   const [agentsStatus, setAgentsStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
   const [agentsError, setAgentsError] = useState<string | null>(null);
   const [popupState, setPopupState] = useState<{
@@ -86,13 +88,31 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
   const loadDepartments = async () => {
     if (departments.length > 0) return;
     try {
+      setDepartmentsStatus("loading");
+      setDepartmentsError(null);
       const res = await fetch('/api/governance/departments');
       const data = await res.json();
-      if (data.ok && data.departments) {
-        setDepartments(data.departments);
+      if (data.state === "blocked") {
+        setDepartments([]);
+        setDepartmentsStatus("error");
+        setDepartmentsError(`Governance blocked: ${data.reason || "unknown_reason"}.`);
+        return;
+      }
+      
+      const records = data.departments || [];
+      if (records.length > 0) {
+        setDepartments(records);
+        setDepartmentsStatus("ready");
+      } else {
+        setDepartments([]);
+        setDepartmentsStatus("empty");
+        setDepartmentsError("Registry hiện tại không có phòng ban nào.");
       }
     } catch (e) {
       console.error("Failed to load departments", e);
+      setDepartments([]);
+      setDepartmentsStatus("error");
+      setDepartmentsError("Không tải được registry từ /api/governance/departments.");
     }
   };
 
@@ -316,7 +336,7 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
 
             return (
               <button
-                key={item.id}
+                key={popupState.type === "department" ? item.department_id : item.id}
                 type="button"
                 onMouseEnter={() => setActiveIndex(idx)}
                 onClick={() => selectSuggestion(item)}
@@ -353,6 +373,14 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
       {popupState.isOpen && popupState.type === "agent" && agentsStatus === "empty" && (
         <div className="mb-3 rounded-lg border border-slate-700 bg-slate-900/70 p-3 text-xs text-slate-300">
           Registry governance rỗng hoặc chưa load được. Mention cần `@role_id` hợp lệ, nếu không hệ thống sẽ fail-closed.
+        </div>
+      )}
+
+      {popupState.isOpen && popupState.type === "department" && departmentsStatus !== "ready" && (
+        <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-950/30 p-3 text-xs text-amber-200">
+          {departmentsStatus === "loading" && "Đang tải danh sách phòng ban..."}
+          {departmentsStatus === "empty" && (departmentsError ?? "Không có phòng ban nào khả dụng.")}
+          {departmentsStatus === "error" && (departmentsError ?? "Không tải được danh sách phòng ban.")}
         </div>
       )}
 
