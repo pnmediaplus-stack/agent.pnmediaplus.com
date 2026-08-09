@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo } from "react";
 import { useI18n } from "@/lib/i18n/useI18n";
-import { Paperclip, X, Loader2, Bot, FileText, AlertTriangle, Hash, Slash } from "lucide-react";
+import { Paperclip, X, Loader2, Bot, FileText, AlertTriangle, Hash, Slash, Users } from "lucide-react";
 
 type ChatComposerProps = {
   value: string;
@@ -19,11 +19,12 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
   // Autocomplete State
   const [agents, setAgents] = useState<any[]>([]);
   const [artifacts, setArtifacts] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [agentsStatus, setAgentsStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
   const [agentsError, setAgentsError] = useState<string | null>(null);
   const [popupState, setPopupState] = useState<{
     isOpen: boolean;
-    type: 'agent' | 'artifact' | 'command' | null;
+    type: 'agent' | 'artifact' | 'command' | 'department' | null;
     searchTerm: string;
     startIndex: number;
   }>({ isOpen: false, type: null, searchTerm: '', startIndex: -1 });
@@ -82,6 +83,19 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
     }
   };
 
+  const loadDepartments = async () => {
+    if (departments.length > 0) return;
+    try {
+      const res = await fetch('/api/governance/departments');
+      const data = await res.json();
+      if (data.ok && data.departments) {
+        setDepartments(data.departments);
+      }
+    } catch (e) {
+      console.error("Failed to load departments", e);
+    }
+  };
+
   const handleTextChange = (text: string) => {
     onChange(text);
 
@@ -90,8 +104,21 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
 
     // Match /command, @agent or #data right before cursor
     const match = textBeforeCursor.match(/(^|\s)([\/@#])([a-zA-Z0-9_-]*)$/);
+    const planCampaignMatch = textBeforeCursor.match(/(^|\s)(\/plan_campaign\s+)([^\s]*)$/);
 
-    if (match) {
+    if (planCampaignMatch) {
+      const term = planCampaignMatch[3];
+      const startIndex = planCampaignMatch.index! + planCampaignMatch[1].length;
+
+      setPopupState({
+        isOpen: true,
+        type: 'department',
+        searchTerm: term,
+        startIndex
+      });
+      setActiveIndex(0);
+      loadDepartments();
+    } else if (match) {
       const trigger = match[2];
       const term = match[3];
       const startIndex = match.index! + match[1].length;
@@ -130,6 +157,11 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
         (a.capability_boundary?.may || []).join(" ").toLowerCase().includes(term) ||
         (a.capability_boundary?.must_not || []).join(" ").toLowerCase().includes(term)
       ).slice(0, 10); // Max 10 results
+    } else if (popupState.type === 'department') {
+      return departments.filter(d =>
+        (d.department_id || '').toLowerCase().includes(term) ||
+        (d.department_name || '').toLowerCase().includes(term)
+      ).slice(0, 10);
     } else {
       return artifacts.filter(a =>
         (a.artifact_key || '').toLowerCase().includes(term) ||
@@ -137,7 +169,7 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
         (a.id || '').toLowerCase().includes(term)
       ).slice(0, 10);
     }
-  }, [popupState, agents, artifacts, slashCommands]);
+  }, [popupState, agents, artifacts, departments, slashCommands]);
 
   const selectSuggestion = (item: any) => {
     if (!popupState.isOpen) return;
@@ -147,6 +179,8 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
       replacement = `/${item.name} `;
     } else if (popupState.type === 'agent') {
       replacement = `@${item.role_id} `;
+    } else if (popupState.type === 'department') {
+      replacement = `/plan_campaign department_id:${item.department_id} `;
     } else {
       replacement = `#${item.artifact_key || item.canonical_name || item.id} `;
     }
@@ -257,23 +291,27 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
       {popupState.isOpen && filteredSuggestions.length > 0 && (
         <div className="absolute bottom-full mb-2 left-4 w-80 max-h-64 overflow-y-auto rounded-xl border border-indigo-500/30 bg-slate-900/95 backdrop-blur-md p-2 shadow-2xl z-50">
           <div className="text-[10px] uppercase tracking-widest text-slate-500 px-2 pb-2 mb-1 border-b border-slate-800">
-            {popupState.type === 'command' ? 'Select Command' : popupState.type === 'agent' ? 'Select Agent' : 'Select Data Reference'}
+            {popupState.type === 'command' ? 'Select Command' : popupState.type === 'agent' ? 'Select Agent' : popupState.type === 'department' ? 'Select Department' : 'Select Data Reference'}
           </div>
           {filteredSuggestions.map((item, idx) => {
             const isActive = idx === activeIndex;
-            const Icon = popupState.type === 'command' ? Slash : popupState.type === 'agent' ? Bot : FileText;
+            const Icon = popupState.type === 'command' ? Slash : popupState.type === 'agent' ? Bot : popupState.type === 'department' ? Users : FileText;
             const title =
               popupState.type === 'command'
                 ? item.name
                 : popupState.type === 'agent'
                   ? (item.role_name || item.role_id)
-                  : (item.canonical_name || item.artifact_key || item.id);
+                  : popupState.type === 'department'
+                    ? (item.department_name || item.department_id)
+                    : (item.canonical_name || item.artifact_key || item.id);
             const subTitle =
               popupState.type === 'command'
                 ? item.description
                 : popupState.type === 'agent'
                   ? [item.role_id, item.authority_level, item.constitutional_layer].filter(Boolean).join(" • ")
-                  : item.artifact_type;
+                  : popupState.type === 'department'
+                    ? `department_id:${item.department_id}`
+                    : item.artifact_type;
             const isAmbiguous = popupState.type === 'agent' && !item.role_id;
 
             return (
