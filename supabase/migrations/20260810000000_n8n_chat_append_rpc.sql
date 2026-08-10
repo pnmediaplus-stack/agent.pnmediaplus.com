@@ -1,5 +1,9 @@
 -- 20260810000000_n8n_chat_append_rpc.sql
 
+-- Ensure idempotency_key column and constraint exist before creating the RPC
+ALTER TABLE pn_os_ai_department.chat_messages ADD COLUMN IF NOT EXISTS idempotency_key text;
+CREATE UNIQUE INDEX IF NOT EXISTS chat_messages_idempotency_key_idx ON pn_os_ai_department.chat_messages (idempotency_key);
+
 create or replace function public.phase075_n8n_append_chat_message(
   p_thread_id uuid,
   p_idempotency_key text,
