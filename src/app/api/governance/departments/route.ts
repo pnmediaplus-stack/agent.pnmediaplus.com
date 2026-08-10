@@ -4,8 +4,16 @@ import { createServiceRoleClient } from "@/lib/supabase-server";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const guard = await verifyUiAuth(req);
-  if (!guard.ok) return guard.response;
+  const authHeader = req.headers.get('x-n8n-api-key') || req.headers.get('authorization')?.replace('Bearer ', '');
+  const isN8nService = authHeader && (
+    authHeader === process.env.N8N_API_KEY || 
+    authHeader === process.env.N8N_CAMPAIGN_PLANNER_API_KEY
+  );
+
+  if (!isN8nService) {
+    const guard = await verifyUiAuth(req);
+    if (!guard.ok) return guard.response;
+  }
 
   try {
     const supabase = createServiceRoleClient();
