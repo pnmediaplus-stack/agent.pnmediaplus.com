@@ -651,7 +651,12 @@ async function routePlanCampaignCommand(
     departmentPack: departmentRecord.department_pack
   };
 
-  const routed = await postN8nWebhook("webhook/human-task-intake", routePayload);
+  let webhookPath = "webhook/human-task-intake";
+  if (intentType === "plan_campaign") {
+    webhookPath = "webhook/plan-campaign-intake";
+  }
+
+  const routed = await postN8nWebhook(webhookPath, routePayload);
   if (!routed.ok) {
     throw new Error(`DEPARTMENT_ROUTE_FAILED: ${routed.status} ${routed.message}`);
   }
