@@ -151,43 +151,20 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: false, error: "Organization is not active or not found" }, { status: 403 });
       }
 
-      // Retrieve max message_seq for the thread to compute the next sequence atomically
-      const seqRes = await fetch(`${supabaseUrl}/rest/v1/chat_messages?thread_id=eq.${thread_id}&select=message_seq&order=message_seq.desc&limit=1`, {
-        method: 'GET',
-        headers: {
-          'apikey': serviceKey,
-          'Authorization': `Bearer ${serviceKey}`,
-          'Accept-Profile': 'pn_os_ai_department'
-        },
-        cache: 'no-store'
-      });
-      let nextSeq = 1;
-      if (seqRes.ok) {
-        const seqData = await seqRes.json();
-        if (seqData && seqData.length > 0) {
-          nextSeq = seqData[0].message_seq + 1;
-        }
-      }
-
-      // 2. Insert new message (Append-only) with atomic Idempotency Key check
-      const insertRes = await fetch(`${supabaseUrl}/rest/v1/chat_messages`, {
+      // 2. Insert new message via Atomic RPC (prevents message_seq TOCTOU race condition)
+      const insertRes = await fetch(`${supabaseUrl}/rest/v1/rpc/phase075_n8n_append_chat_message`, {
         method: 'POST',
         headers: {
           'apikey': serviceKey,
           'Authorization': `Bearer ${serviceKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-          'Content-Profile': 'pn_os_ai_department'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          thread_id,
-          message_seq: nextSeq,
-          idempotency_key,
-          actor_type: 'N8N',
-          actor_external_ref: sender,
-          message_kind: 'RESPONSE',
-          content: body,
-          intent_type
+          p_thread_id: thread_id,
+          p_idempotency_key: idempotency_key,
+          p_sender: sender,
+          p_content: body,
+          p_intent_type: intent_type
         })
       });
 
@@ -199,17 +176,17 @@ export async function POST(request: Request) {
           // fallback
         }
         
-        // Handle atomic unique constraint violation (idempotency hit) exactly via structured JSON
-        if (insertRes.status === 409 && errJson && errJson.code === '23505') {
-          console.log(`[N8N_CALLBACK:CHAT] Idempotency key ${idempotency_key} đã tồn tại (Atomic Reject). Bỏ qua ghi trùng.`);
-          return NextResponse.json({ ok: true, received: true, action, message: "Idempotency key already exists. Ignored." });
-        }
-
         console.error('[N8N_CALLBACK:CHAT] Lỗi insert DB:', errJson || await insertRes.text().catch(()=>''));
         return NextResponse.json({ ok: false, error: "DB_INSERT_ERROR" }, { status: 500 });
       }
 
-      console.log(`[N8N_CALLBACK:CHAT] Đã chèn tin nhắn mới vào thread ${thread_id}`);
+      const rpcResult = await insertRes.json();
+      if (rpcResult.message === 'Idempotency key already exists. Ignored.') {
+        console.log(`[N8N_CALLBACK:CHAT] Idempotency key ${idempotency_key} đã tồn tại (Atomic Reject). Bỏ qua ghi trùng.`);
+      } else {
+        console.log(`[N8N_CALLBACK:CHAT] Đã chèn tin nhắn mới vào thread ${thread_id} (seq: ${rpcResult.message_seq})`);
+      }
+      
       return NextResponse.json({ ok: true, received: true, action });
 
     } else {
