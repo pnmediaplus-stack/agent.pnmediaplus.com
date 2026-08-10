@@ -98,7 +98,7 @@
           "parameters": [
             {
               "name": "x-n8n-api-key",
-              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
+              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"] || $env[\"N8N_API_KEY\"]}}"
             },
             {
               "name": "Content-Type",
@@ -108,7 +108,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Webhook Trigger'].json.body.threadId,\n  organization_id: $node['Webhook Trigger'].json.body.organization_id,\n  idempotency_key: $execution.id + '_error',\n  sender: 'agent_campaign_planner',\n  body: 'Lỗi Gatekeeper: ' + $json.reason,\n  intent_type: 'clarify_missing_scope'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Webhook Trigger'].json.body.threadId,\n  organization_id: $node['Webhook Trigger'].json.body.organization_id,\n  idempotency_key: $execution.id + '_error',\n  sender: 'gatekeeper',\n  body: 'Lỗi Gatekeeper: ' + $json.reason,\n  intent_type: 'clarify_missing_scope'\n} }}",
         "options": {}
       },
       "name": "Clarify Error (chat_append)",
@@ -128,7 +128,7 @@
           "parameters": [
             {
               "name": "x-n8n-api-key",
-              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
+              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"] || $env[\"N8N_API_KEY\"]}}"
             },
             {
               "name": "Content-Type",
@@ -138,7 +138,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.threadId,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_ack',\n  sender: 'agent_campaign_planner',\n  body: 'Marketing Agent thuộc phòng `' + ($json.departmentName || $json.departmentId) + '` đã nhận yêu cầu lập kế hoạch truyền thông. Đang tiến hành phân tích theo Brief của bạn...',\n  intent_type: 'agent_progress'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.threadId,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_ack',\n  sender: 'agent_1_research',\n  body: 'Agent 1 (Research) thuộc phòng `' + ($json.departmentName || $json.departmentId) + '` đã nhận yêu cầu lập kế hoạch truyền thông. Đang bắt đầu nghiên cứu góc độ Viral...',\n  intent_type: 'agent_progress'\n} }}",
         "options": {}
       },
       "name": "Acknowledge (chat_append)",
@@ -168,14 +168,75 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: 'You are an expert Marketing Campaign Planner. The user will provide a brief. You must output a detailed Campaign Plan in Markdown format. The plan should include Objectives, Target Audience, 3-Phase Strategy, and Key Deliverables. Do not output JSON. Output pure Markdown string.'\n    },\n    {\n      role: 'user',\n      content: 'Brief from user: ' + $json.body + '\\nDepartment: ' + ($json.departmentName || $json.departmentId)\n    }\n  ]\n} }}",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 1 - Viral Research & Angle. Your capability is strictly BOUNDED. You MUST output a strategic research packet in valid JSON format containing exactly these keys: `audience_pain_points`, `viral_angle`, `three_phase_strategy`. You MUST NOT write final social captions. You MUST NOT output final markdown proposals. Your output is an upstream source of truth for downstream agents.'\n    },\n    {\n      role: 'user',\n      content: 'User Brief: ' + $json.body + '\\nDepartment context: ' + ($json.departmentName || $json.departmentId)\n    }\n  ]\n} }}",
         "options": {}
       },
-      "name": "AI Agent (LLM)",
+      "name": "Agent 1 - Research",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
         1100,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env[\"OPENAI_API_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 4 - Publish Readiness QA. You are a strict gatekeeper. You MUST evaluate if Agent 1\\'s research packet aligns with the user\\'s original brief. You MUST NOT rewrite the strategy or create prompts. You MUST output STRICTLY a JSON object with keys `passed` (boolean) and `reason` (string explaining why it passed or failed).'\n    },\n    {\n      role: 'user',\n      content: 'Original User Brief: ' + $node['Scope Resolve'].json.body + '\\n\\nAgent 1 Research Packet: ' + $json.choices[0].message.content\n    }\n  ]\n} }}",
+        "options": {}
+      },
+      "name": "Agent 4 - QA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1300,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const qaResponse = $input.item.json.choices[0].message.content;\nlet parsed;\ntry {\n  parsed = JSON.parse(qaResponse);\n} catch (e) {\n  parsed = { passed: false, reason: 'Invalid QA JSON output' };\n}\nreturn { json: { passed: !!parsed.passed, reason: parsed.reason || 'No reason provided' } };"
+      },
+      "name": "QA Verdict Parser",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.passed}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "QA Passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1700,
         150
       ]
     },
@@ -188,7 +249,7 @@
           "parameters": [
             {
               "name": "x-n8n-api-key",
-              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
+              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"] || $env[\"N8N_API_KEY\"]}}"
             },
             {
               "name": "Content-Type",
@@ -198,15 +259,75 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Scope Resolve'].json.threadId,\n  organization_id: $node['Scope Resolve'].json.organization_id,\n  idempotency_key: $execution.id + '_done',\n  sender: 'agent_campaign_planner',\n  body: $json.choices[0].message.content,\n  intent_type: 'agent_response'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Scope Resolve'].json.threadId,\n  organization_id: $node['Scope Resolve'].json.organization_id,\n  idempotency_key: $execution.id + '_qa_reject',\n  sender: 'agent_4_qa',\n  body: '⛔ **Agent 4 (QA) đã chặn bản Kế hoạch này vì không đạt yêu cầu:**\\n\\n' + $json.reason,\n  intent_type: 'agent_response'\n} }}",
+        "options": {}
+      },
+      "name": "QA Reject (chat_append)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env[\"OPENAI_API_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 7 - Documentation & Packaging. Your capability is strictly BOUNDED. You MUST convert the approved strategic research packet into a final beautiful Markdown Proposal output for the user. You MUST NOT alter the core strategy. You MUST NOT write social captions. Output pure Markdown string (do not wrap in JSON).'\n    },\n    {\n      role: 'user',\n      content: 'Approved Research Packet from Agent 1:\\n' + $node['Agent 1 - Research'].json.choices[0].message.content\n    }\n  ]\n} }}",
+        "options": {}
+      },
+      "name": "Agent 7 - Packaging",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1900,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"API_BASE_URL\"] || 'http://localhost:3000'}}/api/n8n/publish-callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-api-key",
+              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"] || $env[\"N8N_API_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Scope Resolve'].json.threadId,\n  organization_id: $node['Scope Resolve'].json.organization_id,\n  idempotency_key: $execution.id + '_done',\n  sender: 'agent_7_packaging',\n  body: $json.choices[0].message.content,\n  intent_type: 'agent_response'\n} }}",
         "options": {}
       },
       "name": "Delivery (chat_append)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1300,
-        150
+        2100,
+        50
       ]
     }
   ],
@@ -266,14 +387,65 @@
       "main": [
         [
           {
-            "node": "AI Agent (LLM)",
+            "node": "Agent 1 - Research",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "AI Agent (LLM)": {
+    "Agent 1 - Research": {
+      "main": [
+        [
+          {
+            "node": "Agent 4 - QA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 4 - QA": {
+      "main": [
+        [
+          {
+            "node": "QA Verdict Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QA Verdict Parser": {
+      "main": [
+        [
+          {
+            "node": "QA Passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QA Passed?": {
+      "main": [
+        [
+          {
+            "node": "Agent 7 - Packaging",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "QA Reject (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 7 - Packaging": {
       "main": [
         [
           {
