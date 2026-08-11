@@ -11,22 +11,16 @@
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
-      "position": [100, 300],
+      "position": [
+        100,
+        300
+      ],
       "webhookId": "analyze-strategy-webhook-id"
     },
     {
       "parameters": {
-        "jsCode": "const body = $('Webhook Trigger').item.json.body;\nif (!body.organization_id || !body.thread_id) {\n  throw new Error('SCOPE_ERROR: Missing required SSOT inputs (organization_id, thread_id).');\n}\nreturn { json: body };"
-      },
-      "name": "Scope Resolve",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [200, 450]
-    },
-    {
-      "parameters": {
         "method": "GET",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase5_strategies?status=eq.active&limit=1",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase5_strategies?status=eq.active&limit=1&organization_id=eq.{{$json.organization_id}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -34,10 +28,13 @@
       "name": "Get Strategy",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [300, 300],
+      "position": [
+        900,
+        300
+      ],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "SupabaseAuth",
+          "id": "Phase5ReadOnlyAuth",
           "name": "Header Auth"
         }
       }
@@ -55,13 +52,16 @@
       },
       "name": "Has Strategy?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1.0,
-      "position": [500, 300]
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase5_pivot_proposals?strategy_id=eq.{{$json[0].id}}&status=eq.pending_approval",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase5_pivot_proposals?strategy_id=eq.{{$json[0].id}}&status=eq.pending_approval&organization_id=eq.{{$json.organization_id}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -69,10 +69,13 @@
       "name": "Check Proposals",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [700, 200],
+      "position": [
+        1300,
+        200
+      ],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "SupabaseAuth",
+          "id": "Phase5ReadOnlyAuth",
           "name": "Header Auth"
         }
       }
@@ -90,13 +93,16 @@
       },
       "name": "No Pending Proposals?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1.0,
-      "position": [900, 200]
+      "typeVersion": 1,
+      "position": [
+        900,
+        200
+      ]
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_lessons_learned?order=createdAt.desc&limit=20",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_lessons_learned?order=createdAt.desc&limit=20&organization_id=eq.{{$json.organization_id}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -104,10 +110,13 @@
       "name": "Get Lessons",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1100, 100],
+      "position": [
+        1700,
+        100
+      ],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "SupabaseAuth",
+          "id": "Phase5ReadOnlyAuth",
           "name": "Header Auth"
         }
       }
@@ -118,8 +127,11 @@
       },
       "name": "Format Prompt",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [1300, 100]
+      "typeVersion": 2,
+      "position": [
+        1300,
+        100
+      ]
     },
     {
       "parameters": {
@@ -146,7 +158,10 @@
       "name": "Agent 1 - CMO Strategist",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1500, 100]
+      "position": [
+        1500,
+        100
+      ]
     },
     {
       "parameters": {
@@ -154,8 +169,11 @@
       },
       "name": "Validate Agent 1 Output",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [1700, 100]
+      "typeVersion": 2,
+      "position": [
+        1700,
+        100
+      ]
     },
     {
       "parameters": {
@@ -182,7 +200,10 @@
       "name": "Agent 4 - QA Gatekeeper",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1900, 100]
+      "position": [
+        1900,
+        100
+      ]
     },
     {
       "parameters": {
@@ -190,8 +211,11 @@
       },
       "name": "QA Verdict Parser",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [2100, 100]
+      "typeVersion": 2,
+      "position": [
+        2700,
+        100
+      ]
     },
     {
       "parameters": {
@@ -206,17 +230,45 @@
       },
       "name": "QA Passed?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1.0,
-      "position": [2300, 100]
+      "typeVersion": 1,
+      "position": [
+        2900,
+        100
+      ]
     },
     {
       "parameters": {
-        "jsCode": "return { json: { status: 'QA_REJECT', message: $input.item.json.reason, organization_id: $input.item.json.organization_id, thread_id: $input.item.json.thread_id, content_item_id: $input.item.json.content_item_id, department_id: $input.item.json.department_id, strategy_id: $input.item.json.strategy_id } };"
+        "method": "POST",
+        "url": "={{$env[\"API_BASE_URL\"]}}/api/n8n/publish-callback",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"chat_append\",\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"department_id\": \"{{$json.department_id}}\",\n  \"idempotency_key\": \"{{$execution.id}}_reject\",\n  \"content\": \"CMO Analysis Failed QA.\\n\\n**Reason:** {{$json.reason}}\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-idempotency-key",
+              "value": "={{$execution.id}}_reject"
+            }
+          ]
+        },
+        "options": {}
       },
-      "name": "Output QA Reject",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [2500, 200]
+      "name": "Callback (QA Reject)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        3100,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ControlPlaneAuth",
+          "name": "Header Auth"
+        }
+      }
     },
     {
       "parameters": {
@@ -231,18 +283,21 @@
       },
       "name": "Should Pivot?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1.0,
-      "position": [1900, 100]
+      "typeVersion": 1,
+      "position": [
+        1900,
+        100
+      ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"]}}/api/chat_append",
+        "url": "={{$env[\"API_BASE_URL\"]}}/api/n8n/publish-callback",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"department_id\": \"{{$json.department_id}}\",\n  \"message\": \"CMO Analysis Complete. Pivot Recommended: {{$json.aiResult.should_pivot}}\",\n  \"payload\": {\n    \"strategy_id\": \"{{$json.strategy_id}}\",\n    \"reasoning\": \"{{$json.aiResult.reasoning}}\",\n    \"proposed_direction\": \"{{$json.aiResult.proposed_direction}}\"\n  }\n}",
+        "jsonBody": "={\n  \"action\": \"chat_append\",\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"department_id\": \"{{$json.department_id}}\",\n  \"idempotency_key\": \"{{$execution.id}}\",\n  \"content\": \"CMO Analysis Complete. Pivot Recommended: {{$json.aiResult.should_pivot}}\\n\\n**Reasoning:** {{$json.aiResult.reasoning}}\\n\\n**Proposed Direction:** {{$json.aiResult.proposed_direction}}\"\n}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -257,7 +312,10 @@
       "name": "Callback (chat_append)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [2100, 0],
+      "position": [
+        2700,
+        0
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "ControlPlaneAuth",
@@ -271,8 +329,11 @@
       },
       "name": "Output Pivot",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [2300, 0]
+      "typeVersion": 2,
+      "position": [
+        2300,
+        0
+      ]
     },
     {
       "parameters": {
@@ -280,8 +341,11 @@
       },
       "name": "Output Stay",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [2100, 200]
+      "typeVersion": 2,
+      "position": [
+        2100,
+        200
+      ]
     },
     {
       "parameters": {
@@ -289,8 +353,11 @@
       },
       "name": "Output No Strategy",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [700, 400]
+      "typeVersion": 2,
+      "position": [
+        700,
+        400
+      ]
     },
     {
       "parameters": {
@@ -298,67 +365,373 @@
       },
       "name": "Output Pending",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [1100, 300]
+      "typeVersion": 2,
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"SUPABASE_URL\"]}}/rest/v1/phase2_content_items?id=eq.{{$json.body.content_item_id}}&organization_id=eq.{{$json.body.organization_id}}&select=id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Verify Content Scope",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        200,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Phase5ReadOnlyAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"SUPABASE_URL\"]}}/rest/v1/chat_threads?id=eq.{{$(\"Webhook Trigger\").item.json.body.thread_id}}&organization_id=eq.{{$(\"Webhook Trigger\").item.json.body.organization_id}}&select=id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Verify Thread Scope",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        400,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Phase5ReadOnlyAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $('Webhook Trigger').item.json.body || {};\nconst contentRes = $('Verify Content Scope').item.json || [];\nconst threadRes = $('Verify Thread Scope').item.json || [];\n\nif (!body.organization_id || !body.thread_id || !body.content_item_id || !body.department_id) {\n  return { json: { valid: false, reason: 'Missing required SSOT inputs' } };\n}\nif (contentRes.length === 0) {\n  return { json: { valid: false, reason: 'Registry match failed: Content Item not found in Organization' } };\n}\nif (threadRes.length === 0) {\n  return { json: { valid: false, reason: 'Registry match failed: Thread not found in Organization' } };\n}\n\n// Add variables for downstream\nreturn { json: { valid: true, ...body } };"
+      },
+      "name": "Scope Resolve",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.valid}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Valid Scope?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"API_BASE_URL\"]}}/api/n8n/publish-callback",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-idempotency-key",
+              "value": "={{$execution.id}}_scope_error"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"chat_append\",\n  \"organization_id\": \"{{$('Webhook Trigger').item.json.body.organization_id}}\",\n  \"thread_id\": \"{{$('Webhook Trigger').item.json.body.thread_id}}\",\n  \"content_item_id\": \"{{$('Webhook Trigger').item.json.body.content_item_id}}\",\n  \"department_id\": \"{{$('Webhook Trigger').item.json.body.department_id}}\",\n  \"idempotency_key\": \"{{$execution.id}}_scope_error\",\n  \"content\": \"CMO Analysis Failed Scope Resolve.\\n\\n**Reason:** {{$json.reason}}\"\n}",
+        "options": {}
+      },
+      "name": "Callback (Scope Error)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        800,
+        500
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ControlPlaneAuth",
+          "name": "Header Auth"
+        }
+      }
     }
   ],
   "connections": {
-    "Webhook Trigger": {
-      "main": [ [ { "node": "Scope Resolve", "type": "main", "index": 0 } ] ]
-    },
-    "Scope Resolve": {
-      "main": [ [ { "node": "Get Strategy", "type": "main", "index": 0 } ] ]
-    },
     "Get Strategy": {
-      "main": [ [ { "node": "Has Strategy?", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Has Strategy?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Has Strategy?": {
       "main": [
-        [ { "node": "Check Proposals", "type": "main", "index": 0 } ],
-        [ { "node": "Output No Strategy", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Check Proposals",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Output No Strategy",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Check Proposals": {
-      "main": [ [ { "node": "No Pending Proposals?", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "No Pending Proposals?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "No Pending Proposals?": {
       "main": [
-        [ { "node": "Get Lessons", "type": "main", "index": 0 } ],
-        [ { "node": "Output Pending", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Get Lessons",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Output Pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Get Lessons": {
-      "main": [ [ { "node": "Format Prompt", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Format Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Format Prompt": {
-      "main": [ [ { "node": "Agent 1 - CMO Strategist", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Agent 1 - CMO Strategist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Agent 1 - CMO Strategist": {
-      "main": [ [ { "node": "Validate Agent 1 Output", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Validate Agent 1 Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Validate Agent 1 Output": {
-      "main": [ [ { "node": "Agent 4 - QA Gatekeeper", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Agent 4 - QA Gatekeeper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Agent 4 - QA Gatekeeper": {
-      "main": [ [ { "node": "QA Verdict Parser", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "QA Verdict Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "QA Verdict Parser": {
-      "main": [ [ { "node": "QA Passed?", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "QA Passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "QA Passed?": {
       "main": [
-        [ { "node": "Should Pivot?", "type": "main", "index": 0 } ],
-        [ { "node": "Output QA Reject", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Should Pivot?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Output QA Reject",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Should Pivot?": {
       "main": [
-        [ { "node": "Callback (chat_append)", "type": "main", "index": 0 } ],
-        [ { "node": "Output Stay", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Callback (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Output Stay",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Callback (chat_append)": {
-      "main": [ [ { "node": "Output Pivot", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Output Pivot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verify Content Scope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Content Scope": {
+      "main": [
+        [
+          {
+            "node": "Verify Thread Scope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Thread Scope": {
+      "main": [
+        [
+          {
+            "node": "Scope Resolve",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scope Resolve": {
+      "main": [
+        [
+          {
+            "node": "Valid Scope?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Scope?": {
+      "main": [
+        [
+          {
+            "node": "Get Strategy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback (Scope Error)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
