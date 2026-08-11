@@ -21,15 +21,10 @@ export async function GET(req: Request) {
       return Response.json({ ok: false, state: "blocked", error: "MISSING_REQUIRED_PARAMS" }, { status: 400 });
     }
     const supabase = createServiceRoleClient();
-    const { data: org, error: orgErr } = await supabase
-      .schema('portal_auth')
-      .from('organizations')
-      .select('id')
-      .eq('id', orgId)
-      .eq('status', 'active')
-      .single();
-    
-    if (orgErr || !org) {
+    const { data: isActive, error: rpcErr } = await supabase
+      .rpc('check_tenant_active', { p_organization_id: orgId });
+
+    if (rpcErr || !isActive) {
       return Response.json({ ok: false, state: "blocked", error: "UNAUTHORIZED_TENANT_OR_INACTIVE" }, { status: 403 });
     }
   } else {
