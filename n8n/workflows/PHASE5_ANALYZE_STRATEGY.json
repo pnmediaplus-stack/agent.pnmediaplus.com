@@ -115,42 +115,99 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"]}}/api/phase2/ai-broker",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.prompt}}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" },\n  \"tenant_id\": \"{{$json.tenant_id}}\"\n}",
+        "url": "https://api.openai.com/v1/chat/completions",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
-              "name": "x-request-id",
-              "value": "={{$execution.id}}"
+              "name": "Authorization",
+              "value": "=Bearer {{$env[\"OPENAI_API_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
         },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.prompt}}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n}",
         "options": {}
       },
-      "name": "AI Broker LLM",
+      "name": "Agent 1 - CMO Strategist",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1500, 100],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "ControlPlaneAuth",
-          "name": "Header Auth"
-        }
-      }
+      "position": [1500, 100]
     },
     {
       "parameters": {
-        "jsCode": "const aiResult = JSON.parse($input.item.json.choices[0].message.content);\nreturn { json: { aiResult, strategy_id: $('Format Prompt').item.json.strategy_id } };"
+        "jsCode": "const response = $input.item.json.choices[0].message.content;\nlet parsed;\ntry {\n  parsed = JSON.parse(response);\n} catch (e) {\n  throw new Error('STRUCTURAL_ERROR: Agent 1 did not return valid JSON.');\n}\nif (typeof parsed.should_pivot !== 'boolean') {\n  throw new Error('STRUCTURAL_ERROR: Agent 1 output is missing the boolean `should_pivot` key.');\n}\nreturn { json: { aiResult: parsed, tenant_id: $('Format Prompt').item.json.tenant_id, strategy_id: $('Format Prompt').item.json.strategy_id } };"
       },
-      "name": "Parse Result",
+      "name": "Validate Agent 1 Output",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2.0,
       "position": [1700, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env[\"OPENAI_API_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are Agent 4 - QA Gatekeeper. You must evaluate if Agent 1's decision to pivot or stay is logically sound given the lessons learned.\\nOutput MUST be strict JSON: { \\\"passed\\\": boolean, \\\"reason\\\": \\\"string\\\" }\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ 'Lessons Learned (Context):\\n' + $('Format Prompt').item.json.prompt + '\\n\\nAgent 1 Output:\\n' + JSON.stringify($json.aiResult, null, 2) }}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n}",
+        "options": {}
+      },
+      "name": "Agent 4 - QA Gatekeeper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1900, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.item.json.choices[0].message.content;\nlet parsed;\ntry {\n  parsed = JSON.parse(response);\n} catch (e) {\n  parsed = { passed: false, reason: 'Invalid JSON from QA Gatekeeper' };\n}\nreturn { json: { passed: !!parsed.passed, reason: parsed.reason, aiResult: $('Validate Agent 1 Output').item.json.aiResult, tenant_id: $('Validate Agent 1 Output').item.json.tenant_id, strategy_id: $('Validate Agent 1 Output').item.json.strategy_id } };"
+      },
+      "name": "QA Verdict Parser",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [2100, 100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.passed}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "QA Passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1.0,
+      "position": [2300, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { status: 'QA_REJECT', message: $input.item.json.reason, tenant_id: $input.item.json.tenant_id, strategy_id: $input.item.json.strategy_id } };"
+      },
+      "name": "Output QA Reject",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [2500, 200]
     },
     {
       "parameters": {
@@ -262,13 +319,25 @@
       "main": [ [ { "node": "Format Prompt", "type": "main", "index": 0 } ] ]
     },
     "Format Prompt": {
-      "main": [ [ { "node": "AI Broker LLM", "type": "main", "index": 0 } ] ]
+      "main": [ [ { "node": "Agent 1 - CMO Strategist", "type": "main", "index": 0 } ] ]
     },
-    "AI Broker LLM": {
-      "main": [ [ { "node": "Parse Result", "type": "main", "index": 0 } ] ]
+    "Agent 1 - CMO Strategist": {
+      "main": [ [ { "node": "Validate Agent 1 Output", "type": "main", "index": 0 } ] ]
     },
-    "Parse Result": {
-      "main": [ [ { "node": "Should Pivot?", "type": "main", "index": 0 } ] ]
+    "Validate Agent 1 Output": {
+      "main": [ [ { "node": "Agent 4 - QA Gatekeeper", "type": "main", "index": 0 } ] ]
+    },
+    "Agent 4 - QA Gatekeeper": {
+      "main": [ [ { "node": "QA Verdict Parser", "type": "main", "index": 0 } ] ]
+    },
+    "QA Verdict Parser": {
+      "main": [ [ { "node": "QA Passed?", "type": "main", "index": 0 } ] ]
+    },
+    "QA Passed?": {
+      "main": [
+        [ { "node": "Should Pivot?", "type": "main", "index": 0 } ],
+        [ { "node": "Output QA Reject", "type": "main", "index": 0 } ]
+      ]
     },
     "Should Pivot?": {
       "main": [
