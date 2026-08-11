@@ -181,6 +181,18 @@
     },
     {
       "parameters": {
+        "jsCode": "const response = $input.item.json.choices[0].message.content;\nlet parsed;\ntry {\n  parsed = JSON.parse(response);\n} catch (e) {\n  throw new Error('STRUCTURAL_ERROR: Agent 1 did not return valid JSON.');\n}\nif (!parsed.daily_timeline) {\n  throw new Error('STRUCTURAL_ERROR: Agent 1 output is missing the required `daily_timeline` key.');\n}\nreturn $input.item;"
+      },
+      "name": "Validate Agent 1 Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        150
+      ]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://api.openai.com/v1/chat/completions",
         "sendHeaders": true,
@@ -309,7 +321,7 @@
           "parameters": [
             {
               "name": "x-n8n-api-key",
-              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"] || $env[\"N8N_API_KEY\"]}}"
+              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
             },
             {
               "name": "Content-Type",
@@ -395,6 +407,17 @@
       ]
     },
     "Agent 1 - Research": {
+      "main": [
+        [
+          {
+            "node": "Validate Agent 1 Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Agent 1 Output": {
       "main": [
         [
           {
