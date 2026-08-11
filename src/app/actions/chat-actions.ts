@@ -637,6 +637,7 @@ async function routePlanCampaignCommand(
   }
 
   const routePayload = {
+    thread_id: threadId,
     threadId,
     humanMessageId,
     body,
@@ -644,10 +645,14 @@ async function routePlanCampaignCommand(
     organization_id: organizationId,
     tenant_id: organizationId,
     actorId: auth.actorId,
+    intent_type: intentType,
     intentType,
     routedIntent: intentType,
+    department_id: departmentRecord.department_id,
     departmentId: departmentRecord.department_id,
+    department_name: departmentRecord.department_name,
     departmentName: departmentRecord.department_name,
+    department_pack: departmentRecord.department_pack,
     departmentPack: departmentRecord.department_pack
   };
 
