@@ -7,6 +7,11 @@ type SupabaseClient = {
   from: (tableName: string) => {
     select: (query: string) => any;
   };
+  schema: (schemaName: string) => {
+    from: (tableName: string) => {
+      select: (query: string) => any;
+    };
+  };
 };
 
 export function createServiceRoleClient(): SupabaseClient {
@@ -123,6 +128,13 @@ export function createServiceRoleClient(): SupabaseClient {
         }
       };
       return queryBuilder;
+    },
+    schema: (schemaName: string) => {
+      return {
+        from: (tableName: string) => {
+          return client.from(`${schemaName}.${tableName}`);
+        }
+      };
     }
   };
 

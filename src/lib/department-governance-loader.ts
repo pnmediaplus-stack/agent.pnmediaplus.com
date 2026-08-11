@@ -55,6 +55,7 @@ export type DepartmentRegistryRecord = {
   department_id: string;
   department_name: string;
   department_pack: string;
+  department_pack_key: string;
   owner_role: string;
   owner_team: string;
   primary_purpose: string;

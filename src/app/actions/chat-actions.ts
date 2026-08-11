@@ -10,6 +10,9 @@ import {
   type DepartmentRegistryRecord
 } from "@/lib/department-governance-loader";
 import {
+  buildCampaignPlanRequestContract
+} from "@/lib/plan-campaign-contract";
+import {
   dbInsertChatMessage,
   dbInsertAuditLog,
   dbLoadChatMessages,
@@ -636,11 +639,61 @@ async function routePlanCampaignCommand(
     };
   }
 
+  const departmentPackKey = departmentRecord.department_pack_key;
+  if (!departmentPackKey) {
+    return {
+      success: false,
+      error: "DEPARTMENT_PACK_KEY_MISSING_IN_REGISTRY"
+    };
+  }
+  const departmentPack = departmentGovernance.data.packsJson.department_packs[departmentPackKey];
+
+  if (!departmentPack) {
+    const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
+      threadId,
+      sender: "system",
+      body: `Không tìm thấy department pack khớp registry cho ${departmentRecord.department_pack}. Hãy rà soát governance bundle trước khi route tiếp.`,
+      intentType: "clarify_missing_scope"
+    });
+
+    if (!clarifyMsgResult.data?.id) {
+      throw new Error("CLARIFY_SCOPE_MESSAGE_INSERT_FAILED");
+    }
+
+    await dbInsertAuditLog(organizationId, {
+      entityId: threadId,
+      entityType: "chat_thread",
+      action: "scope_clarification_requested",
+      actor: "System AI",
+      details: `intent=${intentType} requestId=${requestId} reason=department_pack_registry_miss`
+    });
+
+    return {
+      success: false,
+      message: clarifyMsgResult.data,
+      webhook: { ok: false, route: "not_routed", status: 400, message: "department pack registry scope not found" }
+    };
+  }
+
+  const campaignContract = buildCampaignPlanRequestContract({
+    body,
+    departmentRecord,
+    departmentPack
+  });
+
   const routePayload = {
     thread_id: threadId,
     threadId,
     humanMessageId,
     body,
+    campaign_brief: campaignContract.campaign_brief,
+    campaign_goal: campaignContract.campaign_goal,
+    campaign_duration_days: campaignContract.campaign_duration_days,
+    paid_media_allowed: campaignContract.paid_media_allowed,
+    target_terms: campaignContract.target_terms,
+    required_terms: campaignContract.required_terms,
+    validation_hints: campaignContract.validation_hints,
+    campaign_contract: campaignContract,
     tenantId: auth.tenantId,
     organization_id: organizationId,
     tenant_id: organizationId,
@@ -652,8 +705,9 @@ async function routePlanCampaignCommand(
     departmentId: departmentRecord.department_id,
     department_name: departmentRecord.department_name,
     departmentName: departmentRecord.department_name,
-    department_pack: departmentRecord.department_pack,
-    departmentPack: departmentRecord.department_pack
+    department_pack: departmentPack,
+    departmentPack: departmentPack,
+    department_pack_key: departmentPackKey
   };
 
   let webhookPath = "webhook/human-task-intake";
