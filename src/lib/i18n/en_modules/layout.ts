@@ -2,7 +2,7 @@ export const layout = {
   "layout.brand.name": "PN OS AI Department",
   "layout.brand.phase": "Phase 1 Internal MVP",
   "layout.brand.tagline": "Thin-shell UI for commands, registry state, approvals, and workflow monitoring.",
-  "layout.header.title": "Localhost build",
+  "layout.header.title": "agent.pnmediaplus.com",
   "layout.header.description": "Next.js shell with live data surfaces and safe server routes.",
   "layout.sidebar.userCard.titleReady": "Signed in",
   "layout.sidebar.userCard.titleBlocked": "Portal blocked",

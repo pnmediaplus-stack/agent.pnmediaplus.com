@@ -473,7 +473,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:3000/api/n8n/publish-callback",
+        "url": "https://agent.pnmediaplus.com/api/n8n/publish-callback",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"job_id\": \"{{ $('Normalize Payload').first().json.job_id }}\",\n  \"post_id\": \"{{ $('Normalize Payload').first().json.post_id }}\",\n  \"status\": \"Success\",\n  \"fb_id\": \"{{ $json.fb_id }}\"\n}",
@@ -515,7 +515,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:3000/api/n8n/publish-callback",
+        "url": "https://agent.pnmediaplus.com/api/n8n/publish-callback",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"job_id\": \"{{ $json.job_id }}\",\n  \"post_id\": \"{{ $json.post_id }}\",\n  \"status\": \"{{ $json.status }}\"\n}",

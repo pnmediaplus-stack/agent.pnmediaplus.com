@@ -208,7 +208,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{$env[\"API_BASE_URL\"] || 'http://localhost:3000'}}/api/governance/marketing-agents",
+        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/governance/marketing-agents",
         "authentication": "none",
         "options": {}
       },

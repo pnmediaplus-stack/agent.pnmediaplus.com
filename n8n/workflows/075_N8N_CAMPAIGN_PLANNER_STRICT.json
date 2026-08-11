@@ -34,7 +34,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{$env[\"API_BASE_URL\"] || 'http://localhost:3000'}}/api/governance/departments",
+        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/governance/departments",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -92,7 +92,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] || 'http://localhost:3000'}}/api/n8n/publish-callback",
+        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/n8n/publish-callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -122,7 +122,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] || 'http://localhost:3000'}}/api/n8n/publish-callback",
+        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/n8n/publish-callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -243,7 +243,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] || 'http://localhost:3000'}}/api/n8n/publish-callback",
+        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/n8n/publish-callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -303,7 +303,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] || 'http://localhost:3000'}}/api/n8n/publish-callback",
+        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/n8n/publish-callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
