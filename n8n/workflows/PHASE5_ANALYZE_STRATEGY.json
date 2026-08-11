@@ -16,6 +16,15 @@
     },
     {
       "parameters": {
+        "jsCode": "const body = $('Webhook Trigger').item.json.body;\nif (!body.organization_id || !body.thread_id) {\n  throw new Error('SCOPE_ERROR: Missing required SSOT inputs (organization_id, thread_id).');\n}\nreturn { json: body };"
+      },
+      "name": "Scope Resolve",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.0,
+      "position": [200, 450]
+    },
+    {
+      "parameters": {
         "method": "GET",
         "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase5_strategies?status=eq.active&limit=1",
         "authentication": "genericCredentialType",
@@ -105,7 +114,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const strategy = $('Get Strategy').item.json[0];\nconst lessons = $input.item.json || [];\nif (lessons.length === 0) {\n  lessons.push({ lessonText: \"Our recent campaigns received very low engagement. The target audience (Gen Z) seems unresponsive to long-form text. They prefer short, punchy visual hooks.\" });\n}\n\nconst isVi = $('Webhook Trigger').item.json.body.locale === 'vi';\nconst lessonsText = lessons.map(l => `- ${l.lessonText}${l.metricHighlight ? ' (' + l.metricHighlight + ')' : ''}`).join('\\n');\nconst langInstruction = isVi \n  ? \"IMPORTANT: Your reasoning and proposed_direction MUST be written entirely in Vietnamese (Tiếng Việt).\" \n  : \"IMPORTANT: Your reasoning and proposed_direction MUST be written entirely in English.\";\n\nconst prompt = `You are a ruthless, data-driven Chief Marketing Officer AI.\\nYour current ACTIVE STRATEGY is: \"${strategy.name}\"\\nVision: \"${strategy.vision}\"\\n\\nHere are the recent lessons learned from the field:\\n${lessonsText}\\n\\nYour task: Evaluate if we should PIVOT (change direction) or STAY THE COURSE.\\nIf the lessons indicate failure or a mismatch, you MUST pivot. \\n${langInstruction}\\n\\nIf we should pivot, respond with STRICT JSON:\\n{\\n  \"should_pivot\": true,\\n  \"reasoning\": \"${isVi ? 'Giải thích lý do' : 'Detailed reasoning'}\",\\n  \"proposed_direction\": \"${isVi ? 'Hướng đi mới' : 'New direction'}\"\\n}\\nIf we should stay the course, respond with STRICT JSON:\\n{\\n  \"should_pivot\": false\\n}`;\n\nreturn { json: { prompt, tenant_id: $('Webhook Trigger').item.json.body.tenant_id, strategy_id: strategy.id } };"
+        "jsCode": "const strategy = $('Get Strategy').item.json[0];\nconst lessons = $input.item.json || [];\nif (lessons.length === 0) {\n  lessons.push({ lessonText: \"Our recent campaigns received very low engagement. The target audience (Gen Z) seems unresponsive to long-form text. They prefer short, punchy visual hooks.\" });\n}\n\nconst isVi = $('Webhook Trigger').item.json.body.locale === 'vi';\nconst lessonsText = lessons.map(l => `- ${l.lessonText}${l.metricHighlight ? ' (' + l.metricHighlight + ')' : ''}`).join('\\n');\nconst langInstruction = isVi \n  ? \"IMPORTANT: Your reasoning and proposed_direction MUST be written entirely in Vietnamese (Tiếng Việt).\" \n  : \"IMPORTANT: Your reasoning and proposed_direction MUST be written entirely in English.\";\n\nconst prompt = `You are a ruthless, data-driven Chief Marketing Officer AI.\\nYour current ACTIVE STRATEGY is: \"${strategy.name}\"\\nVision: \"${strategy.vision}\"\\n\\nHere are the recent lessons learned from the field:\\n${lessonsText}\\n\\nYour task: Evaluate if we should PIVOT (change direction) or STAY THE COURSE.\\nIf the lessons indicate failure or a mismatch, you MUST pivot. \\n${langInstruction}\\n\\nIf we should pivot, respond with STRICT JSON:\\n{\\n  \"should_pivot\": true,\\n  \"reasoning\": \"${isVi ? 'Giải thích lý do' : 'Detailed reasoning'}\",\\n  \"proposed_direction\": \"${isVi ? 'Hướng đi mới' : 'New direction'}\"\\n}\\nIf we should stay the course, respond with STRICT JSON:\\n{\\n  \"should_pivot\": false\\n}`;\n\nreturn { json: { prompt, organization_id: $('Webhook Trigger').item.json.body.organization_id, thread_id: $('Webhook Trigger').item.json.body.thread_id, content_item_id: $('Webhook Trigger').item.json.body.content_item_id, department_id: $('Webhook Trigger').item.json.body.department_id, strategy_id: strategy.id } };"
       },
       "name": "Format Prompt",
       "type": "n8n-nodes-base.code",
@@ -141,7 +150,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.item.json.choices[0].message.content;\nlet parsed;\ntry {\n  parsed = JSON.parse(response);\n} catch (e) {\n  throw new Error('STRUCTURAL_ERROR: Agent 1 did not return valid JSON.');\n}\nif (typeof parsed.should_pivot !== 'boolean') {\n  throw new Error('STRUCTURAL_ERROR: Agent 1 output is missing the boolean `should_pivot` key.');\n}\nreturn { json: { aiResult: parsed, tenant_id: $('Format Prompt').item.json.tenant_id, strategy_id: $('Format Prompt').item.json.strategy_id } };"
+        "jsCode": "const response = $input.item.json.choices[0].message.content;\nlet parsed;\ntry {\n  parsed = JSON.parse(response);\n} catch (e) {\n  throw new Error('STRUCTURAL_ERROR: Agent 1 did not return valid JSON.');\n}\nif (typeof parsed.should_pivot !== 'boolean') {\n  throw new Error('STRUCTURAL_ERROR: Agent 1 output is missing the boolean `should_pivot` key.');\n}\nreturn { json: { aiResult: parsed, organization_id: $('Format Prompt').item.json.organization_id, thread_id: $('Format Prompt').item.json.thread_id, content_item_id: $('Format Prompt').item.json.content_item_id, department_id: $('Format Prompt').item.json.department_id, strategy_id: $('Format Prompt').item.json.strategy_id } };"
       },
       "name": "Validate Agent 1 Output",
       "type": "n8n-nodes-base.code",
@@ -177,7 +186,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.item.json.choices[0].message.content;\nlet parsed;\ntry {\n  parsed = JSON.parse(response);\n} catch (e) {\n  parsed = { passed: false, reason: 'Invalid JSON from QA Gatekeeper' };\n}\nreturn { json: { passed: !!parsed.passed, reason: parsed.reason, aiResult: $('Validate Agent 1 Output').item.json.aiResult, tenant_id: $('Validate Agent 1 Output').item.json.tenant_id, strategy_id: $('Validate Agent 1 Output').item.json.strategy_id } };"
+        "jsCode": "const response = $input.item.json.choices[0].message.content;\nlet parsed;\ntry {\n  parsed = JSON.parse(response);\n  if (typeof parsed.passed !== 'boolean' || typeof parsed.reason !== 'string') throw new Error('Missing fields');\n} catch (e) {\n  parsed = { passed: false, reason: 'QA_REJECT: Invalid QA Output Schema' };\n}\nreturn { json: { passed: parsed.passed, reason: parsed.reason, aiResult: $('Validate Agent 1 Output').item.json.aiResult, organization_id: $('Validate Agent 1 Output').item.json.organization_id, thread_id: $('Validate Agent 1 Output').item.json.thread_id, content_item_id: $('Validate Agent 1 Output').item.json.content_item_id, department_id: $('Validate Agent 1 Output').item.json.department_id, strategy_id: $('Validate Agent 1 Output').item.json.strategy_id } };"
       },
       "name": "QA Verdict Parser",
       "type": "n8n-nodes-base.code",
@@ -202,7 +211,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return { json: { status: 'QA_REJECT', message: $input.item.json.reason, tenant_id: $input.item.json.tenant_id, strategy_id: $input.item.json.strategy_id } };"
+        "jsCode": "return { json: { status: 'QA_REJECT', message: $input.item.json.reason, organization_id: $input.item.json.organization_id, thread_id: $input.item.json.thread_id, content_item_id: $input.item.json.content_item_id, department_id: $input.item.json.department_id, strategy_id: $input.item.json.strategy_id } };"
       },
       "name": "Output QA Reject",
       "type": "n8n-nodes-base.code",
@@ -228,30 +237,30 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase5_pivot_proposals",
+        "url": "={{$env[\"API_BASE_URL\"]}}/api/chat_append",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"strategy_id\": \"{{$json.strategy_id}}\",\n  \"reasoning\": \"{{$json.aiResult.reasoning}}\",\n  \"proposed_direction\": \"{{$json.aiResult.proposed_direction}}\",\n  \"status\": \"pending_approval\"\n}",
+        "jsonBody": "={\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"department_id\": \"{{$json.department_id}}\",\n  \"message\": \"CMO Analysis Complete. Pivot Recommended: {{$json.aiResult.should_pivot}}\",\n  \"payload\": {\n    \"strategy_id\": \"{{$json.strategy_id}}\",\n    \"reasoning\": \"{{$json.aiResult.reasoning}}\",\n    \"proposed_direction\": \"{{$json.aiResult.proposed_direction}}\"\n  }\n}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
-              "name": "Prefer",
-              "value": "return=representation"
+              "name": "x-idempotency-key",
+              "value": "={{$execution.id}}"
             }
           ]
         },
         "options": {}
       },
-      "name": "Insert Proposal",
+      "name": "Callback (chat_append)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [2100, 0],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "SupabaseAuth",
+          "id": "ControlPlaneAuth",
           "name": "Header Auth"
         }
       }
@@ -295,6 +304,9 @@
   ],
   "connections": {
     "Webhook Trigger": {
+      "main": [ [ { "node": "Scope Resolve", "type": "main", "index": 0 } ] ]
+    },
+    "Scope Resolve": {
       "main": [ [ { "node": "Get Strategy", "type": "main", "index": 0 } ] ]
     },
     "Get Strategy": {
@@ -341,11 +353,11 @@
     },
     "Should Pivot?": {
       "main": [
-        [ { "node": "Insert Proposal", "type": "main", "index": 0 } ],
+        [ { "node": "Callback (chat_append)", "type": "main", "index": 0 } ],
         [ { "node": "Output Stay", "type": "main", "index": 0 } ]
       ]
     },
-    "Insert Proposal": {
+    "Callback (chat_append)": {
       "main": [ [ { "node": "Output Pivot", "type": "main", "index": 0 } ] ]
     }
   },
