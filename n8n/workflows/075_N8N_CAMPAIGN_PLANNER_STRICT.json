@@ -108,7 +108,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Webhook Trigger'].json.body.thread_id,\n  organization_id: $node['Webhook Trigger'].json.body.organization_id,\n  idempotency_key: $execution.id + '_error',\n  sender: 'gatekeeper',\n  body: 'Lỗi Gatekeeper: ' + $json.reason,\n  intent_type: 'clarify_missing_scope'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Webhook Trigger'].json.body.thread_id,\n  organization_id: $node['Webhook Trigger'].json.body.organization_id,\n  idempotency_key: $execution.id + '_error',\n  sender: 'gatekeeper',\n  body: 'Lỗi Gatekeeper: ' + ($json.reason || 'NEEDS_CLARIFICATION') + (Array.isArray($json.clarification_questions) && $json.clarification_questions.length ? '\\n\\nCâu hỏi cần làm rõ:\\n- ' + $json.clarification_questions.join('\\n- ') : ''),\n  intent_type: 'clarify_missing_scope'\n} }}",
         "options": {}
       },
       "name": "Clarify Error (chat_append)",
@@ -168,7 +168,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 1 - Viral Research & Angle. Your capability is strictly BOUNDED. You MUST treat campaign_brief as the SSOT and only use the deterministic contract fields provided by the control plane. You MUST NOT infer campaign_goal, required_terms, validation_hints, paid_media_allowed, or campaign_duration_days beyond the provided contract. You MUST carefully read the user request and the contract envelope, then produce a strategic research packet in valid JSON format containing exactly these keys: `audience_pain_points`, `viral_angle`, `three_phase_strategy`, `daily_timeline` (an array MUST CONTAIN EXACTLY campaign_duration_days items, e.g. if 15 days then exactly 15 objects), and `uses_ads` (a boolean indicating whether the strategy uses paid advertising). You MUST NOT write final social captions. You MUST NOT output final markdown proposals. Your output is an upstream source of truth for downstream agents. YOU MUST PROVIDE COMPREHENSIVE AND DETAILED CONTENT FOR ALL FIELDS, DO NOT RETURN EMPTY ARRAYS OR STRINGS. EVEN IF the campaign_brief lacks specifics, YOU MUST INVENT AND EXTRAPOLATE reasonable strategic details to fulfill EXACTLY the required number of days in the daily_timeline array. YOU MUST NATURALLY INCLUDE ALL required_terms IN YOUR OUTPUT TEXT.'\n    },\n    {\n      role: 'user',\n      content: 'campaign_brief: ' + $json.campaign_brief + '\\ncampaign_goal: ' + $json.campaign_goal + '\\ncampaign_duration_days: ' + String($json.campaign_duration_days) + '\\npaid_media_allowed: ' + String($json.paid_media_allowed) + '\\nrequired_terms: ' + JSON.stringify($json.required_terms || []) + '\\nvalidation_hints: ' + JSON.stringify($json.validation_hints || []) + '\\ndepartment_context: ' + ($json.department_name || $json.department_id) + '\\ndepartment_pack: ' + JSON.stringify($json.department_pack || {}) + '\\n\\nUser Request (verbatim): ' + $json.campaign_brief\n    }\n  ]\n} }}",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 1 - Viral Research & Angle. Your capability is strictly BOUNDED. You MUST treat campaign_brief as the SSOT and only use the deterministic contract fields provided by the control plane. You MUST NOT infer campaign_goal, required_terms, validation_hints, paid_media_allowed, or campaign_duration_days beyond the provided contract. You MUST carefully read the user request and the contract envelope, then produce a strategic research packet in valid JSON format containing exactly these keys: `audience_pain_points`, `viral_angle`, `three_phase_strategy`, `daily_timeline` (an array MUST CONTAIN EXACTLY campaign_duration_days items, e.g. if 15 days then exactly 15 objects), and `uses_ads` (a boolean indicating whether the strategy uses paid advertising). You MUST NOT write final social captions. You MUST NOT output final markdown proposals. Your output is an upstream source of truth for downstream agents. Do NOT invent missing facts, products, audiences, budgets, channels, or constraints. If required specifics are missing and cannot be derived from campaign_brief, campaign_contract, or department_pack, keep the strategy bounded and generic, mark unknown fields in assumptions_to_confirm, and set needs_clarification to true with concise clarification_questions. Use only verified details from the brief and contract. Never fabricate context to satisfy length or completeness.'\n    },\n    {\n      role: 'user',\n      content: 'campaign_brief: ' + $json.campaign_brief + '\\ncampaign_goal: ' + $json.campaign_goal + '\\ncampaign_duration_days: ' + String($json.campaign_duration_days) + '\\npaid_media_allowed: ' + String($json.paid_media_allowed) + '\\nrequired_terms: ' + JSON.stringify($json.required_terms || []) + '\\nvalidation_hints: ' + JSON.stringify($json.validation_hints || []) + '\\ndepartment_context: ' + ($json.department_name || $json.department_id) + '\\ndepartment_pack: ' + JSON.stringify($json.department_pack || {}) + '\\n\\nUser Request (verbatim): ' + $json.campaign_brief\n    }\n  ]\n} }}",
         "options": {}
       },
       "name": "Agent 1 - Research",
@@ -181,13 +181,32 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.item.json.choices[0].message.content;\nlet parsed;\ntry {\n  parsed = JSON.parse(response);\n} catch (e) {\n  throw new Error('STRUCTURAL_ERROR: Agent 1 did not return valid JSON.');\n}\n\nif (!parsed.daily_timeline || typeof parsed.daily_timeline !== 'object') {\n  throw new Error('STRUCTURAL_ERROR: Agent 1 output is missing or invalid `daily_timeline`. Must be an object or array.');\n}\n\nconst scope = $node['Scope Resolve'].json;\nconst contract = scope.campaign_contract || {};\nconst brief = scope.campaign_brief || scope.body || '';\nconst expectedDays = Number.isInteger(contract.campaign_duration_days) ? contract.campaign_duration_days : null;\nconst requiredTerms = Array.isArray(contract.required_terms) ? contract.required_terms.filter((term) => typeof term === 'string' && term.trim()) : [];\nconst paidMediaAllowed = contract.paid_media_allowed;\nconst normalizedPacket = JSON.stringify(parsed).toLowerCase();\n\nif (expectedDays !== null) {\n  const timelineKeys = Object.keys(parsed.daily_timeline);\n  const timelineLength = Array.isArray(parsed.daily_timeline) ? parsed.daily_timeline.length : timelineKeys.length;\n  if (timelineLength !== expectedDays) {\n    throw new Error(`VALIDATION_ERROR: Agent 1 output failed strict contract. Expected exactly ${expectedDays} days from deterministic contract, but got ${timelineLength} days.`);\n  }\n}\n\nif (paidMediaAllowed === false && parsed.uses_ads !== false) {\n  throw new Error('VALIDATION_ERROR: Agent 1 output failed strict contract. Strategy uses ads despite paid_media_allowed=false.');\n}\n\nfor (const term of requiredTerms) {\n  const normalizedTerm = term.toLowerCase().trim();\n  if (normalizedTerm && !normalizedPacket.includes(normalizedTerm)) {\n    throw new Error(`VALIDATION_ERROR: Agent 1 output failed deterministic required_terms check. Missing term: ${term}`);\n  }\n}\n\nif (typeof contract.campaign_goal === 'string' && contract.campaign_goal.trim()) {\n  const goalTokens = contract.campaign_goal.toLowerCase().split(/\\s+/).filter(Boolean).slice(0, 3);\n  if (goalTokens.length > 0 && !goalTokens.every((token) => normalizedPacket.includes(token))) {\n    throw new Error('VALIDATION_ERROR: Agent 1 output is not sufficiently anchored to campaign_goal from contract.');\n  }\n}\n\nreturn $input.item;"
+        "jsCode": "const response = $input.item.json.choices[0].message.content;\nlet parsed;\ntry {\n  parsed = JSON.parse(response);\n} catch (e) {\n  throw new Error('STRUCTURAL_ERROR: Agent 1 did not return valid JSON.');\n}\n\nif (!parsed.daily_timeline || typeof parsed.daily_timeline !== 'object') {\n  throw new Error('STRUCTURAL_ERROR: Agent 1 output is missing or invalid `daily_timeline`. Must be an object or array.');\n}\n\nconst needsClarification = parsed.needs_clarification === true;\nconst clarificationQuestions = Array.isArray(parsed.clarification_questions)\n  ? parsed.clarification_questions.filter((question) => typeof question === 'string' && question.trim())\n  : [];\n\nif (needsClarification) {\n  return {\n    json: {\n      ...$input.item.json,\n      needs_clarification: true,\n      clarification_questions: clarificationQuestions,\n      reason: typeof parsed.reason === 'string' && parsed.reason.trim()\n        ? parsed.reason\n        : 'NEEDS_CLARIFICATION'\n    }\n  };\n}\n\nconst scope = $node['Scope Resolve'].json;\nconst contract = scope.campaign_contract || {};\nconst requiredTerms = Array.isArray(contract.required_terms) ? contract.required_terms.filter((term) => typeof term === 'string' && term.trim()) : [];\nconst paidMediaAllowed = contract.paid_media_allowed;\nconst normalizedPacket = JSON.stringify(parsed).toLowerCase();\n\nif (Number.isInteger(contract.campaign_duration_days)) {\n  const expectedDays = contract.campaign_duration_days;\n  const timelineKeys = Object.keys(parsed.daily_timeline);\n  const timelineLength = Array.isArray(parsed.daily_timeline) ? parsed.daily_timeline.length : timelineKeys.length;\n  if (timelineLength !== expectedDays) {\n    throw new Error('VALIDATION_ERROR: Agent 1 output failed strict contract. Expected exactly ' + expectedDays + ' days from deterministic contract, but got ' + timelineLength + ' days.');\n  }\n}\n\nif (paidMediaAllowed === false && parsed.uses_ads !== false) {\n  throw new Error('VALIDATION_ERROR: Agent 1 output failed strict contract. Strategy uses ads despite paid_media_allowed=false.');\n}\n\nfor (const term of requiredTerms) {\n  const normalizedTerm = term.toLowerCase().trim();\n  if (normalizedTerm && !normalizedPacket.includes(normalizedTerm)) {\n    throw new Error('VALIDATION_ERROR: Agent 1 output failed deterministic required_terms check. Missing term: ' + term);\n  }\n}\n\nif (typeof contract.campaign_goal === 'string' && contract.campaign_goal.trim()) {\n  const goalTokens = contract.campaign_goal.toLowerCase().split(/\\s+/).filter(Boolean).slice(0, 3);\n  if (goalTokens.length > 0 && !goalTokens.every((token) => normalizedPacket.includes(token))) {\n    throw new Error('VALIDATION_ERROR: Agent 1 output is not sufficiently anchored to campaign_goal from contract.');\n  }\n}\n\nreturn {\n  json: {\n    ...$input.item.json,\n    needs_clarification: false,\n    clarification_questions: []\n  }\n};"
       },
       "name": "Validate Agent 1 Output",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         1200,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.needs_clarification}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Needs Clarification?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1300,
         150
       ]
     },
@@ -421,7 +440,7 @@
       "main": [
         [
           {
-            "node": "Agent 4 - QA",
+            "node": "Needs Clarification?",
             "type": "main",
             "index": 0
           }
@@ -473,6 +492,24 @@
         [
           {
             "node": "Delivery (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Clarification?": {
+      "main": [
+        [
+          {
+            "node": "Clarify Error (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent 4 - QA",
             "type": "main",
             "index": 0
           }
