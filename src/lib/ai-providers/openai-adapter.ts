@@ -5,7 +5,7 @@ import { AiProviderAdapter, UsageInfo } from './index';
 const OPENAI_PRICING: Record<string, { prompt: number; completion: number }> = {
   'gpt-4o': { prompt: 5.0, completion: 15.0 },
   'gpt-4o-mini': { prompt: 0.15, completion: 0.60 },
-  'dall-e-3': { prompt: 40.0, completion: 40.0 }, // per 1k images for simplicity
+  'gpt-image-1': { prompt: 40.0, completion: 40.0 }, // per 1k images
   'default': { prompt: 5.0, completion: 15.0 }
 };
 
@@ -15,7 +15,7 @@ export const openaiAdapter: AiProviderAdapter = {
   
   getEndpointUrl: (payload: any, options: { endpointUrl?: string }) => {
     if (options.endpointUrl) return options.endpointUrl;
-    if (payload.model?.includes('dall-e')) {
+    if (payload.model?.includes('dall-e') || payload.model?.includes('gpt-image')) {
       return process.env.BYOK_OPENAI_IMAGES_URL || 'https://api.openai.com/v1/images/generations';
     }
     return process.env.BYOK_OPENAI_CHAT_COMPLETIONS_URL || 'https://api.openai.com/v1/chat/completions';
@@ -49,7 +49,7 @@ export const openaiAdapter: AiProviderAdapter = {
     // For Image Generations (DALL-E usually doesn't return `usage` field, cost is per image)
     if (responseJson.data && Array.isArray(responseJson.data)) {
       const imageCount = responseJson.data.length;
-      const pricing = OPENAI_PRICING[payload.model] || OPENAI_PRICING['dall-e-3'];
+      const pricing = OPENAI_PRICING[payload.model] || OPENAI_PRICING['gpt-image-1'];
       const estimatedCost = (imageCount / 1000) * pricing.completion; // Normalized to per 1k
 
       return {
