@@ -11,8 +11,23 @@
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
-      "position": [100, 300],
+      "position": [
+        100,
+        300
+      ],
       "webhookId": "campaign-planner-webhook-id"
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $input.item.json.body;\nif (!b.title || !b.campaign_goal || !b.campaign_brief) {\n  throw new Error('MISSING_CONTRACT: campaign_goal, title, and campaign_brief are required.');\n}\nreturn $input.item;"
+      },
+      "name": "Strict Contract Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ]
     },
     {
       "parameters": {
@@ -22,7 +37,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"title\": \"{{$json.body.title}}\",\n  \"goal_description\": \"{{$json.body.goal}}\",\n  \"target_audience\": \"{{$json.body.target_audience || 'General audience'}}\",\n  \"status\": \"active\"\n}",
+        "jsonBody": "={\n  \"title\": \"{{$json.body.title}}\",\n  \"campaign_goal\": \"{{$json.body.campaign_goal}}\",\n  \"campaign_brief\": \"{{$json.body.campaign_brief}}\",\n  \"target_audience\": \"{{$json.body.target_audience || 'General audience'}}\",\n  \"required_terms\": {{( $json.body.required_terms ? JSON.stringify($json.body.required_terms) : '[]' )}},\n  \"validation_hints\": {{( $json.body.validation_hints ? JSON.stringify($json.body.validation_hints) : '{}' )}},\n  \"paid_media_allowed\": {{$json.body.paid_media_allowed || false}},\n  \"campaign_duration_days\": {{$json.body.campaign_duration_days || 30}},\n  \"status\": \"active\"\n}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -45,7 +60,10 @@
       "name": "Create Campaign",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [300, 300],
+      "position": [
+        400,
+        300
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "SupabaseAuth",
@@ -76,7 +94,10 @@
       "name": "AI Broker LLM",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [500, 300],
+      "position": [
+        600,
+        300
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "ControlPlaneAuth",
@@ -90,8 +111,11 @@
       },
       "name": "Parse JSON",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [700, 300]
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ]
     },
     {
       "parameters": {
@@ -107,7 +131,10 @@
       "name": "Insert Ideas",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [900, 300],
+      "position": [
+        1000,
+        300
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "SupabaseAuth",
@@ -121,25 +148,79 @@
       },
       "name": "Format Output",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2.0,
-      "position": [1100, 300]
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ]
     }
   ],
   "connections": {
     "Webhook Trigger": {
-      "main": [ [ { "node": "Create Campaign", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Strict Contract Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Create Campaign": {
-      "main": [ [ { "node": "AI Broker LLM", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "AI Broker LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "AI Broker LLM": {
-      "main": [ [ { "node": "Parse JSON", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse JSON": {
-      "main": [ [ { "node": "Insert Ideas", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Insert Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Insert Ideas": {
-      "main": [ [ { "node": "Format Output", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strict Contract Guard": {
+      "main": [
+        [
+          {
+            "node": "Create Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,

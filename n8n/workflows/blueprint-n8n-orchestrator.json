@@ -5,14 +5,17 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "webhook/chat",
-        "responseMode": "onReceived",
+        "responseMode": "lastNode",
         "options": {}
       },
       "id": "1",
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
-      "position": [250, 300]
+      "position": [
+        250,
+        300
+      ]
     },
     {
       "parameters": {
@@ -24,65 +27,23 @@
       "name": "OpenAI Intent Extractor",
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
-      "position": [450, 300]
+      "position": [
+        450,
+        300
+      ]
     },
     {
       "parameters": {
-        "jsCode": "try {\n  let content = $('OpenAI Intent Extractor').item.json.message.content;\n  if (content.startsWith('```json')) {\n    content = content.substring(7, content.length - 3);\n  }\n  return [{\n    json: {\n      tasks: JSON.parse(content)\n    }\n  }];\n} catch (e) {\n  return [{ json: { tasks: [] } }];\n}"
+        "jsCode": "try {\n  let content = $('OpenAI Intent Extractor').item.json.message.content;\n  if (content.startsWith('```json')) {\n    content = content.substring(7, content.length - 3);\n  }\n  return [{\n    json: {\n      status: \"PREVIEW_REQUIRED\",\n      message: \"Here are the suggested tasks. Please confirm.\",\n      suggested_tasks: JSON.parse(content)\n    }\n  }];\n} catch (e) {\n  return [{ json: { status: \"ERROR\", message: \"Failed to parse tasks\", suggested_tasks: [] } }];\n}"
       },
       "id": "99",
       "name": "Parse Tasks",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [600, 300]
-    },
-    {
-      "parameters": {
-        "requestMethod": "POST",
-        "url": "={{$env[\"API_BASE_URL\"]}}/api/phase2/create-workflow-run",
-        "authentication": "headerAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-request-id",
-              "value": "={{ $('Webhook Trigger').item.json.body.humanMessageId || 'test_' + Date.now() }}_wf"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ department_id: '11111111-1111-1111-1111-111111111111', workflow_key: 'wf_' + ($('Webhook Trigger').item.json.body.humanMessageId || Date.now().toString()).replace(/-/g, ''), workflow_name: 'Chiến dịch Marketing từ Chat', idempotency_key: $('Webhook Trigger').item.json.body.humanMessageId || Date.now().toString(), tenant_id: $('Webhook Trigger').item.json.body.tenantId || 'test_tenant', created_by_actor_type: 'HUMAN', created_by_external_ref: $('Webhook Trigger').item.json.body.actorId || 'test_actor' }) }}"
-      },
-      "id": "3",
-      "name": "Create Workflow Run (Next.js)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 1,
-      "position": [800, 300]
-    },
-    {
-      "parameters": {
-        "requestMethod": "POST",
-        "url": "={{$env[\"API_BASE_URL\"]}}/api/phase2/create-tasks",
-        "authentication": "headerAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-request-id",
-              "value": "={{ $('Webhook Trigger').item.json.body.humanMessageId || 'test_' + Date.now() }}_tasks"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ tenant_id: $('Webhook Trigger').item.json.body.tenantId || 'test_tenant', workflow_run_id: $('Create Workflow Run (Next.js)').item.json.id, tasks: $('Parse Tasks').item.json.tasks.map(t => ({ task_key: t.task_key, title: t.title, department_id: t.department_id, intent_type: t.intent_type, priority: t.priority, requester_actor_type: 'HUMAN', requester_external_ref: $('Webhook Trigger').item.json.body.actorId || 'test_actor' })) }) }}"
-      },
-      "id": "4",
-      "name": "Create Tasks (Next.js)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 1,
-      "position": [1000, 300]
+      "position": [
+        600,
+        300
+      ]
     }
   ],
   "connections": {
@@ -108,17 +69,7 @@
         ]
       ]
     },
-    "Parse Tasks": {
-      "main": [
-        [
-          {
-            "node": "Create Workflow Run (Next.js)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
+    "Parse Tasks": {},
     "Create Workflow Run (Next.js)": {
       "main": [
         [
