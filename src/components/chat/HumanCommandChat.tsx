@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
+import { DraftContentModal } from "@/components/chat/DraftContentModal";
 import { useI18n } from "@/lib/i18n/useI18n";
 // inferChatIntent removed, must be done on server
 import { sendChatMessage, pollActiveTasks } from "@/app/actions/chat-actions";
@@ -23,6 +24,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   const [activeTasks, setActiveTasks] = useState<any[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [isContentModalOpen, setIsContentModalOpen] = useState(false);
   const { t: tChat } = useI18n("chat");
   const { t: tShared } = useI18n("shared");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -116,6 +118,52 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     }
   }
 
+  async function handleDirectSubmit(contentItemId: string, title: string) {
+    if (isSending) return;
+    setIsContentModalOpen(false);
+    setIsSending(true);
+    setSendError(null);
+    setDraft("");
+
+    const commandStr = `/auto_content ${contentItemId} ${title}`;
+
+    const optimisticMessage: any = {
+      id: `optimistic-${Date.now()}`,
+      thread_id: thread.id,
+      sender: "human",
+      body: commandStr,
+      intent_type: "unknown", 
+      created_at: new Date().toISOString()
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+
+    try {
+      const result = await sendChatMessage(thread.id, commandStr);
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+      
+      const [messagesRes, logsRes, latestTasks] = await Promise.all([
+        fetch(`/api/chat-messages?thread_id=${thread.id}`).then(r => r.json()),
+        fetch(`/api/audit-logs`).then(r => r.json()),
+        pollActiveTasks()
+      ]);
+      if (messagesRes.chat_messages) setMessages(messagesRes.chat_messages);
+      if (logsRes.audit_logs) {
+        const threadLogs = logsRes.audit_logs.filter((l: AuditLog) => l.entity_id === thread.id && l.entity_type === 'chat_thread');
+        setAuditLogs(threadLogs);
+      }
+      setActiveTasks(latestTasks);
+    } catch (err) {
+      console.error("Failed to send message", err);
+      setSendError(err instanceof Error ? err.message : "Failed to send message");
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
+    } finally {
+      setIsSending(false);
+    }
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]" style={{ height: 'calc(100vh - 200px)' }}>
       <div className="space-y-4 flex flex-col h-full min-h-0 min-w-0">
@@ -164,7 +212,12 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         </div>
 
         <div className="shrink-0 pt-2">
-          <ChatComposer value={draft} onChange={setDraft} onSubmit={handleSubmit} />
+          <ChatComposer 
+            value={draft} 
+            onChange={setDraft} 
+            onSubmit={handleSubmit} 
+            onRequestCreateTask={() => setIsContentModalOpen(true)}
+          />
         </div>
       </div>
       <div className="space-y-4 flex flex-col h-full min-h-0 min-w-0">
@@ -198,6 +251,14 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           </div>
         </div>
       </div>
+
+      {isContentModalOpen && (
+        <DraftContentModal 
+          initialTitle={draft} 
+          onClose={() => setIsContentModalOpen(false)} 
+          onSuccess={handleDirectSubmit}
+        />
+      )}
     </div>
   );
 }

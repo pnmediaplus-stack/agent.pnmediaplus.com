@@ -2,15 +2,16 @@
 
 import { useState, useRef, useMemo } from "react";
 import { useI18n } from "@/lib/i18n/useI18n";
-import { Paperclip, X, Loader2, Bot, FileText, AlertTriangle, Hash, Slash, Users } from "lucide-react";
+import { Paperclip, X, Loader2, Bot, FileText, AlertTriangle, Hash, Slash, Users, CheckSquare } from "lucide-react";
 
 type ChatComposerProps = {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  onRequestCreateTask?: () => void;
 };
 
-export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
+export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }: ChatComposerProps) {
   const { t } = useI18n("chat");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -434,6 +435,16 @@ export function ChatComposer({ value, onChange, onSubmit }: ChatComposerProps) {
             <Paperclip className="h-4 w-4" />
             <span className="font-semibold tracking-wider">ATTACH</span>
           </button>
+          {onRequestCreateTask && (
+            <button
+              type="button"
+              onClick={onRequestCreateTask}
+              className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
+              <CheckSquare className="h-4 w-4" />
+              <span className="font-semibold tracking-wider">CREATE TASK</span>
+            </button>
+          )}
         </label>
         <button
           type="button"
