@@ -12,6 +12,7 @@ export const chat = {
   "chat.composer.label": "Lệnh từ Người dùng",
   "chat.composer.placeholder": "Nhập lệnh, hỏi trạng thái, hoặc yêu cầu tạo tác vụ...",
   "chat.composer.send": "Gửi lệnh",
+  "chat.composer.create_task": "TẠO TASK",
   "chat.summary.latestFallback": "Tin nhắn mới nhất sẽ xuất hiện ở đây.",
   "chat.message.sender.human": "Người dùng",
   "chat.message.sender.agent": "Đặc vụ",

@@ -12,6 +12,7 @@ export const chat = {
   "chat.composer.label": "Human command",
   "chat.composer.placeholder": "Type a command, ask for status, or request a task...",
   "chat.composer.send": "Send command",
+  "chat.composer.create_task": "CREATE TASK",
   "chat.summary.latestFallback": "Latest message will appear here.",
   "chat.message.sender.human": "Human",
   "chat.message.sender.agent": "Agent",

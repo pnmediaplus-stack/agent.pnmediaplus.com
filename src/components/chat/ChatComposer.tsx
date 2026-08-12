@@ -442,7 +442,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
               className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors"
             >
               <CheckSquare className="h-4 w-4" />
-              <span className="font-semibold tracking-wider">CREATE TASK</span>
+              <span className="font-semibold tracking-wider">{t("chat.composer.create_task") ?? "CREATE TASK"}</span>
             </button>
           )}
         </label>
