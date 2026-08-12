@@ -101,7 +101,7 @@ export function DraftContentModal({ initialTitle, onClose, onSuccess }: DraftCon
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-300">Phòng ban phụ trách (Task Owner)</label>
+              <label className="mb-1 block text-sm font-medium text-slate-300">Phòng ban gắn thẻ (Metadata)</label>
               <select
                 value={deptId}
                 onChange={e => setDeptId(e.target.value)}
