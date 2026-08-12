@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS public.phase2_llm_usage (
 );
 
 -- Index tối ưu truy vấn quota theo actor và thời gian
-CREATE INDEX idx_llm_usage_actor_time ON public.phase2_llm_usage (actor_id, created_at);
-CREATE INDEX idx_llm_usage_tenant_time ON public.phase2_llm_usage (tenant_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_llm_usage_actor_time ON public.phase2_llm_usage (actor_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_llm_usage_tenant_time ON public.phase2_llm_usage (tenant_id, created_at);
 
 -- Tạo View lấy tổng usage trong 24h qua cho từng tenant
 CREATE OR REPLACE VIEW public.phase2_llm_usage_daily AS
@@ -31,8 +31,17 @@ ALTER TABLE public.phase2_llm_usage ENABLE ROW LEVEL SECURITY;
 -- Mặc định block tất cả các quyền từ anon/authenticated, chỉ có postgres, service_role có quyền.
 
 -- 1. Unique constraint for request_id to prevent duplicates
-ALTER TABLE public.phase2_llm_usage 
-ADD CONSTRAINT phase2_llm_usage_request_id_key UNIQUE (request_id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM pg_constraint 
+        WHERE conname = 'phase2_llm_usage_request_id_key'
+    ) THEN
+        ALTER TABLE public.phase2_llm_usage 
+        ADD CONSTRAINT phase2_llm_usage_request_id_key UNIQUE (request_id);
+    END IF;
+END $$;
 
 -- 2. RPC: reserve_llm_budget
 CREATE OR REPLACE FUNCTION public.reserve_llm_budget(
