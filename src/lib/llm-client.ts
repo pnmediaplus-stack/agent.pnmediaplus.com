@@ -90,6 +90,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     delete cleanPayload.provider;
     delete cleanPayload.tenant_id;
     delete cleanPayload.organization_id;
+    delete cleanPayload.endpointUrl;
 
     const response = await fetch(endpointUrl, {
       method: 'POST',
