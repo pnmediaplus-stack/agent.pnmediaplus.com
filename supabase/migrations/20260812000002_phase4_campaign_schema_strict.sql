@@ -48,7 +48,7 @@ BEGIN
 
   -- Add organization_id
   IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' and table_schema='pn_content_phase2' and column_name='organization_id') THEN
-      ALTER TABLE pn_content_phase2.campaigns ADD COLUMN organization_id uuid references public.portal_organizations(id) on delete cascade;
+      ALTER TABLE pn_content_phase2.campaigns ADD COLUMN organization_id uuid references portal_auth.organizations(id) on delete cascade;
   END IF;
 
   -- Add required_terms
