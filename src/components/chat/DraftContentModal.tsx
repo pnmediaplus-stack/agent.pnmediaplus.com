@@ -109,7 +109,9 @@ export function DraftContentModal({ initialTitle, onClose, onSuccess }: DraftCon
                 className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 text-white outline-none focus:border-cyan-500"
               >
                 {departments.map(d => (
-                  <option key={d.id} value={d.id}>{d.canonical_name}</option>
+                  <option key={d.id} value={d.id} className="bg-slate-800 text-white">
+                    {d.canonical_name}
+                  </option>
                 ))}
               </select>
             </div>
