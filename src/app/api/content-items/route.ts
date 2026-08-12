@@ -46,8 +46,6 @@ export async function POST(req: Request) {
         'apikey': serviceRoleKey,
         'Authorization': `Bearer ${serviceRoleKey}`,
         'Content-Type': 'application/json',
-        'Accept-Profile': 'pn_os_ai_department',
-        'Content-Profile': 'pn_os_ai_department',
         'Prefer': 'return=representation'
       },
       body: JSON.stringify(payload)
