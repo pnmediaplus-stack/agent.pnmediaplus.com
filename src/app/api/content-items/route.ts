@@ -35,9 +35,8 @@ export async function POST(req: Request) {
       content_key,
       title,
       brief: brief || null,
-      task_owner_ref: task_owner_ref || null,
       owner_ref: auth.user.id,
-      current_state: 'idea',
+      state: 'idea',
       updated_at: new Date().toISOString()
     };
 
@@ -56,6 +55,7 @@ export async function POST(req: Request) {
 
     if (!res.ok) {
       const err = await res.json();
+      console.error('Supabase Error:', err);
       if (err.code === '23505') {
          return NextResponse.json({ error: 'A content item with this key already exists in your organization' }, { status: 409 });
       }
