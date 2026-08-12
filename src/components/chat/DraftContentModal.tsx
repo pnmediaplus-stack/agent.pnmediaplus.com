@@ -20,8 +20,8 @@ export function DraftContentModal({ initialTitle, onClose, onSuccess }: DraftCon
   const [title, setTitle] = useState(initialTitle);
   const [brief, setBrief] = useState("");
   const [deptId, setDeptId] = useState("");
-  // Generate a short ID for preview content_key, e.g. CT-1234
-  const [contentKey, setContentKey] = useState(`CT-${Math.floor(Math.random() * 10000)}`);
+  // Generate a short ID for preview content_key, e.g. ct_1234
+  const [contentKey, setContentKey] = useState(() => `ct_${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`);
 
   useEffect(() => {
     fetch("/api/departments")
