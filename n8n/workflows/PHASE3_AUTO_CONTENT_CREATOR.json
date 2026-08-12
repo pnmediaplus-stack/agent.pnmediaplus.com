@@ -121,55 +121,12 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1300,
+        1500,
         200
       ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "ControlPlaneAuth",
-          "name": "Header Auth"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "\nconst textContent = $('Parse Text').item.json.textContent;\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nlet imageUrl = \"https://placehold.co/1024x1024?text=Image+Generation+Failed\";\nif ($input.item.json.data && $input.item.json.data[0] && $input.item.json.data[0].url) {\n  imageUrl = $input.item.json.data[0].url;\n}\n\nconst contentItemId = item.id;\nconst actorRef = 'agent_content_creator';\nconst now = Date.now();\n\nconst createPayload = (currentState, nextState, type, uri, key) => ({\n  p_organization_id: tenantId,\n  p_content_item_id: contentItemId,\n  p_expected_current_state: currentState,\n  p_next_state: nextState,\n  p_actor_ref: actorRef,\n  p_idempotency_key: key || ('trans_' + now + '_' + nextState),\n  p_stage_payload: type ? {\n    artifacts: [{ artifact_key: key, artifact_type: type, content: uri }]\n  } : {}\n});\n\nconst stages = [\n  createPayload('idea', 'research_ready', 'viral_research_packet', textContent.agent_1_research_packet, 'res_' + now),\n  createPayload('research_ready', 'visual_ready', 'visual_asset', imageUrl, 'vis_' + now),\n  createPayload('visual_ready', 'caption_ready', 'caption_output', textContent.agent_2_publish_ready_caption, 'cap_' + now),\n  createPayload('caption_ready', 'QA_ready', null, null, null)\n];\n\nreturn stages.map(stage => ({ json: stage }));\n"
-      },
-      "name": "Format Assets",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1500,
-        200
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/rpc/phase3_apply_stage_transition",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{JSON.stringify($json)}}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          }
-        }
-      },
-      "name": "Apply Stage Transitions",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        1700,
-        200
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "SupabaseAuth",
           "name": "Header Auth"
         }
       }
@@ -182,7 +139,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2100,
+        2900,
         200
       ]
     },
@@ -231,6 +188,178 @@
         800,
         300
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst textContent = $('Parse Text').item.json.textContent;\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'idea',\n  p_next_state: 'research_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + Date.now() + '_research',\n  p_stage_payload: { artifacts: [{ artifact_key: 'res_' + Date.now(), artifact_type: 'viral_research_packet', content: textContent.agent_1_research_packet }] }\n}}};\n"
+      },
+      "name": "Extract Research",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/rpc/phase3_apply_stage_transition",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json.payload)}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "name": "Submit Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1300,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nlet imageUrl = \"https://placehold.co/1024x1024?text=Image+Generation+Failed\";\nif ($input.item.json.data && $input.item.json.data[0] && $input.item.json.data[0].url) {\n  imageUrl = $input.item.json.data[0].url;\n}\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'research_ready',\n  p_next_state: 'visual_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + Date.now() + '_visual',\n  p_stage_payload: { artifacts: [{ artifact_key: 'vis_' + Date.now(), artifact_type: 'visual_asset', content: imageUrl }] }\n}}};\n"
+      },
+      "name": "Extract Visual",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1700,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/rpc/phase3_apply_stage_transition",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json.payload)}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "name": "Submit Visual",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1900,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst textContent = $('Parse Text').item.json.textContent;\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'visual_ready',\n  p_next_state: 'caption_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + Date.now() + '_caption',\n  p_stage_payload: { artifacts: [{ artifact_key: 'cap_' + Date.now(), artifact_type: 'caption_output', content: textContent.agent_2_publish_ready_caption }] }\n}}};\n"
+      },
+      "name": "Extract Caption",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2100,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/rpc/phase3_apply_stage_transition",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json.payload)}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "name": "Submit Caption",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2300,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'caption_ready',\n  p_next_state: 'QA_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + Date.now() + '_qa',\n  p_stage_payload: {}\n}}};\n"
+      },
+      "name": "Submit QA Ready payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2500,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/rpc/phase3_apply_stage_transition",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json.payload)}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "name": "Submit QA Ready",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2700,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SupabaseAuth",
+          "name": "Header Auth"
+        }
+      }
     }
   ],
   "connections": {
@@ -311,6 +440,28 @@
       "main": [
         [
           {
+            "node": "Extract Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Research": {
+      "main": [
+        [
+          {
+            "node": "Submit Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Research": {
+      "main": [
+        [
+          {
             "node": "AI Broker (Image)",
             "type": "main",
             "index": 0
@@ -322,25 +473,69 @@
       "main": [
         [
           {
-            "node": "Format Assets",
+            "node": "Extract Visual",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Format Assets": {
+    "Extract Visual": {
       "main": [
         [
           {
-            "node": "Apply Stage Transitions",
+            "node": "Submit Visual",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Apply Stage Transitions": {
+    "Submit Visual": {
+      "main": [
+        [
+          {
+            "node": "Extract Caption",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Caption": {
+      "main": [
+        [
+          {
+            "node": "Submit Caption",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Caption": {
+      "main": [
+        [
+          {
+            "node": "Submit QA Ready payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit QA Ready payload": {
+      "main": [
+        [
+          {
+            "node": "Submit QA Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit QA Ready": {
       "main": [
         [
           {
