@@ -23,27 +23,59 @@ begin
   end if;
 end $$;
 
--- 2. Create Campaigns Table with STRICT deterministic contracts
+-- 2. Create Campaigns Table (if it doesn't exist at all)
 create table if not exists pn_content_phase2.campaigns (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.portal_organizations(id) on delete cascade,
   title text not null,
-  
-  -- Strict deterministic contract fields
-  campaign_goal text not null,
-  required_terms text[] not null default '{}',
-  validation_hints jsonb not null default '{}'::jsonb,
-  paid_media_allowed boolean not null default false,
-  campaign_duration_days integer not null default 30,
-  
-  -- Single Source of Truth for Brief
-  campaign_brief text not null,
-  
   target_audience text,
   status pn_content_phase2.campaign_status not null default 'active',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Safely add or rename columns to meet STRICT deterministic contracts
+DO $$ 
+BEGIN
+  -- Rename goal_description to campaign_goal if it exists
+  IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' and table_schema='pn_content_phase2' and column_name='goal_description') THEN
+      ALTER TABLE pn_content_phase2.campaigns RENAME COLUMN goal_description TO campaign_goal;
+  END IF;
+  
+  -- Add campaign_goal if it still doesn't exist
+  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' and table_schema='pn_content_phase2' and column_name='campaign_goal') THEN
+      ALTER TABLE pn_content_phase2.campaigns ADD COLUMN campaign_goal text not null default '';
+  END IF;
+
+  -- Add organization_id
+  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' and table_schema='pn_content_phase2' and column_name='organization_id') THEN
+      ALTER TABLE pn_content_phase2.campaigns ADD COLUMN organization_id uuid references public.portal_organizations(id) on delete cascade;
+  END IF;
+
+  -- Add required_terms
+  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' and table_schema='pn_content_phase2' and column_name='required_terms') THEN
+      ALTER TABLE pn_content_phase2.campaigns ADD COLUMN required_terms text[] not null default '{}';
+  END IF;
+
+  -- Add validation_hints
+  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' and table_schema='pn_content_phase2' and column_name='validation_hints') THEN
+      ALTER TABLE pn_content_phase2.campaigns ADD COLUMN validation_hints jsonb not null default '{}'::jsonb;
+  END IF;
+
+  -- Add paid_media_allowed
+  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' and table_schema='pn_content_phase2' and column_name='paid_media_allowed') THEN
+      ALTER TABLE pn_content_phase2.campaigns ADD COLUMN paid_media_allowed boolean not null default false;
+  END IF;
+
+  -- Add campaign_duration_days
+  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' and table_schema='pn_content_phase2' and column_name='campaign_duration_days') THEN
+      ALTER TABLE pn_content_phase2.campaigns ADD COLUMN campaign_duration_days integer not null default 30;
+  END IF;
+
+  -- Add campaign_brief
+  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' and table_schema='pn_content_phase2' and column_name='campaign_brief') THEN
+      ALTER TABLE pn_content_phase2.campaigns ADD COLUMN campaign_brief text not null default '';
+  END IF;
+END $$;
 
 alter table pn_content_phase2.campaigns enable row level security;
 
