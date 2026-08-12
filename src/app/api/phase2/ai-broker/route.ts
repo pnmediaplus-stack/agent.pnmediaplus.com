@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
 import { invokeLlm } from '@/lib/llm-client';
 
+export const maxDuration = 60; // Allow long-running LLM calls
+
 const AiBrokerPayloadSchema = z.object({
   provider: z.string().optional(),
   model: z.string(),
@@ -41,6 +43,7 @@ export async function POST(request: Request) {
        return NextResponse.json({ error: 'RATE_LIMIT_EXCEEDED', message: error.message }, { status: 429 });
     }
     
-    return NextResponse.json({ error: 'LLM_ERROR', message: errorMsg }, { status: 502 });
+    // Use 500 instead of 502 so Cloudflare doesn't mask the JSON error with an HTML page
+    return NextResponse.json({ error: 'LLM_ERROR', message: errorMsg }, { status: 500 });
   }
 }
