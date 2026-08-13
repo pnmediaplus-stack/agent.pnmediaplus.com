@@ -607,8 +607,18 @@ function AssetView({
                 </div>
               </>,
               <StateBadge label={currentAsset.assetType} displayLabel={t(`dashboard.assetType.${currentAsset.assetType}`) ?? currentAsset.assetType} />,
-              currentAsset.ownerRef,
-              <span className="text-xs text-slate-400">{currentAsset.evidenceRef ?? (t("dashboard.labels.pending") ?? "pending")}</span>
+              <span className="text-xs font-mono text-slate-400" title={currentAsset.ownerRef}>
+                {currentAsset.ownerRef.split('-')[0]}...
+              </span>,
+              <div className="max-w-[300px] overflow-hidden text-ellipsis whitespace-nowrap text-xs text-slate-300" title={currentAsset.assetUri}>
+                {currentAsset.assetUri && currentAsset.assetUri.startsWith('http') ? (
+                  <a href={currentAsset.assetUri} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">
+                    [Link Hình Ảnh]
+                  </a>
+                ) : (
+                  currentAsset.assetUri ? currentAsset.assetUri : (t("dashboard.labels.pending") ?? "pending")
+                )}
+              </div>
             ];
           }}
         />
