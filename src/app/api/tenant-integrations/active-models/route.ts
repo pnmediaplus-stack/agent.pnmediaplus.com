@@ -46,11 +46,15 @@ export async function GET(request: Request) {
     }
   }
 
-  if (!textConfig || !imageConfig) {
+  if (!imageConfig) {
      return NextResponse.json({ 
        state: 'blocked', 
-       reason: `FAIL_CLOSED: Missing preferred models in tenant metadata (text=${!!textConfig}, image=${!!imageConfig}). Please configure preferred models in Tenant Integrations.` 
+       reason: `FAIL_CLOSED: Missing preferred image model in tenant metadata (text=${!!textConfig}, image=${!!imageConfig}). Please configure an image model in Tenant Integrations.` 
      }, { status: 200 }); // Status 200 so N8N can parse the 'blocked' state gracefully if using simple HTTP nodes
+  }
+
+  if (!textConfig) {
+    textConfig = imageConfig;
   }
 
   return NextResponse.json({
