@@ -59,7 +59,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { model: 'gpt-4o-mini', messages: [{ role: 'user', content: $json.prompt }], response_format: { type: 'json_object' }, tenant_id: $json.tenant_id } }}",
+        "jsonBody": "={{ { provider: $('Fetch Tenant AI Config').item.json.text.provider, model: $('Fetch Tenant AI Config').item.json.text.model, messages: [{ role: 'user', content: $json.prompt }], response_format: { type: 'json_object' }, tenant_id: $json.tenant_id } }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -105,7 +105,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { model: 'dall-e-3', prompt: $('Parse Text').item.json.textContent.agent_3_image_prompt, n: 1, size: '1024x1024', tenant_id: $('Parse Text').item.json.tenant_id } }}",
+        "jsonBody": "={{ { provider: $('Fetch Tenant AI Config').item.json.image.provider, model: $('Fetch Tenant AI Config').item.json.image.model, prompt: $('Parse Text').item.json.textContent.agent_3_image_prompt, n: 1, size: '1024x1024', tenant_id: $('Parse Text').item.json.tenant_id } }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -360,6 +360,52 @@
           "name": "Header Auth"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/tenant-integrations/active-models?organization_id={{$json.body.organization_id}}",
+        "authentication": "none",
+        "options": {}
+      },
+      "name": "Fetch Tenant AI Config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        350,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.state}}",
+              "value2": "ready"
+            }
+          ]
+        }
+      },
+      "name": "Validate AI Config",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        375,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "=AI Config Blocked: {{$json.reason}}"
+      },
+      "name": "AI Config Blocked Escalate",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        375,
+        300
+      ]
     }
   ],
   "connections": {
@@ -378,7 +424,7 @@
       "main": [
         [
           {
-            "node": "Fetch Governance Registry",
+            "node": "Fetch Tenant AI Config",
             "type": "main",
             "index": 0
           }
@@ -545,10 +591,39 @@
           }
         ]
       ]
+    },
+    "Fetch Tenant AI Config": {
+      "main": [
+        [
+          {
+            "node": "Validate AI Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate AI Config": {
+      "main": [
+        [
+          {
+            "node": "Fetch Governance Registry",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Config Blocked Escalate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   }
-}\n
+}
