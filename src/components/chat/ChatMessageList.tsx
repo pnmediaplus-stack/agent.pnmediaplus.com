@@ -177,10 +177,15 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="h-2 w-2 rounded-full bg-emerald-400/50 animate-bounce" style={{ animationDelay: '0ms' }} />
-              <div className="h-2 w-2 rounded-full bg-emerald-400/50 animate-bounce" style={{ animationDelay: '150ms' }} />
-              <div className="h-2 w-2 rounded-full bg-emerald-400/50 animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="flex items-center gap-3 mt-1">
+              <span className="text-sm text-emerald-300/80 font-medium italic">
+                {t("chat.message.processing") ?? "Đang xử lý Workflow. Xin vui lòng chờ"}
+              </span>
+              <div className="flex items-center gap-1">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400/80 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400/80 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400/80 animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
             </div>
           </div>
         </div>
