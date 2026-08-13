@@ -46,9 +46,8 @@ export const openaiAdapter: AiProviderAdapter = {
   },
 
   injectAuth: (headers: Record<string, string>, tenantKey?: string) => {
-    const key = tenantKey || process.env.OPENAI_API_KEY?.trim();
-    if (!key) throw new Error('OPENAI_API_KEY is missing');
-    headers['Authorization'] = `Bearer ${key}`;
+    if (!tenantKey) throw new Error('VAULT_CREDENTIAL_NOT_READY: OPENAI_API_KEY is missing');
+    headers['Authorization'] = `Bearer ${tenantKey}`;
   },
 
   parseUsage: async (responseJson: any, payload: any): Promise<UsageInfo> => {

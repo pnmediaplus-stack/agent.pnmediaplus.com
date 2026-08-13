@@ -18,9 +18,8 @@ export const falAiAdapter: AiProviderAdapter = {
   },
 
   injectAuth: (headers: Record<string, string>, tenantKey?: string) => {
-    const key = tenantKey || process.env.FAL_KEY?.trim();
-    if (!key) throw new Error('FAL_KEY is missing');
-    headers['Authorization'] = `Key ${key}`;
+    if (!tenantKey) throw new Error('VAULT_CREDENTIAL_NOT_READY: FAL_KEY is missing');
+    headers['Authorization'] = `Key ${tenantKey}`;
   },
 
   parseUsage: (responseJson: any, payload: any): UsageInfo => {

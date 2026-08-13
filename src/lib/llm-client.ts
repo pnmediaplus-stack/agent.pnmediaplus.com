@@ -1,5 +1,48 @@
 import { z } from 'zod';
 import { getProvider } from './ai-providers';
+import { issueReferenceToken, redeemReferenceToken } from './byok-secret-broker';
+
+async function getTenantApiKey(tenantId: string, providerCode: string): Promise<string> {
+  const supabaseUrl = process.env.SUPABASE_URL?.trim();
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('VAULT_CREDENTIAL_NOT_READY: Missing Supabase server keys.');
+  }
+
+  const { createServiceRoleClient } = await import('./supabase-server');
+  const supabase = createServiceRoleClient();
+
+  // 1. Get the active integration key for this provider
+  const { data, error } = await supabase
+    .from('phase070_tenant_integration_status')
+    .select('integration_key')
+    .eq('organization_id', tenantId)
+    .eq('provider_code', providerCode)
+    .eq('status', 'active');
+    
+  if (error) throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to query active integration - ${error.message}`);
+  if (!data || data.length === 0) throw new Error('VAULT_CREDENTIAL_NOT_READY: No active integration found for this provider.');
+  const integrationKey = data[0].integration_key;
+
+  // 2. We need credential_ref to issue token
+  const { data: credentialRef, error: credError } = await supabase.rpc('phase075_get_tenant_vault_credential_ref', {
+    p_organization_id: tenantId,
+    p_integration_key: integrationKey
+  });
+  if (credError) throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to fetch credential ref - ${credError.message}`);
+  if (!credentialRef) throw new Error('VAULT_CREDENTIAL_NOT_READY: Credential reference not found in Vault.');
+
+  // 3. Issue and redeem token (in-memory only, one-time use)
+  const actor = { actorType: 'SYSTEM' as any, actorRef: 'llm-client' };
+  const tokenReq = await issueReferenceToken({ credential_ref: credentialRef, scope: 'llm:invoke' }, actor);
+  const secretData = await redeemReferenceToken(tokenReq.lease_token, tenantId, integrationKey, actor);
+  
+  if (!secretData.access_token) {
+    throw new Error('VAULT_CREDENTIAL_NOT_READY: Decrypted secret is empty.');
+  }
+
+  return secretData.access_token;
+}
 
 export type LlmClientOptions = {
   actorId: string;
@@ -33,9 +76,9 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     'Content-Type': 'application/json'
   };
 
-  // Inject Provider-specific Auth
-  // Note: tenantKey support for BYOK would go here (fetching from tenant_integrations)
-  adapter.injectAuth(headers);
+  // Fetch BYOK Tenant Key from Vault (Fail-closed)
+  const tenantKey = await getTenantApiKey(tenantId, providerId);
+  adapter.injectAuth(headers, tenantKey);
 
   const endpointUrl = await adapter.getEndpointUrl(payload, options);
   // 1. ATOMIC QUOTA RESERVE (Fail-closed via RPC)
