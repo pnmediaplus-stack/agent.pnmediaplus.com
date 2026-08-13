@@ -485,79 +485,50 @@ export async function upsertIntegrationProvider(
       return { ok: false, state: "blocked", reason: "INVALID_PROVIDER_CODE" };
     }
 
-    const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/\/$/, '');
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
+    const rpcName = (process.env.PHASE070_PROVIDER_CATALOG_WRITE_RPC || "phase070_upsert_integration_provider").trim();
 
-    let url = `${supabaseUrl}/rest/v1/integration_providers`;
-    let method = "POST";
-    
-    if (id) {
-       url = `${url}?id=eq.${id}`;
-       method = "PATCH";
-    }
-
-    const bodyData: any = {
-      provider_code: payload.provider_code,
-      provider_name: payload.provider_name,
-      provider_category: 'ai',
-      auth_type: payload.auth_type,
-      public_metadata: payload.public_metadata
-    };
-
-    const res = await fetch(url, {
-      method,
-      headers: {
-        "apikey": serviceKey,
-        "Authorization": `Bearer ${serviceKey}`,
-        "Content-Type": "application/json",
-        "Accept-Profile": "tenant_integration_vault",
-        "Content-Profile": "tenant_integration_vault",
-        "Prefer": "return=minimal"
-      },
-      body: JSON.stringify(bodyData)
+    const supabase = createServiceRoleClient();
+    const { data, error } = await supabase.rpc(rpcName, {
+      payload: {
+        provider_code: payload.provider_code,
+        provider_name: payload.provider_name,
+        provider_category: 'ai',
+        auth_type: payload.auth_type,
+        public_metadata: payload.public_metadata
+      }
     });
 
-    if (!res.ok) {
-       const errText = await res.text();
-       return { ok: false, state: "blocked", reason: `UPSERT_FAILED: ${res.status} - ${errText}` };
+    if (error) {
+      return { ok: false, state: "blocked", reason: `UPSERT_FAILED: ${error.message}` };
     }
 
-    return { ok: true, state: "ready", reason: "PROVIDER_UPSERTED" };
+    return { ok: true, state: "ready", reason: "PROVIDER_UPSERTED", data };
   } catch (error: any) {
     return { ok: false, state: "blocked", reason: `INTERNAL_ERROR: ${error.message}` };
   }
 }
 
-export async function deleteIntegrationProvider(id: string): Promise<VaultActionResponse> {
+export async function deleteIntegrationProvider(providerCode: string): Promise<VaultActionResponse> {
   try {
     const auth = await requireAuthContext();
     if (auth.role !== "admin" && auth.role !== "owner") {
       return { ok: false, state: "blocked", reason: "UNAUTHORIZED_ROLE" };
     }
 
-    const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/\/$/, '');
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
+    const rpcName = (process.env.PHASE070_PROVIDER_CATALOG_DELETE_RPC || "phase070_delete_integration_provider").trim();
 
-    const url = `${supabaseUrl}/rest/v1/integration_providers?id=eq.${id}`;
-    
-    const res = await fetch(url, {
-      method: "PATCH",
-      headers: {
-        "apikey": serviceKey,
-        "Authorization": `Bearer ${serviceKey}`,
-        "Content-Type": "application/json",
-        "Accept-Profile": "tenant_integration_vault",
-        "Content-Profile": "tenant_integration_vault",
-        "Prefer": "return=minimal"
-      },
-      body: JSON.stringify({ status: 'disabled' })
+    const supabase = createServiceRoleClient();
+    const { data, error } = await supabase.rpc(rpcName, {
+      payload: {
+        provider_code: providerCode
+      }
     });
 
-    if (!res.ok) {
-       return { ok: false, state: "blocked", reason: `DELETE_FAILED: ${res.status}` };
+    if (error) {
+      return { ok: false, state: "blocked", reason: `DELETE_FAILED: ${error.message}` };
     }
 
-    return { ok: true, state: "ready", reason: "PROVIDER_DELETED" };
+    return { ok: true, state: "ready", reason: "PROVIDER_DELETED", data };
   } catch (error: any) {
     return { ok: false, state: "blocked", reason: `INTERNAL_ERROR: ${error.message}` };
   }
