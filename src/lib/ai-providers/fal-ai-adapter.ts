@@ -1,4 +1,4 @@
-import { AiProviderAdapter, UsageInfo } from './index';
+import type { AiProviderAdapter, UsageInfo } from './index';
 
 // Fal.ai cost map
 const FAL_PRICING: Record<string, { per_unit: number, type: 'seconds' | 'megapixel' | 'flat' }> = {

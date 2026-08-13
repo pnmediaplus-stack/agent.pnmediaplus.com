@@ -1,4 +1,4 @@
-import { AiProviderAdapter, UsageInfo } from './index';
+import type { AiProviderAdapter, UsageInfo } from './index';
 
 async function getProviderMetadata(providerId: string) {
   const supabaseUrl = process.env.SUPABASE_URL?.trim();

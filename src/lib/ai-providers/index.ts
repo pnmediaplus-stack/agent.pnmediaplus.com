@@ -24,10 +24,16 @@ export const AI_PROVIDERS: Record<string, AiProviderAdapter> = {
 };
 
 export function getProvider(providerId: string): AiProviderAdapter {
-  const provider = AI_PROVIDERS[providerId];
-  if (provider) {
-    return provider;
+  const normalizedProviderId = typeof providerId === 'string' ? providerId.trim() : '';
+
+  if (!normalizedProviderId) {
+    throw new Error('PROVIDER_NOT_SUPPORTED: providerId is required.');
   }
-  // Fallback to Universal OpenAI Adapter for dynamically added providers
-  return openaiAdapter;
+
+  const provider = AI_PROVIDERS[normalizedProviderId];
+  if (!provider) {
+    throw new Error(`PROVIDER_NOT_SUPPORTED: Provider '${normalizedProviderId}' is not registered.`);
+  }
+
+  return provider;
 }
