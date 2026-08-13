@@ -74,13 +74,6 @@ async function readPublicTenantIntegrationRow<T>(
     throw new Error("PHASE070_SUPABASE_ENV_MISSING");
   }
 
-  console.debug("[phase070:readPublicTenantIntegrationRow] request", {
-    table,
-    filters,
-    hasAccessToken: Boolean(accessToken),
-    accessTokenPrefix: accessToken ? `${accessToken.slice(0, 12)}...` : null
-  });
-
   const endpoint = new URL(`${supabaseUrl}/rest/v1/${table}`);
   endpoint.searchParams.set("select", select);
   for (const [key, value] of Object.entries(filters)) {
