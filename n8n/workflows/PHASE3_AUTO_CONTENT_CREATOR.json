@@ -191,7 +191,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst textContent = $('Parse Text').item.json.textContent;\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'idea',\n  p_next_state: 'research_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + Date.now() + '_research',\n  p_stage_payload: { artifacts: [{ artifact_key: 'res_' + Date.now(), artifact_type: 'viral_research_packet', content: textContent.agent_1_research_packet }] }\n}}};\n"
+        "jsCode": "\nconst textContent = $('Parse Text').item.json.textContent;\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'idea',\n  p_next_state: 'research_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + $execution.id + '_research',\n  p_stage_payload: { artifacts: [{ artifact_key: 'res_' + $execution.id + '_' + item.id, artifact_type: 'viral_research_packet', content: textContent.agent_1_research_packet }] }\n}}};\n"
       },
       "name": "Extract Research",
       "type": "n8n-nodes-base.code",
@@ -234,7 +234,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nlet imageUrl = \"https://placehold.co/1024x1024?text=Image+Generation+Failed\";\nif ($input.item.json.data && $input.item.json.data[0] && $input.item.json.data[0].url) {\n  imageUrl = $input.item.json.data[0].url;\n}\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'research_ready',\n  p_next_state: 'visual_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + Date.now() + '_visual',\n  p_stage_payload: { artifacts: [{ artifact_key: 'vis_' + Date.now(), artifact_type: 'visual_asset', content: imageUrl }] }\n}}};\n"
+        "jsCode": "\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nlet imageUrl = \"https://placehold.co/1024x1024?text=Image+Generation+Failed\";\nif ($input.item.json.data && $input.item.json.data[0] && $input.item.json.data[0].url) {\n  imageUrl = $input.item.json.data[0].url;\n}\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'research_ready',\n  p_next_state: 'visual_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + $execution.id + '_visual',\n  p_stage_payload: { artifacts: [{ artifact_key: 'vis_' + $execution.id + '_' + item.id, artifact_type: 'visual_asset', content: imageUrl }] }\n}}};\n"
       },
       "name": "Extract Visual",
       "type": "n8n-nodes-base.code",
@@ -277,7 +277,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst textContent = $('Parse Text').item.json.textContent;\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'visual_ready',\n  p_next_state: 'caption_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + Date.now() + '_caption',\n  p_stage_payload: { artifacts: [{ artifact_key: 'cap_' + Date.now(), artifact_type: 'caption_output', content: textContent.agent_2_publish_ready_caption }] }\n}}};\n"
+        "jsCode": "\nconst textContent = $('Parse Text').item.json.textContent;\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'visual_ready',\n  p_next_state: 'caption_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + $execution.id + '_caption',\n  p_stage_payload: { artifacts: [{ artifact_key: 'cap_' + $execution.id + '_' + item.id, artifact_type: 'caption_output', content: textContent.agent_2_publish_ready_caption }] }\n}}};\n"
       },
       "name": "Extract Caption",
       "type": "n8n-nodes-base.code",
@@ -320,7 +320,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'caption_ready',\n  p_next_state: 'QA_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + Date.now() + '_qa',\n  p_stage_payload: {}\n}}};\n"
+        "jsCode": "\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'caption_ready',\n  p_next_state: 'QA_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + $execution.id + '_qa',\n  p_stage_payload: {}\n}}};\n"
       },
       "name": "Submit QA Ready payload",
       "type": "n8n-nodes-base.code",
