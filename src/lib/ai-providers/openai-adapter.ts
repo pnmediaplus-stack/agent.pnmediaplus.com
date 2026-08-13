@@ -31,6 +31,16 @@ export const openaiAdapter: AiProviderAdapter = {
       return modelConfig.endpoint;
     }
 
+    if (modelConfig) {
+      const baseUrl = metadata?.base_url || 'https://api.openai.com/v1';
+      if (modelConfig.capability === 'text') {
+        return `${baseUrl.replace(/\/$/, '')}/chat/completions`;
+      }
+      if (modelConfig.capability === 'image') {
+        return `${baseUrl.replace(/\/$/, '')}/images/generations`;
+      }
+    }
+
     // Fail-closed instead of guessing dall-e or gpt-image
     throw new Error(`UNABLE_TO_DETERMINE_ENDPOINT: Model '${payload.model}' does not have an endpoint configured in integration_providers.public_metadata.`);
   },

@@ -465,3 +465,100 @@ export async function updateTenantIntegrationMetadata(
     return { ok: false, state: "blocked", reason: `INTERNAL_ERROR: ${error.message}` };
   }
 }
+
+export async function upsertIntegrationProvider(
+  id: string | null,
+  payload: {
+    provider_code: string;
+    provider_name: string;
+    auth_type: string;
+    public_metadata: Record<string, any>;
+  }
+): Promise<VaultActionResponse> {
+  try {
+    const auth = await requireAuthContext();
+    if (auth.role !== "admin" && auth.role !== "owner") {
+      return { ok: false, state: "blocked", reason: "UNAUTHORIZED_ROLE" };
+    }
+
+    if (!/^[a-z0-9_]+$/.test(payload.provider_code)) {
+      return { ok: false, state: "blocked", reason: "INVALID_PROVIDER_CODE" };
+    }
+
+    const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/\/$/, '');
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
+
+    let url = `${supabaseUrl}/rest/v1/integration_providers`;
+    let method = "POST";
+    
+    if (id) {
+       url = `${url}?id=eq.${id}`;
+       method = "PATCH";
+    }
+
+    const bodyData: any = {
+      provider_code: payload.provider_code,
+      provider_name: payload.provider_name,
+      provider_category: 'ai',
+      auth_type: payload.auth_type,
+      public_metadata: payload.public_metadata
+    };
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        "apikey": serviceKey,
+        "Authorization": `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        "Accept-Profile": "tenant_integration_vault",
+        "Content-Profile": "tenant_integration_vault",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    if (!res.ok) {
+       const errText = await res.text();
+       return { ok: false, state: "blocked", reason: `UPSERT_FAILED: ${res.status} - ${errText}` };
+    }
+
+    return { ok: true, state: "ready", reason: "PROVIDER_UPSERTED" };
+  } catch (error: any) {
+    return { ok: false, state: "blocked", reason: `INTERNAL_ERROR: ${error.message}` };
+  }
+}
+
+export async function deleteIntegrationProvider(id: string): Promise<VaultActionResponse> {
+  try {
+    const auth = await requireAuthContext();
+    if (auth.role !== "admin" && auth.role !== "owner") {
+      return { ok: false, state: "blocked", reason: "UNAUTHORIZED_ROLE" };
+    }
+
+    const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/\/$/, '');
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
+
+    const url = `${supabaseUrl}/rest/v1/integration_providers?id=eq.${id}`;
+    
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        "apikey": serviceKey,
+        "Authorization": `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        "Accept-Profile": "tenant_integration_vault",
+        "Content-Profile": "tenant_integration_vault",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify({ status: 'disabled' })
+    });
+
+    if (!res.ok) {
+       return { ok: false, state: "blocked", reason: `DELETE_FAILED: ${res.status}` };
+    }
+
+    return { ok: true, state: "ready", reason: "PROVIDER_DELETED" };
+  } catch (error: any) {
+    return { ok: false, state: "blocked", reason: `INTERNAL_ERROR: ${error.message}` };
+  }
+}
