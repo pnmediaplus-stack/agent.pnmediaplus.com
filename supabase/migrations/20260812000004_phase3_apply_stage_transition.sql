@@ -38,6 +38,11 @@ declare
   v_artifact_content jsonb;
   v_artifact_content_text text;
 begin
+  -- 0. Absolute guard against NULL idempotency
+  if p_idempotency_key is null then
+    return jsonb_build_object('ok', false, 'error_code', 'NULL_IDEMPOTENCY_KEY');
+  end if;
+
   -- 1. Check Idempotency Guard (Fail-Safe Early Return)
   if exists (
     select 1 
@@ -76,8 +81,20 @@ begin
       'actual', v_current_state
     );
   end if;
+  
+  -- 4. Pre-Log Idempotency Key (Before any state update, to ensure transaction safety)
+  begin
+    insert into pn_content_phase2.stage_transition_logs (
+      organization_id, content_item_id, expected_current_state, next_state, idempotency_key, actor_ref, stage_payload
+    ) values (
+      p_organization_id, p_content_item_id, p_expected_current_state, p_next_state, p_idempotency_key, p_actor_ref, p_stage_payload
+    );
+  exception when unique_violation then
+    -- Handled via early return above, but just in case of race condition:
+    return jsonb_build_object('ok', true, 'content_item_id', p_content_item_id, 'idempotency_hit', true);
+  end;
 
-  -- 4. Insert Artifacts (if provided)
+  -- 5. Insert Artifacts (if provided)
   if p_stage_payload ? 'artifacts' and jsonb_array_length(p_stage_payload->'artifacts') > 0 then
     v_artifact := p_stage_payload->'artifacts'->0;
     v_artifact_key := v_artifact->>'artifact_key';
@@ -110,22 +127,10 @@ begin
     end if;
   end if;
 
-  -- 5. Advance State
+  -- 6. Advance State
   update pn_content_phase2.content_items
   set state = p_next_state::pn_content_phase2.content_state
   where id = p_content_item_id;
-
-  -- 6. Log Idempotency Key
-  begin
-    insert into pn_content_phase2.stage_transition_logs (
-      organization_id, content_item_id, expected_current_state, next_state, idempotency_key, actor_ref, stage_payload
-    ) values (
-      p_organization_id, p_content_item_id, p_expected_current_state, p_next_state, p_idempotency_key, p_actor_ref, p_stage_payload
-    );
-  exception when unique_violation then
-    -- Should not happen unless race condition
-    return jsonb_build_object('ok', true, 'content_item_id', p_content_item_id, 'idempotency_hit', true);
-  end;
 
   v_result := jsonb_build_object(
     'ok', true,
