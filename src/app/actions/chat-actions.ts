@@ -199,9 +199,31 @@ export async function sendChatMessage(threadId: string, body: string) {
            const routedMsgResult = await dbInsertChatMessage(organizationId, {
              threadId,
              sender: "system",
-             body: `Đã nhận và điều phối lệnh: ${command} ${args.join(' ')}`,
+             body: `Đã nhận và điều phối lệnh: ${command} ${args.join(' ')}\n\nN8N Workflow đã hoàn tất.`,
              intentType: "route_department"
            });
+
+           const n8nResp = webhookResult.response as any;
+           if (n8nResp && n8nResp.artifacts) {
+             const artifacts = n8nResp.artifacts;
+             let bodyStr = `**Nội dung đã được tạo thành công (QA_ready)**\n\n`;
+             if (artifacts.image) {
+               bodyStr += `![Generated Image](${artifacts.image})\n\n`;
+             }
+             if (artifacts.caption) {
+               bodyStr += `**Caption:**\n${artifacts.caption}\n\n`;
+             }
+             if (artifacts.research) {
+               bodyStr += `**Research Packet:**\n${artifacts.research}\n\n`;
+             }
+
+             await dbInsertChatMessage(organizationId, {
+               threadId,
+               sender: "system",
+               body: bodyStr,
+               intentType: "route_department"
+             });
+           }
 
            return {
              success: true,

@@ -133,7 +133,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return { json: { status: 'OK', message: 'Content generated successfully' } };"
+        "jsCode": "const textContent = $('Parse Text').item.json.textContent;\nlet imageUrl = \"https://placehold.co/1024x1024?text=Image+Generation+Failed\";\ntry {\n  imageUrl = $('Extract Visual').item.json.payload.p_stage_payload.artifacts[0].content;\n} catch(e) {}\n\nreturn { \n  json: { \n    status: 'OK', \n    message: 'Content generated successfully',\n    artifacts: {\n      research: textContent.agent_1_research_packet,\n      caption: textContent.agent_2_publish_ready_caption,\n      image: imageUrl\n    }\n  } \n};"
       },
       "name": "Format Output",
       "type": "n8n-nodes-base.code",
