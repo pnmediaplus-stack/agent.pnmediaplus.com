@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   }
 
   // Fetch active integrations for the tenant
-  const res = await fetch(`${supabaseUrl}/rest/v1/tenant_integrations?organization_id=eq.${organizationId}&status=eq.ACTIVE&select=provider_code,public_metadata`, {
+  const res = await fetch(`${supabaseUrl}/rest/v1/phase070_tenant_integration_status?organization_id=eq.${organizationId}&status=eq.active&select=provider_code,public_metadata`, {
     headers: {
       'apikey': supabaseKey,
       'Authorization': `Bearer ${supabaseKey}`
