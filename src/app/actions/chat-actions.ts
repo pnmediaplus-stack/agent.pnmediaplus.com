@@ -215,7 +215,10 @@ export async function sendChatMessage(threadId: string, body: string) {
                bodyStr += `**Caption:**\n${artifacts.caption}\n\n`;
              }
              if (artifacts.research) {
-               bodyStr += `**Research Packet:**\n${artifacts.research}\n\n`;
+               const researchStr = typeof artifacts.research === 'object' 
+                 ? "```json\n" + JSON.stringify(artifacts.research, null, 2) + "\n```"
+                 : artifacts.research;
+               bodyStr += `**Research Packet:**\n${researchStr}\n\n`;
              }
 
              await dbInsertChatMessage(organizationId, {
