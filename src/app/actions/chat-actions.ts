@@ -203,7 +203,8 @@ export async function sendChatMessage(threadId: string, body: string) {
              intentType: "route_department"
            });
 
-           const n8nResp = webhookResult.response as any;
+           const n8nRespRaw = webhookResult.response as any;
+           const n8nResp = Array.isArray(n8nRespRaw) ? n8nRespRaw[0] : n8nRespRaw;
            if (n8nResp && n8nResp.artifacts) {
              const artifacts = n8nResp.artifacts;
              let bodyStr = `**Nội dung đã được tạo thành công (QA_ready)**\n\n`;
