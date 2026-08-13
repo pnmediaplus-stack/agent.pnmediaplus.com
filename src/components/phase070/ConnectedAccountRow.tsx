@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { StateBadge } from "@/components/shared/StateBadge";
 import { RotateCcw, Trash2, Play } from "lucide-react";
 import type { Phase070ProviderCatalogItem, Phase070TenantIntegrationStatus } from "@/lib/tenant-integrations";
@@ -25,6 +26,7 @@ export function ConnectedAccountRow({
   const { t } = useI18n("phase070");
   const meta = integration.public_metadata as any;
   const isFacebook = provider.provider_code === "facebook_page";
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   
   // Facebook-specific metadata
   const pageName = isFacebook ? (meta?.page_name || (t("phase070.dashboard.unknownPage") ?? "Unknown Page")) : integration.integration_name;
@@ -47,12 +49,15 @@ export function ConnectedAccountRow({
 
   // Fallback for avatar
   const renderAvatar = () => {
-    if (avatarUrl) {
+    if (avatarUrl && !avatarLoadFailed) {
       return (
         <img 
           src={avatarUrl} 
           alt={pageName} 
           className={`w-12 h-12 rounded-full border-2 object-cover bg-slate-800 ${glowColor}`} 
+          referrerPolicy="no-referrer"
+          crossOrigin="anonymous"
+          onError={() => setAvatarLoadFailed(true)}
         />
       );
     }
