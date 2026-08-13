@@ -15,15 +15,20 @@ export async function GET(request: Request) {
   }
 
   // Fetch active integrations for the tenant
-  const res = await fetch(`${supabaseUrl}/rest/v1/phase070_tenant_integration_status?organization_id=eq.${organizationId}&status=eq.active&select=provider_code,public_metadata`, {
+  const res = await fetch(`${supabaseUrl}/rest/v1/phase070_tenant_integration_status?organization_id=eq.${organizationId}&select=provider_code,public_metadata`, {
     headers: {
       'apikey': supabaseKey,
-      'Authorization': `Bearer ${supabaseKey}`
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Accept-Profile': 'public'
     }
   });
 
   if (!res.ok) {
-     return NextResponse.json({ state: 'blocked', reason: 'DATABASE_ERROR' }, { status: 500 });
+     const body = await res.text().catch(() => '');
+     return NextResponse.json({
+       state: 'blocked',
+       reason: body ? `DATABASE_ERROR: ${body}` : `DATABASE_ERROR: ${res.status} ${res.statusText}`
+     }, { status: 500 });
   }
 
   const integrations = await res.json();
