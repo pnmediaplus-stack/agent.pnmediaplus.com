@@ -430,7 +430,7 @@ export async function updateTenantIntegrationMetadata(
       
       // Ensure the chosen model is actually offered by the provider
       if (value !== null && value !== "" && value !== "default") {
-        const modelInfo = availableModels.find((m: any) => m.id === value);
+        const modelInfo = availableModels.find((m: any) => m.code === value);
         if (!modelInfo) {
           return { ok: false, state: "blocked", reason: `INVALID_MODEL: ${value} is not a valid model for this provider.` };
         }
