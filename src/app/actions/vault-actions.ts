@@ -360,6 +360,14 @@ export async function issueReferenceToken(
     // The RPC returns { jti, lease_token, expires_at, broker_receipt_ref }
     const tokenData = Array.isArray(data) ? data[0] : data;
 
+    await resetTenantIntegrationState(
+      authContext.organizationId,
+      normalizedIntegrationKey,
+      undefined,
+      "healthy",
+      new Date().toISOString()
+    );
+
     return { 
       ok: true, 
       state: "ready", 
