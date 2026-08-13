@@ -105,7 +105,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { model: 'gpt-image-1', prompt: $('Parse Text').item.json.textContent.agent_3_image_prompt, n: 1, size: '1024x1024', tenant_id: $('Parse Text').item.json.tenant_id } }}",
+        "jsonBody": "={{ { model: 'dall-e-3', prompt: $('Parse Text').item.json.textContent.agent_3_image_prompt, n: 1, size: '1024x1024', tenant_id: $('Parse Text').item.json.tenant_id } }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
