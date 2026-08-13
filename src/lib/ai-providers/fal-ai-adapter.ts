@@ -8,7 +8,7 @@ const FAL_PRICING: Record<string, { per_unit: number, type: 'seconds' | 'megapix
 };
 
 export const falAiAdapter: AiProviderAdapter = {
-  id: 'fal-ai',
+  id: 'fal_ai',
   billingUnits: ['seconds', 'requests', 'images'],
   
   getEndpointUrl: (payload: any, options: { endpointUrl?: string }) => {

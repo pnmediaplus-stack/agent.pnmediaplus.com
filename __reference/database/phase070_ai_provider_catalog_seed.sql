@@ -47,7 +47,7 @@ on conflict (provider_code) do update set
 insert into tenant_integration_vault.integration_providers 
 (provider_code, provider_name, provider_category, auth_type, status, capabilities, public_metadata)
 values (
-  'fal-ai',
+  'fal_ai',
   'Fal.ai',
   'ai',
   'bearer_token',

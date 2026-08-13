@@ -20,7 +20,7 @@ import { falAiAdapter } from './fal-ai-adapter';
 
 export const AI_PROVIDERS: Record<string, AiProviderAdapter> = {
   'openai': openaiAdapter,
-  'fal-ai': falAiAdapter,
+  'fal_ai': falAiAdapter,
 };
 
 export function getProvider(providerId: string): AiProviderAdapter {
