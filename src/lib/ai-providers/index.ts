@@ -25,8 +25,9 @@ export const AI_PROVIDERS: Record<string, AiProviderAdapter> = {
 
 export function getProvider(providerId: string): AiProviderAdapter {
   const provider = AI_PROVIDERS[providerId];
-  if (!provider) {
-    throw new Error(`PROVIDER_NOT_SUPPORTED: The provider '${providerId}' is not configured in the strict whitelist.`);
+  if (provider) {
+    return provider;
   }
-  return provider;
+  // Fallback to Universal OpenAI Adapter for dynamically added providers
+  return openaiAdapter;
 }
