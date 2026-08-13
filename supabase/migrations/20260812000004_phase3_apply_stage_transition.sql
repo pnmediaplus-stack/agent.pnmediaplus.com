@@ -38,9 +38,9 @@ declare
   v_artifact_content jsonb;
   v_artifact_content_text text;
 begin
-  -- 0. Absolute guard against NULL idempotency
-  if p_idempotency_key is null then
-    return jsonb_build_object('ok', false, 'error_code', 'NULL_IDEMPOTENCY_KEY');
+  -- 0. Absolute guard against NULL or empty idempotency
+  if p_idempotency_key is null or trim(p_idempotency_key) = '' then
+    return jsonb_build_object('ok', false, 'error_code', 'NULL_OR_EMPTY_IDEMPOTENCY_KEY');
   end if;
 
   -- 1. Check Idempotency Guard (Fail-Safe Early Return)
