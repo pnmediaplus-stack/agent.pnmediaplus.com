@@ -84,9 +84,16 @@ export function ProviderCatalogModal({
   const handleDelete = async (code: string) => {
     if (!confirm("Are you sure you want to disable this provider?")) return;
     setLoading(true);
+    setError("");
     try {
-      await deleteIntegrationProvider(code);
+      const res = await deleteIntegrationProvider(code);
+      if (!res.ok) {
+        setError(res.reason);
+        return;
+      }
       onRefresh();
+    } catch (err: any) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
