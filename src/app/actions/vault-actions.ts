@@ -397,11 +397,10 @@ export async function updateTenantIntegrationMetadata(
 
     const supabase = createServiceRoleClient();
     
-    // First get the existing record to merge metadata
+    // First get the existing record from the public view
     const { data: existing, error: findError } = await supabase
-      .schema("tenant_integration_vault")
-      .from("tenant_integrations")
-      .select("id, public_metadata, provider_id")
+      .from("phase070_tenant_integration_status")
+      .select("public_metadata, provider_code, status, connection_state")
       .eq("integration_key", integrationKey)
       .eq("organization_id", auth.organizationId)
       .single();
@@ -411,10 +410,9 @@ export async function updateTenantIntegrationMetadata(
     }
 
     const { data: provider, error: providerError } = await supabase
-      .schema("tenant_integration_vault")
-      .from("integration_providers")
+      .from("phase070_integration_provider_catalog")
       .select("public_metadata")
-      .eq("id", existing.provider_id)
+      .eq("provider_code", existing.provider_code)
       .single();
 
     if (providerError || !provider) {
@@ -430,43 +428,27 @@ export async function updateTenantIntegrationMetadata(
         return { ok: false, state: "blocked", reason: `INVALID_METADATA_KEY: ${key} is not allowed.` };
       }
       
-      if (value === "" || value === null || value === undefined) {
-         validatedUpdates[key] = null;
-         continue;
-      }
-      
-      const isValid = availableModels.some((m: any) => m.code === value);
-      if (!isValid) {
-        return { ok: false, state: "blocked", reason: `INVALID_MODEL: ${value} is not in the provider catalog.` };
+      // Ensure the chosen model is actually offered by the provider
+      if (value !== null && value !== "" && value !== "default") {
+        const modelInfo = availableModels.find((m: any) => m.id === value);
+        if (!modelInfo) {
+          return { ok: false, state: "blocked", reason: `INVALID_MODEL: ${value} is not a valid model for this provider.` };
+        }
       }
       
       validatedUpdates[key] = value;
     }
 
-    const newMetadata = {
-      ...(typeof existing.public_metadata === "object" && existing.public_metadata !== null ? existing.public_metadata : {}),
-      ...validatedUpdates
-    };
+    const newMetadata = { ...((existing.public_metadata as object) || {}), ...validatedUpdates };
 
-    const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/\/$/, '');
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
-
-    const updateRes = await fetch(`${supabaseUrl}/rest/v1/tenant_integrations?id=eq.${existing.id}`, {
-      method: "PATCH",
-      headers: {
-        "apikey": serviceKey,
-        "Authorization": `Bearer ${serviceKey}`,
-        "Content-Type": "application/json",
-        "Accept-Profile": "tenant_integration_vault",
-        "Content-Profile": "tenant_integration_vault",
-        "Prefer": "return=minimal"
-      },
-      body: JSON.stringify({ public_metadata: newMetadata })
-    });
-
-    if (!updateRes.ok) {
-       return { ok: false, state: "blocked", reason: `METADATA_UPDATE_FAILED: ${updateRes.status}` };
-    }
+    // Update using the reset RPC which is publicly exposed
+    await resetTenantIntegrationState(
+      auth.organizationId,
+      integrationKey,
+      newMetadata,
+      existing.connection_state,
+      undefined // do not change lastVerifiedAt
+    );
 
     return { ok: true, state: "ready", reason: "METADATA_UPDATED" };
   } catch (error: any) {
