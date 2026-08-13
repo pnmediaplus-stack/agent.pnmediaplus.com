@@ -37,7 +37,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
   // Note: tenantKey support for BYOK would go here (fetching from tenant_integrations)
   adapter.injectAuth(headers);
 
-  const endpointUrl = adapter.getEndpointUrl(payload, options);
+  const endpointUrl = await adapter.getEndpointUrl(payload, options);
   // 1. ATOMIC QUOTA RESERVE (Fail-closed via RPC)
   const quotaKey = `LLM_DAILY_BUDGET_${providerId.toUpperCase().replace(/-/g, '_')}`;
   const fallbackBudget = providerId === 'openai' ? 5.0 : 10.0;
@@ -114,7 +114,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
   }
 
   // 3. Parse Usage and Log (Post-execution Update)
-  const usageInfo = adapter.parseUsage(responseData, payload);
+  const usageInfo = await adapter.parseUsage(responseData, payload);
   
   if (!adapter.billingUnits.includes(usageInfo.unit)) {
     if (recordId) await updateUsageRecord(supabaseUrl, supabaseKey, recordId, { status: 'FAILED', estimated_cost: 0 });

@@ -23,7 +23,30 @@ export async function POST(req: Request) {
   const { payload, logCompletion } = guard;
   const { prompt } = payload;
 
-  const model = process.env.IMAGE_GENERATOR_MODEL?.trim() || 'dall-e-3';
+  const supabaseUrl = process.env.SUPABASE_URL?.trim();
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  
+  const res = await fetch(`${supabaseUrl}/rest/v1/phase070_tenant_integration_status?organization_id=eq.${payload.tenant_id}&select=public_metadata`, {
+    headers: {
+      'apikey': supabaseKey!,
+      'Authorization': `Bearer ${supabaseKey}`
+    }
+  });
+
+  let model: string | undefined;
+  if (res.ok) {
+     const json = await res.json();
+     for (const row of json) {
+       if (row.public_metadata?.preferred_image_model) {
+         model = row.public_metadata.preferred_image_model;
+         break;
+       }
+     }
+  }
+  
+  if (!model) {
+     return NextResponse.json({ error: 'CONFIG_MISSING', message: 'No preferred image model configured for tenant.' }, { status: 400 });
+  }
 
   // 2. AI Prompt System (Optimize for DALL-E)
   const enhancedPrompt = `Professional high-quality promotional image for social media marketing. Style: Modern, vibrant, professional. Subject: ${prompt}. No text in the image.`;
@@ -38,8 +61,7 @@ export async function POST(req: Request) {
     }, {
       actorId: 'n8n_image_generator',
       tenantId: payload.tenant_id, // STRICT TENANT SCOPE
-      requestId: req.headers.get('x-request-id') || 'unknown',
-      endpointUrl: 'https://api.openai.com/v1/images/generations'
+      requestId: req.headers.get('x-request-id') || 'unknown'
     });
 
     // Success

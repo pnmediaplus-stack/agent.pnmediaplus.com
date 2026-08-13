@@ -60,7 +60,7 @@ function MetadataRow({ label, value }: { label: string; value: React.ReactNode }
   );
 }
 
-import { createTenantIntegration, rotateTenantIntegration, revokeTenantIntegration, issueReferenceToken, type VaultActionResponse } from "@/app/actions/vault-actions";
+import { createTenantIntegration, rotateTenantIntegration, revokeTenantIntegration, issueReferenceToken, updateTenantIntegrationMetadata, type VaultActionResponse } from "@/app/actions/vault-actions";
 
 export function TenantIntegrationsView() {
   const { t } = useI18n("phase070");
@@ -307,6 +307,11 @@ export function TenantIntegrationsView() {
                   onTest={async (integrationKey) => {
                     await executeAction(provider.provider_code, () =>
                       issueReferenceToken(integrationKey, provider.provider_code)
+                    );
+                  }}
+                  onUpdateMetadata={async (integrationKey, metadataUpdates) => {
+                    await executeAction(provider.provider_code, () =>
+                      updateTenantIntegrationMetadata(integrationKey, metadataUpdates)
                     );
                   }}
                 />

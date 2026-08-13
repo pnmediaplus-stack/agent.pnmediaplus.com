@@ -1,24 +1,38 @@
 import { AiProviderAdapter, UsageInfo } from './index';
 
-// OpenAI cost map (approximate cost per 1M tokens in USD)
-// Update these to match real pricing if needed
-const OPENAI_PRICING: Record<string, { prompt: number; completion: number }> = {
-  'gpt-4o': { prompt: 5.0, completion: 15.0 },
-  'gpt-4o-mini': { prompt: 0.15, completion: 0.60 },
-  'dall-e-3': { prompt: 40.0, completion: 40.0 }, // per 1k images
-  'default': { prompt: 5.0, completion: 15.0 }
-};
+async function getProviderMetadata(providerId: string) {
+  const supabaseUrl = process.env.SUPABASE_URL?.trim();
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!supabaseUrl || !supabaseKey) return null;
+  
+  const res = await fetch(`${supabaseUrl}/rest/v1/phase070_integration_provider_catalog?provider_code=eq.${providerId}&select=public_metadata`, {
+    headers: {
+      'apikey': supabaseKey,
+      'Authorization': `Bearer ${supabaseKey}`
+    }
+  });
+  
+  if (!res.ok) return null;
+  const json = await res.json();
+  return json[0]?.public_metadata;
+}
 
 export const openaiAdapter: AiProviderAdapter = {
   id: 'openai',
   billingUnits: ['tokens', 'images'],
   
-  getEndpointUrl: (payload: any, options: { endpointUrl?: string }) => {
+  getEndpointUrl: async (payload: any, options: { endpointUrl?: string }): Promise<string> => {
     if (options.endpointUrl) return options.endpointUrl;
-    if (payload.model?.includes('dall-e') || payload.model?.includes('gpt-image')) {
-      return process.env.BYOK_OPENAI_IMAGES_URL || 'https://api.openai.com/v1/images/generations';
+    const metadata = await getProviderMetadata('openai');
+    const models = metadata?.models || [];
+    const modelConfig = models.find((m: any) => m.code === payload.model);
+    
+    if (modelConfig && modelConfig.endpoint) {
+      return modelConfig.endpoint;
     }
-    return process.env.BYOK_OPENAI_CHAT_COMPLETIONS_URL || 'https://api.openai.com/v1/chat/completions';
+
+    // Fail-closed instead of guessing dall-e or gpt-image
+    throw new Error(`UNABLE_TO_DETERMINE_ENDPOINT: Model '${payload.model}' does not have an endpoint configured in integration_providers.public_metadata.`);
   },
 
   injectAuth: (headers: Record<string, string>, tenantKey?: string) => {
@@ -27,15 +41,22 @@ export const openaiAdapter: AiProviderAdapter = {
     headers['Authorization'] = `Bearer ${key}`;
   },
 
-  parseUsage: (responseJson: any, payload: any): UsageInfo => {
+  parseUsage: async (responseJson: any, payload: any): Promise<UsageInfo> => {
     // For Chat Completions
     if (responseJson.usage) {
       const promptTokens = responseJson.usage.prompt_tokens || 0;
       const completionTokens = responseJson.usage.completion_tokens || 0;
       const totalTokens = responseJson.usage.total_tokens || 0;
       
-      const pricing = OPENAI_PRICING[payload.model] || OPENAI_PRICING['default'];
-      const estimatedCost = (promptTokens / 1_000_000) * pricing.prompt + (completionTokens / 1_000_000) * pricing.completion;
+      const metadata = await getProviderMetadata('openai');
+      const models = metadata?.models || [];
+      const modelConfig = models.find((m: any) => m.code === payload.model);
+      
+      if (!modelConfig || modelConfig.prompt_cost === undefined || modelConfig.completion_cost === undefined) {
+         throw new Error(`CONFIG_MISSING: Pricing for model '${payload.model}' is missing in integration_providers.public_metadata.`);
+      }
+      
+      const estimatedCost = (promptTokens / 1_000_000) * modelConfig.prompt_cost + (completionTokens / 1_000_000) * modelConfig.completion_cost;
 
       return {
         unit: 'tokens',
@@ -49,8 +70,15 @@ export const openaiAdapter: AiProviderAdapter = {
     // For Image Generations (DALL-E usually doesn't return `usage` field, cost is per image)
     if (responseJson.data && Array.isArray(responseJson.data)) {
       const imageCount = responseJson.data.length;
-      const pricing = OPENAI_PRICING[payload.model] || OPENAI_PRICING['dall-e-3'];
-      const estimatedCost = (imageCount / 1000) * pricing.completion; // Normalized to per 1k
+      const metadata = await getProviderMetadata('openai');
+      const models = metadata?.models || [];
+      const modelConfig = models.find((m: any) => m.code === payload.model);
+      
+      if (!modelConfig || modelConfig.completion_cost === undefined) {
+         throw new Error(`CONFIG_MISSING: Pricing for image model '${payload.model}' is missing in integration_providers.public_metadata.`);
+      }
+      
+      const estimatedCost = (imageCount / 1000) * modelConfig.completion_cost; // Normalized to per 1k
 
       return {
         unit: 'images',

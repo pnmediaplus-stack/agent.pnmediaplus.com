@@ -10,6 +10,7 @@ interface ConnectedAccountRowProps {
   onRotate: (integrationKey: string, secretMaterial: string, pageId?: string) => Promise<void>;
   onRevoke: (integrationKey: string) => Promise<void>;
   onTest: (integrationKey: string) => Promise<void>;
+  onUpdateMetadata: (integrationKey: string, metadataUpdates: Record<string, any>) => Promise<void>;
 }
 
 export function ConnectedAccountRow({
@@ -19,6 +20,7 @@ export function ConnectedAccountRow({
   onRotate,
   onRevoke,
   onTest,
+  onUpdateMetadata,
 }: ConnectedAccountRowProps) {
   const { t } = useI18n("phase070");
   const meta = integration.public_metadata as any;
@@ -91,6 +93,39 @@ export function ConnectedAccountRow({
             <span className="text-slate-700">•</span>
             <span className="text-xs text-slate-500 font-mono">{integration.integration_key}</span>
           </div>
+          
+          {!!(provider.public_metadata as any)?.models && Array.isArray((provider.public_metadata as any).models) && (
+            <div className="mt-3 flex space-x-4">
+              <label className="flex items-center space-x-2">
+                <span className="text-xs text-slate-400">Image Model:</span>
+                <select 
+                  className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none focus:border-cyan-500"
+                  value={meta?.preferred_image_model || ""}
+                  onChange={(e) => onUpdateMetadata(integration.integration_key, { preferred_image_model: e.target.value })}
+                  disabled={!!actionLoading}
+                >
+                  <option value="">-- Mặc định --</option>
+                  {(provider.public_metadata as any).models.filter((m: any) => m.capability === 'image').map((m: any) => (
+                    <option key={m.code} value={m.code}>{m.code}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center space-x-2">
+                <span className="text-xs text-slate-400">Text Model:</span>
+                <select 
+                  className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none focus:border-cyan-500"
+                  value={meta?.preferred_text_model || ""}
+                  onChange={(e) => onUpdateMetadata(integration.integration_key, { preferred_text_model: e.target.value })}
+                  disabled={!!actionLoading}
+                >
+                  <option value="">-- Mặc định --</option>
+                  {(provider.public_metadata as any).models.filter((m: any) => m.capability === 'text').map((m: any) => (
+                    <option key={m.code} value={m.code}>{m.code}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
         </div>
       </div>
 

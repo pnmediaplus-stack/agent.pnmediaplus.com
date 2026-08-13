@@ -371,8 +371,97 @@ export async function issueReferenceToken(
           broker_status: "PASSED" 
         } 
       } 
+    }
+  } catch (error: any) {
+    return { ok: false, state: "blocked", reason: `INTERNAL_ERROR: ${error.message}` };
+  }
+}
+
+export async function updateTenantIntegrationMetadata(
+  integrationKey: string,
+  metadataUpdates: Record<string, any>
+): Promise<VaultActionResponse> {
+  try {
+    const auth = await requireAuthContext();
+    if (!auth.organizationId) {
+      return { ok: false, state: "blocked", reason: "MISSING_ORGANIZATION_CONTEXT" };
+    }
+
+    const supabase = createServiceRoleClient();
+    
+    // First get the existing record to merge metadata
+    const { data: existing, error: findError } = await supabase
+      .schema("tenant_integration_vault")
+      .from("tenant_integrations")
+      .select("id, public_metadata, provider_id")
+      .eq("integration_key", integrationKey)
+      .eq("organization_id", auth.organizationId)
+      .single();
+
+    if (findError || !existing) {
+      return { ok: false, state: "blocked", reason: "INTEGRATION_NOT_FOUND" };
+    }
+
+    const { data: provider, error: providerError } = await supabase
+      .schema("tenant_integration_vault")
+      .from("integration_providers")
+      .select("public_metadata")
+      .eq("id", existing.provider_id)
+      .single();
+
+    if (providerError || !provider) {
+      return { ok: false, state: "blocked", reason: "PROVIDER_NOT_FOUND" };
+    }
+
+    const allowedKeys = ['preferred_text_model', 'preferred_image_model'];
+    const validatedUpdates: Record<string, any> = {};
+    const availableModels = Array.isArray(provider.public_metadata?.models) ? provider.public_metadata.models : [];
+
+    for (const [key, value] of Object.entries(metadataUpdates)) {
+      if (!allowedKeys.includes(key)) {
+        return { ok: false, state: "blocked", reason: `INVALID_METADATA_KEY: ${key} is not allowed.` };
+      }
+      
+      if (value === "" || value === null || value === undefined) {
+         validatedUpdates[key] = null;
+         continue;
+      }
+      
+      const isValid = availableModels.some((m: any) => m.code === value);
+      if (!isValid) {
+        return { ok: false, state: "blocked", reason: `INVALID_MODEL: ${value} is not in the provider catalog.` };
+      }
+      
+      validatedUpdates[key] = value;
+    }
+
+    const newMetadata = {
+      ...(typeof existing.public_metadata === "object" && existing.public_metadata !== null ? existing.public_metadata : {}),
+      ...validatedUpdates
     };
-  } catch (err: any) {
-    return { ok: false, state: "blocked", reason: err.message };
+
+    const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/\/$/, '');
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
+
+    const updateRes = await fetch(`${supabaseUrl}/rest/v1/tenant_integrations?id=eq.${existing.id}`, {
+      method: "PATCH",
+      headers: {
+        "apikey": serviceKey,
+        "Authorization": `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        "Accept-Profile": "tenant_integration_vault",
+        "Content-Profile": "tenant_integration_vault",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify({ public_metadata: newMetadata })
+    });
+
+    if (!updateRes.ok) {
+       return { ok: false, state: "blocked", reason: `METADATA_UPDATE_FAILED: ${updateRes.status}` };
+    }
+
+    return { ok: true, state: "ready", reason: "METADATA_UPDATED" };
+  } catch (error: any) {
+    return { ok: false, state: "blocked", reason: `INTERNAL_ERROR: ${error.message}` };
   }
 }

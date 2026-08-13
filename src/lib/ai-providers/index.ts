@@ -9,9 +9,9 @@ export interface UsageInfo {
 export interface AiProviderAdapter {
   id: string;
   billingUnits: ('tokens' | 'seconds' | 'images' | 'requests')[];
-  getEndpointUrl: (payload: any, options: { endpointUrl?: string }) => string;
+  getEndpointUrl: (payload: any, options: { endpointUrl?: string }) => Promise<string> | string;
   injectAuth: (headers: Record<string, string>, tenantKey?: string) => void;
-  parseUsage: (responseJson: any, payload: any) => UsageInfo;
+  parseUsage: (responseJson: any, payload: any) => Promise<UsageInfo> | UsageInfo;
 }
 
 // Registry Whitelist
