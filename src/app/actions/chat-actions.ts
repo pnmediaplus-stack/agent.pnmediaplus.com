@@ -199,7 +199,7 @@ export async function sendChatMessage(threadId: string, body: string) {
            const routedMsgResult = await dbInsertChatMessage(organizationId, {
              threadId,
              sender: "system",
-             body: `Đã nhận và điều phối lệnh: ${command} ${args.join(' ')}\n\nN8N Workflow đã hoàn tất.`,
+             body: `Đã nhận và điều phối lệnh: ${command} ${args.join(' ')}`,
              intentType: "route_department"
            });
 
