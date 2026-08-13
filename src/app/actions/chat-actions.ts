@@ -231,7 +231,7 @@ export async function sendChatMessage(threadId: string, body: string) {
 
            return {
              success: true,
-             message: routedMsgResult.data,
+             message: routedMsgResult.data ? JSON.parse(JSON.stringify(routedMsgResult.data)) : null,
              webhook: { ok: webhookResult.ok, route: "webhook/command", status: webhookResult.status || 202, message: webhookResult.message }
            };
         } else if (command === '/plan_campaign') {
@@ -768,7 +768,7 @@ async function routePlanCampaignCommand(
 
   return {
     success: true,
-    message: routedMsgResult.data,
+    message: routedMsgResult.data ? JSON.parse(JSON.stringify(routedMsgResult.data)) : null,
     webhook: { ok: true, route: "webhook/human-task-intake", status: routed.status, message: routed.message }
   };
 }
