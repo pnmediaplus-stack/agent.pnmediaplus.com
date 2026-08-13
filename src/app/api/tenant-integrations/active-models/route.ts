@@ -14,8 +14,11 @@ export async function GET(request: Request) {
      return NextResponse.json({ state: 'blocked', reason: 'SERVER_CONFIGURATION_ERROR' }, { status: 500 });
   }
 
-  // Fetch active integrations for the tenant
-  const res = await fetch(`${supabaseUrl}/rest/v1/phase070_tenant_integration_status?organization_id=eq.${organizationId}&select=provider_code,public_metadata`, {
+  // Fetch only active integrations for the tenant.
+  // This avoids revoked/blocked rows from overwriting a valid configured/healthy row.
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/phase070_tenant_integration_status?organization_id=eq.${organizationId}&status=eq.configured&connection_state=eq.healthy&select=provider_code,public_metadata,status,connection_state`,
+    {
     headers: {
       'apikey': supabaseKey,
       'Authorization': `Bearer ${supabaseKey}`,
@@ -32,9 +35,16 @@ export async function GET(request: Request) {
   }
 
   const integrations = await res.json();
-  
-  let textConfig = null;
-  let imageConfig = null;
+
+  if (!Array.isArray(integrations) || integrations.length === 0) {
+    return NextResponse.json({
+      state: 'blocked',
+      reason: `FAIL_CLOSED: No configured/healthy tenant integration row found for organization_id=${organizationId}. Please verify the active provider row exists in phase070_tenant_integration_status.`
+    }, { status: 200 });
+  }
+
+  let textConfig: { provider: string; model: string } | null = null;
+  let imageConfig: { provider: string; model: string } | null = null;
 
   for (const intg of integrations) {
     const meta = intg.public_metadata || {};
