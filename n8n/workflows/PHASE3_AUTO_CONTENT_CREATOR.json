@@ -59,7 +59,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.prompt}}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" },\n  \"tenant_id\": \"{{$json.tenant_id}}\"\n}",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": {{JSON.stringify($json.prompt)}}\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" },\n  \"tenant_id\": \"{{$json.tenant_id}}\"\n}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -105,7 +105,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"gpt-image-1\",\n  \"prompt\": \"{{$('Parse Text').item.json.textContent.agent_3_image_prompt}}\",\n  \"n\": 1,\n  \"size\": \"1024x1024\",\n  \"tenant_id\": \"{{$('Parse Text').item.json.tenant_id}}\"\n}",
+        "jsonBody": "={\n  \"model\": \"gpt-image-1\",\n  \"prompt\": {{JSON.stringify($('Parse Text').item.json.textContent.agent_3_image_prompt)}},\n  \"n\": 1,\n  \"size\": \"1024x1024\",\n  \"tenant_id\": \"{{$('Parse Text').item.json.tenant_id}}\"\n}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
