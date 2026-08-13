@@ -61,6 +61,52 @@ async function resetTenantIntegrationState(
   }
 }
 
+async function readPublicTenantIntegrationRow<T>(
+  accessToken: string,
+  table: string,
+  select: string,
+  filters: Record<string, string>
+): Promise<T | null> {
+  const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim().replace(/\/$/, "");
+  const anonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").trim();
+
+  if (!supabaseUrl || !anonKey) {
+    throw new Error("PHASE070_SUPABASE_ENV_MISSING");
+  }
+
+  console.debug("[phase070:readPublicTenantIntegrationRow] request", {
+    table,
+    filters,
+    hasAccessToken: Boolean(accessToken),
+    accessTokenPrefix: accessToken ? `${accessToken.slice(0, 12)}...` : null
+  });
+
+  const endpoint = new URL(`${supabaseUrl}/rest/v1/${table}`);
+  endpoint.searchParams.set("select", select);
+  for (const [key, value] of Object.entries(filters)) {
+    endpoint.searchParams.set(key, `eq.${value}`);
+  }
+
+  const response = await fetch(endpoint, {
+    method: "GET",
+    cache: "no-store",
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+      "Accept-Profile": "public"
+    }
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`PHASE070_PUBLIC_VIEW_READ_FAILED:${table}:${response.status}:${body || response.statusText}`);
+  }
+
+  const rows = (await response.json().catch(() => [])) as T[];
+  return Array.isArray(rows) ? (rows[0] ?? null) : null;
+}
+
 import { parseMasterKeysEnv, decodeMasterKey } from "@/lib/byok-secret-broker";
 
 /**
@@ -395,27 +441,55 @@ export async function updateTenantIntegrationMetadata(
       return { ok: false, state: "blocked", reason: "MISSING_ORGANIZATION_CONTEXT" };
     }
 
-    const supabase = createServiceRoleClient();
-    
-    // First get the existing record from the public view
-    const { data: existing, error: findError } = await supabase
-      .from("phase070_tenant_integration_status")
-      .select("public_metadata, provider_code, status, connection_state")
-      .eq("integration_key", integrationKey)
-      .eq("organization_id", auth.organizationId)
-      .single();
+    console.debug("[phase070:updateTenantIntegrationMetadata] lookup start", {
+      organizationId: auth.organizationId,
+      integrationKey,
+      metadataKeys: Object.keys(metadataUpdates)
+    });
 
-    if (findError || !existing) {
+    const existing = await readPublicTenantIntegrationRow<{
+      public_metadata: Record<string, any>;
+      provider_code: string;
+      status: string;
+      connection_state: string;
+      organization_id: string;
+      integration_key: string;
+    }>(
+      auth.accessToken,
+      "phase070_tenant_integration_status",
+      "public_metadata,provider_code,status,connection_state,organization_id,integration_key",
+      {
+        organization_id: auth.organizationId,
+        integration_key: integrationKey
+      }
+    );
+
+    if (!existing) {
+      console.debug("[phase070:updateTenantIntegrationMetadata] integration not found", {
+        organizationId: auth.organizationId,
+        integrationKey
+      });
       return { ok: false, state: "blocked", reason: "INTEGRATION_NOT_FOUND" };
     }
 
-    const { data: provider, error: providerError } = await supabase
-      .from("phase070_integration_provider_catalog")
-      .select("public_metadata")
-      .eq("provider_code", existing.provider_code)
-      .single();
+    const provider = await readPublicTenantIntegrationRow<{
+      public_metadata: Record<string, any>;
+      provider_code: string;
+    }>(
+      auth.accessToken,
+      "phase070_integration_provider_catalog",
+      "public_metadata,provider_code",
+      {
+        provider_code: existing.provider_code
+      }
+    );
 
-    if (providerError || !provider) {
+    if (!provider) {
+      console.debug("[phase070:updateTenantIntegrationMetadata] provider not found", {
+        organizationId: auth.organizationId,
+        integrationKey,
+        providerCode: existing.provider_code
+      });
       return { ok: false, state: "blocked", reason: "PROVIDER_NOT_FOUND" };
     }
 
@@ -446,7 +520,7 @@ export async function updateTenantIntegrationMetadata(
       auth.organizationId,
       integrationKey,
       newMetadata,
-      existing.connection_state,
+      existing.connection_state === "healthy" ? "healthy" : "unverified",
       undefined // do not change lastVerifiedAt
     );
 
