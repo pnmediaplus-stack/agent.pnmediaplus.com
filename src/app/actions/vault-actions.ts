@@ -377,6 +377,12 @@ export async function issueReferenceToken(
     }
 
     const credentialRow = Array.isArray(credentialCheck.data) ? (credentialCheck.data[0] as Record<string, unknown> | undefined) : undefined;
+    console.debug("[phase070:issueReferenceToken] credential package check", {
+      credentialRef: vaultCredentialRef,
+      current_secret_blob_id: credentialRow?.current_secret_blob_id ?? null,
+      current_master_key_id: credentialRow?.current_master_key_id ?? null,
+      state: credentialRow?.state ?? null
+    });
     if (
       !credentialRow ||
       !String(credentialRow.state || "").trim() ||
