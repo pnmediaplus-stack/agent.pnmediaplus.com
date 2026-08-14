@@ -3,6 +3,8 @@
 import { postN8nWebhook } from "@/lib/n8n-client";
 import type { ChatIntentType } from "@/types/state";
 import { verifyActionAuth } from "@/lib/action-auth-guard";
+import { createServiceRoleClient } from "@/lib/supabase-server";
+import { issueReferenceToken } from "./vault-actions";
 
 import { loadMarketingAgentRegistry } from "@/lib/marketing-agent-loader";
 import {
@@ -91,6 +93,39 @@ function matchDepartmentRegistryRecord(
   }
 
   return null;
+}
+
+async function issueAutoContentReferenceToken(organizationId: string) {
+  const supabase = createServiceRoleClient();
+  const { data: integrationRows, error } = await supabase
+    .from("tenant_integrations")
+    .select("integration_key, provider_code, status, connection_state")
+    .eq("organization_id", organizationId)
+    .eq("provider_code", "fal_ai")
+    .eq("status", "configured")
+    .eq("connection_state", "healthy")
+    .limit(1);
+
+  if (error) {
+    throw new Error(`ACTIVE_MODEL_LOOKUP_FAILED: ${error.message}`);
+  }
+
+  const integrationRow = Array.isArray(integrationRows) ? integrationRows[0] : null;
+  if (!integrationRow?.integration_key || !integrationRow?.provider_code) {
+    throw new Error("NO_VALID_ROW: No configured/healthy fal_ai integration row found");
+  }
+
+  const tokenResponse = await issueReferenceToken(
+    String(integrationRow.integration_key),
+    String(integrationRow.provider_code)
+  );
+
+  const leaseToken = tokenResponse.data?.receipt?.lease_token;
+  if (!tokenResponse.ok || !leaseToken) {
+    throw new Error(`FAILED_TO_ISSUE_REFERENCE_TOKEN: ${tokenResponse.reason}`);
+  }
+
+  return leaseToken;
 }
 
 export async function sendChatMessage(threadId: string, body: string) {
@@ -190,10 +225,12 @@ export async function sendChatMessage(threadId: string, body: string) {
         // For /auto_content we hit our newly integrated workflow "generate-content" endpoint
         let webhookResult;
         if (command === '/auto_content') {
+           const referenceToken = await issueAutoContentReferenceToken(organizationId);
            webhookResult = await postN8nWebhook("webhook/generate-content", {
              contentItemId: args[0],
              organization_id: organizationId,
-             tenant_id: organizationId
+             tenant_id: organizationId,
+             reference_token: referenceToken
            });
 
            const routedMsgResult = await dbInsertChatMessage(organizationId, {
