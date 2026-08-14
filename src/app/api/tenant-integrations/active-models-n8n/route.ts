@@ -92,17 +92,13 @@ export async function GET(request: Request) {
     tokenIntegrationKey
   });
 
-  const { data: integrationRow, error: integrationError } = await supabase
-    .schema("tenant_integration_vault")
-    .from("tenant_integrations")
-    .select("provider_id, public_metadata, status, connection_state")
-    .eq("organization_id", organizationId)
-    .eq("integration_key", tokenIntegrationKey)
-    .eq("status", "configured")
-    .eq("connection_state", "healthy")
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .single();
+  const { data: integrationRow, error: integrationError } = await supabase.rpc(
+    "phase077_get_active_tenant_integration_n8n",
+    {
+      p_organization_id: organizationId,
+      p_integration_key: tokenIntegrationKey
+    }
+  );
 
   if (integrationError) {
     console.error("[active-models-n8n] integration lookup error", {
@@ -134,51 +130,14 @@ export async function GET(request: Request) {
     );
   }
 
-  const providerId = String((integrationRow as Record<string, unknown>).provider_id || "");
   console.error("[active-models-n8n] integration row", {
-    providerId,
+    integrationId: (integrationRow as Record<string, unknown>).integration_id,
+    providerCode: (integrationRow as Record<string, unknown>).provider_code,
     status: (integrationRow as Record<string, unknown>).status,
     connectionState: (integrationRow as Record<string, unknown>).connection_state,
     publicMetadataKeys: Object.keys(((integrationRow as Record<string, unknown>).public_metadata || {}) as Record<string, unknown>)
   });
-  if (!providerId) {
-    return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `ACTIVE_MODELS_LOOKUP_FAILED: MISSING_PROVIDER_ID`
-      },
-      { status: 500 }
-    );
-  }
-
-  const { data: providerRow, error: providerError } = await supabase
-    .schema("tenant_integration_vault")
-    .from("integration_providers")
-    .select("provider_code")
-    .eq("id", providerId)
-    .limit(1)
-    .single();
-
-  if (providerError) {
-    console.error("[active-models-n8n] provider lookup error", {
-      message: providerError.message,
-      details: providerError.details,
-      hint: providerError.hint,
-      code: providerError.code
-    });
-    return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `ACTIVE_MODELS_LOOKUP_FAILED: ${providerError.message || "PROVIDER_LOOKUP_FAILED"}`
-      },
-      { status: 500 }
-    );
-  }
-
-  const providerCode = String((providerRow as Record<string, unknown>)?.provider_code || "");
-  console.error("[active-models-n8n] provider row", {
-    providerCode
-  });
+  const providerCode = String((integrationRow as Record<string, unknown>).provider_code || "");
   if (!providerCode) {
     return NextResponse.json(
       {
