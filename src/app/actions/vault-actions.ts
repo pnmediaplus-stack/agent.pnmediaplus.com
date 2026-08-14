@@ -361,6 +361,35 @@ export async function issueReferenceToken(
     }
 
     const vaultCredentialRef = `${authContext.organizationId.replace(/-/g, "")}__${normalizedProviderCode}__${normalizedIntegrationKey}`;
+    const credentialCheck = await supabase
+      .schema("pn_vault")
+      .from("vault_credentials")
+      .select("id,current_secret_blob_id,current_master_key_id,state")
+      .eq("credential_ref", vaultCredentialRef)
+      .maybeSingle();
+
+    if (credentialCheck.error) {
+      return {
+        ok: false,
+        state: "blocked",
+        reason: `CREDENTIAL_LOOKUP_FAILED: ${credentialCheck.error.message}`
+      };
+    }
+
+    const credentialRow = credentialCheck.data as Record<string, unknown> | null;
+    if (
+      !credentialRow ||
+      !String(credentialRow.state || "").trim() ||
+      !String(credentialRow.current_secret_blob_id || "").trim() ||
+      !String(credentialRow.current_master_key_id || "").trim()
+    ) {
+      return {
+        ok: false,
+        state: "blocked",
+        reason: "CREDENTIAL_SECRET_PACKAGE_NOT_READY"
+      };
+    }
+
     const issueToken = async () =>
       supabase.rpc("byok_issue_reference_token", {
       p_credential_ref: vaultCredentialRef,
@@ -372,24 +401,6 @@ export async function issueReferenceToken(
       });
 
     let { data, error } = await issueToken();
-
-    if (error && String(error.message || "").includes("CREDENTIAL_NOT_FOUND")) {
-      const createCredential = await supabase.rpc("byok_create_credential", {
-        p_credential_ref: vaultCredentialRef,
-        p_owner_ref: authContext.organizationId,
-        p_provider_code: normalizedProviderCode,
-        p_credential_name: `${normalizedProviderCode} ${normalizedIntegrationKey}`,
-        p_created_by_actor_type: "HUMAN",
-        p_created_by_actor_ref: authContext.userId,
-        p_secret_kind: "API_KEY"
-      });
-
-      if (createCredential.error) {
-        return { ok: false, state: "blocked", reason: `CREDENTIAL_CREATE_FAILED: ${createCredential.error.message}` };
-      }
-
-      ({ data, error } = await issueToken());
-    }
 
     if (error) {
       console.error("Vault issue token error:", error);
