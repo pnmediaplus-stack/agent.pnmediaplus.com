@@ -21,6 +21,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const organizationId = searchParams.get("organization_id");
   const referenceToken = searchParams.get("reference_token")?.trim() || "";
+  console.error("[active-models-n8n] incoming", {
+    organizationId,
+    hasReferenceToken: Boolean(referenceToken),
+    authHeaderPresent: Boolean(readRuntimeAuth(request))
+  });
 
   if (!organizationId) {
     return NextResponse.json(
@@ -50,6 +55,10 @@ export async function GET(request: Request) {
     actorType: "N8N",
     actorRef: "n8n:active-models"
   });
+  console.error("[active-models-n8n] token redeemed", {
+    credentialRef: consumedToken.credential_ref,
+    expiresAt: consumedToken.expires_at
+  });
 
   const credentialParts = String(consumedToken.credential_ref || "").split("__");
   const tokenOrgId = credentialParts[0] || "";
@@ -77,6 +86,11 @@ export async function GET(request: Request) {
   }
 
   const supabase = createServiceRoleClient();
+  console.error("[active-models-n8n] lookup start", {
+    organizationId,
+    tokenOrgId,
+    tokenIntegrationKey
+  });
 
   const { data: integrationRow, error: integrationError } = await supabase
     .schema("tenant_integration_vault")
@@ -91,6 +105,12 @@ export async function GET(request: Request) {
     .single();
 
   if (integrationError) {
+    console.error("[active-models-n8n] integration lookup error", {
+      message: integrationError.message,
+      details: integrationError.details,
+      hint: integrationError.hint,
+      code: integrationError.code
+    });
     return NextResponse.json(
       {
         state: "blocked",
@@ -101,6 +121,10 @@ export async function GET(request: Request) {
   }
 
   if (!integrationRow) {
+    console.error("[active-models-n8n] integration lookup empty", {
+      organizationId,
+      tokenIntegrationKey
+    });
     return NextResponse.json(
       {
         state: "blocked",
@@ -111,6 +135,12 @@ export async function GET(request: Request) {
   }
 
   const providerId = String((integrationRow as Record<string, unknown>).provider_id || "");
+  console.error("[active-models-n8n] integration row", {
+    providerId,
+    status: (integrationRow as Record<string, unknown>).status,
+    connectionState: (integrationRow as Record<string, unknown>).connection_state,
+    publicMetadataKeys: Object.keys(((integrationRow as Record<string, unknown>).public_metadata || {}) as Record<string, unknown>)
+  });
   if (!providerId) {
     return NextResponse.json(
       {
@@ -130,6 +160,12 @@ export async function GET(request: Request) {
     .single();
 
   if (providerError) {
+    console.error("[active-models-n8n] provider lookup error", {
+      message: providerError.message,
+      details: providerError.details,
+      hint: providerError.hint,
+      code: providerError.code
+    });
     return NextResponse.json(
       {
         state: "blocked",
@@ -140,6 +176,9 @@ export async function GET(request: Request) {
   }
 
   const providerCode = String((providerRow as Record<string, unknown>)?.provider_code || "");
+  console.error("[active-models-n8n] provider row", {
+    providerCode
+  });
   if (!providerCode) {
     return NextResponse.json(
       {
