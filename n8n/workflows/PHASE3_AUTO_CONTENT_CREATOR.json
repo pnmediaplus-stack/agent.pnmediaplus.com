@@ -362,12 +362,21 @@
       }
     },
     {
-      "parameters": {
-        "method": "GET",
-        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/tenant-integrations/active-models?organization_id={{$json.body.organization_id}}",
-        "authentication": "none",
-        "options": {}
-      },
+    "parameters": {
+      "method": "GET",
+      "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/tenant-integrations/active-models-n8n?organization_id={{$json.body.organization_id || $json.organization_id}}&reference_token={{$json.body.reference_token || $json.reference_token}}",
+      "authentication": "none",
+      "sendHeaders": true,
+      "headerParameters": {
+        "parameters": [
+            {
+              "name": "x-n8n-api-key",
+              "value": "={{$env[\"N8N_API_KEY\"]}}"
+            }
+          ]
+        },
+      "options": {}
+    },
       "name": "Fetch Tenant AI Config",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
