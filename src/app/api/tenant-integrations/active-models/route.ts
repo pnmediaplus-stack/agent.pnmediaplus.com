@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { loadPortalOrganizationContext, readPortalAccessToken, verifySupabaseAccessToken } from "@/lib/portal-auth";
+import { createServiceRoleClient } from "@/lib/supabase-server";
+import {
+  loadPortalOrganizationContext,
+  readPortalAccessToken,
+  verifySupabaseAccessToken
+} from "@/lib/portal-auth";
 
 type ActiveModelConfig = {
   state: "ready" | "blocked";
@@ -7,6 +12,10 @@ type ActiveModelConfig = {
   image?: { provider: string; model: string };
   text?: { provider: string; model: string };
 };
+
+function readAuthHeader(request: Request) {
+  return request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -19,7 +28,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const accessToken = readPortalAccessToken(request.headers);
+  const accessToken = readPortalAccessToken(request.headers) || readAuthHeader(request);
   if (!accessToken) {
     return NextResponse.json(
       { state: "blocked", reason: "UNAUTHORIZED_MISSING_TOKEN" },
@@ -36,79 +45,102 @@ export async function GET(request: Request) {
   }
 
   const orgContext = await loadPortalOrganizationContext(accessToken, user.id);
-  const matchingMembership =
-    orgContext.state === "ready"
-      ? orgContext.memberships.find((membership) => membership.organization_id === organizationId) || null
-      : null;
+  if (orgContext.state === "blocked") {
+    return NextResponse.json(
+      { state: "blocked", reason: `TENANT_SCOPE_INVALID: ${orgContext.reason}` },
+      { status: 403 }
+    );
+  }
 
-  if (orgContext.state === "blocked" || !matchingMembership) {
+  const membership = orgContext.memberships.find((item) => item.organization_id === organizationId);
+  if (!membership) {
     return NextResponse.json(
       {
         state: "blocked",
-        reason: `TENANT_SCOPE_INVALID: ${orgContext.reason}`
+        reason: `TENANT_SCOPE_INVALID: organization_id=${organizationId}`
       },
       { status: 403 }
     );
   }
 
-  const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim().replace(/\/$/, "");
-  const anonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").trim();
+  const supabase = createServiceRoleClient();
 
-  if (!supabaseUrl || !anonKey) {
-    return NextResponse.json(
-      { state: "blocked", reason: "SERVER_CONFIGURATION_ERROR" },
-      { status: 500 }
-    );
-  }
+  const { data: integrationRow, error: integrationError } = await supabase
+    .schema("tenant_integration_vault")
+    .from("tenant_integrations")
+    .select("provider_id, public_metadata, status, connection_state")
+    .eq("organization_id", organizationId)
+    .eq("status", "configured")
+    .eq("connection_state", "healthy")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .single();
 
-  const rpcResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/phase070_get_active_models`, {
-    method: "POST",
-    cache: "no-store",
-    headers: {
-      apikey: anonKey,
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-      Accept: "application/json"
-    },
-    body: JSON.stringify({
-      p_organization_id: organizationId
-    })
-  });
-
-  if (!rpcResponse.ok) {
-    const body = await rpcResponse.text().catch(() => "");
+  if (integrationError) {
     return NextResponse.json(
       {
         state: "blocked",
-        reason: `ACTIVE_MODELS_LOOKUP_FAILED: RPC_${rpcResponse.status}${body ? `:${body}` : ""}`
+        reason: `ACTIVE_MODELS_LOOKUP_FAILED: ${integrationError.message || "INTEGRATION_LOOKUP_FAILED"}`
       },
       { status: 500 }
     );
   }
 
-  const result = (await rpcResponse.json().catch(() => null)) as ActiveModelConfig | null;
-
-  if (!result || typeof result !== "object") {
+  if (!integrationRow) {
     return NextResponse.json(
       {
         state: "blocked",
-        reason: "ACTIVE_MODELS_LOOKUP_FAILED: INVALID_RPC_RESPONSE"
-      },
-      { status: 500 }
-    );
-  }
-
-  if (result.state === "blocked") {
-    return NextResponse.json(
-      {
-        state: "blocked",
-        reason: result.reason || "ACTIVE_MODELS_LOOKUP_FAILED"
+        reason: `NO_ACTIVE_TENANT_INTEGRATION: organization_id=${organizationId}`
       },
       { status: 200 }
     );
   }
 
-  if (!result.image?.provider || !result.image?.model) {
+  const providerId = String((integrationRow as Record<string, unknown>).provider_id || "");
+  if (!providerId) {
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: `ACTIVE_MODELS_LOOKUP_FAILED: MISSING_PROVIDER_ID`
+      },
+      { status: 500 }
+    );
+  }
+
+  const { data: providerRow, error: providerError } = await supabase
+    .schema("tenant_integration_vault")
+    .from("integration_providers")
+    .select("provider_code")
+    .eq("id", providerId)
+    .limit(1)
+    .single();
+
+  if (providerError) {
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: `ACTIVE_MODELS_LOOKUP_FAILED: ${providerError.message || "PROVIDER_LOOKUP_FAILED"}`
+      },
+      { status: 500 }
+    );
+  }
+
+  const providerCode = String((providerRow as Record<string, unknown>)?.provider_code || "");
+  if (!providerCode) {
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: `ACTIVE_MODELS_LOOKUP_FAILED: MISSING_PROVIDER_CODE`
+      },
+      { status: 500 }
+    );
+  }
+
+  const meta = ((integrationRow as Record<string, unknown>).public_metadata || {}) as Record<string, unknown>;
+  const preferredImageModel = typeof meta.preferred_image_model === "string" ? meta.preferred_image_model : "";
+  const preferredTextModel = typeof meta.preferred_text_model === "string" ? meta.preferred_text_model : "";
+
+  if (!preferredImageModel) {
     return NextResponse.json(
       {
         state: "blocked",
@@ -118,12 +150,14 @@ export async function GET(request: Request) {
     );
   }
 
-  return NextResponse.json(
-    {
-      state: "ready",
-      image: result.image,
-      text: result.text?.provider && result.text?.model ? result.text : result.image
-    },
-    { status: 200 }
-  );
+  const image = { provider: providerCode, model: preferredImageModel };
+  const text = preferredTextModel ? { provider: providerCode, model: preferredTextModel } : image;
+
+  const result: ActiveModelConfig = {
+    state: "ready",
+    image,
+    text
+  };
+
+  return NextResponse.json(result, { status: 200 });
 }
