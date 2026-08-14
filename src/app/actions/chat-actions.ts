@@ -98,12 +98,13 @@ function matchDepartmentRegistryRecord(
 async function issueAutoContentReferenceToken(organizationId: string) {
   const supabase = createServiceRoleClient();
   const { data: integrationRows, error } = await supabase
+    .schema("tenant_integration_vault")
     .from("tenant_integrations")
-    .select("integration_key, provider_code, status, connection_state")
+    .select("integration_key, provider_id, status, connection_state")
     .eq("organization_id", organizationId)
-    .eq("provider_code", "fal_ai")
     .eq("status", "configured")
     .eq("connection_state", "healthy")
+    .order("updated_at", { ascending: false })
     .limit(1);
 
   if (error) {
@@ -111,13 +112,30 @@ async function issueAutoContentReferenceToken(organizationId: string) {
   }
 
   const integrationRow = Array.isArray(integrationRows) ? integrationRows[0] : null;
-  if (!integrationRow?.integration_key || !integrationRow?.provider_code) {
-    throw new Error("NO_VALID_ROW: No configured/healthy fal_ai integration row found");
+  if (!integrationRow?.integration_key || !integrationRow?.provider_id) {
+    throw new Error("NO_VALID_ROW: No configured/healthy tenant integration row found");
+  }
+
+  const { data: providerRow, error: providerError } = await supabase
+    .schema("tenant_integration_vault")
+    .from("integration_providers")
+    .select("provider_code")
+    .eq("id", String(integrationRow.provider_id))
+    .limit(1)
+    .single();
+
+  if (providerError) {
+    throw new Error(`ACTIVE_MODEL_LOOKUP_FAILED: ${providerError.message}`);
+  }
+
+  const providerCode = String(providerRow?.provider_code || "");
+  if (providerCode !== "fal_ai") {
+    throw new Error(`NO_VALID_ROW: Expected fal_ai provider, got ${providerCode || "unknown"}`);
   }
 
   const tokenResponse = await issueReferenceToken(
     String(integrationRow.integration_key),
-    String(integrationRow.provider_code)
+    providerCode
   );
 
   const leaseToken = tokenResponse.data?.receipt?.lease_token;
