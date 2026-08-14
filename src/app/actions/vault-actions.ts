@@ -366,7 +366,7 @@ export async function issueReferenceToken(
       .from("vault_credentials")
       .select("id,current_secret_blob_id,current_master_key_id,state")
       .eq("credential_ref", vaultCredentialRef)
-      .maybeSingle();
+      .limit(1);
 
     if (credentialCheck.error) {
       return {
@@ -376,7 +376,7 @@ export async function issueReferenceToken(
       };
     }
 
-    const credentialRow = credentialCheck.data as Record<string, unknown> | null;
+    const credentialRow = Array.isArray(credentialCheck.data) ? (credentialCheck.data[0] as Record<string, unknown> | undefined) : undefined;
     if (
       !credentialRow ||
       !String(credentialRow.state || "").trim() ||
