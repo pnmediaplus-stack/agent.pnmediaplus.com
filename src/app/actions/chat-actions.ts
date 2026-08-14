@@ -3,7 +3,7 @@
 import { postN8nWebhook } from "@/lib/n8n-client";
 import type { ChatIntentType } from "@/types/state";
 import { verifyActionAuth } from "@/lib/action-auth-guard";
-import { createServiceRoleClient } from "@/lib/supabase-server";
+import { cookies } from "next/headers";
 import { issueReferenceToken } from "./vault-actions";
 
 import { loadMarketingAgentRegistry } from "@/lib/marketing-agent-loader";
@@ -96,43 +96,56 @@ function matchDepartmentRegistryRecord(
 }
 
 async function issueAutoContentReferenceToken(organizationId: string) {
-  const supabase = createServiceRoleClient();
-  const { data: integrationRows, error } = await supabase
-    .schema("tenant_integration_vault")
-    .from("tenant_integrations")
-    .select("integration_key, provider_id, status, connection_state")
-    .eq("organization_id", organizationId)
-    .eq("status", "configured")
-    .eq("connection_state", "healthy")
-    .order("updated_at", { ascending: false })
-    .limit(1);
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get("pn_portal_access_token")?.value?.trim() || "";
 
-  if (error) {
-    throw new Error(`ACTIVE_MODEL_LOOKUP_FAILED: ${error.message}`);
+  if (!accessToken) {
+    throw new Error("UNAUTHORIZED_MISSING_PORTAL_TOKEN");
   }
+
+  const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim().replace(/\/$/, "");
+  const anonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").trim();
+
+  if (!supabaseUrl || !anonKey) {
+    throw new Error("ACTIVE_MODEL_LOOKUP_FAILED: Missing Supabase env");
+  }
+
+  const endpoint = new URL(`${supabaseUrl}/rest/v1/phase070_tenant_integration_status`);
+  endpoint.searchParams.set("select", "integration_key,provider_code,status,connection_state");
+  endpoint.searchParams.set("organization_id", `eq.${encodeURIComponent(organizationId)}`);
+  endpoint.searchParams.set("provider_code", `eq.fal_ai`);
+  endpoint.searchParams.set("status", `eq.configured`);
+  endpoint.searchParams.set("connection_state", `eq.healthy`);
+  endpoint.searchParams.set("order", "updated_at.desc");
+  endpoint.searchParams.set("limit", "1");
+
+  const response = await fetch(endpoint, {
+    method: "GET",
+    cache: "no-store",
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+      "Accept-Profile": "public"
+    }
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`ACTIVE_MODEL_LOOKUP_FAILED: ${response.status}:${body || response.statusText}`);
+  }
+
+  const integrationRows = (await response.json().catch(() => [])) as Array<{
+    integration_key?: string;
+    provider_code?: string;
+  }>;
 
   const integrationRow = Array.isArray(integrationRows) ? integrationRows[0] : null;
-  if (!integrationRow?.integration_key || !integrationRow?.provider_id) {
-    throw new Error("NO_VALID_ROW: No configured/healthy tenant integration row found");
+  if (!integrationRow?.integration_key || integrationRow.provider_code !== "fal_ai") {
+    throw new Error("NO_VALID_ROW: No configured/healthy fal_ai integration row found");
   }
 
-  const { data: providerRow, error: providerError } = await supabase
-    .schema("tenant_integration_vault")
-    .from("integration_providers")
-    .select("provider_code")
-    .eq("id", String(integrationRow.provider_id))
-    .limit(1)
-    .single();
-
-  if (providerError) {
-    throw new Error(`ACTIVE_MODEL_LOOKUP_FAILED: ${providerError.message}`);
-  }
-
-  const providerCode = String(providerRow?.provider_code || "");
-  if (providerCode !== "fal_ai") {
-    throw new Error(`NO_VALID_ROW: Expected fal_ai provider, got ${providerCode || "unknown"}`);
-  }
-
+  const providerCode = "fal_ai";
   const tokenResponse = await issueReferenceToken(
     String(integrationRow.integration_key),
     providerCode
