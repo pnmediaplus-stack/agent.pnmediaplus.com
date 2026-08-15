@@ -293,6 +293,22 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     delete cleanPayload.organization_id;
     delete cleanPayload.endpointUrl;
 
+    if (providerId === 'fal_ai') {
+      const promptFromMessages = Array.isArray(cleanPayload.messages)
+        ? cleanPayload.messages
+            .map((message: any) => (typeof message?.content === 'string' ? message.content : ''))
+            .filter(Boolean)
+            .join('\n')
+        : '';
+
+      if (promptFromMessages && typeof cleanPayload.prompt !== 'string') {
+        cleanPayload.prompt = promptFromMessages;
+      }
+
+      delete cleanPayload.messages;
+      delete cleanPayload.response_format;
+    }
+
     const response = await fetch(endpointUrl, {
       method: 'POST',
       headers,
