@@ -51,10 +51,33 @@ export async function GET(request: Request) {
     );
   }
 
-  const consumedToken = await consumeReferenceToken(referenceToken, {
-    actorType: "N8N",
-    actorRef: "n8n:active-models"
-  });
+  let consumedToken;
+  try {
+    consumedToken = await consumeReferenceToken(referenceToken, {
+      actorType: "N8N",
+      actorRef: "n8n:active-models"
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const isTokenNotUsable = message.includes("TOKEN_NOT_USABLE");
+
+    console.error("[active-models-n8n] token consume failed", {
+      message,
+      tokenNotUsable: isTokenNotUsable,
+      organizationId
+    });
+
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: isTokenNotUsable
+          ? "REFERENCE_TOKEN_ALREADY_CONSUMED"
+          : `REFERENCE_TOKEN_CONSUME_FAILED: ${message}`
+      },
+      { status: isTokenNotUsable ? 409 : 500 }
+    );
+  }
+
   console.error("[active-models-n8n] token redeemed", {
     credentialRef: consumedToken.credential_ref,
     expiresAt: consumedToken.expires_at

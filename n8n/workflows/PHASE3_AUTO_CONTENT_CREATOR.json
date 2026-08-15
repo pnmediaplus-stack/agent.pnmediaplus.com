@@ -103,9 +103,6 @@
         "url": "={{$env[\"API_BASE_URL\"]}}/api/phase2/ai-broker",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ { provider: $('Fetch Tenant AI Config').item.json.image.provider, model: $('Fetch Tenant AI Config').item.json.image.model, prompt: $('Parse Text').item.json.textContent.agent_3_image_prompt, n: 1, size: '1024x1024', tenant_id: $('Parse Text').item.json.tenant_id } }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -115,6 +112,9 @@
             }
           ]
         },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { provider: $('Fetch Tenant AI Config').item.json.image.provider, model: $('Fetch Tenant AI Config').item.json.image.model, prompt: $('Parse Text').item.json.textContent.agent_3_image_prompt, n: 1, size: '1024x1024', tenant_id: $('Parse Text').item.json.tenant_id } }}",
         "options": {}
       },
       "name": "AI Broker (Image)",
@@ -362,28 +362,40 @@
       }
     },
     {
-    "parameters": {
-      "method": "GET",
-      "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/tenant-integrations/active-models-n8n?organization_id={{$json.body.organization_id || $json.organization_id}}&reference_token={{$json.body.reference_token || $json.reference_token}}",
-      "authentication": "none",
-      "sendHeaders": true,
-      "headerParameters": {
-        "parameters": [
+      "parameters": {
+        "url": "={{$env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\"}}/api/tenant-integrations/active-models-n8n",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
             {
-              "name": "x-n8n-api-key",
-              "value": "={{$env[\"N8N_API_KEY\"]}}"
+              "name": "organization_id",
+              "value": "={{$json.organization_id}}"
+            },
+            {
+              "name": "reference_token",
+              "value": "={{$json.lease_token}}"
             }
           ]
         },
-      "options": {}
-    },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-api-key",
+              "value": "={{$env.N8N_API_KEY}}"
+            }
+          ]
+        },
+        "options": {}
+      },
       "name": "Fetch Tenant AI Config",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        350,
-        100
-      ]
+        6000,
+        -1712
+      ],
+      "id": "e6658934-abee-4729-ab60-b7208f2a302e"
     },
     {
       "parameters": {
@@ -400,9 +412,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        375,
-        100
-      ]
+        6192,
+        -1712
+      ],
+      "id": "ed1381ae-4f88-407e-a1d0-c2d759d34446"
     },
     {
       "parameters": {
@@ -412,9 +425,51 @@
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
       "position": [
-        375,
-        300
-      ]
+        6192,
+        -1504
+      ],
+      "id": "853e7825-460c-4d8b-8f98-d86958c5b5c3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cf01ee3a-31eb-4750-a9cc-2744ebb04f78",
+              "name": "lease_token",
+              "value": "={{$('Webhook Trigger').item.json.body.lease_token || $('Webhook Trigger').item.json.lease_token}}",
+              "type": "string"
+            },
+            {
+              "id": "cc7ac466-7f2c-4021-be68-b7c6f974a9ef",
+              "name": "organization_id",
+              "value": "={{$('Webhook Trigger').item.json.body.organization_id || $('Webhook Trigger').item.json.organization_id}}",
+              "type": "string"
+            },
+            {
+              "id": "b3f14c7d-7d73-4b8d-9f22-9d4d26f97c10",
+              "name": "reference_token",
+              "value": "={{$('Webhook Trigger').item.json.body.reference_token || $('Webhook Trigger').item.json.reference_token}}",
+              "type": "string"
+            },
+            {
+              "id": "3d106f60-b466-4838-a4fc-8b3c9b71f747",
+              "name": "contentItemId",
+              "value": "={{$('Webhook Trigger').item.json.body.contentItemId || $('Webhook Trigger').item.json.contentItemId}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5808,
+        -1712
+      ],
+      "id": "683b2467-ebe4-45e5-b345-506164263c5b",
+      "name": "Preserve Reference Token"
     }
   ],
   "connections": {
@@ -433,36 +488,7 @@
       "main": [
         [
           {
-            "node": "Fetch Tenant AI Config",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fetch Governance Registry": {
-      "main": [
-        [
-          {
-            "node": "Validate Governance State",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate Governance State": {
-      "main": [
-        [
-          {
-            "node": "Format Prompt",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Governance Blocked Escalate",
+            "node": "Preserve Reference Token",
             "type": "main",
             "index": 0
           }
@@ -502,6 +528,46 @@
         ]
       ]
     },
+    "AI Broker (Image)": {
+      "main": [
+        [
+          {
+            "node": "Extract Visual",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Governance Registry": {
+      "main": [
+        [
+          {
+            "node": "Validate Governance State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Governance State": {
+      "main": [
+        [
+          {
+            "node": "Format Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Governance Blocked Escalate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Extract Research": {
       "main": [
         [
@@ -518,17 +584,6 @@
         [
           {
             "node": "AI Broker (Image)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "AI Broker (Image)": {
-      "main": [
-        [
-          {
-            "node": "Extract Visual",
             "type": "main",
             "index": 0
           }
@@ -624,6 +679,17 @@
         [
           {
             "node": "AI Config Blocked Escalate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preserve Reference Token": {
+      "main": [
+        [
+          {
+            "node": "Fetch Tenant AI Config",
             "type": "main",
             "index": 0
           }

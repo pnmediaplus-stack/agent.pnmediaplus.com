@@ -95,8 +95,7 @@ export async function dispatchToN8n(approvalId: string, integrationKey: string):
       organization_id: authContext.organizationId,
       integration_key: integrationKey,
       lease_token: leaseToken,
-      broker_receipt_ref: brokerReceiptRef,
-      reference_token: leaseToken // For n8n if strictly required
+      broker_receipt_ref: brokerReceiptRef
     };
 
     const dispatchReq = await fetch(n8nWebhookUrl, {
