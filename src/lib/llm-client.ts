@@ -2,8 +2,30 @@ import { z } from 'zod';
 import { getProvider } from './ai-providers';
 import { issueReferenceToken, redeemReferenceToken } from './byok-secret-broker';
 
-async function getTenantApiKey(tenantId: string, providerCode: string): Promise<string> {
+function getSupabaseRuntimeInfo() {
   const supabaseUrl = process.env.SUPABASE_URL?.trim();
+  let supabaseHost: string | null = null;
+  let supabaseProjectRef: string | null = null;
+
+  if (supabaseUrl) {
+    try {
+      const parsedUrl = new URL(supabaseUrl);
+      supabaseHost = parsedUrl.host;
+      supabaseProjectRef = parsedUrl.hostname.split('.')[0] || null;
+    } catch {
+      supabaseHost = supabaseUrl;
+    }
+  }
+
+  return {
+    supabaseUrl,
+    supabaseHost,
+    supabaseProjectRef,
+  };
+}
+
+async function getTenantApiKey(tenantId: string, providerCode: string): Promise<string> {
+  const { supabaseUrl, supabaseHost, supabaseProjectRef } = getSupabaseRuntimeInfo();
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!supabaseUrl || !supabaseKey) {
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Missing Supabase server keys.');
@@ -11,15 +33,6 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
 
   const { createServiceRoleClient } = await import('./supabase-server');
   const supabase = createServiceRoleClient();
-  let supabaseHost: string | null = null;
-  let supabaseProjectRef: string | null = null;
-  try {
-    const parsedUrl = new URL(supabaseUrl);
-    supabaseHost = parsedUrl.host;
-    supabaseProjectRef = parsedUrl.hostname.split('.')[0] || null;
-  } catch {
-    supabaseHost = supabaseUrl;
-  }
 
   console.log('[llm-client] tenant lookup start', {
     tenantId,
@@ -199,7 +212,7 @@ export type LlmPayload = {
 const DEFAULT_DAILY_QUOTA = 100000;
 
 export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) {
-  const supabaseUrl = process.env.SUPABASE_URL?.trim();
+  const { supabaseUrl, supabaseHost, supabaseProjectRef } = getSupabaseRuntimeInfo();
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   
   if (!supabaseUrl || !supabaseKey) {
