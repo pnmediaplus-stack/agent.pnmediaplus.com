@@ -28,11 +28,27 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     supabaseProjectRef,
   });
 
-  const { count: tenantRowCount, error: tenantRowCountError } = await supabase
-    .schema('tenant_integration_vault')
-    .from('tenant_integrations')
-    .select('*', { count: 'exact', head: true })
-    .eq('organization_id', tenantId);
+  const tenantRowProbeUrl = new URL(`${supabaseUrl}/rest/v1/tenant_integrations`);
+  tenantRowProbeUrl.searchParams.set('select', 'organization_id');
+  tenantRowProbeUrl.searchParams.set('organization_id', `eq.${tenantId}`);
+  tenantRowProbeUrl.searchParams.set('limit', '1');
+
+  const tenantRowProbeRes = await fetch(tenantRowProbeUrl.toString(), {
+    method: 'GET',
+    headers: {
+      'apikey': supabaseKey,
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Accept': 'application/json',
+      'Range-Unit': 'items',
+      'Range': '0-0',
+      'Prefer': 'count=exact'
+    }
+  });
+
+  const tenantRowCountHeader = tenantRowProbeRes.headers.get('content-range');
+  const tenantRowCount = tenantRowCountHeader ? Number(tenantRowCountHeader.split('/')[1] || '0') : null;
+  const tenantRowProbeBody = tenantRowProbeRes.ok ? await tenantRowProbeRes.text() : null;
+  const tenantRowProbeError = tenantRowProbeRes.ok ? null : await tenantRowProbeRes.text();
 
   console.log('[llm-client] tenant row preflight', {
     tenantId,
@@ -40,7 +56,10 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     supabaseHost,
     supabaseProjectRef,
     tenantRowCount,
-    tenantRowCountError: tenantRowCountError?.message || null,
+    probeStatus: tenantRowProbeRes.status,
+    tenantRowCountHeader,
+    tenantRowProbeError,
+    tenantRowProbeBodyPreview: tenantRowProbeBody ? tenantRowProbeBody.slice(0, 160) : null,
   });
 
   // 1. Read the authoritative runtime row directly from the private tenant vault.
