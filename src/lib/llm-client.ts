@@ -31,7 +31,7 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
   const { count: tenantRowCount, error: tenantRowCountError } = await supabase
     .schema('tenant_integration_vault')
     .from('tenant_integrations')
-    .select('organization_id', { count: 'exact', head: true })
+    .select('*', { count: 'exact', head: true })
     .eq('organization_id', tenantId);
 
   console.log('[llm-client] tenant row preflight', {
