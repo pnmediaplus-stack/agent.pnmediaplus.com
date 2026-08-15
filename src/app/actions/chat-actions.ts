@@ -142,7 +142,7 @@ async function issueAutoContentReferenceToken(organizationId: string) {
 
   const integrationRow = Array.isArray(integrationRows) ? integrationRows[0] : null;
   if (!integrationRow?.integration_key || integrationRow.provider_code !== "fal_ai") {
-    throw new Error("NO_VALID_ROW: No configured/healthy fal_ai integration row found");
+    throw new Error("NO_VALID_ROW: No configured healthy fal_ai integration row found");
   }
 
   const providerCode = "fal_ai";

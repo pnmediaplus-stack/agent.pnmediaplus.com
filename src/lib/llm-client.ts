@@ -12,16 +12,25 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
   const { createServiceRoleClient } = await import('./supabase-server');
   const supabase = createServiceRoleClient();
 
-  // 1. Get the active integration key for this provider
+  // 1. Get the configured, healthy integration for this provider.
   const { data, error } = await supabase
     .from('phase070_tenant_integration_status')
-    .select('integration_key')
+    .select('integration_key, provider_code, status, connection_state')
     .eq('organization_id', tenantId)
     .eq('provider_code', providerCode)
-    .eq('status', 'active');
-    
-  if (error) throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to query active integration - ${error.message}`);
-  if (!data || data.length === 0) throw new Error('VAULT_CREDENTIAL_NOT_READY: No active integration found for this provider.');
+    .eq('status', 'configured')
+    .eq('connection_state', 'healthy')
+    .order('updated_at', { ascending: false })
+    .limit(1);
+
+  if (error) {
+    throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to query configured/healthy integration - ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error('VAULT_CREDENTIAL_NOT_READY: No configured healthy integration found for this provider.');
+  }
+
   const integrationKey = data[0].integration_key;
 
   // 2. We need credential_ref to issue token

@@ -360,10 +360,30 @@ export async function issueReferenceToken(
       return { ok: false, state: "blocked", reason: "CREDENTIAL_MAPPING_NOT_FOUND" };
     }
 
-    const vaultCredentialRef = `${authContext.organizationId.replace(/-/g, "")}__${normalizedProviderCode}__${normalizedIntegrationKey}`;
+    const { data: vaultCredentialRef, error: credentialRefError } = await supabase.rpc(
+      "phase075_get_tenant_vault_credential_ref",
+      {
+        p_organization_id: authContext.organizationId,
+        p_integration_key: normalizedIntegrationKey
+      }
+    );
+
+    if (credentialRefError) {
+      return {
+        ok: false,
+        state: "blocked",
+        reason: `CREDENTIAL_REF_LOOKUP_FAILED: ${credentialRefError.message}`
+      };
+    }
+
+    if (!vaultCredentialRef || typeof vaultCredentialRef !== "string") {
+      return { ok: false, state: "blocked", reason: "CREDENTIAL_MAPPING_NOT_FOUND" };
+    }
+
     console.debug("[phase070:issueReferenceToken] credential package check", {
       credentialRef: vaultCredentialRef,
-      lookup: "byok_issue_reference_token"
+      lookup: "phase075_get_tenant_vault_credential_ref",
+      providerCode: normalizedProviderCode
     });
 
     const issueToken = async () =>
