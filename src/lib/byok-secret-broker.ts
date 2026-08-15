@@ -270,6 +270,15 @@ export async function redeemReferenceToken(
 ) {
   // 1. Consume token to get encrypted envelope
   const consumed = await consumeReferenceToken(referenceToken, actor);
+  console.log("[byok-broker] redeem token consumed", {
+    organizationId,
+    integrationKey,
+    credentialRef: consumed.credential_ref,
+    masterKeyRef: consumed.master_key_ref,
+    secretBlobId: consumed.secret_blob_id,
+    ciphertextLength: consumed.ciphertext?.length ?? 0,
+    ciphertextNonceLength: consumed.ciphertext_nonce?.length ?? 0,
+  });
 
   // 2. Validate tenant scope
   const supabase = createServiceRoleClient();
@@ -442,7 +451,23 @@ export function decodeMasterKey(version: string) {
 }
 
 export function decryptSecretPackage(consumed: Awaited<ReturnType<typeof consumeReferenceToken>>) {
+  console.log("[byok-broker] decrypt secret package start", {
+    credentialRef: consumed.credential_ref,
+    masterKeyRef: consumed.master_key_ref,
+    secretBlobId: consumed.secret_blob_id,
+    ciphertextLength: consumed.ciphertext?.length ?? 0,
+    ciphertextNonceLength: consumed.ciphertext_nonce?.length ?? 0,
+  });
+
   const cipherPackage = parseCipherPackage(consumed.ciphertext || "", consumed.ciphertext_nonce || "");
+  console.log("[byok-broker] decrypt secret package parsed", {
+    credentialRef: consumed.credential_ref,
+    version: cipherPackage.version,
+    ivLength: cipherPackage.iv.byteLength,
+    ciphertextLength: cipherPackage.ciphertext.byteLength,
+    authTagLength: cipherPackage.authTag.byteLength,
+  });
+
   const key = decodeMasterKey(cipherPackage.version);
 
   try {
@@ -450,6 +475,12 @@ export function decryptSecretPackage(consumed: Awaited<ReturnType<typeof consume
     decipher.setAuthTag(cipherPackage.authTag);
     return Buffer.concat([decipher.update(cipherPackage.ciphertext), decipher.final()]);
   } catch (error) {
+    console.log("[byok-broker] decrypt secret package failed", {
+      credentialRef: consumed.credential_ref,
+      masterKeyRef: consumed.master_key_ref,
+      secretBlobId: consumed.secret_blob_id,
+      message: error instanceof Error ? error.message : String(error),
+    });
     throw new ByokBrokerError(
       502,
       "VAULT_SECRET_DECRYPT_FAILED",
