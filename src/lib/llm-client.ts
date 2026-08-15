@@ -12,6 +12,11 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
   const { createServiceRoleClient } = await import('./supabase-server');
   const supabase = createServiceRoleClient();
 
+  console.log('[llm-client] tenant lookup start', {
+    tenantId,
+    providerCode,
+  });
+
   // 1. Read the authoritative runtime row directly from the private tenant vault.
   const { data: integration, error: integrationError } = await supabase
     .schema('tenant_integration_vault')
@@ -25,14 +30,28 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     .single();
 
   if (integrationError) {
+    console.log('[llm-client] tenant lookup failed', {
+      tenantId,
+      providerCode,
+      error: integrationError.message,
+    });
     throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to query private tenant integration - ${integrationError.message}`);
   }
 
   if (!integration) {
+    console.log('[llm-client] tenant lookup missing integration', {
+      tenantId,
+      providerCode,
+    });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: No configured healthy integration found for this tenant.');
   }
 
   if (!integration.integration_key) {
+    console.log('[llm-client] tenant integration missing integration_key', {
+      tenantId,
+      providerCode,
+      integrationId: integration.provider_id,
+    });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Tenant integration is missing integration_key.');
   }
 
@@ -45,19 +64,42 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     .single();
 
   if (providerError) {
+    console.log('[llm-client] provider lookup failed', {
+      tenantId,
+      providerCode,
+      integrationKey: integration.integration_key,
+      error: providerError.message,
+    });
     throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to query provider row - ${providerError.message}`);
   }
 
   if (!provider || provider.provider_code !== providerCode) {
+    console.log('[llm-client] provider scope mismatch', {
+      tenantId,
+      providerCode,
+      integrationKey: integration.integration_key,
+      resolvedProviderCode: provider?.provider_code || null,
+    });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Provider scope mismatch for configured integration.');
   }
 
   if (provider.status !== 'active') {
+    console.log('[llm-client] provider not active', {
+      tenantId,
+      providerCode,
+      integrationKey: integration.integration_key,
+      providerStatus: provider.status,
+    });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Provider is not active.');
   }
 
   const credentialRef = integration.vault_credential_ref;
   if (!credentialRef) {
+    console.log('[llm-client] credential reference missing', {
+      tenantId,
+      providerCode,
+      integrationKey: integration.integration_key,
+    });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Credential reference not found in private tenant integration.');
   }
 
@@ -67,6 +109,11 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
   const secretData = await redeemReferenceToken(tokenReq.lease_token, tenantId, integration.integration_key, actor);
   
   if (!secretData.access_token) {
+    console.log('[llm-client] decrypted secret empty', {
+      tenantId,
+      providerCode,
+      integrationKey: integration.integration_key,
+    });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Decrypted secret is empty.');
   }
 
@@ -101,12 +148,26 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
   const providerId = payload.provider || 'openai';
   const adapter = getProvider(providerId);
 
+  console.log('[llm-client] invoke start', {
+    requestId,
+    tenantId,
+    actorId,
+    providerId,
+    model: payload.model,
+  });
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json'
   };
 
   // Fetch BYOK Tenant Key from Vault (Fail-closed)
   const tenantKey = await getTenantApiKey(tenantId, providerId);
+  console.log('[llm-client] tenant key resolved', {
+    requestId,
+    tenantId,
+    providerId,
+    hasTenantKey: Boolean(tenantKey),
+  });
   adapter.injectAuth(headers, tenantKey);
 
   const endpointUrl = await adapter.getEndpointUrl(payload, options);
