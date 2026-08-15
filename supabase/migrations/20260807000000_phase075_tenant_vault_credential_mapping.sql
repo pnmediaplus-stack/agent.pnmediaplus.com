@@ -390,3 +390,78 @@ begin
     grant execute on function public.phase075_get_tenant_vault_credential_ref(uuid, text) to service_role;
   end if;
 end $$;
+
+create or replace function public.phase076_get_runtime_tenant_integration_status(
+  p_organization_id uuid,
+  p_provider_code text,
+  p_integration_key text default null
+)
+returns table (
+  organization_id uuid,
+  organization_key text,
+  provider_code text,
+  provider_name text,
+  provider_category text,
+  integration_key text,
+  integration_name text,
+  status text,
+  connection_state text,
+  last_verified_at timestamptz,
+  credential_configured boolean,
+  public_metadata jsonb,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language sql
+security definer
+set search_path = public, tenant_integration_vault, portal_auth, pg_temp
+as $$
+  select
+    o.id as organization_id,
+    o.organization_key,
+    p.provider_code,
+    p.provider_name,
+    p.provider_category,
+    i.integration_key,
+    i.integration_name,
+    i.status,
+    i.connection_state,
+    i.last_verified_at,
+    (i.current_secret_blob_id is not null) as credential_configured,
+    i.public_metadata,
+    i.created_at,
+    i.updated_at
+  from tenant_integration_vault.tenant_integrations i
+  join portal_auth.organizations o
+    on o.id = i.organization_id
+  join tenant_integration_vault.integration_providers p
+    on p.id = i.provider_id
+  where i.organization_id = p_organization_id
+    and p.provider_code = p_provider_code
+    and i.status = 'configured'
+    and i.connection_state = 'healthy'
+    and p.status = 'active'
+    and (
+      p_integration_key is null
+      or i.integration_key = p_integration_key
+    )
+  order by i.updated_at desc
+  limit 1;
+$$;
+
+do $$
+begin
+  revoke all on function public.phase076_get_runtime_tenant_integration_status(uuid, text, text) from public;
+
+  if exists (select 1 from pg_roles where rolname = 'anon') then
+    revoke all on function public.phase076_get_runtime_tenant_integration_status(uuid, text, text) from anon;
+  end if;
+
+  if exists (select 1 from pg_roles where rolname = 'authenticated') then
+    revoke all on function public.phase076_get_runtime_tenant_integration_status(uuid, text, text) from authenticated;
+  end if;
+
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant execute on function public.phase076_get_runtime_tenant_integration_status(uuid, text, text) to service_role;
+  end if;
+end $$;

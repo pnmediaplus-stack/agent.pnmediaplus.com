@@ -39,43 +39,38 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     providerCode,
     supabaseHost,
     supabaseProjectRef,
-    lookupSource: 'public.phase070_tenant_integration_status -> public.phase075_get_tenant_vault_credential_ref',
+    lookupSource: 'public.phase076_get_runtime_tenant_integration_status -> public.phase075_get_tenant_vault_credential_ref',
   });
 
-  console.log('[llm-client] tenant integration status query', {
+  console.log('[llm-client] tenant integration status rpc', {
     tenantId,
     providerCode,
     supabaseHost,
     supabaseProjectRef,
-    schema: 'public',
-    table: 'phase070_tenant_integration_status',
+    rpc: 'phase076_get_runtime_tenant_integration_status',
     filters: {
-      organization_id: tenantId,
-      provider_code: providerCode,
-      status: 'configured',
-      connection_state: 'healthy',
+      p_organization_id: tenantId,
+      p_provider_code: providerCode,
     },
   });
 
-  const { data: activeIntegration, error: activeIntegrationError } = await supabase
-    .from('public.phase070_tenant_integration_status')
-    .select('organization_id,integration_key,provider_code,status,connection_state,public_metadata,updated_at')
-    .eq('organization_id', tenantId)
-    .eq('provider_code', providerCode)
-    .eq('status', 'configured')
-    .eq('connection_state', 'healthy')
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .single();
+  const { data: activeIntegration, error: activeIntegrationError } = await supabase.rpc(
+    'phase076_get_runtime_tenant_integration_status',
+    {
+      p_organization_id: tenantId,
+      p_provider_code: providerCode,
+      p_integration_key: null,
+    }
+  );
 
   console.log('[llm-client] active integration rpc', {
     tenantId,
     providerCode,
     supabaseHost,
     supabaseProjectRef,
-    lookupSource: 'public.phase070_tenant_integration_status',
+    lookupSource: 'public.phase076_get_runtime_tenant_integration_status',
     rpcError: activeIntegrationError?.message || null,
-    hasIntegration: Boolean(activeIntegration),
+    hasIntegration: Array.isArray(activeIntegration) ? activeIntegration.length > 0 : Boolean(activeIntegration),
   });
 
   if (activeIntegrationError) {
@@ -89,18 +84,20 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to query active tenant integration - ${activeIntegrationError.message}`);
   }
 
-  if (!activeIntegration) {
+  const integrationRow = Array.isArray(activeIntegration) ? activeIntegration[0] : activeIntegration;
+
+  if (!integrationRow) {
     console.log('[llm-client] tenant lookup missing integration', {
       tenantId,
       providerCode,
       supabaseHost,
       supabaseProjectRef,
-      lookupSource: 'public.phase070_tenant_integration_status',
+      lookupSource: 'public.phase076_get_runtime_tenant_integration_status',
     });
-    throw new Error('VAULT_CREDENTIAL_NOT_READY: No configured healthy integration found for this tenant.');
+    throw new Error('VAULT_CREDENTIAL_NOT_READY: No configured healthy integration found for this tenant/provider.');
   }
 
-  const integration = activeIntegration as Record<string, unknown>;
+  const integration = integrationRow as Record<string, unknown>;
   const integrationKey = String(integration.integration_key || '').trim();
   const resolvedProviderCode = String(integration.provider_code || '').trim();
 
@@ -120,7 +117,7 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     providerCode,
     supabaseHost,
     supabaseProjectRef,
-    lookupSource: 'public.phase070_tenant_integration_status -> public.phase075_get_tenant_vault_credential_ref',
+    lookupSource: 'public.phase076_get_runtime_tenant_integration_status -> public.phase075_get_tenant_vault_credential_ref',
     integrationKey,
     resolvedProviderCode,
   });
