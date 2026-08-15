@@ -26,6 +26,11 @@ export function IntegrationCard({
   const isConfigured = !!integration && integration.credential_configured;
   const isConnecting = actionLoading !== null && actionLoading.includes(provider.provider_code);
   const [showConfig, setShowConfig] = useState(!isConfigured);
+  const statusLabel = !isConfigured
+    ? (t("phase070.integrations.credentialMissing") ?? "Not configured")
+    : integration?.status === "ACTIVE"
+      ? "Configured and healthy"
+      : `${integration.status} / ${integration.connection_state}`;
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/5 bg-slate-950/40 backdrop-blur-2xl transition-all duration-500 hover:shadow-2xl hover:shadow-cyan-900/20">
@@ -49,14 +54,14 @@ export function IntegrationCard({
             </div>
           </div>
           
-          <div className={`inline-flex items-center space-x-2 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${isConfigured ? (integration.status === "ACTIVE" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]" : "border-rose-500/30 bg-rose-500/10 text-rose-400") : "border-white/10 bg-white/5 text-slate-400"}`}>
-            {isConfigured && integration.status === "ACTIVE" && (
+          <div className={`inline-flex items-center space-x-2 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${isConfigured ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]" : "border-white/10 bg-white/5 text-slate-400"}`}>
+            {isConfigured && (
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
             )}
-            <span>{isConfigured ? integration.status : (t("phase070.integrations.credentialMissing") ?? "NOT CONFIGURED")}</span>
+            <span>{statusLabel}</span>
           </div>
         </div>
 
@@ -67,7 +72,7 @@ export function IntegrationCard({
               <div className="rounded-xl border border-emerald-900/30 bg-emerald-900/10 p-4 flex items-start space-x-3">
                  <CheckCircle className="h-5 w-5 text-emerald-400 mt-0.5" />
                  <div>
-                    <h4 className="text-sm font-medium text-emerald-200">{t("phase070.integrations.credentialConfigured") ?? "Integration Active"}</h4>
+                    <h4 className="text-sm font-medium text-emerald-200">{t("phase070.integrations.credentialConfigured") ?? "Configured and healthy"}</h4>
                     <p className="text-xs text-emerald-400/70 mt-1">
                       {t("phase070.integrations.description") ?? "Key is securely stored in write-only vault."}
                     </p>
