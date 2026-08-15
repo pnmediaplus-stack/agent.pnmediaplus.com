@@ -12,39 +12,59 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
   const { createServiceRoleClient } = await import('./supabase-server');
   const supabase = createServiceRoleClient();
 
-  // 1. Get the configured, healthy integration for this provider.
-  const { data, error } = await supabase
-    .from('phase070_tenant_integration_status')
-    .select('integration_key, provider_code, status, connection_state')
+  // 1. Read the authoritative runtime row directly from the private tenant vault.
+  const { data: integration, error: integrationError } = await supabase
+    .schema('tenant_integration_vault')
+    .from('tenant_integrations')
+    .select('organization_id,integration_key,status,connection_state,provider_id,vault_credential_ref,current_secret_blob_id,updated_at')
     .eq('organization_id', tenantId)
-    .eq('provider_code', providerCode)
     .eq('status', 'configured')
     .eq('connection_state', 'healthy')
     .order('updated_at', { ascending: false })
-    .limit(1);
+    .limit(1)
+    .single();
 
-  if (error) {
-    throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to query configured/healthy integration - ${error.message}`);
+  if (integrationError) {
+    throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to query private tenant integration - ${integrationError.message}`);
   }
 
-  if (!data || data.length === 0) {
-    throw new Error('VAULT_CREDENTIAL_NOT_READY: No configured healthy integration found for this provider.');
+  if (!integration) {
+    throw new Error('VAULT_CREDENTIAL_NOT_READY: No configured healthy integration found for this tenant.');
   }
 
-  const integrationKey = data[0].integration_key;
+  if (!integration.integration_key) {
+    throw new Error('VAULT_CREDENTIAL_NOT_READY: Tenant integration is missing integration_key.');
+  }
 
-  // 2. We need credential_ref to issue token
-  const { data: credentialRef, error: credError } = await supabase.rpc('phase075_get_tenant_vault_credential_ref', {
-    p_organization_id: tenantId,
-    p_integration_key: integrationKey
-  });
-  if (credError) throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to fetch credential ref - ${credError.message}`);
-  if (!credentialRef) throw new Error('VAULT_CREDENTIAL_NOT_READY: Credential reference not found in Vault.');
+  // 2. Resolve provider directly from the private runtime schema.
+  const { data: provider, error: providerError } = await supabase
+    .schema('tenant_integration_vault')
+    .from('integration_providers')
+    .select('provider_code,status')
+    .eq('id', integration.provider_id)
+    .single();
+
+  if (providerError) {
+    throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to query provider row - ${providerError.message}`);
+  }
+
+  if (!provider || provider.provider_code !== providerCode) {
+    throw new Error('VAULT_CREDENTIAL_NOT_READY: Provider scope mismatch for configured integration.');
+  }
+
+  if (provider.status !== 'active') {
+    throw new Error('VAULT_CREDENTIAL_NOT_READY: Provider is not active.');
+  }
+
+  const credentialRef = integration.vault_credential_ref;
+  if (!credentialRef) {
+    throw new Error('VAULT_CREDENTIAL_NOT_READY: Credential reference not found in private tenant integration.');
+  }
 
   // 3. Issue and redeem token (in-memory only, one-time use)
   const actor = { actorType: 'SYSTEM' as any, actorRef: 'llm-client' };
   const tokenReq = await issueReferenceToken({ credential_ref: credentialRef, scope: 'llm:invoke' }, actor);
-  const secretData = await redeemReferenceToken(tokenReq.lease_token, tenantId, integrationKey, actor);
+  const secretData = await redeemReferenceToken(tokenReq.lease_token, tenantId, integration.integration_key, actor);
   
   if (!secretData.access_token) {
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Decrypted secret is empty.');
