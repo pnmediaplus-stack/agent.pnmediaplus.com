@@ -11,10 +11,36 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
 
   const { createServiceRoleClient } = await import('./supabase-server');
   const supabase = createServiceRoleClient();
+  let supabaseHost: string | null = null;
+  let supabaseProjectRef: string | null = null;
+  try {
+    const parsedUrl = new URL(supabaseUrl);
+    supabaseHost = parsedUrl.host;
+    supabaseProjectRef = parsedUrl.hostname.split('.')[0] || null;
+  } catch {
+    supabaseHost = supabaseUrl;
+  }
 
   console.log('[llm-client] tenant lookup start', {
     tenantId,
     providerCode,
+    supabaseHost,
+    supabaseProjectRef,
+  });
+
+  const { count: tenantRowCount, error: tenantRowCountError } = await supabase
+    .schema('tenant_integration_vault')
+    .from('tenant_integrations')
+    .select('organization_id', { count: 'exact', head: true })
+    .eq('organization_id', tenantId);
+
+  console.log('[llm-client] tenant row preflight', {
+    tenantId,
+    providerCode,
+    supabaseHost,
+    supabaseProjectRef,
+    tenantRowCount,
+    tenantRowCountError: tenantRowCountError?.message || null,
   });
 
   // 1. Read the authoritative runtime row directly from the private tenant vault.
@@ -33,6 +59,8 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     console.log('[llm-client] tenant lookup failed', {
       tenantId,
       providerCode,
+      supabaseHost,
+      supabaseProjectRef,
       error: integrationError.message,
     });
     throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to query private tenant integration - ${integrationError.message}`);
@@ -42,6 +70,9 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     console.log('[llm-client] tenant lookup missing integration', {
       tenantId,
       providerCode,
+      supabaseHost,
+      supabaseProjectRef,
+      tenantRowCount,
     });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: No configured healthy integration found for this tenant.');
   }
@@ -50,6 +81,8 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     console.log('[llm-client] tenant integration missing integration_key', {
       tenantId,
       providerCode,
+      supabaseHost,
+      supabaseProjectRef,
       integrationId: integration.provider_id,
     });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Tenant integration is missing integration_key.');
@@ -67,6 +100,8 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     console.log('[llm-client] provider lookup failed', {
       tenantId,
       providerCode,
+      supabaseHost,
+      supabaseProjectRef,
       integrationKey: integration.integration_key,
       error: providerError.message,
     });
@@ -77,6 +112,8 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     console.log('[llm-client] provider scope mismatch', {
       tenantId,
       providerCode,
+      supabaseHost,
+      supabaseProjectRef,
       integrationKey: integration.integration_key,
       resolvedProviderCode: provider?.provider_code || null,
     });
@@ -87,6 +124,8 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     console.log('[llm-client] provider not active', {
       tenantId,
       providerCode,
+      supabaseHost,
+      supabaseProjectRef,
       integrationKey: integration.integration_key,
       providerStatus: provider.status,
     });
@@ -98,6 +137,8 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     console.log('[llm-client] credential reference missing', {
       tenantId,
       providerCode,
+      supabaseHost,
+      supabaseProjectRef,
       integrationKey: integration.integration_key,
     });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Credential reference not found in private tenant integration.');
@@ -112,6 +153,8 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     console.log('[llm-client] decrypted secret empty', {
       tenantId,
       providerCode,
+      supabaseHost,
+      supabaseProjectRef,
       integrationKey: integration.integration_key,
     });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Decrypted secret is empty.');
@@ -154,6 +197,8 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     actorId,
     providerId,
     model: payload.model,
+    supabaseHost,
+    supabaseProjectRef,
   });
 
   const headers: Record<string, string> = {
@@ -166,6 +211,8 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     requestId,
     tenantId,
     providerId,
+    supabaseHost,
+    supabaseProjectRef,
     hasTenantKey: Boolean(tenantKey),
   });
   adapter.injectAuth(headers, tenantKey);
