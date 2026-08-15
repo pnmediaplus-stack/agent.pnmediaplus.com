@@ -39,6 +39,8 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     providerCode,
     supabaseHost,
     supabaseProjectRef,
+    probeSchema: 'tenant_integration_vault',
+    probeTable: 'tenant_integrations',
   });
 
   const tenantRowProbeUrl = new URL(`${supabaseUrl}/rest/v1/tenant_integrations`);
@@ -54,7 +56,9 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
       'Accept': 'application/json',
       'Range-Unit': 'items',
       'Range': '0-0',
-      'Prefer': 'count=exact'
+      'Prefer': 'count=exact',
+      'Accept-Profile': 'tenant_integration_vault',
+      'Content-Profile': 'tenant_integration_vault'
     }
   });
 
@@ -68,6 +72,8 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     providerCode,
     supabaseHost,
     supabaseProjectRef,
+    probeSchema: 'tenant_integration_vault',
+    probeTable: 'tenant_integrations',
     tenantRowCount,
     probeStatus: tenantRowProbeRes.status,
     tenantRowCountHeader,
@@ -76,6 +82,19 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
   });
 
   // 1. Read the authoritative runtime row directly from the private tenant vault.
+  console.log('[llm-client] private integration query', {
+    tenantId,
+    providerCode,
+    supabaseHost,
+    supabaseProjectRef,
+    schema: 'tenant_integration_vault',
+    table: 'tenant_integrations',
+    filters: {
+      organization_id: tenantId,
+      status: 'configured',
+      connection_state: 'healthy',
+    },
+  });
   const { data: integration, error: integrationError } = await supabase
     .schema('tenant_integration_vault')
     .from('tenant_integrations')
@@ -127,6 +146,16 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     .select('provider_code,status')
     .eq('id', integration.provider_id)
     .single();
+
+  console.log('[llm-client] provider query', {
+    tenantId,
+    providerCode,
+    supabaseHost,
+    supabaseProjectRef,
+    schema: 'tenant_integration_vault',
+    table: 'integration_providers',
+    providerId: integration.provider_id,
+  });
 
   if (providerError) {
     console.log('[llm-client] provider lookup failed', {
