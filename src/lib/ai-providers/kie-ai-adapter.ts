@@ -82,7 +82,7 @@ export const kieAiAdapter: AiProviderAdapter = {
         completionTokens,
         totalTokens,
         estimatedCost,
-        ...(isPricingMissing ? { pricing_missing: true } : {})
+        ...(isPricingMissing ? { pricing_missing: true, pricing_missing_reason: 'MISSING_TEXT_PRICING' } : {})
       };
     }
     
@@ -108,7 +108,7 @@ export const kieAiAdapter: AiProviderAdapter = {
         completionTokens: 0,
         totalTokens: imageCount,
         estimatedCost,
-        ...(isPricingMissing ? { pricing_missing: true } : {})
+        ...(isPricingMissing ? { pricing_missing: true, pricing_missing_reason: 'MISSING_IMAGE_PRICING' } : {})
       };
     }
 

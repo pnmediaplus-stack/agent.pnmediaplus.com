@@ -5,6 +5,7 @@ export interface UsageInfo {
   totalTokens: number;
   estimatedCost: number; // The universal metric for the ledger
   pricing_missing?: boolean; // Flag to indicate undercharging due to missing DB config
+  pricing_missing_reason?: string;
 }
 
 export interface AiProviderAdapter {

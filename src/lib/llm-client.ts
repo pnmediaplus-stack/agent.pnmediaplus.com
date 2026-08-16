@@ -248,7 +248,9 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
       completion_tokens: usageInfo.completionTokens,
       total_tokens: usageInfo.totalTokens,
       estimated_cost: usageInfo.estimatedCost,
-      status: 'COMPLETED'
+      status: 'COMPLETED',
+      pricing_missing: usageInfo.pricing_missing,
+      pricing_missing_reason: usageInfo.pricing_missing_reason
     });
     
     // Phase 10: Double-write to the new governed ai_token_ledger
@@ -269,7 +271,9 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
         prompt_tokens: usageInfo.promptTokens,
         completion_tokens: usageInfo.completionTokens,
         total_tokens: usageInfo.totalTokens,
-        estimated_cost_usd: usageInfo.estimatedCost
+        estimated_cost_usd: usageInfo.estimatedCost,
+        pricing_missing: usageInfo.pricing_missing || false,
+        pricing_missing_reason: usageInfo.pricing_missing_reason || null
       })
     });
     
@@ -298,10 +302,12 @@ async function updateUsageRecord(supabaseUrl: string, supabaseKey: string, recor
         p_prompt_tokens: updates.prompt_tokens || 0,
         p_completion_tokens: updates.completion_tokens || 0,
         p_total_tokens: updates.total_tokens || 0,
-        p_estimated_cost: updates.estimated_cost || 0
+        p_estimated_cost: updates.estimated_cost || 0,
+        p_pricing_missing: updates.pricing_missing || false,
+        p_pricing_missing_reason: updates.pricing_missing_reason || null
       })
     });
   } catch (e) {
-    console.error('Failed to update LLM usage log:', e);
+    console.error('Failed to update LLM usage record:', e);
   }
 }
