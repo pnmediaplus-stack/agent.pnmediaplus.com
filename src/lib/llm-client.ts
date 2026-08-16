@@ -90,7 +90,11 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Decrypted secret is empty.');
   }
 
-  return secretData.access_token;
+  // Extract only the first line in case the user pasted a multiline .env block
+  const rawKey = String(secretData.access_token).trim();
+  const actualKey = rawKey.split('\n')[0].trim();
+
+  return actualKey;
 }
 
 export type LlmClientOptions = {
@@ -183,6 +187,8 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     delete cleanPayload.tenant_id;
     delete cleanPayload.organization_id;
     delete cleanPayload.endpointUrl;
+    delete cleanPayload.tenant_binding_id;
+    delete cleanPayload.lane_key;
 
     if (providerId === 'fal_ai') {
       const prompt = typeof cleanPayload.prompt === 'string' ? cleanPayload.prompt.trim() : '';
