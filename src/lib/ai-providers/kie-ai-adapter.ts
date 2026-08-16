@@ -37,7 +37,16 @@ export const kieAiAdapter: AiProviderAdapter = {
         return `${baseUrl.replace(/\/$/, '')}/chat/completions`;
       }
       if (modelConfig.capability === 'image') {
-        return `${baseUrl.replace(/\/$/, '')}/images/generations`;
+        const base = baseUrl.replace(/\/v1$/, '').replace(/\/$/, ''); // Remove /v1 if present so we can use /api/v1
+        if (payload.model === 'flux-kontext-pro') {
+          return `${base}/api/v1/flux/kontext/generate`;
+        }
+        // Fallback for other flux models if any
+        if (payload.model.includes('flux')) {
+          const subPath = payload.model.replace('flux-', '').replace('-pro', '');
+          return `${base}/api/v1/flux/${subPath}/generate`;
+        }
+        return `${base}/api/v1/images/generations`;
       }
     }
 

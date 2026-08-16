@@ -199,6 +199,15 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
       delete cleanPayload.messages;
       delete cleanPayload.response_format;
     }
+    
+    if (providerId === 'kie_ai' && cleanPayload.size) { // size indicates it's an image generation request
+      cleanPayload.aspectRatio = cleanPayload.size === '1024x1024' ? '1:1' : '16:9';
+      cleanPayload.outputFormat = "jpeg";
+      cleanPayload.enableTranslation = true;
+      delete cleanPayload.messages;
+      delete cleanPayload.n;
+      delete cleanPayload.size;
+    }
 
     const response = await fetch(endpointUrl, {
       method: 'POST',
