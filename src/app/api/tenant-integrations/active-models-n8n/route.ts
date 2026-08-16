@@ -7,12 +7,11 @@ type ActiveModelConfig = {
   state: "ready" | "blocked";
   reason?: string;
   tenant_binding_id?: string;
-  lane_bindings?: {
-    text?: { provider_code: string; model_code: string };
-    image?: { provider_code: string; model_code: string };
+  provider_bindings?: {
+    text?: { provider_code: string; capability: string; model_code: string; lane_key: string };
+    image?: { provider_code: string; capability: string; model_code: string; lane_key: string };
+    [key: string]: { provider_code: string; capability: string; model_code: string; lane_key: string } | undefined;
   };
-  image?: { provider: string; model: string };
-  text?: { provider: string; model: string };
 };
 
 function readRuntimeAuth(request: Request) {
@@ -188,25 +187,20 @@ export async function GET(request: Request) {
   }
 
   const meta = ((integrationRow as Record<string, unknown>).public_metadata || {}) as Record<string, unknown>;
-  const preferredImageModel = typeof meta.preferred_image_model === "string" ? meta.preferred_image_model : "";
-  const preferredTextModel = typeof meta.preferred_text_model === "string" ? meta.preferred_text_model : "";
+  const bindings = (meta.bindings as Record<string, any>) || {};
+  const preferredImageModel = bindings.image_lane?.model_code || (typeof meta.preferred_image_model === "string" ? meta.preferred_image_model : "");
+  const preferredTextModel = bindings.text_lane?.model_code || (typeof meta.preferred_text_model === "string" ? meta.preferred_text_model : "");
 
   if (!preferredImageModel) {
     return NextResponse.json(
-      {
-        state: "blocked",
-        reason: "MISSING_IMAGE_MODEL"
-      },
+      { state: "blocked", reason: "IMAGE_LANE_BINDING_MISSING" },
       { status: 200 }
     );
   }
 
   if (!preferredTextModel) {
     return NextResponse.json(
-      {
-        state: "blocked",
-        reason: "MISSING_TEXT_MODEL"
-      },
+      { state: "blocked", reason: "TEXT_LANE_BINDING_MISSING" },
       { status: 200 }
     );
   }
@@ -219,10 +213,7 @@ export async function GET(request: Request) {
 
   if (providerCatalogError) {
     return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `ACTIVE_MODELS_LOOKUP_FAILED: ${providerCatalogError.message || "PROVIDER_CATALOG_LOOKUP_FAILED"}`
-      },
+      { state: "blocked", reason: `ACTIVE_MODELS_LOOKUP_FAILED: ${providerCatalogError.message || "PROVIDER_CATALOG_LOOKUP_FAILED"}` },
       { status: 500 }
     );
   }
@@ -233,30 +224,21 @@ export async function GET(request: Request) {
 
   if (!imageBinding) {
     return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `MISSING_IMAGE_PROVIDER_BINDING: model=${preferredImageModel}`
-      },
+      { state: "blocked", reason: `MODEL_CAPABILITY_MISMATCH: model=${preferredImageModel} missing capability=image` },
       { status: 200 }
     );
   }
 
   if (imageBinding.provider !== providerCode) {
     return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `IMAGE_PROVIDER_SCOPE_MISMATCH: expected=${providerCode} actual=${imageBinding.provider}`
-      },
+      { state: "blocked", reason: `TENANT_BINDING_SCOPE_MISMATCH: expected=${providerCode} actual=${imageBinding.provider}` },
       { status: 403 }
     );
   }
 
   if (!textBinding) {
     return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `MISSING_TEXT_PROVIDER_BINDING: model=${preferredTextModel}`
-      },
+      { state: "blocked", reason: `TEXT_LANE_BINDING_MISSING` },
       { status: 200 }
     );
   }
@@ -268,18 +250,20 @@ export async function GET(request: Request) {
         (integrationRow as Record<string, unknown>).integration_key ||
         `${organizationId}:${providerCode}`
     ),
-    lane_bindings: {
+    provider_bindings: {
       text: {
         provider_code: textBinding.provider,
-        model_code: textBinding.model
+        capability: "text",
+        model_code: textBinding.model,
+        lane_key: "text_lane"
       },
       image: {
         provider_code: imageBinding.provider,
-        model_code: imageBinding.model
+        capability: "image",
+        model_code: imageBinding.model,
+        lane_key: "image_lane"
       }
-    },
-    image: imageBinding,
-    text: textBinding
+    }
   };
 
   return NextResponse.json(result, { status: 200 });
