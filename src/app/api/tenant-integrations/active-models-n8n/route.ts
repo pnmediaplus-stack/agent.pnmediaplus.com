@@ -43,10 +43,11 @@ export async function GET(request: Request) {
   
   // Fetch ALL configured integrations
   const { data: activeIntegrations, error: integrationError } = await supabase
-    .from("phase070_tenant_integration_status")
-    .select("integration_key, provider_code, public_metadata, updated_at")
+    .schema("tenant_integration_vault")
+    .from("tenant_integrations")
+    .select("integration_key, provider_id, public_metadata, updated_at")
     .eq("organization_id", organizationId)
-    .eq("credential_configured", true)
+    .not("current_secret_blob_id", "is", null)
     .eq("connection_state", "healthy")
     .order("updated_at", { ascending: false });
 
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
   const { data: providerCatalogRows } = await supabase
     .schema("tenant_integration_vault")
     .from("integration_providers")
-    .select("provider_code, public_metadata")
+    .select("id, provider_code, public_metadata")
     .eq("status", "active");
 
   const providerRows = Array.isArray(providerCatalogRows) ? providerCatalogRows : [];
@@ -69,18 +70,24 @@ export async function GET(request: Request) {
     const meta = (integration.public_metadata || {}) as Record<string, any>;
     const bindings = (meta.bindings || {}) as Record<string, any>;
 
+    const providerId = integration.provider_id;
+    const providerCat = providerRows.find((p: any) => p.id === providerId);
+    const providerCode = providerCat?.provider_code;
+
+    if (!providerCode) continue;
+
     const prefImage = bindings.image_lane?.model_code || (typeof meta.preferred_image_model === "string" ? meta.preferred_image_model : "");
     if (!finalImageBinding && prefImage) {
-      const resolved = resolveLaneProviderBinding(providerRows, "image", prefImage, integration.provider_code);
-      if (resolved && resolved.provider === integration.provider_code) {
+      const resolved = resolveLaneProviderBinding(providerRows, "image", prefImage, providerCode);
+      if (resolved && resolved.provider === providerCode) {
         finalImageBinding = { provider_code: resolved.provider, capability: "image", model_code: resolved.model, lane_key: "image_lane", tenant_binding_id: integration.integration_key };
       }
     }
 
     const prefText = bindings.text_lane?.model_code || (typeof meta.preferred_text_model === "string" ? meta.preferred_text_model : "");
     if (!finalTextBinding && prefText) {
-      const resolved = resolveLaneProviderBinding(providerRows, "text", prefText, integration.provider_code);
-      if (resolved && resolved.provider === integration.provider_code) {
+      const resolved = resolveLaneProviderBinding(providerRows, "text", prefText, providerCode);
+      if (resolved && resolved.provider === providerCode) {
         finalTextBinding = { provider_code: resolved.provider, capability: "text", model_code: resolved.model, lane_key: "text_lane", tenant_binding_id: integration.integration_key };
       }
     }
