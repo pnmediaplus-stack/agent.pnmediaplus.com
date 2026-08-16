@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 
     const prefImage = bindings.image_lane?.model_code || (typeof meta.preferred_image_model === "string" ? meta.preferred_image_model : "");
     if (!finalImageBinding && prefImage) {
-      const resolved = resolveLaneProviderBinding(providerRows, "image", prefImage);
+      const resolved = resolveLaneProviderBinding(providerRows, "image", prefImage, integration.provider_code);
       if (resolved && resolved.provider === integration.provider_code) {
         finalImageBinding = { provider_code: resolved.provider, capability: "image", model_code: resolved.model, lane_key: "image_lane", tenant_binding_id: integration.integration_key };
       }
@@ -74,7 +74,7 @@ export async function GET(request: Request) {
 
     const prefText = bindings.text_lane?.model_code || (typeof meta.preferred_text_model === "string" ? meta.preferred_text_model : "");
     if (!finalTextBinding && prefText) {
-      const resolved = resolveLaneProviderBinding(providerRows, "text", prefText);
+      const resolved = resolveLaneProviderBinding(providerRows, "text", prefText, integration.provider_code);
       if (resolved && resolved.provider === integration.provider_code) {
         finalTextBinding = { provider_code: resolved.provider, capability: "text", model_code: resolved.model, lane_key: "text_lane", tenant_binding_id: integration.integration_key };
       }

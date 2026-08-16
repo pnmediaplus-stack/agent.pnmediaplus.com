@@ -47,7 +47,8 @@ function matchesLaneCapability(lane: LaneKind, capability: unknown) {
 export function resolveLaneProviderBinding(
   providers: ProviderCatalogRow[],
   lane: LaneKind,
-  preferredModel: string
+  preferredModel: string,
+  expectedProvider?: string
 ): LaneBinding | null {
   const targetModel = stringField(preferredModel);
   if (!targetModel) {
@@ -57,6 +58,10 @@ export function resolveLaneProviderBinding(
   for (const row of providers) {
     const providerCode = stringField(row.provider_code);
     if (!providerCode) {
+      continue;
+    }
+
+    if (expectedProvider && providerCode !== expectedProvider) {
       continue;
     }
 
