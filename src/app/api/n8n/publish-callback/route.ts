@@ -77,8 +77,6 @@ export async function POST(request: Request) {
       }
 
       const { job_id, status, error_message, fb_id } = parseResult.data;
-      console.log(`[N8N_CALLBACK:PUBLISH] Nhận trạng thái từ n8n cho Job ${job_id}:`, status);
-
       const targetState = status.toLowerCase() === 'success' ? 'PUBLISHED' : 'FAILED';
       // const errorMessage = status.toLowerCase() !== 'success' ? (error_message || 'Unknown error during publish') : null;
 
@@ -100,8 +98,6 @@ export async function POST(request: Request) {
         const errText = await res.text();
         console.error('[N8N_CALLBACK:PUBLISH] Lỗi update DB:', errText);
         return NextResponse.json({ ok: false, error: "DB_ERROR" }, { status: 500 });
-      } else {
-        console.log(`[N8N_CALLBACK:PUBLISH] Đã cập nhật task ${job_id} thành ${targetState}. FB_ID: ${fb_id || 'N/A'}`);
       }
 
       return NextResponse.json({ ok: true, received: true, action });
@@ -181,12 +177,6 @@ export async function POST(request: Request) {
       }
 
       const rpcResult = await insertRes.json();
-      if (rpcResult.message === 'Idempotency key already exists. Ignored.') {
-        console.log(`[N8N_CALLBACK:CHAT] Idempotency key ${idempotency_key} đã tồn tại (Atomic Reject). Bỏ qua ghi trùng.`);
-      } else {
-        console.log(`[N8N_CALLBACK:CHAT] Đã chèn tin nhắn mới vào thread ${thread_id} (seq: ${rpcResult.message_seq})`);
-      }
-      
       return NextResponse.json({ ok: true, received: true, action });
 
     } else {
