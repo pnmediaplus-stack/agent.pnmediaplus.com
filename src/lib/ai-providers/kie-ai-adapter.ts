@@ -86,8 +86,11 @@ export const kieAiAdapter: AiProviderAdapter = {
     }
     
     // For Image Generations
-    if (responseJson.data && Array.isArray(responseJson.data)) {
-      const imageCount = responseJson.data.length;
+    if (payload.model?.includes('flux') || (responseJson.data && Array.isArray(responseJson.data)) || responseJson.images || responseJson.output) {
+      let imageCount = 1;
+      if (responseJson.data && Array.isArray(responseJson.data)) imageCount = responseJson.data.length;
+      else if (responseJson.images && Array.isArray(responseJson.images)) imageCount = responseJson.images.length;
+      else if (responseJson.output && Array.isArray(responseJson.output)) imageCount = responseJson.output.length;
       const metadata = await getProviderMetadata('kie_ai');
       const models = metadata?.models || [];
       const modelConfig = models.find((m: any) => m.code === payload.model);
