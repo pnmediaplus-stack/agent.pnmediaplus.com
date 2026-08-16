@@ -13,32 +13,19 @@ const AiBrokerPayloadSchema = z.object({
 
 export async function POST(request: Request) {
   const requestId = request.headers.get('x-request-id') || 'unknown';
-  console.log('[ai-broker] inbound request', {
-    requestId,
-    url: request.url,
-  });
 
   // 1. Central Guard: Auth, Boundary, Idempotency, Audit
   const guard = await verifyN8nWebhook(request, 'ai_broker_call', AiBrokerPayloadSchema);
   
   if (!guard.ok) {
-    console.log('[ai-broker] guard rejected', { requestId });
     return guard.response;
   }
   
   if (guard.duplicate) {
-    console.log('[ai-broker] duplicate request', { requestId });
     return guard.response;
   }
 
   const { payload, logCompletion } = guard;
-
-  console.log('[ai-broker] invoking llm', {
-    requestId,
-    tenantId: payload.tenant_id,
-    provider: payload.provider || 'openai',
-    model: payload.model,
-  });
 
   try {
     const responseData = await invokeLlm(payload, {
