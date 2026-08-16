@@ -185,15 +185,9 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     delete cleanPayload.endpointUrl;
 
     if (providerId === 'fal_ai') {
-      const promptFromMessages = Array.isArray(cleanPayload.messages)
-        ? cleanPayload.messages
-            .map((message: any) => (typeof message?.content === 'string' ? message.content : ''))
-            .filter(Boolean)
-            .join('\n')
-        : '';
-
-      if (promptFromMessages && typeof cleanPayload.prompt !== 'string') {
-        cleanPayload.prompt = promptFromMessages;
+      const prompt = typeof cleanPayload.prompt === 'string' ? cleanPayload.prompt.trim() : '';
+      if (!prompt) {
+        throw new Error('FAL_IMAGE_PROMPT_MISSING: fal_ai requires a non-empty prompt');
       }
 
       delete cleanPayload.messages;
