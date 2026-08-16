@@ -12,14 +12,14 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        100,
-        100
+        2416,
+        -560
       ],
-      "webhookId": "generate-content-webhook-id"
+      "webhookId": "generate-content-webhook-id",
+      "id": "41cc376b-7408-4a51-9d71-5b0dc3d62503"
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?id=eq.{{$json.body.contentItemId}}&organization_id=eq.{{$json.body.organization_id}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
@@ -29,13 +29,14 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        300,
-        100
+        2608,
+        -560
       ],
+      "id": "70774c43-dff1-4461-92f5-69b2652c2568",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "SupabaseAuth",
-          "name": "Header Auth"
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
         }
       }
     },
@@ -47,60 +48,28 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        800,
-        100
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"]}}/api/phase2/ai-broker",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ { provider: $('Fetch Tenant AI Config').item.json.text.provider, model: $('Fetch Tenant AI Config').item.json.text.model, messages: [{ role: 'user', content: $json.prompt }], response_format: { type: 'json_object' }, tenant_id: $json.tenant_id } }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-request-id",
-              "value": "={{$execution.id}}-{{$position}}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "name": "AI Broker (Text)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        900,
-        200
+        3856,
+        -592
       ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "ControlPlaneAuth",
-          "name": "Header Auth"
-        }
-      }
+      "id": "d023657a-bf57-4fb5-acbe-e7e14cf0ebf9"
     },
     {
       "parameters": {
-        "jsCode": "\nconst responseText = $input.item.json.choices[0].message.content || '{}';\nconst item = $('Format Prompt').item.json.item;\nconst tenant_id = $('Format Prompt').item.json.tenant_id;\nlet parsed = {};\ntry {\n  parsed = JSON.parse(responseText);\n} catch(e) {\n  throw new Error('AI Response was not valid JSON');\n}\n\nreturn { \n  json: { \n    id: item.id, \n    organization_id: item.organization_id,\n    tenant_id: tenant_id,\n    textContent: {\n      agent_1_research_packet: parsed.agent_1_research_packet,\n      agent_2_publish_ready_caption: parsed.agent_2_publish_ready_caption,\n      agent_3_image_prompt: parsed.agent_3_image_prompt\n    },\n    item: item\n  } \n};\n  "
+        "jsCode": "\nconst responseText = $input.first().json.choices?.[0]?.message?.content || '{}';\nconst item = $('Format Prompt').item.json.item;\nconst tenant_id = $('Format Prompt').item.json.tenant_id;\nlet parsed = {};\ntry {\n  parsed = JSON.parse(responseText);\n} catch(e) {\n  throw new Error('AI Response was not valid JSON');\n}\n\nconst imagePrompt = typeof parsed.agent_3_image_prompt === 'string' ? parsed.agent_3_image_prompt.trim() : '';\nif (!imagePrompt) {\n  throw new Error('IMAGE_PROMPT_MISSING');\n}\n\nreturn { \n  json: { \n    id: item.id, \n    organization_id: item.organization_id,\n    tenant_id: tenant_id,\n    textContent: {\n      agent_1_research_packet: parsed.agent_1_research_packet,\n      agent_2_publish_ready_caption: parsed.agent_2_publish_ready_caption,\n      agent_3_image_prompt: imagePrompt\n    },\n    item: item\n  } \n};\n  "
       },
       "name": "Parse Text",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1100,
-        200
-      ]
+        4240,
+        -592
+      ],
+      "id": "de9a78ec-b9d4-4648-962a-8ec28f201040"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"]}}/api/phase2/ai-broker",
+        "url": "=https://agent.pnmediaplus.com/api/phase2/ai-broker",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -114,49 +83,50 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { provider: $('Fetch Tenant AI Config').item.json.image.provider, model: $('Fetch Tenant AI Config').item.json.image.model, prompt: $('Parse Text').item.json.textContent.agent_3_image_prompt, n: 1, size: '1024x1024', tenant_id: $('Parse Text').item.json.tenant_id } }}",
+        "jsonBody": "={{ (() => {\n  const prompt = $('Parse Text').first().json.textContent?.agent_3_image_prompt;\n  if (!prompt || !String(prompt).trim()) {\n    throw new Error('IMAGE_PROMPT_MISSING');\n  }\n  return {\n    provider: $('Fetch Tenant AI Config').first().json.image.provider,\n    model: $('Fetch Tenant AI Config').first().json.image.model,\n    prompt,\n    n: 1,\n    size: '1024x1024',\n    tenant_id: $('Parse Text').first().json.tenant_id\n  };\n})() }}",
         "options": {}
       },
       "name": "AI Broker (Image)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1500,
-        200
+        4896,
+        -592
       ],
+      "id": "2e35823d-75ef-47f8-8b59-27693135e7bf",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "ControlPlaneAuth",
-          "name": "Header Auth"
+          "id": "nlRh1UkRewsK7CCR",
+          "name": "ControlPlaneAuth"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "const textContent = $('Parse Text').item.json.textContent;\nlet imageUrl = \"https://placehold.co/1024x1024?text=Image+Generation+Failed\";\ntry {\n  imageUrl = $('Extract Visual').item.json.payload.p_stage_payload.artifacts[0].content;\n} catch(e) {}\n\nreturn { \n  json: { \n    status: 'OK', \n    message: 'Content generated successfully',\n    artifacts: {\n      research: textContent.agent_1_research_packet,\n      caption: textContent.agent_2_publish_ready_caption,\n      image: imageUrl\n    }\n  } \n};"
+        "jsCode": "const parsed = $('Parse Text').first().json;\nconst visual = $('Extract Visual').first().json;\nconst captionNode = $('Extract Caption').first().json;\n\nconst research = parsed.textContent?.agent_1_research_packet || '';\nconst caption =\n  parsed.textContent?.agent_2_publish_ready_caption ||\n  captionNode.artifacts?.caption ||\n  '';\nconst imageUrl =\n  visual.artifacts?.image ||\n  visual.images?.[0]?.url ||\n  '';\n\nreturn {\n  json: {\n    status: 'OK',\n    message: 'Content generated successfully',\n    content: `${caption}\\n\\n![Generated Image](${imageUrl})`,\n    artifacts: {\n      research,\n      caption,\n      image: imageUrl,\n    },\n    id: parsed.id || visual.id || '',\n    organization_id: parsed.organization_id || visual.organization_id || '',\n    tenant_id: parsed.tenant_id || visual.tenant_id || '',\n  },\n};"
       },
       "name": "Format Output",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2900,
-        200
-      ]
+        6304,
+        -592
+      ],
+      "id": "8ada2f4b-0f5e-4054-96af-4e2cef677b27"
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/governance/marketing-agents",
-        "authentication": "none",
         "options": {}
       },
       "name": "Fetch Governance Registry",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        400,
-        100
-      ]
+        3440,
+        -576
+      ],
+      "id": "890a5a9b-8dce-477f-a1ef-2ffc3b33f84f"
     },
     {
       "parameters": {
@@ -173,9 +143,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        600,
-        100
-      ]
+        3632,
+        -576
+      ],
+      "id": "f3c5b931-564d-4cb6-981c-21b9ed06fa66"
     },
     {
       "parameters": {
@@ -185,9 +156,10 @@
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
       "position": [
-        800,
-        300
-      ]
+        3632,
+        -352
+      ],
+      "id": "f31cdc1f-8d8f-4af9-b5a5-e5f1176025df"
     },
     {
       "parameters": {
@@ -197,9 +169,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1100,
-        200
-      ]
+        4464,
+        -592
+      ],
+      "id": "7b919fa6-c65e-4320-92f1-71767d3c236c"
     },
     {
       "parameters": {
@@ -222,27 +195,29 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1300,
-        200
+        4688,
+        -592
       ],
+      "id": "fb3310e9-676c-4582-8f37-3138441f8dc8",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "SupabaseAuth",
-          "name": "Header Auth"
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nlet imageUrl = \"https://placehold.co/1024x1024?text=Image+Generation+Failed\";\nif ($input.item.json.data && $input.item.json.data[0] && $input.item.json.data[0].url) {\n  imageUrl = $input.item.json.data[0].url;\n}\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'research_ready',\n  p_next_state: 'visual_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + $execution.id + '_visual',\n  p_stage_payload: { artifacts: [{ artifact_key: 'vis_' + $execution.id + '_' + item.id.replace(/-/g, '_'), artifact_type: 'visual_asset', content: imageUrl }] }\n}}};\n"
+        "jsCode": "const item = $('Parse Text').first().json.item;\nconst tenantId = $('Parse Text').first().json.tenant_id || item.owner_ref;\n\nlet imageUrl =\n  $input.first().json.images?.[0]?.url ||\n  $input.first().json.data?.[0]?.url ||\n  'https://placehold.co/1024x1024?text=Image+Generation+Failed';\n\nreturn {\n  json: {\n    status: 'OK',\n    message: 'Content generated successfully',\n    artifacts: {\n      research: $('Parse Text').first().json.textContent.agent_1_research_packet,\n      caption: $('Parse Text').first().json.textContent.agent_2_publish_ready_caption,\n      image: imageUrl,\n    },\n    id: item.id,\n    organization_id: item.organization_id,\n    tenant_id: tenantId,\n  },\n};"
       },
       "name": "Extract Visual",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1700,
-        200
-      ]
+        5104,
+        -592
+      ],
+      "id": "0dc7ecf7-cde3-4964-bf44-cc64d67fe22f"
     },
     {
       "parameters": {
@@ -252,7 +227,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{JSON.stringify($json.payload)}}",
+        "jsonBody": "={{ {\n  p_organization_id: $json.organization_id,\n  p_content_item_id: $json.id,\n  p_expected_current_state: 'visual_ready',\n  p_next_state: 'caption_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: `trans_${$execution.id}_visual`,\n  p_stage_payload: {\n    artifacts: [\n      {\n        artifact_key: `vis_${$execution.id}_${$json.id.replace(/-/g, '_')}`,\n        artifact_type: 'visual_asset',\n        content: $json.artifacts.image,\n      },\n    ],\n  },\n} }}",
         "options": {
           "response": {
             "response": {
@@ -265,13 +240,14 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1900,
-        200
+        5296,
+        -592
       ],
+      "id": "0f967294-dd13-4713-a304-c3924ab79d11",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "SupabaseAuth",
-          "name": "Header Auth"
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
         }
       }
     },
@@ -283,9 +259,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2100,
-        200
-      ]
+        5504,
+        -592
+      ],
+      "id": "3163fec8-38ad-49a6-a919-9850a6d2ed6f"
     },
     {
       "parameters": {
@@ -308,13 +285,14 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        2300,
-        200
+        5696,
+        -592
       ],
+      "id": "abbdca5e-3fb6-4c54-808e-83298720eedc",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "SupabaseAuth",
-          "name": "Header Auth"
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
         }
       }
     },
@@ -326,9 +304,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2500,
-        200
-      ]
+        5904,
+        -592
+      ],
+      "id": "baa89b36-411f-4480-85c1-0ce89ab3614a"
     },
     {
       "parameters": {
@@ -351,13 +330,14 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        2700,
-        200
+        6096,
+        -592
       ],
+      "id": "9d67ff23-7e14-45a9-9f72-6b49f35ad306",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "SupabaseAuth",
-          "name": "Header Auth"
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
         }
       }
     },
@@ -373,7 +353,7 @@
             },
             {
               "name": "reference_token",
-              "value": "={{$json.lease_token}}"
+              "value": "={{$json.lease_token || $json.reference_token}}"
             }
           ]
         },
@@ -392,10 +372,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        6000,
-        -1712
+        3024,
+        -560
       ],
-      "id": "e6658934-abee-4729-ab60-b7208f2a302e"
+      "id": "91dd7bfb-6a07-4143-b2e2-82adbfea23a0"
     },
     {
       "parameters": {
@@ -412,10 +392,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        6192,
-        -1712
+        3216,
+        -560
       ],
-      "id": "ed1381ae-4f88-407e-a1d0-c2d759d34446"
+      "id": "cce70c24-af05-4e66-9ff7-30d5b9b83f71"
     },
     {
       "parameters": {
@@ -425,10 +405,10 @@
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
       "position": [
-        6192,
-        -1504
+        3216,
+        -352
       ],
-      "id": "853e7825-460c-4d8b-8f98-d86958c5b5c3"
+      "id": "50eb64f3-1405-4bfa-9375-fa3ab32f143c"
     },
     {
       "parameters": {
@@ -437,7 +417,7 @@
             {
               "id": "cf01ee3a-31eb-4750-a9cc-2744ebb04f78",
               "name": "lease_token",
-              "value": "={{$('Webhook Trigger').item.json.body.lease_token || $('Webhook Trigger').item.json.lease_token}}",
+              "value": "={{$('Webhook Trigger').item.json.body.lease_token || $('Webhook Trigger').item.json.lease_token || $('Webhook Trigger').item.json.body.reference_token || $('Webhook Trigger').item.json.reference_token}}",
               "type": "string"
             },
             {
@@ -465,13 +445,49 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        5808,
-        -1712
+        2832,
+        -560
       ],
-      "id": "683b2467-ebe4-45e5-b345-506164263c5b",
+      "id": "849b9152-865c-4727-b0f2-d0cd55a038fd",
       "name": "Preserve Reference Token"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://agent.pnmediaplus.com/api/phase2/ai-broker",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-request-id",
+              "value": "={{$execution.id}}-{{$position}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { provider: $('Fetch Tenant AI Config').item.json.text.provider, model: $('Fetch Tenant AI Config').item.json.text.model, messages: [{ role: 'user', content: $json.prompt }], response_format: { type: 'json_object' }, tenant_id: $json.tenant_id } }}",
+        "options": {}
+      },
+      "name": "AI Broker (Text)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        4064,
+        -592
+      ],
+      "id": "0fe18a3c-cbb7-4f9c-82f6-b05730c78a2d",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nlRh1UkRewsK7CCR",
+          "name": "ControlPlaneAuth"
+        }
+      }
     }
   ],
+  "pinData": {},
   "connections": {
     "Webhook Trigger": {
       "main": [
@@ -500,17 +516,6 @@
         [
           {
             "node": "AI Broker (Text)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "AI Broker (Text)": {
-      "main": [
-        [
-          {
-            "node": "Parse Text",
             "type": "main",
             "index": 0
           }
@@ -695,10 +700,27 @@
           }
         ]
       ]
+    },
+    "AI Broker (Text)": {
+      "main": [
+        [
+          {
+            "node": "Parse Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "versionId": "85f02b51-f285-43fc-b493-a96e67dbded0",
+  "meta": {
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "id": "i7dzBE21080AH5NC",
+  "tags": []
 }

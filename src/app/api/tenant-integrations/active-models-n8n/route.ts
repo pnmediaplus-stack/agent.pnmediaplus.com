@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { consumeReferenceToken } from "@/lib/byok-secret-broker";
+import { resolveLaneProviderBinding } from "@/lib/lane-provider-binding";
 import { createServiceRoleClient } from "@/lib/supabase-server";
 
 type ActiveModelConfig = {
@@ -195,13 +196,70 @@ export async function GET(request: Request) {
     );
   }
 
-  const image = { provider: providerCode, model: preferredImageModel };
-  const text = preferredTextModel ? { provider: providerCode, model: preferredTextModel } : image;
+  if (!preferredTextModel) {
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: "MISSING_TEXT_MODEL"
+      },
+      { status: 200 }
+    );
+  }
+
+  const { data: providerCatalogRows, error: providerCatalogError } = await supabase
+    .schema("tenant_integration_vault")
+    .from("integration_providers")
+    .select("provider_code, public_metadata")
+    .eq("status", "active");
+
+  if (providerCatalogError) {
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: `ACTIVE_MODELS_LOOKUP_FAILED: ${providerCatalogError.message || "PROVIDER_CATALOG_LOOKUP_FAILED"}`
+      },
+      { status: 500 }
+    );
+  }
+
+  const providerRows = Array.isArray(providerCatalogRows) ? providerCatalogRows : [];
+  const imageBinding = resolveLaneProviderBinding(providerRows, "image", preferredImageModel);
+  const textBinding = resolveLaneProviderBinding(providerRows, "text", preferredTextModel);
+
+  if (!imageBinding) {
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: `MISSING_IMAGE_PROVIDER_BINDING: model=${preferredImageModel}`
+      },
+      { status: 200 }
+    );
+  }
+
+  if (imageBinding.provider !== providerCode) {
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: `IMAGE_PROVIDER_SCOPE_MISMATCH: expected=${providerCode} actual=${imageBinding.provider}`
+      },
+      { status: 403 }
+    );
+  }
+
+  if (!textBinding) {
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: `MISSING_TEXT_PROVIDER_BINDING: model=${preferredTextModel}`
+      },
+      { status: 200 }
+    );
+  }
 
   const result: ActiveModelConfig = {
     state: "ready",
-    image,
-    text
+    image: imageBinding,
+    text: textBinding
   };
 
   return NextResponse.json(result, { status: 200 });

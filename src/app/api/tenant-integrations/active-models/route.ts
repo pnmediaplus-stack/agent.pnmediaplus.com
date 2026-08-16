@@ -5,6 +5,7 @@ import {
   readPortalAccessToken,
   verifySupabaseAccessToken
 } from "@/lib/portal-auth";
+import { resolveLaneProviderBinding } from "@/lib/lane-provider-binding";
 
 type ActiveModelConfig = {
   state: "ready" | "blocked";
@@ -110,7 +111,7 @@ export async function GET(request: Request) {
   const { data: providerRow, error: providerError } = await supabase
     .schema("tenant_integration_vault")
     .from("integration_providers")
-    .select("provider_code")
+    .select("provider_code, public_metadata")
     .eq("id", providerId)
     .limit(1)
     .single();
@@ -150,8 +151,55 @@ export async function GET(request: Request) {
     );
   }
 
-  const image = { provider: providerCode, model: preferredImageModel };
-  const text = preferredTextModel ? { provider: providerCode, model: preferredTextModel } : image;
+  const { data: providerCatalogRows, error: providerCatalogError } = await supabase
+    .schema("tenant_integration_vault")
+    .from("integration_providers")
+    .select("provider_code, public_metadata")
+    .eq("status", "active");
+
+  if (providerCatalogError) {
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: `ACTIVE_MODELS_LOOKUP_FAILED: ${providerCatalogError.message || "PROVIDER_CATALOG_LOOKUP_FAILED"}`
+      },
+      { status: 500 }
+    );
+  }
+
+  const providerRows = Array.isArray(providerCatalogRows) ? providerCatalogRows : [];
+  const image = resolveLaneProviderBinding(providerRows, "image", preferredImageModel);
+  const text = preferredTextModel ? resolveLaneProviderBinding(providerRows, "text", preferredTextModel) : null;
+
+  if (!image) {
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: `MISSING_IMAGE_PROVIDER_BINDING: model=${preferredImageModel}`
+      },
+      { status: 200 }
+    );
+  }
+
+  if (image.provider !== providerCode) {
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: `IMAGE_PROVIDER_SCOPE_MISMATCH: expected=${providerCode} actual=${image.provider}`
+      },
+      { status: 403 }
+    );
+  }
+
+  if (!text) {
+    return NextResponse.json(
+      {
+        state: "blocked",
+        reason: `MISSING_TEXT_PROVIDER_BINDING: model=${preferredTextModel || "EMPTY"}`
+      },
+      { status: 200 }
+    );
+  }
 
   const result: ActiveModelConfig = {
     state: "ready",

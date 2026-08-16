@@ -17,7 +17,7 @@ begin
           true
         ),
         '{preferred_text_model}',
-        to_jsonb('fal-ai/flux/dev'::text),
+        to_jsonb('gpt-4o'::text),
         true
       ),
     updated_at = now()
