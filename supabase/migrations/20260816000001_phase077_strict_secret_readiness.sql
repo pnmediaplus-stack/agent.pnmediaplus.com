@@ -21,6 +21,7 @@ begin
   from tenant_integration_vault.tenant_integrations ti
   join pn_vault.vault_credentials vc on vc.credential_ref = ti.vault_credential_ref
   join pn_vault.vault_secret_blobs vsb on vsb.id = vc.current_secret_blob_id
+  join pn_vault.vault_master_keys vmk on vmk.id = vc.current_master_key_id
   where ti.organization_id = p_organization_id
     and ti.status = 'configured'
     and ti.connection_state = 'healthy'
@@ -78,6 +79,7 @@ as $$
   join pn_vault.vault_credentials vc
     on vc.credential_ref = i.vault_credential_ref
   join pn_vault.vault_secret_blobs vsb on vsb.id = vc.current_secret_blob_id
+  join pn_vault.vault_master_keys vmk on vmk.id = vc.current_master_key_id
   where i.organization_id = p_organization_id
     and p.provider_code = p_provider_code
     and i.status = 'configured'
