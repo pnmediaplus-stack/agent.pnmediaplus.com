@@ -34,26 +34,6 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
   const { createServiceRoleClient } = await import('./supabase-server');
   const supabase = createServiceRoleClient();
 
-  console.log('[llm-client] tenant lookup start', {
-    tenantId,
-    providerCode,
-    supabaseHost,
-    supabaseProjectRef,
-    lookupSource: 'public.phase076_get_runtime_tenant_integration_status -> public.phase075_get_tenant_vault_credential_ref',
-  });
-
-  console.log('[llm-client] tenant integration status rpc', {
-    tenantId,
-    providerCode,
-    supabaseHost,
-    supabaseProjectRef,
-    rpc: 'phase076_get_runtime_tenant_integration_status',
-    filters: {
-      p_organization_id: tenantId,
-      p_provider_code: providerCode,
-    },
-  });
-
   const { data: activeIntegration, error: activeIntegrationError } = await supabase.rpc(
     'phase076_get_runtime_tenant_integration_status',
     {
@@ -63,37 +43,13 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
     }
   );
 
-  console.log('[llm-client] active integration rpc', {
-    tenantId,
-    providerCode,
-    supabaseHost,
-    supabaseProjectRef,
-    lookupSource: 'public.phase076_get_runtime_tenant_integration_status',
-    rpcError: activeIntegrationError?.message || null,
-    hasIntegration: Array.isArray(activeIntegration) ? activeIntegration.length > 0 : Boolean(activeIntegration),
-  });
-
   if (activeIntegrationError) {
-    console.log('[llm-client] tenant lookup failed', {
-      tenantId,
-      providerCode,
-      supabaseHost,
-      supabaseProjectRef,
-      error: activeIntegrationError.message,
-    });
     throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to query active tenant integration - ${activeIntegrationError.message}`);
   }
 
   const integrationRow = Array.isArray(activeIntegration) ? activeIntegration[0] : activeIntegration;
 
   if (!integrationRow) {
-    console.log('[llm-client] tenant lookup missing integration', {
-      tenantId,
-      providerCode,
-      supabaseHost,
-      supabaseProjectRef,
-      lookupSource: 'public.phase076_get_runtime_tenant_integration_status',
-    });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: No configured healthy integration found for this tenant/provider.');
   }
 
@@ -102,35 +58,10 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
   const resolvedProviderCode = String(integration.provider_code || '').trim();
 
   if (!integrationKey) {
-    console.log('[llm-client] tenant integration missing integration_key', {
-      tenantId,
-      providerCode,
-      supabaseHost,
-      supabaseProjectRef,
-      integrationId: integration.integration_id || null,
-    });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Tenant integration is missing integration_key.');
   }
 
-  console.log('[llm-client] provider query', {
-    tenantId,
-    providerCode,
-    supabaseHost,
-    supabaseProjectRef,
-    lookupSource: 'public.phase076_get_runtime_tenant_integration_status -> public.phase075_get_tenant_vault_credential_ref',
-    integrationKey,
-    resolvedProviderCode,
-  });
-
   if (resolvedProviderCode !== providerCode) {
-    console.log('[llm-client] provider scope mismatch', {
-      tenantId,
-      providerCode,
-      supabaseHost,
-      supabaseProjectRef,
-      integrationKey,
-      resolvedProviderCode,
-    });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Provider scope mismatch for configured integration.');
   }
 
@@ -143,25 +74,10 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
   );
 
   if (credentialRefError) {
-    console.log('[llm-client] credential ref rpc failed', {
-      tenantId,
-      providerCode,
-      supabaseHost,
-      supabaseProjectRef,
-      integrationKey,
-      error: credentialRefError.message,
-    });
     throw new Error(`VAULT_CREDENTIAL_NOT_READY: Failed to query credential ref - ${credentialRefError.message}`);
   }
 
   if (!credentialRef || typeof credentialRef !== 'string' || !credentialRef.trim()) {
-    console.log('[llm-client] credential reference missing', {
-      tenantId,
-      providerCode,
-      supabaseHost,
-      supabaseProjectRef,
-      integrationKey,
-    });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Credential reference not found in private tenant integration.');
   }
 
@@ -171,13 +87,6 @@ async function getTenantApiKey(tenantId: string, providerCode: string): Promise<
   const secretData = await redeemReferenceToken(tokenReq.lease_token, tenantId, integrationKey, actor);
   
   if (!secretData.access_token) {
-    console.log('[llm-client] decrypted secret empty', {
-      tenantId,
-      providerCode,
-      supabaseHost,
-      supabaseProjectRef,
-      integrationKey: integration.integration_key,
-    });
     throw new Error('VAULT_CREDENTIAL_NOT_READY: Decrypted secret is empty.');
   }
 
@@ -212,30 +121,12 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
   const providerId = payload.provider || 'openai';
   const adapter = getProvider(providerId);
 
-  console.log('[llm-client] invoke start', {
-    requestId,
-    tenantId,
-    actorId,
-    providerId,
-    model: payload.model,
-    supabaseHost,
-    supabaseProjectRef,
-  });
-
   const headers: Record<string, string> = {
     'Content-Type': 'application/json'
   };
 
   // Fetch BYOK Tenant Key from Vault (Fail-closed)
   const tenantKey = await getTenantApiKey(tenantId, providerId);
-  console.log('[llm-client] tenant key resolved', {
-    requestId,
-    tenantId,
-    providerId,
-    supabaseHost,
-    supabaseProjectRef,
-    hasTenantKey: Boolean(tenantKey),
-  });
   adapter.injectAuth(headers, tenantKey);
 
   const endpointUrl = await adapter.getEndpointUrl(payload, options);
