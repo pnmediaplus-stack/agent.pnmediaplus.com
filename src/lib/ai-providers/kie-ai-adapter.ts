@@ -32,7 +32,7 @@ export const kieAiAdapter: AiProviderAdapter = {
     }
 
     if (modelConfig) {
-      const baseUrl = metadata?.base_url || 'https://api.groq.com/openai/v1'; // Default base URL for Kie if none is set
+      const baseUrl = metadata?.base_url || 'https://api.kie.ai/v1'; // Default base URL for Kie if none is set
       if (modelConfig.capability === 'text') {
         return `${baseUrl.replace(/\/$/, '')}/chat/completions`;
       }
