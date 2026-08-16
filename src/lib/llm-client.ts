@@ -223,6 +223,45 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
       throw new Error(`API Error from ${providerId}: ${response.status} - ${JSON.stringify(responseData)}`);
     }
 
+    // --- KIE AI ASYNC POLLING LOGIC ---
+    if (providerId === 'kie_ai' && responseData.data && responseData.data.taskId && cleanPayload.outputFormat) {
+      const taskId = responseData.data.taskId;
+      // Derive polling URL from the generate endpoint
+      // e.g., https://api.kie.ai/api/v1/flux/kontext/generate -> https://api.kie.ai/api/v1/flux/kontext/record-info
+      const pollingUrl = endpointUrl.replace(/\/generate$/, '/record-info') + `?taskId=${taskId}`;
+      
+      let isComplete = false;
+      let pollCount = 0;
+      let finalData = responseData;
+      
+      while (!isComplete && pollCount < 40) { // Max 80 seconds
+        await new Promise(r => setTimeout(r, 2000)); // wait 2s
+        pollCount++;
+        
+        const pollRes = await fetch(pollingUrl, {
+          method: 'GET',
+          headers: { 'Authorization': headers['Authorization'] }
+        });
+        
+        if (pollRes.ok) {
+          const pollJson = await pollRes.json();
+          // Assuming pollJson.data.images array is populated when done
+          if (pollJson.data && pollJson.data.images && Array.isArray(pollJson.data.images) && pollJson.data.images.length > 0) {
+            finalData = pollJson;
+            isComplete = true;
+          } else if (pollJson.data && (pollJson.data.status === 'failed' || pollJson.data.status === 'error' || pollJson.data.status === -1)) {
+            throw new Error(`Kie AI async task failed: ${JSON.stringify(pollJson)}`);
+          }
+        }
+      }
+      
+      if (!isComplete) {
+        throw new Error(`TIMEOUT: Kie AI task ${taskId} did not complete within 80 seconds.`);
+      }
+      responseData = finalData;
+    }
+    // --- END POLLING LOGIC ---
+
   } catch (error: any) {
     if (!responseStatus) {
       if (recordId) await updateUsageRecord(supabaseUrl, supabaseKey, recordId, { status: 'FAILED', estimated_cost: 0 });
@@ -284,19 +323,30 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
   }
   // Transform Kie AI image response to match OpenAI schema so downstream N8N nodes don't break
   if (providerId === 'kie_ai' && payload.size) {
-     if (!responseData.data) {
-        let imageUrl = null;
-        if (responseData.images && Array.isArray(responseData.images) && responseData.images.length > 0) {
-           imageUrl = typeof responseData.images[0] === 'string' ? responseData.images[0] : responseData.images[0].url;
-        } else if (responseData.output && Array.isArray(responseData.output) && responseData.output.length > 0) {
-           imageUrl = typeof responseData.output[0] === 'string' ? responseData.output[0] : responseData.output[0].url;
-        } else if (responseData.url) {
-           imageUrl = responseData.url;
+     let imageUrl = null;
+     
+     // Case 1: Images at root level
+     if (responseData.images && Array.isArray(responseData.images) && responseData.images.length > 0) {
+        imageUrl = typeof responseData.images[0] === 'string' ? responseData.images[0] : responseData.images[0].url;
+     } else if (responseData.output && Array.isArray(responseData.output) && responseData.output.length > 0) {
+        imageUrl = typeof responseData.output[0] === 'string' ? responseData.output[0] : responseData.output[0].url;
+     } else if (responseData.url) {
+        imageUrl = responseData.url;
+     } 
+     // Case 2: Images nested inside data object (from async polling)
+     else if (responseData.data && typeof responseData.data === 'object' && !Array.isArray(responseData.data)) {
+        if (responseData.data.images && Array.isArray(responseData.data.images) && responseData.data.images.length > 0) {
+           imageUrl = typeof responseData.data.images[0] === 'string' ? responseData.data.images[0] : responseData.data.images[0].url;
+        } else if (responseData.data.url) {
+           imageUrl = responseData.data.url;
         }
-        
-        if (imageUrl) {
-           responseData.data = [ { url: imageUrl } ];
-        }
+     }
+     
+     if (imageUrl) {
+        responseData.data = [ { url: imageUrl } ];
+        // Also remove nested data fields to prevent downstream confusion
+        delete responseData.images;
+        delete responseData.output;
      }
   }
 
