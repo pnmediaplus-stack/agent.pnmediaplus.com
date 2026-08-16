@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     .from("tenant_integrations")
     .select("integration_key, provider_id, public_metadata, updated_at")
     .eq("organization_id", organizationId)
-    .not("current_secret_blob_id", "is", null)
+    .eq("status", "configured")
     .eq("connection_state", "healthy")
     .order("updated_at", { ascending: false });
 
