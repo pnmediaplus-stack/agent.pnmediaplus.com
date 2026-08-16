@@ -84,7 +84,27 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ (() => {\n  const cfg = $('Fetch Tenant AI Config').first().json;\n  const prompt = $('Parse Text').first().json.textContent?.agent_3_image_prompt;\n  const imageBinding = cfg.lane_bindings?.image;\n  if (!imageBinding?.provider_code || !imageBinding?.model_code) {\n    throw new Error('IMAGE_LANE_BINDING_MISSING');\n  }\n  if (!prompt || !String(prompt).trim()) {\n    throw new Error('IMAGE_PROMPT_MISSING');\n  }\n  return {\n    provider: imageBinding.provider_code,\n    model: imageBinding.model_code,\n    prompt,\n    n: 1,\n    size: '1024x1024',\n    tenant_id: $('Parse Text').first().json.tenant_id,\n    lane_key: 'image',\n    tenant_binding_id: cfg.tenant_binding_id || ''\n  };\n})() }}",
-        "options": {}
+        "options": {},
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $('Fetch Tenant AI Config').item.json.provider_bindings.image.model_code }}"
+            },
+            {
+              "name": "provider_code",
+              "value": "={{ $('Fetch Tenant AI Config').item.json.provider_bindings.image.provider_code }}"
+            },
+            {
+              "name": "lane_key",
+              "value": "={{ $('Fetch Tenant AI Config').item.json.provider_bindings.image.lane_key }}"
+            },
+            {
+              "name": "tenant_binding_id",
+              "value": "={{ $('Fetch Tenant AI Config').item.json.tenant_binding_id }}"
+            }
+          ]
+        }
       },
       "name": "AI Broker (Image)",
       "type": "n8n-nodes-base.httpRequest",
@@ -131,10 +151,18 @@
     {
       "parameters": {
         "conditions": {
-          "string": [
+          "boolean": [
             {
-              "value1": "={{$json.state}}",
-              "value2": "ready"
+              "value1": "={{$json.state === 'ready'}}",
+              "value2": true
+            },
+            {
+              "value1": "={{!!$json.provider_bindings?.text?.model_code}}",
+              "value2": true
+            },
+            {
+              "value1": "={{!!$json.provider_bindings?.image?.model_code}}",
+              "value2": true
             }
           ]
         }
@@ -380,10 +408,18 @@
     {
       "parameters": {
         "conditions": {
-          "string": [
+          "boolean": [
             {
-              "value1": "={{$json.state}}",
-              "value2": "ready"
+              "value1": "={{$json.state === 'ready'}}",
+              "value2": true
+            },
+            {
+              "value1": "={{!!$json.provider_bindings?.text?.model_code}}",
+              "value2": true
+            },
+            {
+              "value1": "={{!!$json.provider_bindings?.image?.model_code}}",
+              "value2": true
             }
           ]
         }
@@ -469,7 +505,27 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ (() => {\n  const cfg = $('Fetch Tenant AI Config').item.json;\n  const textBinding = cfg.lane_bindings?.text;\n  if (!textBinding?.provider_code || !textBinding?.model_code) {\n    throw new Error('TEXT_LANE_BINDING_MISSING');\n  }\n  return {\n    provider: textBinding.provider_code,\n    model: textBinding.model_code,\n    messages: [{ role: 'user', content: $json.prompt }],\n    response_format: { type: 'json_object' },\n    tenant_id: $json.tenant_id,\n    lane_key: 'text',\n    tenant_binding_id: cfg.tenant_binding_id || ''\n  };\n})() }}",
-        "options": {}
+        "options": {},
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $('Fetch Tenant AI Config').item.json.provider_bindings.text.model_code }}"
+            },
+            {
+              "name": "provider_code",
+              "value": "={{ $('Fetch Tenant AI Config').item.json.provider_bindings.text.provider_code }}"
+            },
+            {
+              "name": "lane_key",
+              "value": "={{ $('Fetch Tenant AI Config').item.json.provider_bindings.text.lane_key }}"
+            },
+            {
+              "name": "tenant_binding_id",
+              "value": "={{ $('Fetch Tenant AI Config').item.json.tenant_binding_id }}"
+            }
+          ]
+        }
       },
       "name": "AI Broker (Text)",
       "type": "n8n-nodes-base.httpRequest",

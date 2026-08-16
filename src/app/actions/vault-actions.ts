@@ -472,7 +472,7 @@ export async function updateTenantIntegrationMetadata(
       return { ok: false, state: "blocked", reason: "PROVIDER_NOT_FOUND" };
     }
 
-    const allowedKeys = ['preferred_text_model', 'preferred_image_model'];
+    const allowedKeys = ['preferred_text_model', 'preferred_image_model', 'bindings'];
     const validatedUpdates: Record<string, any> = {};
     const availableModels = Array.isArray(provider.public_metadata?.models) ? provider.public_metadata.models : [];
 
@@ -481,8 +481,19 @@ export async function updateTenantIntegrationMetadata(
         return { ok: false, state: "blocked", reason: `INVALID_METADATA_KEY: ${key} is not allowed.` };
       }
       
-      // Ensure the chosen model is actually offered by the provider
-      if (value !== null && value !== "" && value !== "default") {
+      if (key === 'bindings' && typeof value === 'object' && value !== null) {
+        for (const [laneKey, binding] of Object.entries(value as Record<string, any>)) {
+          if (!binding) continue;
+          const modelInfo = availableModels.find((m: any) => m.code === binding.model_code);
+          if (!modelInfo) {
+            return { ok: false, state: "blocked", reason: `INVALID_MODEL: ${binding.model_code} is not a valid model for this provider.` };
+          }
+          if (modelInfo.capability !== binding.capability) {
+            return { ok: false, state: "blocked", reason: `CAPABILITY_MISMATCH: Model ${binding.model_code} does not support ${binding.capability}.` };
+          }
+        }
+      } else if (value !== null && value !== "" && value !== "default") {
+        // Ensure the chosen model is actually offered by the provider
         const modelInfo = availableModels.find((m: any) => m.code === value);
         if (!modelInfo) {
           return { ok: false, state: "blocked", reason: `INVALID_MODEL: ${value} is not a valid model for this provider.` };

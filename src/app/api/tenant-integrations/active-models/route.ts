@@ -11,12 +11,11 @@ type ActiveModelConfig = {
   state: "ready" | "blocked";
   reason?: string;
   tenant_binding_id?: string;
-  lane_bindings?: {
-    text?: { provider_code: string; model_code: string };
-    image?: { provider_code: string; model_code: string };
+  provider_bindings?: {
+    text?: { provider_code: string; capability: string; model_code: string; lane_key: string };
+    image?: { provider_code: string; capability: string; model_code: string; lane_key: string };
+    [key: string]: { provider_code: string; capability: string; model_code: string; lane_key: string } | undefined;
   };
-  image?: { provider: string; model: string };
-  text?: { provider: string; model: string };
 };
 
 function readAuthHeader(request: Request) {
@@ -143,16 +142,16 @@ export async function GET(request: Request) {
   }
 
   const meta = ((integrationRow as Record<string, unknown>).public_metadata || {}) as Record<string, unknown>;
-  const preferredImageModel = typeof meta.preferred_image_model === "string" ? meta.preferred_image_model : "";
-  const preferredTextModel = typeof meta.preferred_text_model === "string" ? meta.preferred_text_model : "";
+  
+  // Migrate from old schema if needed
+  const bindings = (meta.bindings as Record<string, any>) || {};
+  const preferredImageModel = bindings.image_lane?.model_code || (typeof meta.preferred_image_model === "string" ? meta.preferred_image_model : "");
+  const preferredTextModel = bindings.text_lane?.model_code || (typeof meta.preferred_text_model === "string" ? meta.preferred_text_model : "");
 
   if (!preferredImageModel) {
     return NextResponse.json(
-      {
-        state: "blocked",
-        reason: "MISSING_IMAGE_MODEL"
-      },
-      { status: 200 }
+      { state: "blocked", reason: "IMAGE_LANE_BINDING_MISSING" },
+      { status: 200 } // keep 200 so n8n can parse 'blocked'
     );
   }
 
@@ -164,10 +163,7 @@ export async function GET(request: Request) {
 
   if (providerCatalogError) {
     return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `ACTIVE_MODELS_LOOKUP_FAILED: ${providerCatalogError.message || "PROVIDER_CATALOG_LOOKUP_FAILED"}`
-      },
+      { state: "blocked", reason: `ACTIVE_MODELS_LOOKUP_FAILED: ${providerCatalogError.message || "PROVIDER_CATALOG_LOOKUP_FAILED"}` },
       { status: 500 }
     );
   }
@@ -178,30 +174,21 @@ export async function GET(request: Request) {
 
   if (!image) {
     return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `MISSING_IMAGE_PROVIDER_BINDING: model=${preferredImageModel}`
-      },
+      { state: "blocked", reason: `MODEL_CAPABILITY_MISMATCH: model=${preferredImageModel} missing capability=image` },
       { status: 200 }
     );
   }
 
   if (image.provider !== providerCode) {
     return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `IMAGE_PROVIDER_SCOPE_MISMATCH: expected=${providerCode} actual=${image.provider}`
-      },
-      { status: 403 }
+      { state: "blocked", reason: `TENANT_BINDING_SCOPE_MISMATCH: expected=${providerCode} actual=${image.provider}` },
+      { status: 200 }
     );
   }
 
   if (!text) {
     return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `MISSING_TEXT_PROVIDER_BINDING: model=${preferredTextModel || "EMPTY"}`
-      },
+      { state: "blocked", reason: `TEXT_LANE_BINDING_MISSING` },
       { status: 200 }
     );
   }
@@ -213,17 +200,20 @@ export async function GET(request: Request) {
         providerId ||
         `${organizationId}:${providerCode}`
     ),
-    lane_bindings: {
-      text: preferredTextModel
-        ? { provider_code: providerCode, model_code: preferredTextModel }
-        : undefined,
+    provider_bindings: {
+      text: {
+        provider_code: providerCode,
+        capability: "text",
+        model_code: text.model,
+        lane_key: "text_lane"
+      },
       image: {
         provider_code: providerCode,
-        model_code: preferredImageModel
+        capability: "image",
+        model_code: image.model,
+        lane_key: "image_lane"
       }
-    },
-    image,
-    text
+    }
   };
 
   return NextResponse.json(result, { status: 200 });
