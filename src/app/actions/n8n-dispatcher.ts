@@ -68,11 +68,8 @@ export async function dispatchToN8n(approvalId: string, integrationKey: string):
       return { ok: false, state: "blocked", reason: "CREDENTIAL_NOT_CONFIGURED" };
     }
 
-    // Wait, the statusView connection_state might not be healthy for now, 
-    // but the plan says "kiểm tra connection_state = healthy".
-    // For this prototype, we'll enforce it.
-    if (statusView.connection_state === "blocked" || statusView.connection_state === "failed") {
-        return { ok: false, state: "blocked", reason: "CONNECTION_NOT_HEALTHY" };
+    if (statusView.connection_state !== "healthy") {
+      return { ok: false, state: "blocked", reason: "CONNECTION_NOT_HEALTHY" };
     }
 
     // 4. Issue BYOK Reference Token
