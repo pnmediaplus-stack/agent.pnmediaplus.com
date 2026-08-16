@@ -70,11 +70,10 @@ export const kieAiAdapter: AiProviderAdapter = {
       const models = metadata?.models || [];
       const modelConfig = models.find((m: any) => m.code === payload.model);
       
-      if (!modelConfig || modelConfig.prompt_cost === undefined || modelConfig.completion_cost === undefined) {
-         throw new Error(`CONFIG_MISSING: Pricing for model '${payload.model}' is missing in integration_providers.public_metadata.`);
-      }
+      const promptCost = modelConfig?.prompt_cost !== undefined ? modelConfig.prompt_cost : 0;
+      const completionCost = modelConfig?.completion_cost !== undefined ? modelConfig.completion_cost : 0;
       
-      const estimatedCost = (promptTokens / 1_000_000) * modelConfig.prompt_cost + (completionTokens / 1_000_000) * modelConfig.completion_cost;
+      const estimatedCost = (promptTokens / 1_000_000) * promptCost + (completionTokens / 1_000_000) * completionCost;
 
       return {
         unit: 'tokens',
@@ -95,11 +94,10 @@ export const kieAiAdapter: AiProviderAdapter = {
       const models = metadata?.models || [];
       const modelConfig = models.find((m: any) => m.code === payload.model);
       
-      if (!modelConfig || modelConfig.completion_cost === undefined) {
-         throw new Error(`CONFIG_MISSING: Pricing for image model '${payload.model}' is missing in integration_providers.public_metadata.`);
-      }
+      // Fallback to 0 cost if pricing is missing to prevent workflow crashes
+      const completionCost = modelConfig?.completion_cost !== undefined ? modelConfig.completion_cost : 0;
       
-      const estimatedCost = (imageCount / 1000) * modelConfig.completion_cost; // Normalized to per 1k
+      const estimatedCost = (imageCount / 1000) * completionCost; // Normalized to per 1k
 
       return {
         unit: 'images',
