@@ -282,6 +282,23 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
        throw new Error(`PHASE10_LEDGER_INSERT_FAILED: ${ledgerRes.status} ${errBody}`);
     }
   }
+  // Transform Kie AI image response to match OpenAI schema so downstream N8N nodes don't break
+  if (providerId === 'kie_ai' && payload.size) {
+     if (!responseData.data) {
+        let imageUrl = null;
+        if (responseData.images && Array.isArray(responseData.images) && responseData.images.length > 0) {
+           imageUrl = typeof responseData.images[0] === 'string' ? responseData.images[0] : responseData.images[0].url;
+        } else if (responseData.output && Array.isArray(responseData.output) && responseData.output.length > 0) {
+           imageUrl = typeof responseData.output[0] === 'string' ? responseData.output[0] : responseData.output[0].url;
+        } else if (responseData.url) {
+           imageUrl = responseData.url;
+        }
+        
+        if (imageUrl) {
+           responseData.data = [ { url: imageUrl } ];
+        }
+     }
+  }
 
   return responseData;
 }
