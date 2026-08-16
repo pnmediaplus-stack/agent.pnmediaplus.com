@@ -239,6 +239,10 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
   }
 
   if (recordId) {
+    if (usageInfo.pricing_missing) {
+       console.warn(`[BILLING WARNING] Provider ${providerId} model ${payload.model} is missing pricing configuration. Billed $0 to avoid blocking the workflow. This is undercharging the tenant and must be fixed in integration_providers.public_metadata!`);
+    }
+
     await updateUsageRecord(supabaseUrl, supabaseKey, recordId, {
       prompt_tokens: usageInfo.promptTokens,
       completion_tokens: usageInfo.completionTokens,

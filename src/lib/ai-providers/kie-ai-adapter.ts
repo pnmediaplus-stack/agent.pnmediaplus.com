@@ -72,6 +72,7 @@ export const kieAiAdapter: AiProviderAdapter = {
       
       const promptCost = modelConfig?.prompt_cost !== undefined ? modelConfig.prompt_cost : 0;
       const completionCost = modelConfig?.completion_cost !== undefined ? modelConfig.completion_cost : 0;
+      const isPricingMissing = modelConfig?.prompt_cost === undefined || modelConfig?.completion_cost === undefined;
       
       const estimatedCost = (promptTokens / 1_000_000) * promptCost + (completionTokens / 1_000_000) * completionCost;
 
@@ -80,7 +81,8 @@ export const kieAiAdapter: AiProviderAdapter = {
         promptTokens,
         completionTokens,
         totalTokens,
-        estimatedCost
+        estimatedCost,
+        ...(isPricingMissing ? { pricing_missing: true } : {})
       };
     }
     
@@ -94,8 +96,9 @@ export const kieAiAdapter: AiProviderAdapter = {
       const models = metadata?.models || [];
       const modelConfig = models.find((m: any) => m.code === payload.model);
       
-      // Fallback to 0 cost if pricing is missing to prevent workflow crashes
-      const completionCost = modelConfig?.completion_cost !== undefined ? modelConfig.completion_cost : 0;
+      // Fallback to 0 cost if pricing is missing to prevent workflow crashes, but mark it
+      const isPricingMissing = modelConfig?.completion_cost === undefined;
+      const completionCost = !isPricingMissing ? modelConfig.completion_cost : 0;
       
       const estimatedCost = (imageCount / 1000) * completionCost; // Normalized to per 1k
 
@@ -104,7 +107,8 @@ export const kieAiAdapter: AiProviderAdapter = {
         promptTokens: 0,
         completionTokens: 0,
         totalTokens: imageCount,
-        estimatedCost
+        estimatedCost,
+        ...(isPricingMissing ? { pricing_missing: true } : {})
       };
     }
 
