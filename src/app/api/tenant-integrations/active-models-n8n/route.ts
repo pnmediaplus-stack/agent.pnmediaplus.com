@@ -3,268 +3,100 @@ import { consumeReferenceToken } from "@/lib/byok-secret-broker";
 import { resolveLaneProviderBinding } from "@/lib/lane-provider-binding";
 import { createServiceRoleClient } from "@/lib/supabase-server";
 
-type ActiveModelConfig = {
-  state: "ready" | "blocked";
-  reason?: string;
-  tenant_binding_id?: string;
-  provider_bindings?: {
-    text?: { provider_code: string; capability: string; model_code: string; lane_key: string };
-    image?: { provider_code: string; capability: string; model_code: string; lane_key: string };
-    [key: string]: { provider_code: string; capability: string; model_code: string; lane_key: string } | undefined;
-  };
-};
-
-function readRuntimeAuth(request: Request) {
-  return (
-    request.headers.get("x-n8n-api-key")?.trim() ||
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() ||
-    ""
-  );
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const organizationId = searchParams.get("organization_id");
   const referenceToken = searchParams.get("reference_token")?.trim() || "";
-  console.error("[active-models-n8n] incoming", {
-    organizationId,
-    hasReferenceToken: Boolean(referenceToken),
-    authHeaderPresent: Boolean(readRuntimeAuth(request))
-  });
-
+  
   if (!organizationId) {
-    return NextResponse.json(
-      { state: "blocked", reason: "MISSING_ORGANIZATION_ID" },
-      { status: 400 }
-    );
+    return NextResponse.json({ state: "blocked", reason: "MISSING_ORGANIZATION_ID" }, { status: 400 });
   }
-
   if (!referenceToken) {
-    return NextResponse.json(
-      { state: "blocked", reason: "MISSING_REFERENCE_TOKEN" },
-      { status: 400 }
-    );
+    return NextResponse.json({ state: "blocked", reason: "MISSING_REFERENCE_TOKEN" }, { status: 400 });
   }
 
   const runtimeApiKey = (process.env.N8N_API_KEY || "").trim();
-  const authHeader = readRuntimeAuth(request);
+  const authHeader = request.headers.get("x-n8n-api-key")?.trim() || request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
 
   if (!runtimeApiKey || authHeader !== runtimeApiKey) {
-    return NextResponse.json(
-      { state: "blocked", reason: "UNAUTHORIZED_N8N_KEY" },
-      { status: 401 }
-    );
+    return NextResponse.json({ state: "blocked", reason: "UNAUTHORIZED_N8N_KEY" }, { status: 401 });
   }
 
-  let consumedToken;
   try {
-    consumedToken = await consumeReferenceToken(referenceToken, {
-      actorType: "N8N",
-      actorRef: "n8n:active-models"
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const isTokenNotUsable = message.includes("TOKEN_NOT_USABLE");
+    const consumedToken = await consumeReferenceToken(referenceToken, { actorType: "N8N", actorRef: "n8n:active-models" });
+    const credentialParts = String(consumedToken.credential_ref || "").split("__");
+    const tokenOrgId = credentialParts[0] || "";
+    const normalizedRequestOrg = organizationId.replace(/-/g, "");
 
-    console.error("[active-models-n8n] token consume failed", {
-      message,
-      tokenNotUsable: isTokenNotUsable,
-      organizationId
-    });
-
+    if (!tokenOrgId || tokenOrgId !== normalizedRequestOrg) {
+      return NextResponse.json({ state: "blocked", reason: "TENANT_SCOPE_MISMATCH" }, { status: 403 });
+    }
+  } catch (error: any) {
+    const isTokenNotUsable = error.message?.includes("TOKEN_NOT_USABLE");
     return NextResponse.json(
-      {
-        state: "blocked",
-        reason: isTokenNotUsable
-          ? "REFERENCE_TOKEN_ALREADY_CONSUMED"
-          : `REFERENCE_TOKEN_CONSUME_FAILED: ${message}`
-      },
+      { state: "blocked", reason: isTokenNotUsable ? "REFERENCE_TOKEN_ALREADY_CONSUMED" : `REFERENCE_TOKEN_CONSUME_FAILED: ${error.message}` },
       { status: isTokenNotUsable ? 409 : 500 }
     );
   }
 
-  console.error("[active-models-n8n] token redeemed", {
-    credentialRef: consumedToken.credential_ref,
-    expiresAt: consumedToken.expires_at
-  });
-
-  const credentialParts = String(consumedToken.credential_ref || "").split("__");
-  const tokenOrgId = credentialParts[0] || "";
-  const tokenIntegrationKey = credentialParts[2] || "";
-  const normalizedRequestOrg = organizationId.replace(/-/g, "");
-
-  if (!tokenOrgId || tokenOrgId !== normalizedRequestOrg) {
-    return NextResponse.json(
-      {
-        state: "blocked",
-        reason: "TENANT_SCOPE_MISMATCH"
-      },
-      { status: 403 }
-    );
-  }
-
-  if (!tokenIntegrationKey) {
-    return NextResponse.json(
-      {
-        state: "blocked",
-        reason: "MISSING_INTEGRATION_KEY"
-      },
-      { status: 400 }
-    );
-  }
-
   const supabase = createServiceRoleClient();
-  console.error("[active-models-n8n] lookup start", {
-    organizationId,
-    tokenOrgId,
-    tokenIntegrationKey
-  });
-
-  const { data: integrationRow, error: integrationError } = await supabase.rpc(
-    "phase077_get_active_tenant_integration_n8n",
-    {
-      p_organization_id: organizationId,
-      p_integration_key: tokenIntegrationKey
-    }
-  );
+  
+  // Fetch ALL configured integrations
+  const { data: activeIntegrations, error: integrationError } = await supabase
+    .from("phase070_tenant_integration_status")
+    .select("integration_key, provider_code, public_metadata")
+    .eq("organization_id", organizationId)
+    .eq("credential_configured", true)
+    .eq("connection_state", "healthy");
 
   if (integrationError) {
-    console.error("[active-models-n8n] integration lookup error", {
-      message: integrationError.message,
-      details: integrationError.details,
-      hint: integrationError.hint,
-      code: integrationError.code
-    });
-    return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `ACTIVE_MODELS_LOOKUP_FAILED: ${integrationError.message || "INTEGRATION_LOOKUP_FAILED"}`
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ state: "blocked", reason: "ACTIVE_MODELS_LOOKUP_FAILED" }, { status: 500 });
   }
 
-  if (!integrationRow) {
-    console.error("[active-models-n8n] integration lookup empty", {
-      organizationId,
-      tokenIntegrationKey
-    });
-    return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `NO_ACTIVE_TENANT_INTEGRATION: organization_id=${organizationId}`
-      },
-      { status: 200 }
-    );
-  }
-
-  console.error("[active-models-n8n] integration row", {
-    integrationId: (integrationRow as Record<string, unknown>).integration_id,
-    providerCode: (integrationRow as Record<string, unknown>).provider_code,
-    status: (integrationRow as Record<string, unknown>).status,
-    connectionState: (integrationRow as Record<string, unknown>).connection_state,
-    publicMetadataKeys: Object.keys(((integrationRow as Record<string, unknown>).public_metadata || {}) as Record<string, unknown>)
-  });
-  const providerCode = String((integrationRow as Record<string, unknown>).provider_code || "");
-  if (!providerCode) {
-    return NextResponse.json(
-      {
-        state: "blocked",
-        reason: `ACTIVE_MODELS_LOOKUP_FAILED: MISSING_PROVIDER_CODE`
-      },
-      { status: 500 }
-    );
-  }
-
-  if (credentialParts[1] && credentialParts[1] !== providerCode) {
-    return NextResponse.json(
-      {
-        state: "blocked",
-        reason: "PROVIDER_SCOPE_MISMATCH"
-      },
-      { status: 403 }
-    );
-  }
-
-  const meta = ((integrationRow as Record<string, unknown>).public_metadata || {}) as Record<string, unknown>;
-  const bindings = (meta.bindings as Record<string, any>) || {};
-  const preferredImageModel = bindings.image_lane?.model_code || (typeof meta.preferred_image_model === "string" ? meta.preferred_image_model : "");
-  const preferredTextModel = bindings.text_lane?.model_code || (typeof meta.preferred_text_model === "string" ? meta.preferred_text_model : "");
-
-  if (!preferredImageModel) {
-    return NextResponse.json(
-      { state: "blocked", reason: "IMAGE_LANE_BINDING_MISSING" },
-      { status: 200 }
-    );
-  }
-
-  if (!preferredTextModel) {
-    return NextResponse.json(
-      { state: "blocked", reason: "TEXT_LANE_BINDING_MISSING" },
-      { status: 200 }
-    );
-  }
-
-  const { data: providerCatalogRows, error: providerCatalogError } = await supabase
+  const { data: providerCatalogRows } = await supabase
     .schema("tenant_integration_vault")
     .from("integration_providers")
     .select("provider_code, public_metadata")
     .eq("status", "active");
 
-  if (providerCatalogError) {
-    return NextResponse.json(
-      { state: "blocked", reason: `ACTIVE_MODELS_LOOKUP_FAILED: ${providerCatalogError.message || "PROVIDER_CATALOG_LOOKUP_FAILED"}` },
-      { status: 500 }
-    );
-  }
-
   const providerRows = Array.isArray(providerCatalogRows) ? providerCatalogRows : [];
-  const imageBinding = resolveLaneProviderBinding(providerRows, "image", preferredImageModel);
-  const textBinding = resolveLaneProviderBinding(providerRows, "text", preferredTextModel);
 
-  if (!imageBinding) {
-    return NextResponse.json(
-      { state: "blocked", reason: `MODEL_CAPABILITY_MISMATCH: model=${preferredImageModel} missing capability=image` },
-      { status: 200 }
-    );
-  }
+  let finalImageBinding: any = null;
+  let finalTextBinding: any = null;
 
-  if (imageBinding.provider !== providerCode) {
-    return NextResponse.json(
-      { state: "blocked", reason: `TENANT_BINDING_SCOPE_MISMATCH: expected=${providerCode} actual=${imageBinding.provider}` },
-      { status: 403 }
-    );
-  }
+  for (const integration of activeIntegrations || []) {
+    const meta = (integration.public_metadata || {}) as Record<string, any>;
+    const bindings = (meta.bindings || {}) as Record<string, any>;
 
-  if (!textBinding) {
-    return NextResponse.json(
-      { state: "blocked", reason: `TEXT_LANE_BINDING_MISSING` },
-      { status: 200 }
-    );
-  }
-
-  const result: ActiveModelConfig = {
-    state: "ready",
-    tenant_binding_id: String(
-      (integrationRow as Record<string, unknown>).integration_id ||
-        (integrationRow as Record<string, unknown>).integration_key ||
-        `${organizationId}:${providerCode}`
-    ),
-    provider_bindings: {
-      text: {
-        provider_code: textBinding.provider,
-        capability: "text",
-        model_code: textBinding.model,
-        lane_key: "text_lane"
-      },
-      image: {
-        provider_code: imageBinding.provider,
-        capability: "image",
-        model_code: imageBinding.model,
-        lane_key: "image_lane"
+    const prefImage = bindings.image_lane?.model_code || (typeof meta.preferred_image_model === "string" ? meta.preferred_image_model : "");
+    if (!finalImageBinding && prefImage) {
+      const resolved = resolveLaneProviderBinding(providerRows, "image", prefImage);
+      if (resolved && resolved.provider === integration.provider_code) {
+        finalImageBinding = { provider_code: resolved.provider, capability: "image", model_code: resolved.model, lane_key: "image_lane" };
       }
     }
-  };
 
-  return NextResponse.json(result, { status: 200 });
+    const prefText = bindings.text_lane?.model_code || (typeof meta.preferred_text_model === "string" ? meta.preferred_text_model : "");
+    if (!finalTextBinding && prefText) {
+      const resolved = resolveLaneProviderBinding(providerRows, "text", prefText);
+      if (resolved && resolved.provider === integration.provider_code) {
+        finalTextBinding = { provider_code: resolved.provider, capability: "text", model_code: resolved.model, lane_key: "text_lane" };
+      }
+    }
+  }
+
+  if (!finalImageBinding) {
+    return NextResponse.json({ state: "blocked", reason: "IMAGE_LANE_BINDING_MISSING" }, { status: 200 });
+  }
+  if (!finalTextBinding) {
+    return NextResponse.json({ state: "blocked", reason: "TEXT_LANE_BINDING_MISSING" }, { status: 200 });
+  }
+
+  return NextResponse.json({
+    state: "ready",
+    provider_bindings: {
+      text: finalTextBinding,
+      image: finalImageBinding
+    }
+  }, { status: 200 });
 }
