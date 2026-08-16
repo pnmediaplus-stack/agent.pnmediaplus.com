@@ -245,11 +245,11 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
         
         if (pollRes.ok) {
           const pollJson = await pollRes.json();
-          // Assuming pollJson.data.images array is populated when done
-          if (pollJson.data && pollJson.data.images && Array.isArray(pollJson.data.images) && pollJson.data.images.length > 0) {
+          // Assuming pollJson.data.successFlag === 1 when done, per Kie docs
+          if (pollJson.data && pollJson.data.successFlag === 1 && pollJson.data.response && pollJson.data.response.resultImageUrl) {
             finalData = pollJson;
             isComplete = true;
-          } else if (pollJson.data && (pollJson.data.status === 'failed' || pollJson.data.status === 'error' || pollJson.data.status === -1)) {
+          } else if (pollJson.data && (pollJson.data.status === 'failed' || pollJson.data.status === 'error' || pollJson.data.status === -1 || pollJson.data.successFlag === -1)) {
             throw new Error(`Kie AI async task failed: ${JSON.stringify(pollJson)}`);
           }
         }
@@ -333,9 +333,11 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
      } else if (responseData.url) {
         imageUrl = responseData.url;
      } 
-     // Case 2: Images nested inside data object (from async polling)
+     // Case 2: Images nested inside data object (from async polling per Kie docs)
      else if (responseData.data && typeof responseData.data === 'object' && !Array.isArray(responseData.data)) {
-        if (responseData.data.images && Array.isArray(responseData.data.images) && responseData.data.images.length > 0) {
+        if (responseData.data.response && responseData.data.response.resultImageUrl) {
+           imageUrl = responseData.data.response.resultImageUrl;
+        } else if (responseData.data.images && Array.isArray(responseData.data.images) && responseData.data.images.length > 0) {
            imageUrl = typeof responseData.data.images[0] === 'string' ? responseData.data.images[0] : responseData.data.images[0].url;
         } else if (responseData.data.url) {
            imageUrl = responseData.data.url;
