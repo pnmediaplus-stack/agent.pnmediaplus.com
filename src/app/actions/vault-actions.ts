@@ -380,12 +380,6 @@ export async function issueReferenceToken(
       return { ok: false, state: "blocked", reason: "CREDENTIAL_MAPPING_NOT_FOUND" };
     }
 
-    console.debug("[phase070:issueReferenceToken] credential package check", {
-      credentialRef: vaultCredentialRef,
-      lookup: "phase075_get_tenant_vault_credential_ref",
-      providerCode: normalizedProviderCode
-    });
-
     const issueToken = async () =>
       supabase.rpc("byok_issue_reference_token", {
       p_credential_ref: vaultCredentialRef,
@@ -441,12 +435,6 @@ export async function updateTenantIntegrationMetadata(
       return { ok: false, state: "blocked", reason: "MISSING_ORGANIZATION_CONTEXT" };
     }
 
-    console.debug("[phase070:updateTenantIntegrationMetadata] lookup start", {
-      organizationId: auth.organizationId,
-      integrationKey,
-      metadataKeys: Object.keys(metadataUpdates)
-    });
-
     const existing = await readPublicTenantIntegrationRow<{
       public_metadata: Record<string, any>;
       provider_code: string;
@@ -465,10 +453,6 @@ export async function updateTenantIntegrationMetadata(
     );
 
     if (!existing) {
-      console.debug("[phase070:updateTenantIntegrationMetadata] integration not found", {
-        organizationId: auth.organizationId,
-        integrationKey
-      });
       return { ok: false, state: "blocked", reason: "INTEGRATION_NOT_FOUND" };
     }
 
@@ -485,11 +469,6 @@ export async function updateTenantIntegrationMetadata(
     );
 
     if (!provider) {
-      console.debug("[phase070:updateTenantIntegrationMetadata] provider not found", {
-        organizationId: auth.organizationId,
-        integrationKey,
-        providerCode: existing.provider_code
-      });
       return { ok: false, state: "blocked", reason: "PROVIDER_NOT_FOUND" };
     }
 
