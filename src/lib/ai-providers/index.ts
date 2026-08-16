@@ -17,10 +17,12 @@ export interface AiProviderAdapter {
 // Registry Whitelist
 import { openaiAdapter } from './openai-adapter';
 import { falAiAdapter } from './fal-ai-adapter';
+import { kieAiAdapter } from './kie-ai-adapter';
 
 export const AI_PROVIDERS: Record<string, AiProviderAdapter> = {
   'openai': openaiAdapter,
   'fal_ai': falAiAdapter,
+  'kie_ai': kieAiAdapter,
 };
 
 export function getProvider(providerId: string): AiProviderAdapter {
