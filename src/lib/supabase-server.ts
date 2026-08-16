@@ -125,6 +125,39 @@ export function createServiceRoleClient(): SupabaseClient {
           const text = await response.text();
           const data = text ? JSON.parse(text) : null;
           return { data, error: null };
+        },
+        then: function(resolve: any, reject: any) {
+          // This allows the query builder itself to be awaited to fetch an array of rows
+          const execute = async () => {
+            const url = new URL(`${supabaseUrl}/rest/v1/${targetTable}`);
+            if (queryBuilder._select) url.searchParams.set('select', queryBuilder._select);
+            queryBuilder._filters.forEach(f => {
+              const [k, v] = f.split('=');
+              url.searchParams.set(k, v);
+            });
+            if (queryBuilder._order) url.searchParams.set('order', queryBuilder._order);
+            if (queryBuilder._limit) url.searchParams.set('limit', queryBuilder._limit);
+
+            const headers: any = { ...defaultHeaders };
+            if (targetSchema) {
+              headers['Accept-Profile'] = targetSchema;
+              headers['Content-Profile'] = targetSchema;
+            }
+            
+            const response = await fetch(url.toString(), {
+              method: 'GET',
+              headers
+            });
+
+            if (!response.ok) {
+              const text = await response.text();
+              return { data: null, error: new Error(`REST_ERROR: ${response.status} - ${text}`) };
+            }
+            const text = await response.text();
+            const data = text ? JSON.parse(text) : [];
+            return { data, error: null };
+          };
+          execute().then(resolve).catch(reject);
         }
       };
       return queryBuilder;
