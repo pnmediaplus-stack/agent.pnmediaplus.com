@@ -102,7 +102,7 @@ export function ConnectedAccountRow({
           {!!(provider.public_metadata as any)?.models && Array.isArray((provider.public_metadata as any).models) && (
             <div className="mt-3 flex space-x-4">
               <label className="flex items-center space-x-2">
-                <span className="text-xs text-slate-400">Image Model:</span>
+                <span className="text-xs text-slate-400">Image lane model:</span>
                 <select 
                   className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none focus:border-cyan-500"
                   value={meta?.preferred_image_model || ""}
@@ -116,7 +116,7 @@ export function ConnectedAccountRow({
                 </select>
               </label>
               <label className="flex items-center space-x-2">
-                <span className="text-xs text-slate-400">Text Model:</span>
+                <span className="text-xs text-slate-400">Text lane model:</span>
                 <select 
                   className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none focus:border-cyan-500"
                   value={meta?.preferred_text_model || ""}
@@ -129,6 +129,9 @@ export function ConnectedAccountRow({
                   ))}
                 </select>
               </label>
+              <span className="self-end text-[10px] text-slate-500">
+                Selected lanes are forwarded as explicit n8n bindings.
+              </span>
             </div>
           )}
         </div>

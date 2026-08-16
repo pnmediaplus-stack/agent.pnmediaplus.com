@@ -10,6 +10,11 @@ import { resolveLaneProviderBinding } from "@/lib/lane-provider-binding";
 type ActiveModelConfig = {
   state: "ready" | "blocked";
   reason?: string;
+  tenant_binding_id?: string;
+  lane_bindings?: {
+    text?: { provider_code: string; model_code: string };
+    image?: { provider_code: string; model_code: string };
+  };
   image?: { provider: string; model: string };
   text?: { provider: string; model: string };
 };
@@ -69,7 +74,7 @@ export async function GET(request: Request) {
   const { data: integrationRow, error: integrationError } = await supabase
     .schema("tenant_integration_vault")
     .from("tenant_integrations")
-    .select("provider_id, public_metadata, status, connection_state")
+    .select("id, provider_id, public_metadata, status, connection_state")
     .eq("organization_id", organizationId)
     .eq("status", "configured")
     .eq("connection_state", "healthy")
@@ -203,6 +208,20 @@ export async function GET(request: Request) {
 
   const result: ActiveModelConfig = {
     state: "ready",
+    tenant_binding_id: String(
+      (integrationRow as Record<string, unknown>).id ||
+        providerId ||
+        `${organizationId}:${providerCode}`
+    ),
+    lane_bindings: {
+      text: preferredTextModel
+        ? { provider_code: providerCode, model_code: preferredTextModel }
+        : undefined,
+      image: {
+        provider_code: providerCode,
+        model_code: preferredImageModel
+      }
+    },
     image,
     text
   };

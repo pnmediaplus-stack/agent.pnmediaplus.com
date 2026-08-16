@@ -6,6 +6,11 @@ import { createServiceRoleClient } from "@/lib/supabase-server";
 type ActiveModelConfig = {
   state: "ready" | "blocked";
   reason?: string;
+  tenant_binding_id?: string;
+  lane_bindings?: {
+    text?: { provider_code: string; model_code: string };
+    image?: { provider_code: string; model_code: string };
+  };
   image?: { provider: string; model: string };
   text?: { provider: string; model: string };
 };
@@ -258,6 +263,21 @@ export async function GET(request: Request) {
 
   const result: ActiveModelConfig = {
     state: "ready",
+    tenant_binding_id: String(
+      (integrationRow as Record<string, unknown>).integration_id ||
+        (integrationRow as Record<string, unknown>).integration_key ||
+        `${organizationId}:${providerCode}`
+    ),
+    lane_bindings: {
+      text: {
+        provider_code: textBinding.provider,
+        model_code: textBinding.model
+      },
+      image: {
+        provider_code: imageBinding.provider,
+        model_code: imageBinding.model
+      }
+    },
     image: imageBinding,
     text: textBinding
   };
