@@ -42,24 +42,16 @@ export async function GET(request: Request) {
   const supabase = createServiceRoleClient();
   
   // Fetch ALL configured integrations
-  const { data: activeIntegrations, error: integrationError } = await supabase
-    .schema("tenant_integration_vault")
-    .from("tenant_integrations")
-    .select("integration_key, provider_id, public_metadata, updated_at")
-    .eq("organization_id", organizationId)
-    .eq("status", "configured")
-    .eq("connection_state", "healthy")
-    .order("updated_at", { ascending: false });
+  const { data: activeIntegrations, error: integrationError } = await supabase.rpc(
+    "phase077_get_all_active_tenant_integrations",
+    { p_organization_id: organizationId }
+  );
 
   if (integrationError) {
     return NextResponse.json({ state: "blocked", reason: "ACTIVE_MODELS_LOOKUP_FAILED" }, { status: 500 });
   }
 
-  const { data: providerCatalogRows } = await supabase
-    .schema("tenant_integration_vault")
-    .from("integration_providers")
-    .select("id, provider_code, public_metadata")
-    .eq("status", "active");
+  const { data: providerCatalogRows } = await supabase.rpc("phase077_get_active_integration_providers");
 
   const providerRows = Array.isArray(providerCatalogRows) ? providerCatalogRows : [];
 
