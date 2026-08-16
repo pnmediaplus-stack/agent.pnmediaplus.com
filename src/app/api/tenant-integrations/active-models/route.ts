@@ -39,10 +39,11 @@ export async function GET(request: Request) {
 
   const { data: activeIntegrations, error: integrationError } = await supabase
     .from("phase070_tenant_integration_status")
-    .select("integration_key, provider_code, public_metadata")
+    .select("integration_key, provider_code, public_metadata, updated_at")
     .eq("organization_id", organizationId)
     .eq("credential_configured", true)
-    .eq("connection_state", "healthy");
+    .eq("connection_state", "healthy")
+    .order("updated_at", { ascending: false });
 
   if (integrationError) {
     return NextResponse.json({ state: "blocked", reason: "ACTIVE_MODELS_LOOKUP_FAILED" }, { status: 500 });
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
     if (!finalImageBinding && prefImage) {
       const resolved = resolveLaneProviderBinding(providerRows, "image", prefImage);
       if (resolved && resolved.provider === integration.provider_code) {
-        finalImageBinding = { provider_code: resolved.provider, capability: "image", model_code: resolved.model, lane_key: "image_lane" };
+        finalImageBinding = { provider_code: resolved.provider, capability: "image", model_code: resolved.model, lane_key: "image_lane", tenant_binding_id: integration.integration_key };
       }
     }
 
@@ -75,7 +76,7 @@ export async function GET(request: Request) {
     if (!finalTextBinding && prefText) {
       const resolved = resolveLaneProviderBinding(providerRows, "text", prefText);
       if (resolved && resolved.provider === integration.provider_code) {
-        finalTextBinding = { provider_code: resolved.provider, capability: "text", model_code: resolved.model, lane_key: "text_lane" };
+        finalTextBinding = { provider_code: resolved.provider, capability: "text", model_code: resolved.model, lane_key: "text_lane", tenant_binding_id: integration.integration_key };
       }
     }
   }
@@ -89,6 +90,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     state: "ready",
+    tenant_binding_id: `multi:${finalTextBinding.tenant_binding_id}:${finalImageBinding.tenant_binding_id}`,
     provider_bindings: {
       text: finalTextBinding,
       image: finalImageBinding
