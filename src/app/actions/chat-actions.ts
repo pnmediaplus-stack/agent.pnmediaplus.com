@@ -21,8 +21,9 @@ import {
   dbDeleteChatMessage,
   dbDeleteAuditLog,
   dbLoadActiveTasks,
-  dbLoadContextData,
-  dbCreateContentItemFromBrief
+  dbCreateContentItemFromBrief,
+  dbResolveActiveCampaign,
+  dbUpdateThreadCampaign
 } from "@/lib/governance-api";
 import { requiresCampaignScope, requiresPublishScope } from "@/lib/validators";
 
@@ -207,7 +208,7 @@ export async function sendChatMessage(threadId: string, body: string) {
       const command = parts[0];
       const args = parts.slice(1);
 
-      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status'];
+      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status', '/campaign'];
 
       if (whitelist.includes(command)) {
         // Enforce args
@@ -220,6 +221,8 @@ export async function sendChatMessage(threadId: string, body: string) {
           if (args.length < 2) missingArgsMsg = 'Lệnh /publish yêu cầu tham số: <page_id|page_name> <content_item_id>';
         } else if (command === '/plan_campaign') {
           if (args.length < 2) missingArgsMsg = 'Lệnh /plan_campaign yêu cầu tham số: <department_id|department_name> <brief>';
+        } else if (command === '/campaign') {
+          if (args[0] !== 'set' || args.length < 2) missingArgsMsg = 'Lệnh /campaign yêu cầu cú pháp: /campaign set <tên_hoặc_id>';
         }
 
         if (missingArgsMsg) {
@@ -261,12 +264,46 @@ export async function sendChatMessage(threadId: string, body: string) {
         if (command === '/auto_content' || command === '/viral_research') {
            const referenceToken = await issueAutoContentReferenceToken(organizationId);
            
-           let contentItemId = args[0];
+           // 1. Parse out --campaign="name" if present
+           let explicitCampaign: string | null = null;
+           let commandBodyStr = args.join(' ');
+           const campaignMatch = commandBodyStr.match(/--campaign=(?:"([^"]+)"|'([^']+)'|([^\s]+))/);
+           if (campaignMatch) {
+             explicitCampaign = campaignMatch[1] || campaignMatch[2] || campaignMatch[3];
+             commandBodyStr = commandBodyStr.replace(campaignMatch[0], '').trim();
+           }
+           
+           // 2. Resolve Active Campaign (Fail-Closed logic applied here)
+           const campaignResolution = await dbResolveActiveCampaign(organizationId, threadId, explicitCampaign);
+           if (campaignResolution.error) {
+              const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+                threadId,
+                sender: "system",
+                body: `Từ chối lệnh: ${campaignResolution.message}`,
+                intentType: "clarify_missing_scope"
+              });
+              return {
+                success: false,
+                message: rejectMsgResult.data,
+                webhook: { ok: false, route: "parser", status: 400, message: campaignResolution.error }
+              };
+           }
+           
+           const resolvedCampaign = campaignResolution.campaign;
+           
+           // Extract new args after removing flag
+           const newArgs = commandBodyStr.split(/\s+/).filter(Boolean);
+           let contentItemId = newArgs[0] || '';
            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
            
            if (!uuidRegex.test(contentItemId)) {
-             const briefText = args.join(' ');
-             const newItemResult = await dbCreateContentItemFromBrief(organizationId, briefText, auth.email);
+             const briefText = commandBodyStr;
+             const newItemResult = await dbCreateContentItemFromBrief(
+               organizationId, 
+               briefText, 
+               auth.email, 
+               resolvedCampaign ? resolvedCampaign.id : null
+             );
              
              if (newItemResult.error || !newItemResult.data) {
                 const rejectMsgResult = await dbInsertChatMessage(organizationId, {
@@ -284,10 +321,16 @@ export async function sendChatMessage(threadId: string, body: string) {
              
              contentItemId = newItemResult.data.id;
              
+             let sysMsg = `Đã tự động khởi tạo Content Item mới (ID: \`${contentItemId}\`) từ văn bản của bạn.`;
+             if (resolvedCampaign) {
+               sysMsg += `\nĐã nhận diện Context: Chiến dịch **${resolvedCampaign.name}**.`;
+             }
+             sysMsg += ` Đang chuyển sang luồng AI xử lý...`;
+             
              await dbInsertChatMessage(organizationId, {
                threadId,
                sender: "system",
-               body: `Đã tự động khởi tạo Content Item mới (ID: \`${contentItemId}\`) từ văn bản của bạn. Đang chuyển sang luồng AI xử lý...`,
+               body: sysMsg,
                intentType: "route_department"
              });
            }
@@ -296,7 +339,8 @@ export async function sendChatMessage(threadId: string, body: string) {
              contentItemId: contentItemId,
              organization_id: organizationId,
              tenant_id: organizationId,
-             reference_token: referenceToken
+             reference_token: referenceToken,
+             campaignContext: resolvedCampaign // Send context to N8N
            });
 
            const routedMsgResult = await dbInsertChatMessage(organizationId, {
@@ -339,6 +383,35 @@ export async function sendChatMessage(threadId: string, body: string) {
            };
         } else if (command === '/plan_campaign') {
           return await routePlanCampaignCommand(organizationId, threadId, requestId, auth, humanMessageId, body);
+        } else if (command === '/campaign') {
+          if (args[0] === 'set') {
+            const explicitCampaign = args.slice(1).join(' ');
+            const resolution = await dbResolveActiveCampaign(organizationId, threadId, explicitCampaign);
+            if (resolution.error || !resolution.campaign) {
+              const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+                threadId,
+                sender: "system",
+                body: `Không thể thiết lập chiến dịch: ${resolution.message || resolution.error}`,
+                intentType: "clarify_missing_scope"
+              });
+              return { success: false, message: rejectMsgResult.data };
+            }
+            // Update thread's active_campaign_id
+            const { error: updateErr } = await dbUpdateThreadCampaign(organizationId, threadId, resolution.campaign.id);
+              
+            if (updateErr) {
+               throw new Error('FAILED_TO_SET_ACTIVE_CAMPAIGN');
+            }
+            
+            const successMsgResult = await dbInsertChatMessage(organizationId, {
+              threadId,
+              sender: "system",
+              body: `Đã thiết lập chiến dịch hiện tại cho luồng này: **${resolution.campaign.name}**. Các lệnh /viral_research tiếp theo sẽ tự động bám sát chiến dịch này.`,
+              intentType: "route_department"
+            });
+            return { success: true, message: successMsgResult.data };
+          }
+          return { success: false };
         } else {
            const rejectMsgResult = await dbInsertChatMessage(organizationId, {
              threadId,

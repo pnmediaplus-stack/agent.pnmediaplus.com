@@ -133,7 +133,7 @@ export async function dbLoadContextData(organizationId: string, referenceType: '
   return { data: data[0] || null };
 }
 
-export async function dbCreateContentItemFromBrief(organizationId: string, brief: string, ownerRef: string) {
+export async function dbCreateContentItemFromBrief(organizationId: string, brief: string, ownerRef: string, campaignId?: string | null) {
   const trimmedBrief = brief.trim();
   let title = trimmedBrief.substring(0, 50).trim();
   if (!title) {
@@ -142,17 +142,20 @@ export async function dbCreateContentItemFromBrief(organizationId: string, brief
     title += '...';
   }
 
+  const bodyData: any = {
+    organization_id: organizationId,
+    content_key: 'auto_' + crypto.randomUUID().replace(/-/g, ''),
+    owner_ref: ownerRef,
+    title: title,
+    brief: trimmedBrief,
+    state: 'idea'
+  };
+  if (campaignId) bodyData.campaign_id = campaignId;
+
   const res = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items`, {
     method: 'POST',
     headers: { ...getPublicHeaders(), 'Prefer': 'return=representation' },
-    body: JSON.stringify({
-      organization_id: organizationId,
-      content_key: 'auto_' + crypto.randomUUID().replace(/-/g, ''),
-      owner_ref: ownerRef,
-      title: title,
-      brief: trimmedBrief,
-      state: 'idea'
-    })
+    body: JSON.stringify(bodyData)
   });
   
   if (!res.ok) {
@@ -160,4 +163,68 @@ export async function dbCreateContentItemFromBrief(organizationId: string, brief
   }
   const data = await res.json();
   return { data: data[0] };
+}
+
+export async function dbResolveActiveCampaign(organizationId: string, threadId: string, explicitIdentifier: string | null) {
+  // 1. Explicit identifier provided
+  if (explicitIdentifier) {
+    let url = `${supabaseUrl}/rest/v1/campaigns?organization_id=eq.${organizationId}&select=*&limit=1`;
+    // Check if it's a UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(explicitIdentifier)) {
+      url += `&id=eq.${explicitIdentifier}`;
+    } else {
+      url += `&name=ilike.*${encodeURIComponent(explicitIdentifier)}*`;
+    }
+    const res = await fetch(url, { headers: getPublicHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.length > 0) return { campaign: data[0] };
+    }
+    return { error: 'explicit_not_found', message: `Không tìm thấy chiến dịch nào khớp với "${explicitIdentifier}".` };
+  }
+
+  // 2. Check thread's active_campaign_id
+  const threadRes = await fetch(`${supabaseUrl}/rest/v1/phase1_chat_threads?id=eq.${threadId}&select=active_campaign_id`, { headers: getPublicHeaders() });
+  if (threadRes.ok) {
+    const threadData = await threadRes.json();
+    if (threadData && threadData.length > 0 && threadData[0].active_campaign_id) {
+      const campRes = await fetch(`${supabaseUrl}/rest/v1/campaigns?id=eq.${threadData[0].active_campaign_id}&select=*`, { headers: getPublicHeaders() });
+      if (campRes.ok) {
+        const campData = await campRes.json();
+        if (campData && campData.length > 0) return { campaign: campData[0] };
+      }
+    }
+  }
+
+  // 3. Fallback to Single Active Campaign check
+  const activeRes = await fetch(`${supabaseUrl}/rest/v1/campaigns?organization_id=eq.${organizationId}&status=eq.active&select=*`, { headers: getPublicHeaders() });
+  if (activeRes.ok) {
+    const activeData = await activeRes.json();
+    if (activeData && activeData.length === 1) {
+      return { campaign: activeData[0] };
+    } else if (activeData && activeData.length > 1) {
+      return { error: 'multiple_active', message: 'Hệ thống tìm thấy nhiều chiến dịch đang hoạt động. Vui lòng chỉ định rõ bằng lệnh: --campaign="Tên Chiến Dịch"' };
+    }
+  }
+
+  // 4. No active campaigns, proceed with minimal context (return null)
+  return { campaign: null };
+}
+
+export async function dbUpdateThreadCampaign(organizationId: string, threadId: string, campaignId: string) {
+  const res = await fetch(`${supabaseUrl}/rest/v1/chat_threads?id=eq.${threadId}`, {
+    method: 'PATCH',
+    headers: {
+      ...getPublicHeaders(),
+      'Content-Profile': 'pn_os_ai_department',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify({ active_campaign_id: campaignId })
+  });
+
+  if (!res.ok) {
+    return { error: await res.text() };
+  }
+  return { error: null };
 }
