@@ -39,9 +39,19 @@ export async function generateR2PresignedUploadUrl(objectKey: string, expiresIn:
 
 export async function generateR2PresignedDownloadUrl(objectKey: string, expiresIn: number = 3600): Promise<string> {
   const client = getR2Client();
+  
+  // Determine content type from extension to force browser rendering
+  let contentType = 'application/octet-stream';
+  const lowerKey = objectKey.toLowerCase();
+  if (lowerKey.endsWith('.png')) contentType = 'image/png';
+  else if (lowerKey.endsWith('.jpg') || lowerKey.endsWith('.jpeg')) contentType = 'image/jpeg';
+  else if (lowerKey.endsWith('.gif')) contentType = 'image/gif';
+  else if (lowerKey.endsWith('.webp')) contentType = 'image/webp';
+
   const command = new GetObjectCommand({
     Bucket: R2_BUCKET_NAME,
     Key: objectKey,
+    ResponseContentType: contentType
   });
   // 3600 seconds = 1 hour
   return await getSignedUrl(client, command, { expiresIn });
