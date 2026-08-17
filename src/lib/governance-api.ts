@@ -225,12 +225,12 @@ export async function dbApproveAndCreateCampaign(organizationId: string, threadI
 
   const msgs = await msgsRes.json();
   
-  // Find the latest AI message that contains a clear marker, or fallback to heuristics
+  // Find the latest AI message that contains a clear marker
   const proposalMsg = msgs.find((m: any) => 
     m.sender === 'system' && (
       m.intentType === 'campaign_proposal' ||
       m.body.includes('[[CAMPAIGN_PROPOSAL]]') ||
-      ((m.body.includes('Proposal:') || m.intentType === 'plan_campaign' || m.intentType === 'agent_progress') && m.body.length > 100)
+      m.intentType === 'plan_campaign' // Keep only intent-based fallback just in case
     )
   );
 

@@ -350,7 +350,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Scope Resolve'].json.thread_id,\n  organization_id: $node['Scope Resolve'].json.organization_id,\n  idempotency_key: $execution.id + '_done',\n  sender: 'agent_7_packaging',\n  body: $json.choices[0].message.content,\n  intent_type: 'agent_response'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Scope Resolve'].json.thread_id,\n  organization_id: $node['Scope Resolve'].json.organization_id,\n  idempotency_key: $execution.id + '_done',\n  sender: 'agent_7_packaging',\n  body: $json.choices[0].message.content,\n  intent_type: 'campaign_proposal'\n} }}",
         "options": {}
       },
       "name": "Delivery (chat_append)",
