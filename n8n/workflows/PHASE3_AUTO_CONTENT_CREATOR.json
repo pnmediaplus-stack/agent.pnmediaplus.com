@@ -548,7 +548,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nitem.r2_object_key = $('Get Upload Ticket').item.json.objectKey;\nitem.r2_url = '/api/assets/proxy?key=' + item.r2_object_key;\nif (!item.artifacts) item.artifacts = {};\nitem.artifacts.image = item.r2_url;\nreturn { json: item };"
+        "jsCode": "const item = $('Extract Visual').first().json;\nitem.r2_object_key = $('Get Upload Ticket').item.json.objectKey;\nitem.r2_url = '/api/assets/proxy?key=' + item.r2_object_key;\nif (!item.artifacts) item.artifacts = {};\nitem.artifacts.image = item.r2_url;\nreturn { json: item };"
       },
       "name": "Map R2 URL",
       "type": "n8n-nodes-base.code",
