@@ -22,6 +22,8 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
   const [artifacts, setArtifacts] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campaignsStatus, setCampaignsStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
+  const [campaignsError, setCampaignsError] = useState<string | null>(null);
   const [departmentsStatus, setDepartmentsStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
   const [departmentsError, setDepartmentsError] = useState<string | null>(null);
   const [agentsStatus, setAgentsStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
@@ -122,11 +124,23 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
   const loadCampaigns = async () => {
     if (campaigns.length > 0) return;
     try {
+      setCampaignsStatus("loading");
+      setCampaignsError(null);
       const res = await fetch('/api/governance/campaigns');
       const data = await res.json();
-      if (data.campaigns) setCampaigns(data.campaigns);
+      if (data.campaigns && data.campaigns.length > 0) {
+        setCampaigns(data.campaigns);
+        setCampaignsStatus("ready");
+      } else {
+        setCampaigns([]);
+        setCampaignsStatus("empty");
+        setCampaignsError("Không có chiến dịch ACTIVE nào trong hệ thống.");
+      }
     } catch (e) {
       console.error("Failed to load campaigns", e);
+      setCampaigns([]);
+      setCampaignsStatus("error");
+      setCampaignsError("Không tải được danh sách chiến dịch.");
     }
   };
 
@@ -342,7 +356,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 relative">
       {/* Autocomplete Popup */}
-      {popupState.isOpen && filteredSuggestions.length > 0 && (
+      {popupState.isOpen && (filteredSuggestions.length > 0 || (popupState.type === 'campaign' && campaignsStatus !== 'ready')) && (
         <div className="absolute bottom-full mb-2 left-4 w-80 max-h-64 overflow-y-auto rounded-xl border border-indigo-500/30 bg-slate-900/95 backdrop-blur-md p-2 shadow-2xl z-50">
           <div className="text-[10px] uppercase tracking-widest text-slate-500 px-2 pb-2 mb-1 border-b border-slate-800">
             {popupState.type === 'command' ? 'Select Command' : popupState.type === 'agent' ? 'Select Agent' : popupState.type === 'department' ? 'Select Department' : popupState.type === 'campaign' ? 'Select Campaign' : 'Select Data Reference'}
@@ -419,6 +433,14 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
           {departmentsStatus === "loading" && "Đang tải danh sách phòng ban..."}
           {departmentsStatus === "empty" && (departmentsError ?? "Không có phòng ban nào khả dụng.")}
           {departmentsStatus === "error" && (departmentsError ?? "Không tải được danh sách phòng ban.")}
+        </div>
+      )}
+
+      {popupState.isOpen && popupState.type === "campaign" && campaignsStatus !== "ready" && (
+        <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-950/30 p-3 text-xs text-amber-200">
+          {campaignsStatus === "loading" && "Đang tải danh sách chiến dịch..."}
+          {campaignsStatus === "empty" && (campaignsError ?? "Không có chiến dịch nào khả dụng.")}
+          {campaignsStatus === "error" && (campaignsError ?? "Không tải được danh sách chiến dịch.")}
         </div>
       )}
 
