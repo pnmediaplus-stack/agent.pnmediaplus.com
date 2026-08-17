@@ -1,43 +1,49 @@
-# Kế hoạch Triển khai: Kiến trúc BYOK & Multi-Provider Động (Tái sử dụng Phase 070)
+# Kế hoạch Triển khai: Cloudflare R2 Storage (`agent-storage`)
 
-Mục tiêu: Chuyển đổi kiến trúc sang dạng cấu hình động (Config-driven) mà **KHÔNG CẦN TẠO THÊM BẢNG DATABASE MỚI**. Tái sử dụng tối đa hệ thống Phase 070 (Tenant Integration Vault) hiện có để quản lý danh mục Model và Tùy chọn của Tenant.
+Tuyệt vời! Việc anh đã chuẩn bị sẵn Bucket `agent-storage` với chế độ **Public Access: Disabled** (Private) cho thấy anh rất quan tâm đến bảo mật và chống thất thoát tài nguyên (chống hotlink).
 
-## Phân tích Kiến trúc hiện tại & Hạn chế
-- **Hạn chế 1 (Next.js):** Các file như `openai-adapter.ts` hay `fal-ai-adapter.ts` đang bị hardcode bảng giá (Pricing) và tên Model.
-- **Hạn chế 2 (N8N):** Node AI Broker đang bị fix cứng giá trị `model: 'dall-e-3'`.
-- **Lợi thế:** Hệ thống đã có bảng `integration_providers` (chứa danh sách nhà cung cấp) và `tenant_integrations` (chứa API Key của Tenant). Cả 2 bảng này đều có cột `public_metadata` kiểu JSONB cực kỳ linh hoạt.
+Với cấu hình này, hình ảnh AI tạo ra sẽ được giấu kín 100% đằng sau cánh cửa của Cloudflare. Bất kỳ ai cố tình truy cập trực tiếp bằng link cũng sẽ bị chặn lại. 
 
-## Proposed Changes (Giải pháp Tối ưu)
+Để tương tác với kho lưu trữ siêu bảo mật này, hệ thống sẽ sử dụng cơ chế **Cloudflare R2 S3-compatible presigned URL** (Cấp thẻ ra vào có thời hạn) và **Asset Proxy** (Đường hầm trung chuyển). Dưới đây là kế hoạch chi tiết đã được Gatekeeper duyệt:
 
-### 1. Tận dụng `public_metadata` thay vì tạo bảng mới
-- **Tại bảng `integration_providers`**: Chúng ta sẽ lưu danh sách các models hỗ trợ và giá tiền vào cột `public_metadata`.
-  - Ví dụ: `public_metadata: { "models": [{ "code": "dall-e-3", "capability": "image", "cost": 40.0 }, { "code": "gpt-4o", "capability": "text", "cost": 5.0 }] }`
-- **Tại bảng `tenant_integrations`**: Chúng ta sẽ lưu lựa chọn Model mặc định của Tenant vào cột `public_metadata`.
-  - Ví dụ: `public_metadata: { "preferred_image_model": "fal-ai/flux/dev", "preferred_text_model": "gpt-4o" }`
+## Proposed Changes
 
-### 2. Nâng cấp Giao diện UI (Dashboard Cấu hình API)
-- Trên giao diện `/tenant-integrations` hiện tại (như anh chụp ảnh), sau khi Tenant điền API Key cho một AI Provider (vd: OpenAI), UI sẽ bung ra một Dropdown để chọn "Mô hình Hình ảnh mặc định" và "Mô hình Text mặc định" dựa trên danh sách models lấy từ `integration_providers`.
-- Các lựa chọn này sẽ được lưu gọn gàng vào `public_metadata` của `tenant_integrations`.
+### 1. [System & Dependencies Layer]
+- **Install AWS SDK**: Cài đặt 2 thư viện chuẩn công nghiệp để giao tiếp với R2 qua chuẩn S3: `@aws-sdk/client-s3` và `@aws-sdk/s3-request-presigner`.
+- **Environment Variables**: Yêu cầu khai báo các biến môi trường:
+  ```env
+  R2_ACCOUNT_ID=75f8b0f65e41949cc8efde8a9938d955
+  R2_ACCESS_KEY_ID=<your_access_key>
+  R2_SECRET_ACCESS_KEY=<your_secret_key>
+  R2_BUCKET_NAME=agent-storage
+  ```
 
-### 3. Dọn dẹp Code Hardcode trong Next.js
-- **[MODIFY]** `src/lib/ai-providers/*-adapter.ts`
-  - Gỡ bỏ hoàn toàn các biến hằng số `OPENAI_PRICING`, `FAL_PRICING`.
-  - Logic tính phí (Metering) sẽ quét qua danh sách `models` trong `public_metadata` của Provider để tính giá.
+### 2. [Backend Integration Layer]
 
-### 4. Thiết kế lại Luồng N8N (Config-driven)
-- **[MODIFY]** Luồng `PHASE3_AUTO_CONTENT_CREATOR.json`
-  - Node `Fetch Governance Registry` sẽ được bổ sung thêm thông tin cấu hình từ `tenant_integrations.public_metadata`.
-  - Node `AI Broker (Image)` sẽ sử dụng biến môi trường lấy từ Registry thay vì hardcode:
-    ```json
-    {
-       "provider": "{{ $('Fetch Registry').item.json.preferred_image_provider }}",
-       "model": "{{ $('Fetch Registry').item.json.preferred_image_model }}",
-       "prompt": "..."
-    }
-    ```
-  - Cập nhật Node `Extract Visual` tương thích nhiều định dạng trả về.
+#### [NEW] src/lib/r2-client.ts
+- Xây dựng Core Client kết nối đến Cloudflare R2 Endpoint qua chuẩn S3-compatible.
+- Khai báo 2 hàm tiện ích:
+  - `generatePresignedUploadUrl(key)`: Tạo link cho phép N8N tải ảnh lên.
+  - `generatePresignedDownloadUrl(key)`: Tạo link cho phép trình duyệt tải ảnh về.
+
+#### [NEW] src/app/api/assets/proxy/route.ts
+- Xây dựng Asset Proxy. Trong Chat, link ảnh sẽ luôn có dạng: `![Ảnh AI](/api/assets/proxy?key=campaign-x/image.png)`. Khi trình duyệt gọi API này, Backend sẽ ký một Link Download mới từ R2 và trả về mã `HTTP 302 Redirect`.
+- **Gatekeeper Audit Checked**: Cấu hình Response Header với `Cache-Control: no-store, no-cache, must-revalidate` và `Expires: 0` để chặn 100% việc trình duyệt lưu Cache sai lệch cái link Proxy. Proxy cũng thực hiện check an toàn `key.includes('..')` để chống tấn công Path Traversal.
+
+#### [NEW] src/app/api/assets/upload-ticket/route.ts
+- **Gatekeeper Audit Checked**: Backend Next.js là nơi trực tiếp phát sinh và làm chủ `Object Key` cuối cùng bằng `crypto.randomUUID()`. N8N chỉ việc gọi lên xin thẻ Upload chứ không được quyền tự đặt tên. Object key sau đó được gửi trả về để N8N gán vào `payload` lưu vào CSDL.
+
+### 3. [Workflow Layer (N8N)]
+
+#### [MODIFY] n8n/workflows/PHASE3_AUTO_CONTENT_CREATOR.json
+- **Quy trình MỚI trong N8N**:
+  1. AI Broker sinh ra ảnh gốc.
+  2. N8N gọi `Download Image` kéo ảnh gốc vào bộ nhớ (Binary Data).
+  3. N8N gọi API nội bộ `Get Upload Ticket` (Backend Next.js) để xin một thẻ `Cloudflare R2 S3-compatible presigned upload URL` kèm Object Key an toàn.
+  4. N8N dùng `Upload to R2` (HTTP PUT method) để upload thẳng tấm ảnh đó vào Cloudflare R2 thông qua link vừa được cấp.
+  5. N8N map chuỗi `r2_url` dạng `r2://[object_key]` rồi mới trả về cho Webhook cập nhật Database.
 
 ## Verification Plan
-1. Xóa file SQL thừa (`phase076_dynamic_ai_catalog.sql`).
-2. Sửa file Seed Database (`phase070_...`) để nhồi sẵn danh sách models vào metadata của Provider OpenAI và Fal.ai.
-3. Chạy giao diện, chọn Model, lưu lại, và chạy test N8N để xác minh ảnh được vẽ bằng Fal.ai.
+1. Viết API Test Tool ngắn gọn.
+2. Cập nhật N8N Workflow và chạy luồng tạo ảnh.
+3. Xác nhận hình ảnh hiển thị trên Chat UI thông qua `/api/assets/proxy` mượt mà, và trong bucket `agent-storage` của Cloudflare xuất hiện file vật lý.
