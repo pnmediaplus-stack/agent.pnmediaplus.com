@@ -21,7 +21,8 @@ import {
   dbDeleteChatMessage,
   dbDeleteAuditLog,
   dbLoadActiveTasks,
-  dbLoadContextData
+  dbLoadContextData,
+  dbCreateContentItemFromBrief
 } from "@/lib/governance-api";
 import { requiresCampaignScope, requiresPublishScope } from "@/lib/validators";
 
@@ -211,7 +212,9 @@ export async function sendChatMessage(threadId: string, body: string) {
       if (whitelist.includes(command)) {
         // Enforce args
         let missingArgsMsg = '';
-        if (command === '/auto_content' || command === '/viral_research' || command === '/status') {
+        if (command === '/auto_content' || command === '/viral_research') {
+          if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> hoặc đoạn văn bản (Ví dụ: ${command} 12345 hoặc ${command} Nội dung bài viết...)`;
+        } else if (command === '/status') {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> (Ví dụ: ${command} 12345)`;
         } else if (command === '/publish') {
           if (args.length < 2) missingArgsMsg = 'Lệnh /publish yêu cầu tham số: <page_id|page_name> <content_item_id>';
@@ -255,10 +258,42 @@ export async function sendChatMessage(threadId: string, body: string) {
         // Fire mock/real webhook depending on command
         // For /auto_content we hit our newly integrated workflow "generate-content" endpoint
         let webhookResult;
-        if (command === '/auto_content') {
+        if (command === '/auto_content' || command === '/viral_research') {
            const referenceToken = await issueAutoContentReferenceToken(organizationId);
+           
+           let contentItemId = args[0];
+           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+           
+           if (!uuidRegex.test(contentItemId)) {
+             const briefText = args.join(' ');
+             const newItemResult = await dbCreateContentItemFromBrief(organizationId, briefText, auth.email);
+             
+             if (newItemResult.error || !newItemResult.data) {
+                const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+                  threadId,
+                  sender: "system",
+                  body: `Lỗi khởi tạo nội dung: ${newItemResult.error || 'Unknown Error'}. Vui lòng thử lại.`,
+                  intentType: "clarify_missing_scope"
+                });
+                return {
+                  success: false,
+                  message: rejectMsgResult.data,
+                  webhook: { ok: false, route: "parser", status: 500, message: "Failed to create content item from brief" }
+                };
+             }
+             
+             contentItemId = newItemResult.data.id;
+             
+             await dbInsertChatMessage(organizationId, {
+               threadId,
+               sender: "system",
+               body: `Đã tự động khởi tạo Content Item mới (ID: \`${contentItemId}\`) từ văn bản của bạn. Đang chuyển sang luồng AI xử lý...`,
+               intentType: "route_department"
+             });
+           }
+
            webhookResult = await postN8nWebhook("webhook/generate-content", {
-             contentItemId: args[0],
+             contentItemId: contentItemId,
              organization_id: organizationId,
              tenant_id: organizationId,
              reference_token: referenceToken

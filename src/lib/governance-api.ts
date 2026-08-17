@@ -132,3 +132,32 @@ export async function dbLoadContextData(organizationId: string, referenceType: '
   const data = await res.json();
   return { data: data[0] || null };
 }
+
+export async function dbCreateContentItemFromBrief(organizationId: string, brief: string, ownerRef: string) {
+  const trimmedBrief = brief.trim();
+  let title = trimmedBrief.substring(0, 50).trim();
+  if (!title) {
+    title = 'Idea from Chat ' + new Date().toISOString().split('T')[0];
+  } else if (trimmedBrief.length > 50) {
+    title += '...';
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items`, {
+    method: 'POST',
+    headers: { ...getPublicHeaders(), 'Prefer': 'return=representation' },
+    body: JSON.stringify({
+      organization_id: organizationId,
+      content_key: crypto.randomUUID(),
+      owner_ref: ownerRef,
+      title: title,
+      brief: trimmedBrief,
+      state: 'idea'
+    })
+  });
+  
+  if (!res.ok) {
+    return { error: await res.text(), data: null };
+  }
+  const data = await res.json();
+  return { data: data[0] };
+}
