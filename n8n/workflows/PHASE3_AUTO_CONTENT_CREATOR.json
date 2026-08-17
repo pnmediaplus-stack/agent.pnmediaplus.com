@@ -523,6 +523,15 @@
       "parameters": {
         "method": "PUT",
         "url": "={{ $('Get Upload Ticket').item.json.uploadUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "={{ $('Get Upload Ticket').item.json.contentType }}"
+            }
+          ]
+        },
         "sendBody": true,
         "contentType": "binaryData",
         "inputDataFieldName": "data",

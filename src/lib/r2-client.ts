@@ -27,11 +27,12 @@ export function getR2Client(): S3Client {
   return s3Client;
 }
 
-export async function generateR2PresignedUploadUrl(objectKey: string, expiresIn: number = 900): Promise<string> {
+export async function generateR2PresignedUploadUrl(objectKey: string, expiresIn: number = 900, contentType?: string): Promise<string> {
   const client = getR2Client();
   const command = new PutObjectCommand({
     Bucket: R2_BUCKET_NAME,
     Key: objectKey,
+    ContentType: contentType, // Force content-type metadata on upload
   });
   // 900 seconds = 15 minutes
   return await getSignedUrl(client, command, { expiresIn });

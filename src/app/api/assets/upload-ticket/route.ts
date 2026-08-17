@@ -17,11 +17,19 @@ export async function POST(req: NextRequest) {
      const safeExt = fileExtension.replace(/[^a-zA-Z0-9]/g, '');
      const objectKey = `${prefix}/${dateStr}/${uuid}.${safeExt}`;
 
-     const presignedUrl = await generateR2PresignedUploadUrl(objectKey, 900); // 15 mins
+     let contentType = 'application/octet-stream';
+     const lowerExt = safeExt.toLowerCase();
+     if (lowerExt === 'png') contentType = 'image/png';
+     else if (lowerExt === 'jpg' || lowerExt === 'jpeg') contentType = 'image/jpeg';
+     else if (lowerExt === 'gif') contentType = 'image/gif';
+     else if (lowerExt === 'webp') contentType = 'image/webp';
+
+     const presignedUrl = await generateR2PresignedUploadUrl(objectKey, 900, contentType); // 15 mins
 
      return NextResponse.json({
        objectKey,
        uploadUrl: presignedUrl,
+       contentType,
        expiresIn: 900
      });
 
