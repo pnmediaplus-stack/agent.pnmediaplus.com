@@ -524,16 +524,8 @@
         "method": "PUT",
         "url": "={{ $('Get Upload Ticket').item.json.uploadUrl }}",
         "sendBody": true,
-        "contentType": "raw",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "data",
-              "parameterType": "form-data",
-              "inputDataFieldName": "data"
-            }
-          ]
-        },
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
         "options": {}
       },
       "name": "Upload to R2",
