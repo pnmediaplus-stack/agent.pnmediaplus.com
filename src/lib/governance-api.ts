@@ -214,7 +214,7 @@ export async function dbResolveActiveCampaign(organizationId: string, threadId: 
 
 export async function dbApproveAndCreateCampaign(organizationId: string, threadId: string, title: string) {
   // 1. Fetch thread messages to find the proposal
-  const msgsRes = await fetch(`${supabaseUrl}/rest/v1/chat_message_feed_v1?threadId=eq.${threadId}&order=createdAt.desc&limit=20`, {
+  const msgsRes = await fetch(`${supabaseUrl}/rest/v1/chat_message_feed_v1?threadId=eq.${threadId}&order=createdAt.desc&limit=50`, {
     headers: getHeaders(),
     cache: 'no-store'
   });
@@ -225,11 +225,13 @@ export async function dbApproveAndCreateCampaign(organizationId: string, threadI
 
   const msgs = await msgsRes.json();
   
-  // Find the latest AI message that contains "Proposal:" or has a matching intent
+  // Find the latest AI message that contains a clear marker, or fallback to heuristics
   const proposalMsg = msgs.find((m: any) => 
-    m.sender === 'system' && 
-    (m.body.includes('Proposal:') || m.intentType === 'plan_campaign' || m.intentType === 'agent_progress') &&
-    m.body.length > 100 // ensure it's a substantive plan, not a short status message
+    m.sender === 'system' && (
+      m.intentType === 'campaign_proposal' ||
+      m.body.includes('[[CAMPAIGN_PROPOSAL]]') ||
+      ((m.body.includes('Proposal:') || m.intentType === 'plan_campaign' || m.intentType === 'agent_progress') && m.body.length > 100)
+    )
   );
 
   if (!proposalMsg) {

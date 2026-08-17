@@ -403,7 +403,21 @@ export async function sendChatMessage(threadId: string, body: string) {
           }
           
           // Attach campaign to thread
-          await dbUpdateThreadCampaign(organizationId, threadId, approveRes.data.id);
+          const updateRes = await dbUpdateThreadCampaign(organizationId, threadId, approveRes.data.id);
+          
+          if (updateRes.error) {
+             const partialMsgResult = await dbInsertChatMessage(organizationId, {
+               threadId,
+               sender: "system",
+               body: `Chiến dịch **${campaignTitle}** đã tạo thành công nhưng việc gắn vào luồng chat thất bại (${updateRes.error}). Vui lòng gõ lại lệnh /campaign set để gắn thủ công.`,
+               intentType: "request_status"
+             });
+             return {
+               success: false,
+               message: partialMsgResult.data,
+               webhook: { ok: false, route: "handled_internally", status: 500, message: "Campaign created but thread bind failed" }
+             };
+          }
           
           const successMsgResult = await dbInsertChatMessage(organizationId, {
             threadId,
