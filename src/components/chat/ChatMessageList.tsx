@@ -1,13 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { ChatMessage } from "@/types/chat";
-import { User, Bot, LayoutTemplate, Activity, ExternalLink, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { User, Bot, LayoutTemplate, Activity, ExternalLink, CheckCircle, XCircle, RefreshCw, Maximize2, Download, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[], isTyping?: boolean }) {
   const { t } = useI18n("chat");
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   return (
     <div className="space-y-3">
       {messages.map((message) => {
@@ -60,9 +62,15 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
                   components={{
                     img: ({ node, ...props }) => {
                       return (
-                        <div className="my-4 overflow-hidden rounded-xl border border-white/10 shadow-lg max-h-[300px] flex items-center justify-center bg-black/50">
+                        <div 
+                          className="my-4 relative overflow-hidden rounded-xl border border-white/10 shadow-lg max-h-[300px] flex items-center justify-center bg-black/50 group cursor-pointer"
+                          onClick={() => setLightboxImage(props.src || null)}
+                        >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img {...props} className="max-h-[300px] w-auto object-contain" alt={props.alt || 'Chat media'} />
+                          <img {...props} className="max-h-[300px] w-auto object-contain transition-transform duration-300 group-hover:scale-105" alt={props.alt || 'Chat media'} />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                            <Maximize2 className="h-8 w-8 text-white/80 drop-shadow-md" />
+                          </div>
                         </div>
                       );
                     },
@@ -183,6 +191,58 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
               <div className="h-2 w-2 rounded-full bg-emerald-400/50 animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox Overlay */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" 
+          onClick={() => setLightboxImage(null)}
+        >
+          <div className="absolute top-4 right-4 flex gap-4">
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  const res = await fetch(lightboxImage);
+                  if (!res.ok) throw new Error("Network error");
+                  const blob = await res.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.style.display = 'none';
+                  a.href = url;
+                  a.download = lightboxImage.split('/').pop() || 'image.jpg';
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                } catch (err) {
+                  console.error("Failed to download image", err);
+                  // Fallback for cross-origin or signed URLs
+                  window.open(lightboxImage, '_blank');
+                }
+              }}
+              className="p-3 bg-black/50 hover:bg-black/80 text-white rounded-full transition-colors border border-white/20 backdrop-blur-md shadow-xl"
+              title="Download Image"
+            >
+              <Download className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => setLightboxImage(null)}
+              className="p-3 bg-black/50 hover:bg-black/80 text-white rounded-full transition-colors border border-white/20 backdrop-blur-md shadow-xl"
+              title="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={lightboxImage} 
+            alt="Enlarged view" 
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl" 
+            onClick={(e) => e.stopPropagation()} 
+          />
         </div>
       )}
     </div>
