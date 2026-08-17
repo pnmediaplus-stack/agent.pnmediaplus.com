@@ -267,14 +267,20 @@ export async function dbApproveAndCreateCampaign(organizationId: string, threadI
 export async function dbUpdateThreadCampaign(organizationId: string, threadId: string, campaignId: string) {
   // 1. Verify ownership
   const checkRes = await fetch(`${supabaseUrl}/rest/v1/chat_threads?id=eq.${threadId}&select=department_id`, {
-    headers: getPublicHeaders()
+    headers: {
+      ...getPublicHeaders(),
+      'Accept-Profile': 'pn_os_ai_department'
+    }
   });
   if (!checkRes.ok) return { error: 'FAILED_TO_CHECK_THREAD' };
   const checkData = await checkRes.json();
   if (!checkData || checkData.length === 0) return { error: 'THREAD_NOT_FOUND' };
 
   const deptRes = await fetch(`${supabaseUrl}/rest/v1/departments?id=eq.${checkData[0].department_id}&organization_id=eq.${organizationId}&select=id`, {
-    headers: getPublicHeaders()
+    headers: {
+      ...getPublicHeaders(),
+      'Accept-Profile': 'pn_os_ai_department'
+    }
   });
   if (!deptRes.ok) return { error: 'FAILED_TO_CHECK_DEPT' };
   const deptData = await deptRes.json();
