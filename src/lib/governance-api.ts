@@ -147,7 +147,7 @@ export async function dbCreateContentItemFromBrief(organizationId: string, brief
     headers: { ...getPublicHeaders(), 'Prefer': 'return=representation' },
     body: JSON.stringify({
       organization_id: organizationId,
-      content_key: crypto.randomUUID(),
+      content_key: 'auto_' + crypto.randomUUID().replace(/-/g, ''),
       owner_ref: ownerRef,
       title: title,
       brief: trimmedBrief,
