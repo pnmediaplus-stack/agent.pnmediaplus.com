@@ -229,8 +229,7 @@ export async function dbApproveAndCreateCampaign(organizationId: string, threadI
   const proposalMsg = msgs.find((m: any) => 
     m.sender === 'system' && (
       m.intentType === 'campaign_proposal' ||
-      m.body.includes('[[CAMPAIGN_PROPOSAL]]') ||
-      m.intentType === 'plan_campaign' // Keep only intent-based fallback just in case
+      m.body.includes('[[CAMPAIGN_PROPOSAL]]')
     )
   );
 
