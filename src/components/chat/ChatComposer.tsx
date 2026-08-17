@@ -21,13 +21,14 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
   const [agents, setAgents] = useState<any[]>([]);
   const [artifacts, setArtifacts] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
   const [departmentsStatus, setDepartmentsStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
   const [departmentsError, setDepartmentsError] = useState<string | null>(null);
   const [agentsStatus, setAgentsStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
   const [agentsError, setAgentsError] = useState<string | null>(null);
   const [popupState, setPopupState] = useState<{
     isOpen: boolean;
-    type: 'agent' | 'artifact' | 'command' | 'department' | null;
+    type: 'agent' | 'artifact' | 'command' | 'department' | 'campaign' | null;
     searchTerm: string;
     startIndex: number;
   }>({ isOpen: false, type: null, searchTerm: '', startIndex: -1 });
@@ -118,6 +119,17 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
     }
   };
 
+  const loadCampaigns = async () => {
+    if (campaigns.length > 0) return;
+    try {
+      const res = await fetch('/api/governance/campaigns');
+      const data = await res.json();
+      if (data.campaigns) setCampaigns(data.campaigns);
+    } catch (e) {
+      console.error("Failed to load campaigns", e);
+    }
+  };
+
   const handleTextChange = (text: string) => {
     onChange(text);
 
@@ -127,8 +139,21 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
     // Match /command, @agent or #data right before cursor
     const match = textBeforeCursor.match(/(^|\s)([\/@#])([a-zA-Z0-9_-]*)$/);
     const planCampaignMatch = textBeforeCursor.match(/(^|\s)(\/plan_campaign\s+)([^\s]*)$/);
+    const campaignSetMatch = textBeforeCursor.match(/(^|\s)(\/campaign\s+set\s+)([^\s]*)$/);
 
-    if (planCampaignMatch) {
+    if (campaignSetMatch) {
+      const term = campaignSetMatch[3];
+      const startIndex = campaignSetMatch.index! + campaignSetMatch[1].length;
+
+      setPopupState({
+        isOpen: true,
+        type: 'campaign',
+        searchTerm: term,
+        startIndex
+      });
+      setActiveIndex(0);
+      loadCampaigns();
+    } else if (planCampaignMatch) {
       const term = planCampaignMatch[3];
       const startIndex = planCampaignMatch.index! + planCampaignMatch[1].length;
 
@@ -184,6 +209,11 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
         (d.department_id || '').toLowerCase().includes(term) ||
         (d.department_name || '').toLowerCase().includes(term)
       ).slice(0, 10);
+    } else if (popupState.type === 'campaign') {
+      return campaigns.filter(c =>
+        (c.id || '').toLowerCase().includes(term) ||
+        (c.name || '').toLowerCase().includes(term)
+      ).slice(0, 10);
     } else {
       return artifacts.filter(a =>
         (a.artifact_key || '').toLowerCase().includes(term) ||
@@ -191,7 +221,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
         (a.id || '').toLowerCase().includes(term)
       ).slice(0, 10);
     }
-  }, [popupState, agents, artifacts, departments, slashCommands]);
+  }, [popupState, agents, artifacts, departments, campaigns, slashCommands]);
 
   const selectSuggestion = (item: any) => {
     if (!popupState.isOpen) return;
@@ -203,6 +233,8 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
       replacement = `@${item.role_id} `;
     } else if (popupState.type === 'department') {
       replacement = `/plan_campaign department_id:${item.department_id} `;
+    } else if (popupState.type === 'campaign') {
+      replacement = `/campaign set ${item.name || item.id} `;
     } else {
       replacement = `#${item.artifact_key || item.canonical_name || item.id} `;
     }
@@ -313,11 +345,11 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
       {popupState.isOpen && filteredSuggestions.length > 0 && (
         <div className="absolute bottom-full mb-2 left-4 w-80 max-h-64 overflow-y-auto rounded-xl border border-indigo-500/30 bg-slate-900/95 backdrop-blur-md p-2 shadow-2xl z-50">
           <div className="text-[10px] uppercase tracking-widest text-slate-500 px-2 pb-2 mb-1 border-b border-slate-800">
-            {popupState.type === 'command' ? 'Select Command' : popupState.type === 'agent' ? 'Select Agent' : popupState.type === 'department' ? 'Select Department' : 'Select Data Reference'}
+            {popupState.type === 'command' ? 'Select Command' : popupState.type === 'agent' ? 'Select Agent' : popupState.type === 'department' ? 'Select Department' : popupState.type === 'campaign' ? 'Select Campaign' : 'Select Data Reference'}
           </div>
           {filteredSuggestions.map((item, idx) => {
             const isActive = idx === activeIndex;
-            const Icon = popupState.type === 'command' ? Slash : popupState.type === 'agent' ? Bot : popupState.type === 'department' ? Users : FileText;
+            const Icon = popupState.type === 'command' ? Slash : popupState.type === 'agent' ? Bot : popupState.type === 'department' ? Users : popupState.type === 'campaign' ? FileText : FileText;
             const title =
               popupState.type === 'command'
                 ? item.name
@@ -325,7 +357,9 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
                   ? (item.role_name || item.role_id)
                   : popupState.type === 'department'
                     ? (item.department_name || item.department_id)
-                    : (item.canonical_name || item.artifact_key || item.id);
+                    : popupState.type === 'campaign'
+                      ? item.name
+                      : (item.canonical_name || item.artifact_key || item.id);
             const subTitle =
               popupState.type === 'command'
                 ? item.description
@@ -333,7 +367,9 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
                   ? [item.role_id, item.authority_level, item.constitutional_layer].filter(Boolean).join(" • ")
                   : popupState.type === 'department'
                     ? `department_id:${item.department_id}`
-                    : item.artifact_type;
+                    : popupState.type === 'campaign'
+                      ? item.description
+                      : item.artifact_type;
             const isAmbiguous = popupState.type === 'agent' && !item.role_id;
 
             return (
