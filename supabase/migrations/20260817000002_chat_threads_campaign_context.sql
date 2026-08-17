@@ -18,9 +18,9 @@ BEGIN
         last_activity_at AS "lastActivityAt",
         last_activity_at AS last_activity_at,
         thread_status::text AS status,
-        active_campaign_id,
         created_at AS "createdAt",
-        created_at AS created_at
+        created_at AS created_at,
+        active_campaign_id
       FROM pn_os_ai_department.chat_threads;
 
     GRANT SELECT, INSERT ON public.phase1_chat_threads TO anon, authenticated, service_role;
