@@ -547,7 +547,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nitem.r2_object_key = $('Get Upload Ticket').item.json.objectKey;\nitem.r2_url = 'r2://' + item.r2_object_key;\nreturn { json: item };"
+        "jsCode": "const item = $input.first().json;\nitem.r2_object_key = $('Get Upload Ticket').item.json.objectKey;\nitem.r2_url = '/api/assets/proxy?key=' + item.r2_object_key;\nreturn { json: item };"
       },
       "name": "Map R2 URL",
       "type": "n8n-nodes-base.code",

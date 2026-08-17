@@ -8,7 +8,7 @@ export const revalidate = 0;
 export async function GET(req: NextRequest) {
   try {
     const auth = await verifyActionAuth();
-    if (!auth) {
+    if (!auth.ok) {
       return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
     }
 
