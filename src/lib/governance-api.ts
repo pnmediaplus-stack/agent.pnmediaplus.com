@@ -168,7 +168,7 @@ export async function dbCreateContentItemFromBrief(organizationId: string, brief
 export async function dbResolveActiveCampaign(organizationId: string, threadId: string, explicitIdentifier: string | null) {
   // 1. Explicit identifier provided
   if (explicitIdentifier) {
-    let url = `${supabaseUrl}/rest/v1/campaigns?organization_id=eq.${organizationId}&select=*&limit=1`;
+    let url = `${supabaseUrl}/rest/v1/campaigns?organization_id=eq.${organizationId}&status=eq.active&select=*&limit=1`;
     // Check if it's a UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidRegex.test(explicitIdentifier)) {
