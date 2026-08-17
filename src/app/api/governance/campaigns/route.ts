@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyUiAuth } from '@/lib/auth-guard';
+import { verifyUiAuth } from '@/lib/ui-auth-guard';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
