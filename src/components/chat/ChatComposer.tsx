@@ -41,6 +41,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
     { id: "viral_research", name: "viral_research", description: "Nghiên cứu viral" },
     { id: "publish", name: "publish", description: "Đăng nội dung lên page" },
     { id: "plan_campaign", name: "plan_campaign", description: "Lập kế hoạch chiến dịch" },
+    { id: "approve_campaign", name: "approve_campaign", description: "Duyệt và tạo chiến dịch từ kế hoạch (VD: /approve_campaign Tên)" },
     { id: "status", name: "status", description: "Xem trạng thái" },
     { id: "campaign", name: "campaign", description: "Gắn chiến dịch (VD: /campaign set <tên>)" }
   ]), []);

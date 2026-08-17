@@ -212,6 +212,56 @@ export async function dbResolveActiveCampaign(organizationId: string, threadId: 
   return { campaign: null };
 }
 
+export async function dbApproveAndCreateCampaign(organizationId: string, threadId: string, title: string) {
+  // 1. Fetch thread messages to find the proposal
+  const msgsRes = await fetch(`${supabaseUrl}/rest/v1/chat_message_feed_v1?threadId=eq.${threadId}&order=createdAt.desc&limit=20`, {
+    headers: getHeaders(),
+    cache: 'no-store'
+  });
+  
+  if (!msgsRes.ok) {
+    return { error: 'Failed to fetch thread messages', data: null };
+  }
+
+  const msgs = await msgsRes.json();
+  
+  // Find the latest AI message that contains "Proposal:" or has a matching intent
+  const proposalMsg = msgs.find((m: any) => 
+    m.sender === 'system' && 
+    (m.body.includes('Proposal:') || m.intentType === 'plan_campaign' || m.intentType === 'agent_progress') &&
+    m.body.length > 100 // ensure it's a substantive plan, not a short status message
+  );
+
+  if (!proposalMsg) {
+    return { error: 'Không tìm thấy Đề xuất Kế hoạch (Proposal) nào gần đây trong luồng chat này để duyệt.', data: null };
+  }
+
+  // 2. Insert into campaigns
+  const payload = {
+    organization_id: organizationId,
+    title: title,
+    campaign_brief: proposalMsg.body,
+    status: 'active'
+  };
+
+  const insertRes = await fetch(`${supabaseUrl}/rest/v1/campaigns`, {
+    method: 'POST',
+    headers: {
+      ...getHeaders(),
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!insertRes.ok) {
+    return { error: 'Lỗi Database khi lưu chiến dịch mới.', data: null };
+  }
+
+  const insertedData = await insertRes.json();
+  return { error: null, data: insertedData[0] };
+}
+
 export async function dbUpdateThreadCampaign(organizationId: string, threadId: string, campaignId: string) {
   // 1. Verify ownership
   const checkRes = await fetch(`${supabaseUrl}/rest/v1/chat_threads?id=eq.${threadId}&select=department_id`, {

@@ -21,9 +21,9 @@ import {
   dbDeleteChatMessage,
   dbDeleteAuditLog,
   dbLoadActiveTasks,
-  dbLoadContextData,
   dbCreateContentItemFromBrief,
   dbResolveActiveCampaign,
+  dbApproveAndCreateCampaign,
   dbUpdateThreadCampaign
 } from "@/lib/governance-api";
 import { requiresCampaignScope, requiresPublishScope } from "@/lib/validators";
@@ -209,7 +209,7 @@ export async function sendChatMessage(threadId: string, body: string) {
       const command = parts[0];
       const args = parts.slice(1);
 
-      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status', '/campaign'];
+      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status', '/campaign', '/approve_campaign'];
 
       if (whitelist.includes(command)) {
         // Enforce args
@@ -224,6 +224,8 @@ export async function sendChatMessage(threadId: string, body: string) {
           if (args.length < 2) missingArgsMsg = 'Lệnh /plan_campaign yêu cầu tham số: <department_id|department_name> <brief>';
         } else if (command === '/campaign') {
           if (args[0] !== 'set' || args.length < 2) missingArgsMsg = 'Lệnh /campaign yêu cầu cú pháp: /campaign set <tên_hoặc_id>';
+        } else if (command === '/approve_campaign') {
+          if (args.length < 1) missingArgsMsg = 'Lệnh /approve_campaign yêu cầu tham số: <Tên Chiến Dịch>';
         }
 
         if (missingArgsMsg) {
@@ -382,6 +384,39 @@ export async function sendChatMessage(threadId: string, body: string) {
              message: routedMsgResult.data ? JSON.parse(JSON.stringify(routedMsgResult.data)) : null,
              webhook: { ok: webhookResult.ok, route: "webhook/command", status: webhookResult.status || 202, message: webhookResult.message }
            };
+        } else if (command === '/approve_campaign') {
+          const campaignTitle = args.join(' ');
+          const approveRes = await dbApproveAndCreateCampaign(organizationId, threadId, campaignTitle);
+          
+          if (approveRes.error || !approveRes.data) {
+             const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+               threadId,
+               sender: "system",
+               body: `Từ chối lệnh: ${approveRes.error || 'Lỗi không xác định'}`,
+               intentType: "clarify_missing_scope"
+             });
+             return {
+               success: false,
+               message: rejectMsgResult.data,
+               webhook: { ok: false, route: "parser", status: 400, message: approveRes.error || 'Lỗi duyệt chiến dịch' }
+             };
+          }
+          
+          // Attach campaign to thread
+          await dbUpdateThreadCampaign(organizationId, threadId, approveRes.data.id);
+          
+          const successMsgResult = await dbInsertChatMessage(organizationId, {
+            threadId,
+            sender: "system",
+            body: `Chiến dịch **${campaignTitle}** đã được duyệt và lưu thành công vào cơ sở dữ liệu! Luồng chat hiện tại đã được tự động gắn vào chiến dịch này.`,
+            intentType: "request_status"
+          });
+          
+          return {
+            success: true,
+            message: successMsgResult.data,
+            webhook: { ok: true, route: "handled_internally", status: 200, message: "Campaign approved and activated" }
+          };
         } else if (command === '/plan_campaign') {
           return await routePlanCampaignCommand(organizationId, threadId, requestId, auth, humanMessageId, body);
         } else if (command === '/campaign') {
