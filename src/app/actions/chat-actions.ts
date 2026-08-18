@@ -330,7 +330,7 @@ export async function sendChatMessage(threadId: string, body: string) {
              
              let sysMsg = `Đã tự động khởi tạo Content Item mới (ID: \`${contentItemId}\`) từ văn bản của bạn.`;
              if (resolvedCampaign) {
-               sysMsg += `\nĐã nhận diện Context: Chiến dịch **${resolvedCampaign.name}**.`;
+                sysMsg += `\nĐã nhận diện Context: Chiến dịch **${resolvedCampaign.title}**.`;
              }
              sysMsg += ` Đang chuyển sang luồng AI xử lý...`;
              
@@ -460,7 +460,7 @@ export async function sendChatMessage(threadId: string, body: string) {
             const successMsgResult = await dbInsertChatMessage(organizationId, {
               threadId,
               sender: "system",
-              body: `Đã thiết lập chiến dịch hiện tại cho luồng này: **${resolution.campaign.name}**. Các lệnh /viral_research tiếp theo sẽ tự động bám sát chiến dịch này.`,
+              body: `Đã thiết lập chiến dịch hiện tại cho luồng này: **${resolution.campaign.title}**. Các lệnh /viral_research tiếp theo sẽ tự động bám sát chiến dịch này.`,
               intentType: "route_department"
             });
             return { success: true, message: successMsgResult.data };
