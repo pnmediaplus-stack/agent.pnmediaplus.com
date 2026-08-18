@@ -6,14 +6,7 @@ export function requiresPublishScope(body: string) {
   // Check explicit keywords or a #data reference that might contain the scope
   const hasExplicitPageScope =
     /integration[_\s-]?key\b/.test(normalized) ||
-    /page[_\s-]?id\b/.test(normalized) ||
-    /fanpage[_\s-]?id\b/.test(normalized) ||
-    /page[_\s-]?name\b/.test(normalized) ||
-    /fanpage[_\s-]?name\b/.test(normalized) ||
-    /page\s*[:=]/.test(normalized) ||
-    /fanpage\s*[:=]/.test(normalized) ||
-    /#page[_\s-]?\w+/.test(normalized) ||
-    /#fanpage[_\s-]?\w+/.test(normalized);
+    /#integration[_\s-]?key[_\s-]?\w+/.test(normalized);
 
   return !hasExplicitPageScope;
 }

@@ -37,7 +37,7 @@ function buildUnknownIntentReply() {
 
 function buildMissingScopeReply(intentType?: ChatIntentType) {
   if (intentType === "publish_content") {
-    return "Bạn muốn đăng lên page nào? Hãy cung cấp tên page hoặc page_id để mình chuyển đúng luồng publish.";
+    return "Bạn muốn đăng lên Fanpage nào? Hãy cung cấp integration_key để mình chuyển đúng luồng publish.";
   }
   if (intentType === "plan_campaign" || intentType === "route_department") {
     return "Bạn muốn giao việc cho phòng ban nào? Hãy cung cấp department_id hoặc department_name khớp đúng registry để mình route đúng agent.";
