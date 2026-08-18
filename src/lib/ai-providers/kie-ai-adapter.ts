@@ -48,8 +48,7 @@ export const kieAiAdapter: AiProviderAdapter = {
     const models = metadata?.models || [];
     const modelConfig = models.find((m: any) => m.code === payload.model);
 
-    // For Chat Completions
-    if (modelConfig?.capability === 'text' || responseJson.usage) {
+    if (modelConfig?.capability === 'text') {
       const promptTokens = responseJson.usage?.prompt_tokens || 0;
       const completionTokens = responseJson.usage?.completion_tokens || 0;
       const totalTokens = responseJson.usage?.total_tokens || 0;
@@ -71,13 +70,11 @@ export const kieAiAdapter: AiProviderAdapter = {
       };
     }
     
-    // For Image Generations
-    if (modelConfig?.capability === 'image' || (responseJson.data && responseJson.data.response && responseJson.data.response.resultImageUrl) || (responseJson.data && Array.isArray(responseJson.data)) || responseJson.images || responseJson.output) {
+    if (modelConfig?.capability === 'image') {
       let imageCount = 1;
-      if (responseJson.data && Array.isArray(responseJson.data)) imageCount = responseJson.data.length;
-      else if (responseJson.images && Array.isArray(responseJson.images)) imageCount = responseJson.images.length;
-      else if (responseJson.output && Array.isArray(responseJson.output)) imageCount = responseJson.output.length;
-      
+      if (responseJson.data && Array.isArray(responseJson.data)) {
+        imageCount = responseJson.data.length;
+      }
       
       // Fallback to 0 cost if pricing is missing to prevent workflow crashes, but mark it
       const isPricingMissing = modelConfig?.completion_cost === undefined;
