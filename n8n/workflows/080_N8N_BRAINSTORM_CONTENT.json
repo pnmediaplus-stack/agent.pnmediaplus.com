@@ -20,7 +20,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] || 'http://host.docker.internal:3000'}}/api/phase2/ai-broker",
+        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/phase2/ai-broker",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
