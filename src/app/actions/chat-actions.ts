@@ -220,7 +220,10 @@ export async function sendChatMessage(threadId: string, body: string) {
         } else if (command === '/status') {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> (Ví dụ: ${command} 12345)`;
         } else if (command === '/publish') {
-          if (args.length < 2) missingArgsMsg = 'Lệnh /publish yêu cầu tham số: <page_id|page_name> <content_item_id>';
+          // Bắt buộc dùng page_id:<id> thay vì fallback bừa
+          if (args.length < 2 || !args[0].startsWith('page_id:')) {
+            missingArgsMsg = 'Lệnh /publish yêu cầu tham số chuẩn: page_id:<ID> <content_item_id> (Ví dụ: /publish page_id:123 456)';
+          }
         } else if (command === '/plan_campaign') {
           if (args.length < 2) missingArgsMsg = 'Lệnh /plan_campaign yêu cầu tham số: <department_id|department_name> <brief>';
         } else if (command === '/campaign') {

@@ -22,15 +22,18 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
   const [artifacts, setArtifacts] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [pages, setPages] = useState<any[]>([]);
   const [campaignsStatus, setCampaignsStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
   const [campaignsError, setCampaignsError] = useState<string | null>(null);
   const [departmentsStatus, setDepartmentsStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
   const [departmentsError, setDepartmentsError] = useState<string | null>(null);
   const [agentsStatus, setAgentsStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
   const [agentsError, setAgentsError] = useState<string | null>(null);
+  const [pagesStatus, setPagesStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
+  const [pagesError, setPagesError] = useState<string | null>(null);
   const [popupState, setPopupState] = useState<{
     isOpen: boolean;
-    type: 'agent' | 'artifact' | 'command' | 'department' | 'campaign' | null;
+    type: 'agent' | 'artifact' | 'command' | 'department' | 'campaign' | 'page' | null;
     searchTerm: string;
     startIndex: number;
   }>({ isOpen: false, type: null, searchTerm: '', startIndex: -1 });
@@ -39,7 +42,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
   const slashCommands = useMemo(() => ([
     { id: "auto_content", name: "auto_content", description: "Tạo nội dung tự động" },
     { id: "viral_research", name: "viral_research", description: "Nghiên cứu viral" },
-    { id: "publish", name: "publish", description: "Đăng nội dung lên page" },
+    { id: "publish", name: "publish", description: "Đăng nội dung lên page (VD: /publish page_id:<ID>)" },
     { id: "plan_campaign", name: "plan_campaign", description: "Lập kế hoạch chiến dịch" },
     { id: "approve_campaign", name: "approve_campaign", description: "Duyệt và tạo chiến dịch từ kế hoạch (VD: /approve_campaign Tên)" },
     { id: "status", name: "status", description: "Xem trạng thái" },
@@ -101,24 +104,24 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
       if (data.state === "blocked") {
         setDepartments([]);
         setDepartmentsStatus("error");
-        setDepartmentsError(`Governance blocked: ${data.reason || "unknown_reason"}.`);
+        setDepartmentsError(`Department registry blocked: ${data.reason || "unknown_reason"}.`);
         return;
       }
       
-      const records = data.departments || [];
-      if (records.length > 0) {
-        setDepartments(records);
+      const registryDeps = Array.isArray(data?.data?.departments) ? data.data.departments : [];
+      if (registryDeps.length > 0) {
+        setDepartments(registryDeps);
         setDepartmentsStatus("ready");
       } else {
         setDepartments([]);
         setDepartmentsStatus("empty");
-        setDepartmentsError("Registry hiện tại không có phòng ban nào.");
+        setDepartmentsError("Không có phòng ban nào khả dụng.");
       }
     } catch (e) {
       console.error("Failed to load departments", e);
       setDepartments([]);
       setDepartmentsStatus("error");
-      setDepartmentsError("Không tải được registry từ /api/governance/departments.");
+      setDepartmentsError("Lỗi kết nối khi tải danh sách phòng ban.");
     }
   };
 
@@ -129,32 +132,74 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
       setCampaignsError(null);
       const res = await fetch('/api/governance/campaigns');
       const data = await res.json();
-      if (data.campaigns && data.campaigns.length > 0) {
-        setCampaigns(data.campaigns);
+      
+      const list = Array.isArray(data?.data) ? data.data : [];
+      if (list.length > 0) {
+        setCampaigns(list);
         setCampaignsStatus("ready");
       } else {
         setCampaigns([]);
         setCampaignsStatus("empty");
-        setCampaignsError("Không có chiến dịch ACTIVE nào trong hệ thống.");
+        setCampaignsError("Không có chiến dịch nào đang active.");
       }
     } catch (e) {
       console.error("Failed to load campaigns", e);
       setCampaigns([]);
       setCampaignsStatus("error");
-      setCampaignsError("Không tải được danh sách chiến dịch.");
+      setCampaignsError("Lỗi kết nối khi tải danh sách chiến dịch.");
     }
   };
 
-  const handleTextChange = (text: string) => {
+  const loadPages = async () => {
+    if (pages.length > 0) return;
+    try {
+      setPagesStatus("loading");
+      setPagesError(null);
+      const res = await fetch('/api/tenant-integrations');
+      const data = await res.json();
+      
+      if (!data.ok) {
+        setPages([]);
+        setPagesStatus("error");
+        setPagesError(`Lỗi tải integrations: ${data.reason || "unknown_reason"}.`);
+        return;
+      }
+
+      const validProviders = (data.data?.providers || [])
+        .filter((p: any) => p.provider_category === 'social_media' || p.provider_category === 'other' || p.provider_code === 'facebook_page')
+        .map((p: any) => p.provider_code);
+        
+      const list = (data.data?.integrations || []).filter(
+        (i: any) => (i.status === 'active' || i.status === 'connected') && validProviders.includes(i.provider_code)
+      );
+
+      if (list.length > 0) {
+        setPages(list);
+        setPagesStatus("ready");
+      } else {
+        setPages([]);
+        setPagesStatus("empty");
+        setPagesError("Chưa có fanpage/social nào được kết nối.");
+      }
+    } catch (e) {
+      console.error("Failed to load pages", e);
+      setPages([]);
+      setPagesStatus("error");
+      setPagesError("Lỗi mạng khi tải danh sách page.");
+    }
+  };
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
     onChange(text);
 
     const cursorPosition = textareaRef.current?.selectionStart || text.length;
     const textBeforeCursor = text.substring(0, cursorPosition);
 
-    // Match /command, @agent or #data right before cursor
     const match = textBeforeCursor.match(/(^|\s)([\/@#])([a-zA-Z0-9_-]*)$/);
     const planCampaignMatch = textBeforeCursor.match(/(^|\s)(\/plan_campaign\s+)([^\s]*)$/);
     const campaignSetMatch = textBeforeCursor.match(/(^|\s)(\/campaign\s+set\s+)([^\s]*)$/);
+    const publishMatch = textBeforeCursor.match(/(^|\s)(\/publish\s+)([^\s]*)$/);
 
     if (campaignSetMatch) {
       const term = campaignSetMatch[3];
@@ -168,6 +213,18 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
       });
       setActiveIndex(0);
       loadCampaigns();
+    } else if (publishMatch) {
+      const term = publishMatch[3];
+      const startIndex = publishMatch.index! + publishMatch[1].length;
+
+      setPopupState({
+        isOpen: true,
+        type: 'page',
+        searchTerm: term,
+        startIndex
+      });
+      setActiveIndex(0);
+      loadPages();
     } else if (planCampaignMatch) {
       const term = planCampaignMatch[3];
       const startIndex = planCampaignMatch.index! + planCampaignMatch[1].length;
@@ -218,7 +275,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
         (a.capability_boundary?.must || []).join(" ").toLowerCase().includes(term) ||
         (a.capability_boundary?.may || []).join(" ").toLowerCase().includes(term) ||
         (a.capability_boundary?.must_not || []).join(" ").toLowerCase().includes(term)
-      ).slice(0, 10); // Max 10 results
+      ).slice(0, 10);
     } else if (popupState.type === 'department') {
       return departments.filter(d =>
         (d.department_id || '').toLowerCase().includes(term) ||
@@ -229,6 +286,12 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
         (c.id || '').toLowerCase().includes(term) ||
         (c.name || '').toLowerCase().includes(term)
       ).slice(0, 10);
+    } else if (popupState.type === 'page') {
+      return pages.filter(p =>
+        (p.integration_key || '').toLowerCase().includes(term) ||
+        (p.integration_name || '').toLowerCase().includes(term) ||
+        (p.provider_name || '').toLowerCase().includes(term)
+      ).slice(0, 10);
     } else {
       return artifacts.filter(a =>
         (a.artifact_key || '').toLowerCase().includes(term) ||
@@ -236,7 +299,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
         (a.id || '').toLowerCase().includes(term)
       ).slice(0, 10);
     }
-  }, [popupState, agents, artifacts, departments, campaigns, slashCommands]);
+  }, [popupState, agents, artifacts, departments, campaigns, pages, slashCommands]);
 
   const selectSuggestion = (item: any) => {
     if (!popupState.isOpen) return;
@@ -250,6 +313,8 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
       replacement = `/plan_campaign department_id:${item.department_id} `;
     } else if (popupState.type === 'campaign') {
       replacement = `/campaign set ${item.name || item.id} `;
+    } else if (popupState.type === 'page') {
+      replacement = `page_id:${item.integration_key} `;
     } else {
       replacement = `#${item.artifact_key || item.canonical_name || item.id} `;
     }
@@ -357,14 +422,36 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 relative">
       {/* Autocomplete Popup */}
-      {popupState.isOpen && (filteredSuggestions.length > 0 || (popupState.type === 'campaign' && campaignsStatus !== 'ready')) && (
+      {popupState.isOpen && (filteredSuggestions.length > 0 || (popupState.type === 'campaign' && campaignsStatus !== 'ready') || (popupState.type === 'page' && pagesStatus !== 'ready')) && (
         <div className="absolute bottom-full mb-2 left-4 w-80 max-h-64 overflow-y-auto rounded-xl border border-indigo-500/30 bg-slate-900/95 backdrop-blur-md p-2 shadow-2xl z-50">
           <div className="text-[10px] uppercase tracking-widest text-slate-500 px-2 pb-2 mb-1 border-b border-slate-800">
-            {popupState.type === 'command' ? 'Select Command' : popupState.type === 'agent' ? 'Select Agent' : popupState.type === 'department' ? 'Select Department' : popupState.type === 'campaign' ? 'Select Campaign' : 'Select Data Reference'}
+            {popupState.type === 'command' ? 'Select Command' : popupState.type === 'agent' ? 'Select Agent' : popupState.type === 'department' ? 'Select Department' : popupState.type === 'campaign' ? 'Select Campaign' : popupState.type === 'page' ? 'Select Page' : 'Select Data Reference'}
           </div>
+          
+          {/* Handling loading/empty states for Page */}
+          {popupState.type === 'page' && pagesStatus === 'loading' && (
+            <div className="px-3 py-4 text-center text-sm text-slate-400 flex flex-col items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
+              Đang tải danh sách trang...
+            </div>
+          )}
+          {popupState.type === 'page' && pagesStatus === 'error' && (
+            <div className="px-3 py-4 text-center text-sm text-rose-400 flex flex-col items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              {pagesError || "Lỗi tải danh sách"}
+            </div>
+          )}
+          {popupState.type === 'page' && pagesStatus === 'empty' && (
+            <div className="px-3 py-4 text-center text-sm text-slate-400 flex flex-col items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              {pagesError || "Không có trang nào"}
+            </div>
+          )}
+
+          {/* Render List */}
           {filteredSuggestions.map((item, idx) => {
             const isActive = idx === activeIndex;
-            const Icon = popupState.type === 'command' ? Slash : popupState.type === 'agent' ? Bot : popupState.type === 'department' ? Users : popupState.type === 'campaign' ? FileText : FileText;
+            const Icon = popupState.type === 'command' ? Slash : popupState.type === 'agent' ? Bot : popupState.type === 'department' ? Users : popupState.type === 'campaign' ? FileText : popupState.type === 'page' ? CheckSquare : FileText;
             const title =
               popupState.type === 'command'
                 ? item.name
@@ -374,7 +461,9 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
                     ? (item.department_name || item.department_id)
                     : popupState.type === 'campaign'
                       ? item.name
-                      : (item.canonical_name || item.artifact_key || item.id);
+                      : popupState.type === 'page'
+                        ? item.integration_name
+                        : (item.canonical_name || item.artifact_key || item.id);
             const subTitle =
               popupState.type === 'command'
                 ? item.description
@@ -384,7 +473,9 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
                     ? `department_id:${item.department_id}`
                     : popupState.type === 'campaign'
                       ? item.description
-                      : item.artifact_type;
+                      : popupState.type === 'page'
+                        ? `[${item.provider_name}] ${item.integration_key}`
+                        : item.artifact_type;
             const isAmbiguous = popupState.type === 'agent' && !item.role_id;
 
             return (
