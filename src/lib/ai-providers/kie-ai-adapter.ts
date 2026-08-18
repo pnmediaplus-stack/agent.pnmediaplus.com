@@ -27,11 +27,19 @@ export const kieAiAdapter: AiProviderAdapter = {
     const models = metadata?.models || [];
     const modelConfig = models.find((m: any) => m.code === payload.model);
     
+    const baseUrl = metadata?.base_url ? metadata.base_url.replace(/\/$/, '') : 'https://api.kie.ai/v1';
+
+    let finalEndpoint = '';
     if (modelConfig && modelConfig.endpoint_template) {
-      return modelConfig.endpoint_template.replace('{model}', payload.model);
+      finalEndpoint = modelConfig.endpoint_template.replace('{model}', payload.model);
+    } else if (modelConfig && modelConfig.endpoint) {
+      finalEndpoint = modelConfig.endpoint;
     }
-    if (modelConfig && modelConfig.endpoint) {
-      return modelConfig.endpoint;
+
+    if (finalEndpoint) {
+      if (finalEndpoint.startsWith('http')) return finalEndpoint;
+      if (finalEndpoint.startsWith('/')) return `${baseUrl}${finalEndpoint}`;
+      return `${baseUrl}/${finalEndpoint}`;
     }
 
     // Fail-closed instead of guessing dall-e or gpt-image
