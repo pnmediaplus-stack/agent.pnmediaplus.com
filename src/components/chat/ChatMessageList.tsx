@@ -62,16 +62,16 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
                   components={{
                     img: ({ node, ...props }) => {
                       return (
-                        <div 
+                        <span 
                           className="my-4 relative overflow-hidden rounded-xl border border-white/10 shadow-lg max-h-[300px] flex items-center justify-center bg-black/50 group cursor-pointer"
                           onClick={() => setLightboxImage(typeof props.src === 'string' ? props.src : null)}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img {...props} className="max-h-[300px] w-auto object-contain transition-transform duration-300 group-hover:scale-105" alt={props.alt || 'Chat media'} />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                             <Maximize2 className="h-8 w-8 text-white/80 drop-shadow-md" />
-                          </div>
-                        </div>
+                          </span>
+                        </span>
                       );
                     },
                     a: ({ node, ...props }) => {
