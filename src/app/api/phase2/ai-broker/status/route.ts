@@ -79,13 +79,10 @@ export async function POST(request: Request) {
          console.error('Failed to create outbox record', await insertRes.text());
       }
       
-      // Transform response to match OpenAI schema
+      // Transform response to match OpenAI schema and Extract Visual logic ($json.data[0].url)
       const imageUrl = pollJson.data.response.resultImageUrl;
-      const finalData = {
-         data: [ { url: imageUrl } ]
-      };
       
-      return NextResponse.json({ status: 'completed', data: finalData }, { status: 200 });
+      return NextResponse.json({ status: 'completed', data: [ { url: imageUrl } ] }, { status: 200 });
       
     } else if (pollJson.data && (pollJson.data.status === 'failed' || pollJson.data.status === 'error' || pollJson.data.status === -1 || pollJson.data.successFlag === -1 || pollJson.data.successFlag === 2 || pollJson.data.successFlag === 3)) {
       
