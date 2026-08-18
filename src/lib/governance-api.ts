@@ -241,6 +241,7 @@ export async function dbApproveAndCreateCampaign(organizationId: string, threadI
   const payload = {
     organization_id: organizationId,
     title: title,
+    campaign_goal: title, // Thêm trường campaign_goal để tránh lỗi NOT NULL
     campaign_brief: proposalMsg.body,
     status: 'active'
   };
