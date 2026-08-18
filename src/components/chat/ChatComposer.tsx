@@ -171,7 +171,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
         .map((p: any) => p.provider_code);
         
       const list = (data.data?.integrations || []).filter(
-        (i: any) => (i.status === 'active' || i.status === 'connected') && validProviders.includes(i.provider_code)
+        (i: any) => (i.status === 'active' || i.status === 'connected' || i.connection_state === 'verified' || i.connection_state === 'healthy') && validProviders.includes(i.provider_code)
       );
 
       if (list.length > 0) {
