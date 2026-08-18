@@ -83,10 +83,16 @@ export const kieAiAdapter: AiProviderAdapter = {
     }
     
     if (modelConfig?.capability === 'image') {
-      if (!responseJson.data || !Array.isArray(responseJson.data)) {
-        throw new Error('UNABLE_TO_PARSE_KIE_AI_USAGE: Image response is missing the expected data array.');
+      let imageCount = 1;
+      if (responseJson.data && Array.isArray(responseJson.data)) {
+        imageCount = responseJson.data.length;
+      } else if (responseJson.data && responseJson.data.successFlag !== undefined) {
+        // Unified Jobs API returns an object, we assume 1 image per job as per payload
+        imageCount = payload.n || 1;
+      } else {
+        throw new Error('UNABLE_TO_PARSE_KIE_AI_USAGE: Image response is missing the expected data array or unified job shape.');
       }
-      const imageCount = responseJson.data.length;
+      
       
       // Fallback to 0 cost if pricing is missing to prevent workflow crashes, but mark it
       const isPricingMissing = modelConfig?.completion_cost === undefined;
