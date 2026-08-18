@@ -227,7 +227,7 @@ export async function dbApproveAndCreateCampaign(organizationId: string, threadI
   
   // Find the latest AI message that contains a clear marker
   const proposalMsg = msgs.find((m: any) => 
-    m.sender === 'system' && (
+    m.sender !== 'human' && (
       m.intentType === 'campaign_proposal' ||
       m.body.includes('[[CAMPAIGN_PROPOSAL]]')
     )
