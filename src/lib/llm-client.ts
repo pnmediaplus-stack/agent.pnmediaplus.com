@@ -182,7 +182,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
   let responseData;
   let responseStatus;
   try {
-    const cleanPayload = { ...payload };
+    const cleanPayload: Record<string, any> = { ...payload };
     delete cleanPayload.provider;
     delete cleanPayload.tenant_id;
     delete cleanPayload.organization_id;
