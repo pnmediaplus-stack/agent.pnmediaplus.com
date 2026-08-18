@@ -104,7 +104,8 @@ export async function POST(request: Request) {
     }
 
     // 4. Still generating
-    return NextResponse.json({ status: 'processing' }, { status: 200 });
+    // Return 425 Too Early so N8N can use its built-in "Retry On Fail" feature instead of a complex loop
+    return NextResponse.json({ status: 'processing', message: 'Image is still generating. Please retry.' }, { status: 425 });
 
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
