@@ -23,7 +23,7 @@ values (
         "capability": "image",
         "prompt_cost": 0,
         "completion_cost": 15.0,
-        "endpoint": "https://api.kie.ai/api/v1/nano-banana-2-lite/generate"
+        "endpoint_template": "/images/generations"
       }
     ]
   }'::jsonb
