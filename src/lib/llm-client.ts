@@ -209,11 +209,20 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
       delete cleanPayload.size;
     }
 
-    const response = await fetch(endpointUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(cleanPayload)
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 75000); // 75 seconds timeout
+
+    let response;
+    try {
+      response = await fetch(endpointUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(cleanPayload),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     responseStatus = response.status;
     responseData = await response.json();
@@ -238,10 +247,19 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
         await new Promise(r => setTimeout(r, 2000)); // wait 2s
         pollCount++;
         
-        const pollRes = await fetch(pollingUrl, {
-          method: 'GET',
-          headers: { 'Authorization': headers['Authorization'] }
-        });
+        const pollController = new AbortController();
+        const pollTimeout = setTimeout(() => pollController.abort(), 10000); // 10s per poll
+        
+        let pollRes;
+        try {
+          pollRes = await fetch(pollingUrl, {
+            method: 'GET',
+            headers: { 'Authorization': headers['Authorization'] },
+            signal: pollController.signal
+          });
+        } finally {
+          clearTimeout(pollTimeout);
+        }
         
         if (pollRes.ok) {
           const pollJson = await pollRes.json();
