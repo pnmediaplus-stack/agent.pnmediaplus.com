@@ -29,13 +29,16 @@ export async function GET(request: Request) {
 
     for (const job of pendingJobs) {
       // 2. Lock the job (set to PROCESSING)
-      const { error: lockErr } = await supabase
+      const { data: lockedRows, error: lockErr } = await supabase
         .from('llm_ledger_outbox')
         .update({ status: 'PROCESSING', locked_at: new Date().toISOString() })
         .eq('id', job.id)
-        .eq('status', 'PENDING'); // Optimistic locking
+        .eq('status', 'PENDING') // Optimistic locking
+        .select('id');
 
-      if (lockErr) continue; // Someone else locked it
+      if (lockErr || !lockedRows || lockedRows.length !== 1) {
+        continue; // Someone else locked it or already processed
+      }
 
       try {
         // Fetch original usage record to get model_code if it's unknown
