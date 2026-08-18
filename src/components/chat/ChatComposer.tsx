@@ -108,7 +108,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
         return;
       }
       
-      const registryDeps = Array.isArray(data?.data?.departments) ? data.data.departments : [];
+      const registryDeps = Array.isArray(data?.departments) ? data.departments : [];
       if (registryDeps.length > 0) {
         setDepartments(registryDeps);
         setDepartmentsStatus("ready");
