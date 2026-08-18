@@ -210,13 +210,15 @@ export async function sendChatMessage(threadId: string, body: string) {
       const command = parts[0];
       const args = parts.slice(1);
 
-      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status', '/campaign', '/approve_campaign'];
+      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status', '/campaign', '/approve_campaign', '/brainstorm'];
 
       if (whitelist.includes(command)) {
         // Enforce args
         let missingArgsMsg = '';
         if (command === '/auto_content' || command === '/viral_research') {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> hoặc đoạn văn bản (Ví dụ: ${command} 12345 hoặc ${command} Nội dung bài viết...)`;
+        } else if (command === '/brainstorm') {
+          if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <văn bản mô tả ý tưởng> (Ví dụ: ${command} Lên 15 chủ đề cho 15 ngày)`;
         } else if (command === '/status') {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> (Ví dụ: ${command} 12345)`;
         } else if (command === '/publish') {
@@ -387,6 +389,79 @@ export async function sendChatMessage(threadId: string, body: string) {
              success: true,
              message: routedMsgResult.data ? JSON.parse(JSON.stringify(routedMsgResult.data)) : null,
              webhook: { ok: webhookResult.ok, route: "webhook/command", status: webhookResult.status || 202, message: webhookResult.message }
+           };
+        } else if (command === '/brainstorm') {
+           const referenceToken = await issueAutoContentReferenceToken(organizationId); // Tạm dùng token của auto_content
+           
+           let explicitCampaign: string | null = null;
+           let commandBodyStr = args.join(' ');
+           const campaignMatch = commandBodyStr.match(/--campaign=(?:"([^"]+)"|'([^']+)'|([^\s]+))/);
+           if (campaignMatch) {
+             explicitCampaign = campaignMatch[1] || campaignMatch[2] || campaignMatch[3];
+             commandBodyStr = commandBodyStr.replace(campaignMatch[0], '').trim();
+           }
+           
+           const campaignResolution = await dbResolveActiveCampaign(organizationId, threadId, explicitCampaign);
+           if (campaignResolution.error) {
+              const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+                threadId,
+                sender: "system",
+                body: `Từ chối lệnh: ${campaignResolution.message}`,
+                intentType: "clarify_missing_scope"
+              });
+              return {
+                success: false,
+                message: rejectMsgResult.data,
+                webhook: { ok: false, route: "parser", status: 400, message: campaignResolution.error }
+              };
+           }
+           
+           const resolvedCampaign = campaignResolution.campaign;
+           
+           let sysMsg = `Đã nhận diện Context: Chiến dịch **${resolvedCampaign?.title || 'Unknown'}**. Đang xử lý bão não ý tưởng...`;
+           await dbInsertChatMessage(organizationId, {
+             threadId,
+             sender: "system",
+             body: sysMsg,
+             intentType: "route_department"
+           });
+
+           webhookResult = await postN8nWebhook("webhook/brainstorm-content", {
+             prompt: commandBodyStr,
+             organization_id: organizationId,
+             tenant_id: organizationId,
+             reference_token: referenceToken,
+             campaignContext: resolvedCampaign
+           });
+
+           const routedMsgResult = await dbInsertChatMessage(organizationId, {
+             threadId,
+             sender: "system",
+             body: `Đã điều phối lệnh brainstorm: ${commandBodyStr}`,
+             intentType: "route_department"
+           });
+
+           const n8nRespRaw = webhookResult.response as any;
+           const n8nResp = Array.isArray(n8nRespRaw) ? n8nRespRaw[0] : n8nRespRaw;
+           if (n8nResp && n8nResp.ideas) {
+             const ideas = n8nResp.ideas as any[];
+             let bodyStr = `**Kết quả Bão não (Brainstorm)**\n\n`;
+             ideas.forEach((idea: any, index: number) => {
+               bodyStr += `**${index + 1}. ${idea.title || 'Idea'}**\n${idea.brief || ''}\n\n`;
+             });
+
+             await dbInsertChatMessage(organizationId, {
+               threadId,
+               sender: "system",
+               body: bodyStr.trim(),
+               intentType: "request_status"
+             });
+           }
+
+           return {
+             success: true,
+             message: routedMsgResult.data ? JSON.parse(JSON.stringify(routedMsgResult.data)) : null,
+             webhook: { ok: webhookResult.ok, route: "webhook/brainstorm", status: webhookResult.status || 200, message: webhookResult.message }
            };
         } else if (command === '/approve_campaign') {
           const campaignTitle = args.join(' ');

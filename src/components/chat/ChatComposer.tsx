@@ -45,6 +45,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
     { id: "publish", name: "publish", description: "Đăng nội dung lên page (VD: /publish integration_key:<ID>)" },
     { id: "plan_campaign", name: "plan_campaign", description: "Lập kế hoạch chiến dịch" },
     { id: "approve_campaign", name: "approve_campaign", description: "Duyệt và tạo chiến dịch từ kế hoạch (VD: /approve_campaign Tên)" },
+    { id: "brainstorm", name: "brainstorm", description: "Lên ý tưởng nội dung dựa trên kế hoạch hoặc xu hướng" },
     { id: "status", name: "status", description: "Xem trạng thái" },
     { id: "campaign", name: "campaign", description: "Gắn chiến dịch (VD: /campaign set <tên>)" }
   ]), []);
