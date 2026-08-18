@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceRoleClient } from '@/lib/supabase-server';
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     // Optionally secure the cron endpoint
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createServiceRoleClient();
 
   try {
     // 1. Fetch PENDING records from outbox
@@ -29,14 +29,19 @@ export async function GET(request: Request) {
 
     for (const job of pendingJobs) {
       // 2. Lock the job (set to PROCESSING)
-      const { data: lockedRows, error: lockErr } = await supabase
-        .from('llm_ledger_outbox')
-        .update({ status: 'PROCESSING', locked_at: new Date().toISOString() })
-        .eq('id', job.id)
-        .eq('status', 'PENDING') // Optimistic locking
-        .select('id');
+      const lockRes = await fetch(`${supabaseUrl}/rest/v1/llm_ledger_outbox?id=eq.${job.id}&status=eq.PENDING&select=id`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({ status: 'PROCESSING', locked_at: new Date().toISOString() })
+      });
+      const lockedRows = lockRes.ok ? await lockRes.json() : [];
 
-      if (lockErr || !lockedRows || lockedRows.length !== 1) {
+      if (!lockRes.ok || !lockedRows || lockedRows.length !== 1) {
         continue; // Someone else locked it or already processed
       }
 
@@ -80,7 +85,6 @@ export async function GET(request: Request) {
         }
 
         // 4. Update phase2_llm_usage (finalize_llm_usage RPC logic)
-        // Since we bypass invokeLlm's updateUsageRecord, we do it here
         const { error: finalizeErr } = await supabase.rpc('finalize_llm_usage', {
           p_record_id: job.usage_id,
           p_status: 'COMPLETED',
@@ -95,9 +99,15 @@ export async function GET(request: Request) {
         if (finalizeErr) throw new Error(`finalize_llm_usage failed: ${finalizeErr.message}`);
 
         // 5. Insert into ai_token_ledger
-        const { error: ledgerErr } = await supabase
-          .from('ai_token_ledger')
-          .insert({
+        const ledgerRes = await fetch(`${supabaseUrl}/rest/v1/ai_token_ledger`, {
+          method: 'POST',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
             organization_id: job.tenant_id,
             provider_code: job.provider_code,
             model_used: modelCode || 'unknown',
@@ -109,34 +119,44 @@ export async function GET(request: Request) {
             estimated_cost_usd: estimatedCost,
             pricing_missing: pricingMissing,
             pricing_missing_reason: pricingMissingReason
-          });
-
-        if (ledgerErr) throw new Error(`ai_token_ledger insert failed: ${ledgerErr.message}`);
+          })
+        });
+        if (!ledgerRes.ok) throw new Error(`ai_token_ledger insert failed: ${await ledgerRes.text()}`);
 
         // 6. Mark Outbox as COMPLETED
-        await supabase
-          .from('llm_ledger_outbox')
-          .update({ 
+        await fetch(`${supabaseUrl}/rest/v1/llm_ledger_outbox?id=eq.${job.id}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
              status: 'COMPLETED', 
              estimated_cost: estimatedCost,
              pricing_missing: pricingMissing,
              pricing_missing_reason: pricingMissingReason,
              processed_at: new Date().toISOString() 
           })
-          .eq('id', job.id);
+        });
           
         processedCount++;
 
       } catch (jobErr: any) {
         // 7. Mark Outbox as FAILED
-        await supabase
-          .from('llm_ledger_outbox')
-          .update({ 
+        await fetch(`${supabaseUrl}/rest/v1/llm_ledger_outbox?id=eq.${job.id}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
              status: 'FAILED', 
              last_error: jobErr.message,
              attempt_count: job.attempt_count + 1
           })
-          .eq('id', job.id);
+        });
       }
     }
 

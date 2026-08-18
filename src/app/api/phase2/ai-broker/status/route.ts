@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { getTenantApiKey } from '@/lib/llm-client';
+import { createServiceRoleClient } from '@/lib/supabase-server';
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Status polling only supported for kie_ai currently' }, { status: 400 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createServiceRoleClient();
 
     // 1. Fetch provider config to get base URL
     const { data: providerConfig, error: providerErr } = await supabase
@@ -56,9 +56,15 @@ export async function POST(request: Request) {
     if (pollJson.data && pollJson.data.successFlag === 1 && pollJson.data.response && pollJson.data.response.resultImageUrl) {
       // 3. IMAGE IS READY! Create Outbox Record
       
-      const { error: outboxErr } = await supabase
-        .from('llm_ledger_outbox')
-        .insert({
+      const insertRes = await fetch(`${supabaseUrl}/rest/v1/llm_ledger_outbox`, {
+        method: 'POST',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
           tenant_id: tenant_id,
           usage_id: usage_id,
           provider_code: provider,
@@ -66,10 +72,11 @@ export async function POST(request: Request) {
           task_id: taskId,
           status: 'PENDING',
           estimated_cost: 0 // Cron will calculate it via parseUsage
-        });
+        })
+      });
         
-      if (outboxErr && outboxErr.code !== '23505') { // Ignore unique constraint violation if N8N polled twice
-         console.error('Failed to create outbox record', outboxErr);
+      if (!insertRes.ok && insertRes.status !== 409) { // Ignore unique constraint violation if N8N polled twice
+         console.error('Failed to create outbox record', await insertRes.text());
       }
       
       // Transform response to match OpenAI schema
@@ -83,7 +90,15 @@ export async function POST(request: Request) {
     } else if (pollJson.data && (pollJson.data.status === 'failed' || pollJson.data.status === 'error' || pollJson.data.status === -1 || pollJson.data.successFlag === -1 || pollJson.data.successFlag === 2 || pollJson.data.successFlag === 3)) {
       
       // Mark usage as failed
-      await supabase.from('phase2_llm_usage').update({ status: 'FAILED' }).eq('id', usage_id);
+      await fetch(`${supabaseUrl}/rest/v1/phase2_llm_usage?id=eq.${usage_id}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'FAILED' })
+      });
       
       return NextResponse.json({ status: 'failed', error: 'Kie AI async task failed', details: pollJson }, { status: 500 });
     }
