@@ -207,6 +207,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
       delete cleanPayload.messages;
       delete cleanPayload.n;
       delete cleanPayload.size;
+      delete cleanPayload.model; // Kie AI custom endpoints reject the model parameter
     }
 
     const controller = new AbortController();
