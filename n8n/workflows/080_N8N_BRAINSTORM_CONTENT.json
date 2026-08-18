@@ -21,17 +21,14 @@
       "parameters": {
         "method": "POST",
         "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/phase2/ai-broker",
-        "authentication": "none",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "x-request-id",
               "value": "={{$execution.id}}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{$env[\"CONTROL_PLANE_SECRET\"]}}"
             }
           ]
         },
@@ -46,7 +43,13 @@
       "position": [
         300,
         300
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ControlPlaneAuth",
+          "name": "ControlPlaneAuth"
+        }
+      }
     },
     {
       "parameters": {

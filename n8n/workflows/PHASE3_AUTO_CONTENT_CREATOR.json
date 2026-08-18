@@ -70,17 +70,14 @@
       "parameters": {
         "method": "POST",
         "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/phase2/ai-broker",
-        "authentication": "none",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "x-request-id",
               "value": "={{$execution.id}}-img-{{$position}}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{$env[\"CONTROL_PLANE_SECRET\"]}}"
             }
           ]
         },
@@ -95,7 +92,14 @@
       "position": [
         5696,
         -1280
-      ]
+      ],
+      "id": "58c41527-2275-457c-b57b-da11582825b1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ControlPlaneAuth",
+          "name": "ControlPlaneAuth"
+        }
+      }
     },
     {
       "parameters": {
@@ -450,7 +454,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://agent.pnmediaplus.com/api/phase2/ai-broker",
+        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/phase2/ai-broker",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -477,7 +481,7 @@
       "id": "8459a666-8e26-418d-88e1-0dd0ded2db2f",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "nlRh1UkRewsK7CCR",
+          "id": "ControlPlaneAuth",
           "name": "ControlPlaneAuth"
         }
       }
