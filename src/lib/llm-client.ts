@@ -102,6 +102,7 @@ export type LlmClientOptions = {
   tenantId: string;
   requestId?: string;
   endpointUrl?: string; // e.g. custom BYOK url
+  async?: boolean;
 };
 
 export type LlmPayload = {
@@ -249,6 +250,17 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     // Either legacy outputFormat or new jobs API format
     if (providerId === 'kie_ai' && responseData.data && responseData.data.taskId && (cleanPayload.outputFormat || endpointUrl.includes('/jobs/createTask'))) {
       const taskId = responseData.data.taskId;
+
+      // If async mode is requested, return immediately without polling or parsing usage
+      if (options.async) {
+        return {
+          async_job: true,
+          provider: providerId,
+          taskId: taskId,
+          usage_id: recordId
+        };
+      }
+
       let pollingUrl = '';
       if (endpointUrl.endsWith('/generate')) {
         pollingUrl = endpointUrl.replace(/\/generate$/, '/record-info') + `?taskId=${taskId}`;

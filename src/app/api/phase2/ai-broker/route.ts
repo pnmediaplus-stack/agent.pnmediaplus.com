@@ -31,10 +31,15 @@ export async function POST(request: Request) {
     const responseData = await invokeLlm(payload, {
       actorId: 'n8n_ai_broker',
       tenantId: payload.tenant_id,
-      requestId
+      requestId,
+      async: payload.async === true
     });
 
     await logCompletion('ACCEPTED', 'LLM call succeeded', { model: payload.model });
+    
+    if (responseData && responseData.async_job) {
+      return NextResponse.json(responseData, { status: 202 });
+    }
     return NextResponse.json(responseData, { status: 200 });
 
   } catch (error: any) {
