@@ -1,0 +1,54 @@
+{
+  "name": "Cron - Ledger Processor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "e4b9e112-8e7c-4a3d-b284-5a2a11b60b81",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [ 460, 300 ]
+    },
+    {
+      "parameters": {
+        "url": "https://agent.pnmediaplus.com/api/cron/process-llm-ledger",
+        "method": "GET",
+        "sendHeaders": false,
+        "sendBody": false,
+        "options": {}
+      },
+      "id": "b1b7a69c-0c3d-4c3e-8c01-7b7914f6b1e5",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 680, 300 ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f7ab0d2f-1fc9-4f7f-8c3b-55c3c2b11ef2"
+}
