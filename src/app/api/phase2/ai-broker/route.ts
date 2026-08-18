@@ -45,6 +45,10 @@ export async function POST(request: Request) {
        return NextResponse.json({ error: 'RATE_LIMIT_EXCEEDED', message: error.message }, { status: 429 });
     }
     
+    if (error.status === 504 || (error.message && error.message.includes('UPSTREAM_TIMEOUT'))) {
+       return NextResponse.json({ error: 'UPSTREAM_TIMEOUT', message: error.message }, { status: 504 });
+    }
+    
     // Use 500 instead of 502 so Cloudflare doesn't mask the JSON error with an HTML page
     return NextResponse.json({ error: 'LLM_ERROR', message: errorMsg }, { status: 500 });
   }

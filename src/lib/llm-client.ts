@@ -284,6 +284,14 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     if (!responseStatus) {
       if (recordId) await updateUsageRecord(supabaseUrl, supabaseKey, recordId, { status: 'FAILED', estimated_cost: 0 });
     }
+    
+    // Explicitly handle AbortError from our AbortController timeout
+    if (error.name === 'AbortError') {
+       const timeoutErr = new Error(`UPSTREAM_TIMEOUT: Provider ${providerId} did not respond within the 75-second safety window.`);
+       (timeoutErr as any).status = 504; // Map to 504 Gateway Timeout internally
+       throw timeoutErr;
+    }
+    
     throw error;
   }
 
