@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
 import { invokeLlm } from '@/lib/llm-client';
 
-export const maxDuration = 60; // Allow long-running LLM calls
+export const maxDuration = 75; // Match the upstream safety timeout in llm-client.ts
 
 const AiBrokerPayloadSchema = z.object({
   provider: z.string().optional(),
