@@ -165,7 +165,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[2fr_1fr]" style={{ height: 'calc(100vh - 200px)' }}>
+    <div className="grid gap-6 lg:grid-cols-[2fr_1fr]" style={{ height: 'calc(100vh - 120px)' }}>
       <div className="space-y-4 flex flex-col h-full min-h-0 min-w-0">
         {activeTasks.length > 0 && (
           <div className="rounded-2xl border border-indigo-500/30 bg-indigo-950/20 p-4 shadow-lg shadow-indigo-900/10 shrink-0">
