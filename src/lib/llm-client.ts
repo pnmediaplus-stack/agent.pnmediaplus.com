@@ -201,13 +201,25 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     }
     
     if (providerId === 'kie_ai' && cleanPayload.size) { // size indicates it's an image generation request
-      cleanPayload.aspectRatio = cleanPayload.size === '1024x1024' ? '1:1' : '16:9';
-      cleanPayload.outputFormat = "jpeg";
-      cleanPayload.enableTranslation = true;
-      delete cleanPayload.messages;
-      delete cleanPayload.n;
-      delete cleanPayload.size;
-      delete cleanPayload.model; // Kie AI custom endpoints reject the model parameter
+      if (endpointUrl.includes('/jobs/createTask')) {
+        cleanPayload.input = {
+          prompt: cleanPayload.prompt,
+          aspect_ratio: cleanPayload.size === '1024x1024' ? '1:1' : '16:9'
+        };
+        delete cleanPayload.prompt;
+        delete cleanPayload.messages;
+        delete cleanPayload.n;
+        delete cleanPayload.size;
+        // Keep cleanPayload.model intact!
+      } else {
+        cleanPayload.aspectRatio = cleanPayload.size === '1024x1024' ? '1:1' : '16:9';
+        cleanPayload.outputFormat = "jpeg";
+        cleanPayload.enableTranslation = true;
+        delete cleanPayload.messages;
+        delete cleanPayload.n;
+        delete cleanPayload.size;
+        delete cleanPayload.model; // Legacy endpoints reject the model parameter
+      }
     }
 
     const controller = new AbortController();
@@ -234,11 +246,17 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     }
 
     // --- KIE AI ASYNC POLLING LOGIC ---
-    if (providerId === 'kie_ai' && responseData.data && responseData.data.taskId && cleanPayload.outputFormat) {
+    // Either legacy outputFormat or new jobs API format
+    if (providerId === 'kie_ai' && responseData.data && responseData.data.taskId && (cleanPayload.outputFormat || endpointUrl.includes('/jobs/createTask'))) {
       const taskId = responseData.data.taskId;
-      // Derive polling URL from the generate endpoint
-      // e.g., https://api.kie.ai/api/v1/flux/kontext/generate -> https://api.kie.ai/api/v1/flux/kontext/record-info
-      const pollingUrl = endpointUrl.replace(/\/generate$/, '/record-info') + `?taskId=${taskId}`;
+      let pollingUrl = '';
+      if (endpointUrl.endsWith('/generate')) {
+        pollingUrl = endpointUrl.replace(/\/generate$/, '/record-info') + `?taskId=${taskId}`;
+      } else if (endpointUrl.endsWith('/createTask')) {
+        pollingUrl = endpointUrl.replace(/\/createTask$/, '/recordInfo') + `?taskId=${taskId}`;
+      } else {
+        pollingUrl = endpointUrl.replace(/\/[^/]+$/, '/recordInfo') + `?taskId=${taskId}`;
+      }
       
       let isComplete = false;
       let pollCount = 0;
