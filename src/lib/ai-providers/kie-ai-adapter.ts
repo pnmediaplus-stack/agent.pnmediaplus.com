@@ -49,9 +49,13 @@ export const kieAiAdapter: AiProviderAdapter = {
     const modelConfig = models.find((m: any) => m.code === payload.model);
 
     if (modelConfig?.capability === 'text') {
-      const promptTokens = responseJson.usage?.prompt_tokens || 0;
-      const completionTokens = responseJson.usage?.completion_tokens || 0;
-      const totalTokens = responseJson.usage?.total_tokens || 0;
+      if (!responseJson.usage) {
+        throw new Error('UNABLE_TO_PARSE_KIE_AI_USAGE: Text response is missing usage metadata.');
+      }
+
+      const promptTokens = responseJson.usage.prompt_tokens || 0;
+      const completionTokens = responseJson.usage.completion_tokens || 0;
+      const totalTokens = responseJson.usage.total_tokens || 0;
       
       // Fallback to 0 cost if pricing is missing to prevent workflow crashes, but mark it
       const isPricingMissing = modelConfig?.prompt_cost === undefined || modelConfig?.completion_cost === undefined;
@@ -71,10 +75,10 @@ export const kieAiAdapter: AiProviderAdapter = {
     }
     
     if (modelConfig?.capability === 'image') {
-      let imageCount = 1;
-      if (responseJson.data && Array.isArray(responseJson.data)) {
-        imageCount = responseJson.data.length;
+      if (!responseJson.data || !Array.isArray(responseJson.data)) {
+        throw new Error('UNABLE_TO_PARSE_KIE_AI_USAGE: Image response is missing the expected data array.');
       }
+      const imageCount = responseJson.data.length;
       
       // Fallback to 0 cost if pricing is missing to prevent workflow crashes, but mark it
       const isPricingMissing = modelConfig?.completion_cost === undefined;
