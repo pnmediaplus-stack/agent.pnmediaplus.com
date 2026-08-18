@@ -37,7 +37,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'user',\n      content: `You are an expert Marketing Strategist and Content Ideation AI.\\nCampaign Context: ${$json.body.campaignContext ? JSON.stringify($json.body.campaignContext) : 'None'}\\nUser Request: ${$json.body.prompt}\\n\\nGenerate detailed content ideas based on the user request and campaign context.\\nRespond in STRICT JSON format like this:\\n{\\n  \"ideas\": [\\n    {\\n      \"title\": \"Idea Title\",\\n      \"brief\": \"Detailed description of the idea...\"\\n    }\\n  ]\\n}`\n    }\n  ],\n  response_format: { type: 'json_object' },\n  tenant_id: $json.body.tenant_id\n} }}",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'user',\n      content: `You are an expert Marketing Strategist and Content Ideation AI.\\nCampaign Context: ${$json.body.campaignContext ? JSON.stringify($json.body.campaignContext) : 'None'}\\nUser Request: ${$json.body.prompt}\\n\\nGenerate detailed content ideas based on the user request and campaign context.\\nIMPORTANT: YOU MUST RESPOND IN VIETNAMESE (TIẾNG VIỆT) OR THE SAME LANGUAGE AS THE USER REQUEST.\\nRespond in STRICT JSON format like this:\\n{\\n  \"ideas\": [\\n    {\\n      \"title\": \"Idea Title (in Vietnamese)\",\\n      \"brief\": \"Detailed description of the idea (in Vietnamese)...\"\\n    }\\n  ]\\n}`\n    }\n  ],\n  response_format: { type: 'json_object' },\n  tenant_id: $json.body.tenant_id\n} }}",
         "options": {}
       },
       "name": "AI Broker LLM",
