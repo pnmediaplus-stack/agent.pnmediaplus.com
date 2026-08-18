@@ -52,7 +52,8 @@ export async function GET(request: Request) {
 
         // Fetch provider catalog to get the cost
         const { data: providerConfig } = await supabase
-          .from('tenant_integration_vault.integration_providers')
+          .schema('tenant_integration_vault')
+          .from('integration_providers')
           .select('public_metadata')
           .eq('provider_code', job.provider_code)
           .single();

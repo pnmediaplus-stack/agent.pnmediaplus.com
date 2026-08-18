@@ -22,7 +22,8 @@ export async function POST(request: Request) {
 
     // 1. Fetch provider config to get base URL
     const { data: providerConfig, error: providerErr } = await supabase
-      .from('tenant_integration_vault.integration_providers')
+      .schema('tenant_integration_vault')
+      .from('integration_providers')
       .select('public_metadata, secret_credentials')
       .eq('provider_code', provider)
       .single();

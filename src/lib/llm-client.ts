@@ -24,7 +24,7 @@ function getSupabaseRuntimeInfo() {
   };
 }
 
-async function getTenantApiKey(tenantId: string, providerCode: string): Promise<string> {
+export async function getTenantApiKey(tenantId: string, providerCode: string): Promise<string> {
   const { supabaseUrl, supabaseHost, supabaseProjectRef } = getSupabaseRuntimeInfo();
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!supabaseUrl || !supabaseKey) {
