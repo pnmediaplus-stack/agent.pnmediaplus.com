@@ -43,7 +43,7 @@
     },
     {
       "parameters": {
-        "url": "={{ $('Extract Visual').item.json.artifacts?.image || $('Extract Visual').item.json.images?.[0]?.url }}",
+        "url": "={{ $('Extract Visual').item.json.artifacts?.image }}",
         "options": {}
       },
       "name": "Download Image",
@@ -342,7 +342,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $('Parse Text').first().json.item;\nconst tenantId = $('Parse Text').first().json.tenant_id || item.owner_ref;\n\nlet imageUrl =\n  $input.first().json.images?.[0]?.url ||\n  $input.first().json.data?.[0]?.url ||\n  'https://placehold.co/1024x1024?text=Image+Generation+Failed';\n\nreturn {\n  json: {\n    status: 'OK',\n    message: 'Content generated successfully',\n    artifacts: {\n      research: $('Parse Text').first().json.textContent.agent_1_research_packet,\n      caption: $('Parse Text').first().json.textContent.agent_2_publish_ready_caption,\n      image: imageUrl,\n    },\n    id: item.id,\n    organization_id: tenantId,\n    tenant_id: tenantId,\n  },\n};"
+        "jsCode": "const item = $('Parse Text').first().json.item;\nconst tenantId = $('Parse Text').first().json.tenant_id || item.owner_ref;\n\nlet imageUrl =\n  $input.first().json.data?.[0]?.url ||\n  'https://placehold.co/1024x1024?text=Image+Generation+Failed';\n\nreturn {\n  json: {\n    status: 'OK',\n    message: 'Content generated successfully',\n    artifacts: {\n      research: $('Parse Text').first().json.textContent.agent_1_research_packet,\n      caption: $('Parse Text').first().json.textContent.agent_2_publish_ready_caption,\n      image: imageUrl,\n    },\n    id: item.id,\n    organization_id: tenantId,\n    tenant_id: tenantId,\n  },\n};"
       },
       "name": "Extract Visual",
       "type": "n8n-nodes-base.code",
@@ -352,6 +352,27 @@
         -2176
       ],
       "id": "9e413fd1-08a0-4ef3-9157-a694d0f6ee5f"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/phase2/ai-broker/status",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"taskId\": \"{{$('AI Broker (Image)').item.json.taskId}}\",\n  \"provider\": \"{{$('AI Broker (Image)').item.json.provider}}\",\n  \"tenant_id\": \"{{$('Parse Text').first().json.tenant_id}}\",\n  \"usage_id\": \"{{$('AI Broker (Image)').item.json.usage_id}}\"\n}",
+        "options": {}
+      },
+      "name": "Poll Image Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        11220,
+        -2176
+      ],
+      "id": "poll-image-status-node",
+      "retryOnFail": true,
+      "maxTries": 20,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -475,7 +496,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ (() => {\n  const cfg = $('Fetch Tenant AI Config').first().json;\n  const prompt = $('Parse Text').first().json.textContent?.agent_3_image_prompt;\n  const imageBinding = cfg.provider_bindings?.image;\n  if (!imageBinding?.provider_code || !imageBinding?.model_code) {\n    throw new Error('IMAGE_LANE_BINDING_MISSING');\n  }\n  if (!prompt || !String(prompt).trim()) {\n    throw new Error('IMAGE_PROMPT_MISSING');\n  }\n  return {\n    provider: imageBinding.provider_code,\n    model: imageBinding.model_code,\n    prompt,\n    n: 1,\n    size: '1024x1024',\n    tenant_id: $('Parse Text').first().json.tenant_id,\n    lane_key: 'image',\n    tenant_binding_id: cfg.tenant_binding_id || ''\n  };\n})() }}",
+        "jsonBody": "={{ (() => {\n  const cfg = $('Fetch Tenant AI Config').first().json;\n  const prompt = $('Parse Text').first().json.textContent?.agent_3_image_prompt;\n  const imageBinding = cfg.provider_bindings?.image;\n  if (!imageBinding?.provider_code || !imageBinding?.model_code) {\n    throw new Error('IMAGE_LANE_BINDING_MISSING');\n  }\n  if (!prompt || !String(prompt).trim()) {\n    throw new Error('IMAGE_PROMPT_MISSING');\n  }\n  return {\n    provider: imageBinding.provider_code,\n    model: imageBinding.model_code,\n    async: true,\n    prompt,\n    n: 1,\n    size: '1024x1024',\n    tenant_id: $('Parse Text').first().json.tenant_id,\n    lane_key: 'image',\n    tenant_binding_id: cfg.tenant_binding_id || ''\n  };\n})() }}",
         "options": {}
       },
       "name": "AI Broker (Image)",
@@ -774,6 +795,17 @@
       ]
     },
     "AI Broker (Image)": {
+      "main": [
+        [
+          {
+            "node": "Poll Image Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Image Status": {
       "main": [
         [
           {
