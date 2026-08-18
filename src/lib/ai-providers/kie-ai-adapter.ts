@@ -41,12 +41,14 @@ export const kieAiAdapter: AiProviderAdapter = {
         if (payload.model === 'flux-kontext-pro') {
           return `${base}/api/v1/flux/kontext/generate`;
         }
-        // Fallback for other flux models if any
-        if (payload.model.includes('flux')) {
-          const subPath = payload.model.replace('flux-', '').replace('-pro', '');
-          return `${base}/api/v1/flux/${subPath}/generate`;
+        if (payload.model.includes('dall-e')) {
+          return `${base}/api/v1/images/generations`;
         }
-        return `${base}/api/v1/images/generations`;
+        
+        // Generic fallback for Kie AI custom models (flux, nano-banana, etc)
+        let subPath = payload.model;
+        if (subPath.startsWith('flux-')) subPath = subPath.replace('flux-', 'flux/').replace('-pro', '');
+        return `${base}/api/v1/${subPath}/generate`;
       }
     }
 
@@ -87,7 +89,7 @@ export const kieAiAdapter: AiProviderAdapter = {
     }
     
     // For Image Generations
-    if (payload.model?.includes('flux') || (responseJson.data && Array.isArray(responseJson.data)) || responseJson.images || responseJson.output) {
+    if (payload.model?.includes('flux') || (responseJson.data && responseJson.data.response && responseJson.data.response.resultImageUrl) || (responseJson.data && Array.isArray(responseJson.data)) || responseJson.images || responseJson.output) {
       let imageCount = 1;
       if (responseJson.data && Array.isArray(responseJson.data)) imageCount = responseJson.data.length;
       else if (responseJson.images && Array.isArray(responseJson.images)) imageCount = responseJson.images.length;
