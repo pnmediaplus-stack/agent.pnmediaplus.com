@@ -155,7 +155,7 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
                     }
                   }}
                 >
-                  {message.body}
+                  {message.body?.replace('[[CAMPAIGN_PROPOSAL]]', '')}
                 </ReactMarkdown>
               </div>
 
