@@ -229,6 +229,7 @@ export async function dbApproveAndCreateCampaign(organizationId: string, threadI
   const proposalMsg = msgs.find((m: any) => 
     m.sender === 'system' && (
       m.intentType === 'campaign_proposal' ||
+      m.intentType === 'agent_response' ||
       m.body.includes('[[CAMPAIGN_PROPOSAL]]')
     )
   );
