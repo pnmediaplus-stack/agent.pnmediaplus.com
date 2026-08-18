@@ -248,7 +248,7 @@ export async function dbApproveAndCreateCampaign(organizationId: string, threadI
   const insertRes = await fetch(`${supabaseUrl}/rest/v1/campaigns`, {
     method: 'POST',
     headers: {
-      ...getHeaders(),
+      ...getPublicHeaders(),
       'Content-Type': 'application/json',
       'Prefer': 'return=representation'
     },
@@ -256,7 +256,9 @@ export async function dbApproveAndCreateCampaign(organizationId: string, threadI
   });
 
   if (!insertRes.ok) {
-    return { error: 'Lỗi Database khi lưu chiến dịch mới.', data: null };
+    const errText = await insertRes.text();
+    console.error("DB Error when inserting campaign:", errText);
+    return { error: 'Lỗi Database khi lưu chiến dịch mới: ' + errText, data: null };
   }
 
   const insertedData = await insertRes.json();
