@@ -561,7 +561,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
         <textarea
         ref={textareaRef}
         value={value}
-        onChange={(event) => handleTextChange(event.target.value)}
+        onChange={handleInput}
         onKeyDown={handleKeyDown}
         rows={3}
         disabled={isUploading}
