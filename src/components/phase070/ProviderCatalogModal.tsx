@@ -10,7 +10,7 @@ type EditState = {
   provider_name: string;
   auth_type: string;
   base_url: string;
-  models: { code: string; capability: string; cost?: number }[];
+  models: { code: string; capability: string; prompt_cost?: number; completion_cost?: number; endpoint_template?: string; endpoint?: string }[];
 };
 
 export function ProviderCatalogModal({
@@ -101,7 +101,7 @@ export function ProviderCatalogModal({
 
   const addModel = () => {
     if (!editing) return;
-    setEditing({ ...editing, models: [...editing.models, { code: "", capability: "text", cost: 0 }] });
+    setEditing({ ...editing, models: [...editing.models, { code: "", capability: "text", prompt_cost: 0, completion_cost: 0, endpoint_template: "" }] });
   };
 
   const updateModel = (index: number, key: string, value: any) => {
@@ -210,28 +210,64 @@ export function ProviderCatalogModal({
                 
                 <div className="space-y-3">
                   {editing.models.map((m, idx) => (
-                    <div key={idx} className="flex gap-3 items-center">
-                      <input
-                        type="text"
-                        value={m.code}
-                        onChange={(e) => updateModel(idx, "code", e.target.value)}
-                        placeholder="Model Code (VD: llama3-8b-8192)"
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white outline-none font-mono"
-                      />
-                      <select
-                        value={m.capability}
-                        onChange={(e) => updateModel(idx, "capability", e.target.value)}
-                        className="w-32 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white outline-none"
-                      >
-                        <option value="text">Text</option>
-                        <option value="image">Image</option>
-                        <option value="video">Video</option>
-                      </select>
-                      <button onClick={() => removeModel(idx)} className="p-2 text-slate-500 hover:text-red-400">
+                    <div key={idx} className="bg-slate-900 border border-slate-800 rounded-lg p-4 relative">
+                      <button onClick={() => removeModel(idx)} className="absolute top-4 right-4 text-slate-500 hover:text-red-400">
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
+                      <div className="grid grid-cols-2 gap-4 mr-8">
+                        <div>
+                          <label className="block text-xs font-medium text-slate-400 mb-1">Model Code</label>
+                          <input
+                            type="text"
+                            value={m.code}
+                            onChange={(e) => updateModel(idx, "code", e.target.value)}
+                            placeholder="VD: nano-banana-2-lite"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white outline-none font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-slate-400 mb-1">Capability</label>
+                          <select
+                            value={m.capability}
+                            onChange={(e) => updateModel(idx, "capability", e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white outline-none"
+                          >
+                            <option value="text">Text</option>
+                            <option value="image">Image</option>
+                            <option value="video">Video</option>
+                          </select>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-medium text-slate-400 mb-1">Endpoint Template</label>
+                          <input
+                            type="text"
+                            value={m.endpoint_template || m.endpoint || ""}
+                            onChange={(e) => updateModel(idx, "endpoint_template", e.target.value)}
+                            placeholder="VD: /api/v1/{model}/generate hoặc https://..."
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white outline-none font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-slate-400 mb-1">Prompt Cost ($/1M token)</label>
+                          <input
+                            type="number"
+                            value={m.prompt_cost || 0}
+                            onChange={(e) => updateModel(idx, "prompt_cost", parseFloat(e.target.value))}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-slate-400 mb-1">Completion Cost ($/1M token)</label>
+                          <input
+                            type="number"
+                            value={m.completion_cost || 0}
+                            onChange={(e) => updateModel(idx, "completion_cost", parseFloat(e.target.value))}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white outline-none"
+                          />
+                        </div>
+                      </div>
                     </div>
                   ))}
                   {editing.models.length === 0 && (

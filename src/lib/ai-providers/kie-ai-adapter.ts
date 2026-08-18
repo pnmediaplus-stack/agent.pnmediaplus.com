@@ -27,6 +27,9 @@ export const kieAiAdapter: AiProviderAdapter = {
     const models = metadata?.models || [];
     const modelConfig = models.find((m: any) => m.code === payload.model);
     
+    if (modelConfig && modelConfig.endpoint_template) {
+      return modelConfig.endpoint_template.replace('{model}', payload.model);
+    }
     if (modelConfig && modelConfig.endpoint) {
       return modelConfig.endpoint;
     }

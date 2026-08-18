@@ -539,6 +539,17 @@ export async function upsertIntegrationProvider(
       return { ok: false, state: "blocked", reason: "INVALID_PROVIDER_CODE" };
     }
 
+    if (payload.public_metadata && Array.isArray(payload.public_metadata.models)) {
+      for (const model of payload.public_metadata.models) {
+        if (!model.code || !model.capability) {
+          return { ok: false, state: "blocked", reason: "INVALID_MODEL_SCHEMA: Missing code or capability." };
+        }
+        if (!model.endpoint && !model.endpoint_template) {
+          return { ok: false, state: "blocked", reason: `INVALID_MODEL_SCHEMA: Model '${model.code}' must have either 'endpoint' or 'endpoint_template'.` };
+        }
+      }
+    }
+
     const rpcName = (process.env.PHASE070_PROVIDER_CATALOG_WRITE_RPC || "phase070_upsert_integration_provider").trim();
 
     const supabase = createServiceRoleClient();
