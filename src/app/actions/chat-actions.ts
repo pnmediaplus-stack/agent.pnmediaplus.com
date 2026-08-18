@@ -391,7 +391,6 @@ export async function sendChatMessage(threadId: string, body: string) {
              webhook: { ok: webhookResult.ok, route: "webhook/command", status: webhookResult.status || 202, message: webhookResult.message }
            };
         } else if (command === '/brainstorm') {
-           const referenceToken = await issueAutoContentReferenceToken(organizationId); // Tạm dùng token của auto_content
            
            let explicitCampaign: string | null = null;
            let commandBodyStr = args.join(' ');
@@ -430,7 +429,6 @@ export async function sendChatMessage(threadId: string, body: string) {
              prompt: commandBodyStr,
              organization_id: organizationId,
              tenant_id: organizationId,
-             reference_token: referenceToken,
              campaignContext: resolvedCampaign
            });
 
