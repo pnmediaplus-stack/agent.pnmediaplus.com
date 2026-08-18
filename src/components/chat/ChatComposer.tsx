@@ -42,7 +42,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
   const slashCommands = useMemo(() => ([
     { id: "auto_content", name: "auto_content", description: "Tạo nội dung tự động" },
     { id: "viral_research", name: "viral_research", description: "Nghiên cứu viral" },
-    { id: "publish", name: "publish", description: "Đăng nội dung lên page (VD: /publish page_id:<ID>)" },
+    { id: "publish", name: "publish", description: "Đăng nội dung lên page (VD: /publish integration_key:<ID>)" },
     { id: "plan_campaign", name: "plan_campaign", description: "Lập kế hoạch chiến dịch" },
     { id: "approve_campaign", name: "approve_campaign", description: "Duyệt và tạo chiến dịch từ kế hoạch (VD: /approve_campaign Tên)" },
     { id: "status", name: "status", description: "Xem trạng thái" },
@@ -165,8 +165,9 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
         return;
       }
 
+      // Strictly filter for facebook_page to avoid surfacing non-page integrations
       const validProviders = (data.data?.providers || [])
-        .filter((p: any) => p.provider_category === 'social_media' || p.provider_category === 'other' || p.provider_code === 'facebook_page')
+        .filter((p: any) => p.provider_code === 'facebook_page')
         .map((p: any) => p.provider_code);
         
       const list = (data.data?.integrations || []).filter(
@@ -314,7 +315,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
     } else if (popupState.type === 'campaign') {
       replacement = `/campaign set ${item.name || item.id} `;
     } else if (popupState.type === 'page') {
-      replacement = `page_id:${item.integration_key} `;
+      replacement = `integration_key:${item.integration_key} `;
     } else {
       replacement = `#${item.artifact_key || item.canonical_name || item.id} `;
     }

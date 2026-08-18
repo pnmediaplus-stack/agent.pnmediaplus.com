@@ -1,10 +1,11 @@
-import type { LifecycleState } from "@/types/state";
+import type { LifecycleState } from "@/types/state";
 import { canTransition } from "@/lib/state-machine";
 
 export function requiresPublishScope(body: string) {
   const normalized = body.toLowerCase();
   // Check explicit keywords or a #data reference that might contain the scope
   const hasExplicitPageScope =
+    /integration[_\s-]?key\b/.test(normalized) ||
     /page[_\s-]?id\b/.test(normalized) ||
     /fanpage[_\s-]?id\b/.test(normalized) ||
     /page[_\s-]?name\b/.test(normalized) ||
