@@ -41,14 +41,12 @@ export const kieAiAdapter: AiProviderAdapter = {
         if (payload.model === 'flux-kontext-pro') {
           return `${base}/api/v1/flux/kontext/generate`;
         }
-        if (payload.model.includes('dall-e')) {
-          return `${base}/api/v1/images/generations`;
+        // Fallback for other flux models if any
+        if (payload.model.includes('flux')) {
+          const subPath = payload.model.replace('flux-', '').replace('-pro', '');
+          return `${base}/api/v1/flux/${subPath}/generate`;
         }
-        
-        // Generic fallback for Kie AI custom models (flux, nano-banana, etc)
-        let subPath = payload.model;
-        if (subPath.startsWith('flux-')) subPath = subPath.replace('flux-', 'flux/').replace('-pro', '');
-        return `${base}/api/v1/${subPath}/generate`;
+        return `${base}/api/v1/images/generations`;
       }
     }
 
