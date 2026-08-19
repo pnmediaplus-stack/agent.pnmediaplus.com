@@ -54,35 +54,54 @@ export async function POST(request: Request) {
     const pollJson = await pollRes.json();
     
     if (pollJson.data && pollJson.data.successFlag === 1 && pollJson.data.response && pollJson.data.response.resultImageUrl) {
-      // 3. IMAGE IS READY! Create Outbox Record
+      // 3. IMAGE IS READY! Create Outbox Record idempotently
+      let outboxId = '';
       
-      const insertRes = await fetch(`${supabaseUrl}/rest/v1/llm_ledger_outbox`, {
-        method: 'POST',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          tenant_id: tenant_id,
-          usage_id: usage_id,
-          provider_code: provider,
-          model_code: 'unknown', // We can get this from usage record if needed
-          task_id: taskId,
-          status: 'PENDING',
-          estimated_cost: 0 // Cron will calculate it via parseUsage
-        })
+      const checkRes = await fetch(`${supabaseUrl}/rest/v1/llm_ledger_outbox?usage_id=eq.${usage_id}&select=id`, {
+        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
       });
-        
-      if (!insertRes.ok && insertRes.status !== 409) { // Ignore unique constraint violation if N8N polled twice
-         console.error('Failed to create outbox record', await insertRes.text());
+      const checkData = checkRes.ok ? await checkRes.json() : [];
+      
+      if (checkData && checkData.length > 0) {
+        outboxId = checkData[0].id;
+      } else {
+        const insertRes = await fetch(`${supabaseUrl}/rest/v1/llm_ledger_outbox`, {
+          method: 'POST',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            tenant_id: tenant_id,
+            usage_id: usage_id,
+            provider_code: provider,
+            model_code: 'unknown',
+            task_id: taskId,
+            status: 'PENDING',
+            estimated_cost: 0
+          })
+        });
+          
+        if (insertRes.ok) {
+           const insertData = await insertRes.json();
+           outboxId = insertData[0].id;
+        } else if (insertRes.status === 409) {
+           const checkRes2 = await fetch(`${supabaseUrl}/rest/v1/llm_ledger_outbox?usage_id=eq.${usage_id}&select=id`, {
+             headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+           });
+           const checkData2 = checkRes2.ok ? await checkRes2.json() : [];
+           if (checkData2 && checkData2.length > 0) outboxId = checkData2[0].id;
+        } else {
+           console.error('Failed to create outbox record', await insertRes.text());
+        }
       }
       
       // Transform response to match OpenAI schema and Extract Visual logic ($json.data[0].url)
       const imageUrl = pollJson.data.response.resultImageUrl;
       
-      return NextResponse.json({ status: 'completed', data: [ { url: imageUrl } ] }, { status: 200 });
+      return NextResponse.json({ status: 'completed', outbox_id: outboxId, data: [ { url: imageUrl } ] }, { status: 200 });
       
     } else if (pollJson.data && (pollJson.data.status === 'failed' || pollJson.data.status === 'error' || pollJson.data.status === -1 || pollJson.data.successFlag === -1 || pollJson.data.successFlag === 2 || pollJson.data.successFlag === 3)) {
       

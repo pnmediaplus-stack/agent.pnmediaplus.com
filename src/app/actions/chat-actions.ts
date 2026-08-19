@@ -349,41 +349,16 @@ export async function sendChatMessage(threadId: string, body: string) {
              organization_id: organizationId,
              tenant_id: organizationId,
              reference_token: referenceToken,
-             campaignContext: resolvedCampaign // Send context to N8N
+             campaignContext: resolvedCampaign, // Send context to N8N
+             threadId: threadId // Send threadId for async chat message injection
            });
 
            const routedMsgResult = await dbInsertChatMessage(organizationId, {
              threadId,
              sender: "system",
-             body: `Đã nhận và điều phối lệnh: ${command} ${args.join(' ')}`,
+             body: `Đã nhận lệnh: ${command} ${args.join(' ')}. Hệ thống đang tiến hành phân tích và tạo nội dung, quá trình này có thể mất 1-2 phút...`,
              intentType: "route_department"
            });
-
-           const n8nRespRaw = webhookResult.response as any;
-           const n8nResp = Array.isArray(n8nRespRaw) ? n8nRespRaw[0] : n8nRespRaw;
-           if (n8nResp && n8nResp.artifacts) {
-             const artifacts = n8nResp.artifacts;
-             let bodyStr = `**Nội dung đã được tạo thành công (QA_ready)**\n\n`;
-             if (artifacts.image) {
-               bodyStr += `![Generated Image](${artifacts.image})\n\n`;
-             }
-             if (artifacts.caption) {
-               bodyStr += `**Caption:**\n${artifacts.caption}\n\n`;
-             }
-             if (artifacts.research) {
-               const researchStr = typeof artifacts.research === 'object' 
-                 ? "```json\n" + JSON.stringify(artifacts.research, null, 2) + "\n```"
-                 : artifacts.research;
-               bodyStr += `**Research Packet:**\n${researchStr}\n\n`;
-             }
-
-             await dbInsertChatMessage(organizationId, {
-               threadId,
-               sender: "system",
-               body: bodyStr,
-               intentType: "route_department"
-             });
-           }
 
            return {
              success: true,
