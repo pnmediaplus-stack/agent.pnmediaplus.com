@@ -1,5 +1,5 @@
 -- Update kie_ai provider metadata to include poll_path for image generation models
-UPDATE public.integration_providers
+UPDATE tenant_integration_vault.integration_providers
 SET public_metadata = jsonb_set(
     COALESCE(public_metadata, '{}'::jsonb),
     '{poll_path}',
