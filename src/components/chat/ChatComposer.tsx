@@ -316,7 +316,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
     } else if (popupState.type === 'campaign') {
       replacement = `/campaign set ${item.name || item.id} `;
     } else if (popupState.type === 'page') {
-      replacement = `integration_key:${item.integration_key} `;
+      replacement = `/publish integration_key:${item.integration_key} `;
     } else {
       replacement = `#${item.artifact_key || item.canonical_name || item.id} `;
     }

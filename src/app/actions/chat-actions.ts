@@ -169,6 +169,8 @@ export async function sendChatMessage(threadId: string, body: string) {
   let intentType: import('@/types/state').ChatIntentType = "unknown";
   
   const trimmedBody = body.trim();
+  const lowerBody = trimmedBody.toLowerCase();
+
   if (trimmedBody.startsWith('/')) {
     const cmd = trimmedBody.split(/\s+/)[0];
     if (cmd === '/auto_content') intentType = 'create_content';
@@ -176,6 +178,15 @@ export async function sendChatMessage(threadId: string, body: string) {
     else if (cmd === '/publish') intentType = 'publish_content';
     else if (cmd === '/plan_campaign') intentType = 'plan_campaign';
     else if (cmd === '/status') intentType = 'request_status';
+  } else {
+    // Basic NLP Regex Fallback since AI Classifier is not yet integrated
+    if (lowerBody.includes('đăng nội dung') || lowerBody.includes('đăng bài') || lowerBody.includes('publish')) {
+      intentType = 'publish_content';
+    } else if (lowerBody.includes('tạo nội dung') || lowerBody.includes('viết bài') || lowerBody.includes('lên bài')) {
+      intentType = 'create_content';
+    } else if (lowerBody.includes('chiến dịch') || lowerBody.includes('campaign')) {
+      intentType = 'plan_campaign';
+    }
   }
 
   let organizationId = "";
@@ -553,11 +564,25 @@ export async function sendChatMessage(threadId: string, body: string) {
              return { success: false, message: rejectMsgResult.data };
            }
 
-           const referenceToken = tokenRes.data.token;
+           const referenceToken = tokenRes.data.receipt?.lease_token;
+
+           const ctxRes = await dbLoadContextData(organizationId, 'content', contentItemId);
+           const artifactVersionId = ctxRes.data?.artifact_version_id || null;
+
+           if (!artifactVersionId || ctxRes.data?.state !== 'scheduled') {
+             const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+               threadId,
+               sender: "system",
+               body: `Nội dung **${contentItemId}** chưa sẵn sàng để xuất bản. Trạng thái hiện tại: **${ctxRes.data?.state || 'unknown'}**. Bạn cần hoàn tất tạo nội dung (artifact) và chuyển sang trạng thái "scheduled". Để test thử, bạn có thể gõ lệnh với ID có sẵn: \`/publish integration_key:${integrationKey} b3af39c0-5ed5-42df-a57c-cbe3807d23cc\``,
+               intentType: "clarify_missing_scope"
+             });
+             return { success: false, message: rejectMsgResult.data };
+           }
 
            webhookResult = await postN8nWebhook("webhook/fb-publish-executor", {
              integration_key: integrationKey,
              content_item_id: contentItemId,
+             artifact_version_id: artifactVersionId,
              organization_id: organizationId,
              reference_token: referenceToken
            });
@@ -849,11 +874,19 @@ export async function sendChatMessage(threadId: string, body: string) {
          throw new Error(`Failed to issue token: ${tokenRes.reason}`);
        }
 
+       const ctxRes = await dbLoadContextData(organizationId, 'content', contentItemId);
+       const artifactVersionId = ctxRes.data?.artifact_version_id || null;
+
+       if (!artifactVersionId || ctxRes.data?.state !== 'scheduled') {
+         throw new Error(`Nội dung ${contentItemId} chưa sẵn sàng để xuất bản (Trạng thái: ${ctxRes.data?.state || 'unknown'}). Yêu cầu hoàn tất tạo Artifact và chuyển trạng thái scheduled.`);
+       }
+
        const webhookResult = await postN8nWebhook("webhook/fb-publish-executor", {
          integration_key: integrationKey,
          content_item_id: contentItemId,
+         artifact_version_id: artifactVersionId,
          organization_id: organizationId,
-         reference_token: tokenRes.data.token
+         reference_token: tokenRes.data.receipt?.lease_token
        });
 
        const routedMsgResult = await dbInsertChatMessage(organizationId, {

@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "jsCode": "const item = $('Extract Visual').first().json;\nitem.r2_object_key = $('Get Upload Ticket').item.json.objectKey;\nitem.r2_url = '/api/assets/proxy?key=' + item.r2_object_key;\n\nif (!item.artifacts) item.artifacts = {};\nitem.artifacts.image = item.r2_url;\n\nreturn { json: item };"
+        "jsCode": "const item = $('Extract Visual').first().json;\nitem.r2_object_key = $('Get Upload Ticket').item.json.objectKey;\nitem.r2_url = '/api/assets/public/' + item.r2_object_key;\n\nif (!item.artifacts) item.artifacts = {};\nitem.artifacts.image = item.r2_url;\n\nreturn { json: item };"
       },
       "name": "Map R2 URL",
       "type": "n8n-nodes-base.code",

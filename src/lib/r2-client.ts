@@ -57,3 +57,14 @@ export async function generateR2PresignedDownloadUrl(objectKey: string, expiresI
   // 3600 seconds = 1 hour
   return await getSignedUrl(client, command, { expiresIn });
 }
+
+export async function uploadBufferToR2(objectKey: string, buffer: Uint8Array | Buffer, contentType: string): Promise<void> {
+  const client = getR2Client();
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: objectKey,
+    Body: buffer,
+    ContentType: contentType,
+  });
+  await client.send(command);
+}

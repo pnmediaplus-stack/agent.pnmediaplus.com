@@ -81,49 +81,24 @@ export async function POST(req: NextRequest) {
     const safeFilename = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
     const objectPath = `${organizationId}/${auth.user.id}/${timestamp}_${safeFilename}`;
 
-    // 3. Upload to Supabase Storage via REST
-    const uploadUrl = `${supabaseUrl}/storage/v1/object/phase1_chat_attachments/${objectPath}`;
-
-    const uploadRes = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${serviceRoleKey}`,
-        'apikey': serviceRoleKey,
-        'Content-Type': file.type
-      },
-      body: fileBuffer
-    });
-
-    if (!uploadRes.ok) {
-      const errorText = await uploadRes.text();
-      console.error('Storage Upload Error:', errorText);
-      return NextResponse.json({ error: 'UPLOAD_FAILED', message: 'Failed to upload to storage' }, { status: 500 });
+    // 3. Upload to Cloudflare R2
+    const { uploadBufferToR2 } = await import('@/lib/r2-client');
+    const r2ObjectKey = `chat-attachments/${objectPath}`;
+    
+    try {
+      await uploadBufferToR2(r2ObjectKey, new Uint8Array(fileBuffer), file.type);
+    } catch (err) {
+      console.error('R2 Upload Error:', err);
+      return NextResponse.json({ error: 'UPLOAD_FAILED', message: 'Failed to upload to R2' }, { status: 500 });
     }
 
-    // 4. Create Short-lived Signed URL (Gatekeeper requirement)
-    const signUrl = `${supabaseUrl}/storage/v1/object/sign/phase1_chat_attachments/${objectPath}`;
-    const signRes = await fetch(signUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${serviceRoleKey}`,
-        'apikey': serviceRoleKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ expiresIn: 300 }) // 5 minutes (Gatekeeper requirement)
-    });
-
-    if (!signRes.ok) {
-      const errorText = await signRes.text();
-      console.error('Storage Sign Error:', errorText);
-      return NextResponse.json({ error: 'SIGN_FAILED', message: 'Failed to generate signed url' }, { status: 500 });
-    }
-
-    const signData = await signRes.json();
+    // 4. Return the public proxy path
+    const publicUrl = `/api/assets/public/${r2ObjectKey}`;
 
     return NextResponse.json({
       success: true,
-      path: objectPath,
-      signedUrl: signData.signedURL
+      path: r2ObjectKey,
+      signedUrl: publicUrl
     });
 
   } catch (error) {

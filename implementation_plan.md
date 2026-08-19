@@ -1,31 +1,47 @@
-# Kế hoạch Triển khai: "Context-Aware Chat" (Nhận thức Chiến lược Chiến dịch)
+# Migrate Chat Attachments to Cloudflare R2
 
-Tính năng này sẽ biến Chat UI từ một giao diện ra lệnh đơn thuần thành một Trợ lý thực thụ, biết tự động bám theo Kế hoạch Marketing của công ty.
+Mục tiêu: Chuyển đổi toàn bộ lưu trữ file đính kèm trong khung chat và file do AI (Kie) tạo ra từ Supabase Storage sang Cloudflare R2. Đồng thời, giải quyết triệt để lỗi Facebook không đọc được ảnh bằng cách thiết lập cơ chế URL Public an toàn (bỏ giới hạn 5 phút và bỏ Auth chặn Facebook).
 
-## 1. Nguồn Dữ liệu Chiến dịch (Campaign Context Source)
-* Lấy từ bảng `pn_content_phase2.campaigns`.
-* Dữ liệu bóc tách để nhồi vào AI (Strategic Context): `campaign_name`, `campaign_goal`, `campaign_brief`, `target_audience`, `tone_of_voice` (nếu có trong `validation_hints`).
-
-## 2. Lưu trữ Ngữ cảnh theo Luồng Chat (Thread-Level Active Campaign)
-* Bổ sung cột `active_campaign_id` (UUID) vào bảng `pn_os_ai_department.chat_threads`.
-* Bổ sung API/Slash Command để người dùng gán chiến dịch cho luồng hiện tại: `/campaign set <tên_hoặc_id>`.
-
-## 3. Quy tắc chọn ACTIVE Campaign (Selection Rules & Fail-Closed)
-Mỗi khi người dùng gõ lệnh sinh nội dung (`/viral_research` hoặc `/auto_content`), hệ thống sẽ phân giải Campaign theo thứ tự ưu tiên sau:
-
-1. **User chỉ định trực tiếp trong lệnh:** (VD: `/viral_research Balo --campaign="Back to School"`). Nếu tìm thấy, dùng luôn.
-2. **Context của Thread:** Nếu trong lệnh không có, kiểm tra cột `active_campaign_id` của Thread hiện tại. Nếu có, dùng luôn.
-3. **Mặc định Duy nhất:** Kiểm tra bảng `campaigns` của Tenant. Nếu hiện tại **chỉ có đúng 1 Campaign đang ACTIVE**, tự động lấy Campaign đó làm mặc định.
-4. **Fail-Closed (Hành vi an toàn):** Nếu có nhiều hơn 1 Campaign ACTIVE và user không chỉ định -> Dừng lệnh, trả lời bằng tin nhắn System yêu cầu user làm rõ: *"Hệ thống tìm thấy nhiều chiến dịch đang chạy (Back to School, Summer Sale). Bạn muốn dùng chiến dịch nào? Gõ `/campaign set <tên>` để chọn."*
-
-## 4. Điểm Tiêm Ngữ cảnh (Injection Point)
-* **API `chat-actions.ts`:** Sẽ làm nhiệm vụ phân giải logic số (3) ở trên. Nếu pass, nó sẽ query thông tin Campaign từ DB và truyền vào biến `campaignContext`.
-* **N8N Workflow:** Thay vì chỉ nhận `briefText`, Webhook sẽ nhận thêm object `campaignContext`.
-* **Node `Format Prompt`:** Bổ sung khối `[STRATEGIC CONTEXT]` vào đầu prompt, ép 3 Agent (Research, Caption, Image) phải sáng tạo xoay quanh Mục tiêu và Đối tượng của Chiến dịch này.
-
-## 5. Trải nghiệm người dùng (UX)
-* **Autocomplete:** Chat UI sẽ được nâng cấp để gõ `/campaign set ` hiện ra danh sách thả xuống các Chiến dịch đang Active (Lấy qua API).
-
+## User Review Required
 > [!IMPORTANT]
-> **User Review Required:**
-> Anh thấy thứ tự ưu tiên phân giải Chiến dịch và hành vi **Fail-Closed** (từ chối chạy nếu có quá nhiều chiến dịch mà không chỉ định) đã hợp lý và chặt chẽ chưa ạ? Mình có muốn cho phép AI tự động đoán chiến dịch dựa trên từ khóa không, hay cứ ép User phải chọn cho an toàn?
+> - Cloudflare R2 mặc định là Private. Nếu bạn đã có **Public Custom Domain** cho R2, hệ thống sẽ trả về link trực tiếp. 
+> - Nếu chưa có Public Domain, mình sẽ tạo một endpoint `/api/assets/public` có chức năng Redirect 302 sang Link Presigned của R2 (không cần token xác thực). Facebook hỗ trợ Redirect nên vẫn sẽ lấy được ảnh bình thường.
+
+## Proposed Changes
+
+---
+
+### Cloudflare R2 Client
+
+#### [MODIFY] [r2-client.ts](file:///d:/Projects/agent.pnmediaplus.com/src/lib/r2-client.ts)
+- Bổ sung hàm `uploadBufferToR2(objectKey, buffer, contentType)` để Server có thể upload thẳng file bytes lên R2 mà không cần phải đi vòng qua Presigned Upload URL.
+- Bổ sung hàm lấy Public URL: Trả về link Custom Domain nếu có, hoặc trả về link gọi tới proxy public.
+
+---
+
+### Chat Attachments API
+
+#### [MODIFY] [route.ts](file:///d:/Projects/agent.pnmediaplus.com/src/app/api/chat-attachments/route.ts)
+- Gỡ bỏ hoàn toàn logic fetch sang REST API của Supabase Storage (`/storage/v1/object/...`).
+- Gỡ bỏ logic tạo Signed URL 5 phút.
+- Gắn hàm `uploadBufferToR2` vừa tạo để lưu file đính kèm của người dùng thẳng lên R2.
+- Trả về đường dẫn public (hoặc proxy public) để Chat UI render ổn định.
+
+---
+
+### Public Asset Proxy (New)
+
+#### [NEW] [route.ts](file:///d:/Projects/agent.pnmediaplus.com/src/app/api/assets/public/route.ts)
+- Tạo một API route mới không bị kiểm duyệt bởi `verifyActionAuth()` (cho phép Facebook cào data).
+- Route này sẽ nhận `key` và kiểm tra bảo mật (chỉ cho phép truy xuất các thư mục được public như `campaign-media` hoặc `chat-attachments`).
+- Tự động sinh R2 Presigned URL (1 tiếng) và trả về `302 Redirect`. Bot Facebook sẽ đi theo Redirect này để lấy ảnh.
+
+## Verification Plan
+
+### Automated Tests
+- Build lại project (TypeScript validation) không báo lỗi.
+
+### Manual Verification
+1. Gắn thử một file ảnh vào khung chat -> File tải lên thành công, link ảnh được render ổn định.
+2. Kiểm tra Bucket R2 trên Cloudflare Dashboard -> Ảnh chat đã xuất hiện trong R2.
+3. Kích hoạt lại lệnh `/publish` một content bất kỳ của Kie -> Link ảnh được truyền sang Facebook thành công và không bị báo lỗi `Missing or invalid image file`.
