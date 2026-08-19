@@ -1,5 +1,6 @@
 "use server";
 
+import { v4 as uuidv4 } from 'uuid';
 import { postN8nWebhook } from "@/lib/n8n-client";
 import type { ChatIntentType } from "@/types/state";
 import { verifyActionAuth } from "@/lib/action-auth-guard";
@@ -14,6 +15,7 @@ import {
 import {
   buildCampaignPlanRequestContract
 } from "@/lib/plan-campaign-contract";
+import { fastTrackApproveAndSchedule } from "@/lib/fast-track";
 import {
   dbInsertChatMessage,
   dbInsertAuditLog,
@@ -567,13 +569,20 @@ export async function sendChatMessage(threadId: string, body: string) {
            const referenceToken = tokenRes.data.receipt?.lease_token;
 
            const ctxRes = await dbLoadContextData(organizationId, 'content', contentItemId);
-           const artifactVersionId = ctxRes.data?.artifact_version_id || null;
+           let artifactVersionId = ctxRes.data?.artifact_version_id || null;
+           let currentState = ctxRes.data?.state;
 
-           if (!artifactVersionId || ctxRes.data?.state !== 'scheduled') {
+           // Fast-track QA Approval and Scheduling if user triggers /publish
+           if (currentState === 'QA_ready' || currentState === 'QA_passed' || (currentState === 'scheduled' && !artifactVersionId)) {
+              artifactVersionId = await fastTrackApproveAndSchedule(organizationId, contentItemId);
+              currentState = 'scheduled';
+           }
+
+           if (!artifactVersionId || currentState !== 'scheduled') {
              const rejectMsgResult = await dbInsertChatMessage(organizationId, {
                threadId,
                sender: "system",
-               body: `Nội dung **${contentItemId}** chưa sẵn sàng để xuất bản. Trạng thái hiện tại: **${ctxRes.data?.state || 'unknown'}**. Bạn cần hoàn tất tạo nội dung (artifact) và chuyển sang trạng thái "scheduled". Để test thử, bạn có thể gõ lệnh với ID có sẵn: \`/publish integration_key:${integrationKey} b3af39c0-5ed5-42df-a57c-cbe3807d23cc\``,
+               body: `Nội dung **${contentItemId}** chưa sẵn sàng để xuất bản. Trạng thái hiện tại: **${currentState || 'unknown'}**. Bạn cần hoàn tất tạo nội dung và chuyển sang trạng thái "scheduled".`,
                intentType: "clarify_missing_scope"
              });
              return { success: false, message: rejectMsgResult.data };
@@ -876,10 +885,17 @@ export async function sendChatMessage(threadId: string, body: string) {
        }
 
        const ctxRes = await dbLoadContextData(organizationId, 'content', contentItemId);
-       const artifactVersionId = ctxRes.data?.artifact_version_id || null;
+       let artifactVersionId = ctxRes.data?.artifact_version_id || null;
+       let currentState = ctxRes.data?.state;
 
-       if (!artifactVersionId || ctxRes.data?.state !== 'scheduled') {
-         throw new Error(`Nội dung ${contentItemId} chưa sẵn sàng để xuất bản (Trạng thái: ${ctxRes.data?.state || 'unknown'}). Yêu cầu hoàn tất tạo Artifact và chuyển trạng thái scheduled.`);
+       // Fast-track QA Approval and Scheduling if user triggers /publish
+       if (currentState === 'QA_ready' || currentState === 'QA_passed' || (currentState === 'scheduled' && !artifactVersionId)) {
+          artifactVersionId = await fastTrackApproveAndSchedule(organizationId, contentItemId);
+          currentState = 'scheduled';
+       }
+
+       if (!artifactVersionId || currentState !== 'scheduled') {
+         throw new Error(`Nội dung ${contentItemId} chưa sẵn sàng để xuất bản (Trạng thái: ${currentState || 'unknown'}). Yêu cầu hoàn tất tạo Artifact và chuyển trạng thái scheduled.`);
        }
 
        const webhookResult = await postN8nWebhook("webhook/fb-publish-executor", {
