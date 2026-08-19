@@ -539,7 +539,7 @@ export async function sendChatMessage(threadId: string, body: string) {
              if (threadContentItemId) {
                contentItemId = threadContentItemId;
              } else {
-               const latestRes = await dbGetLatestContentItem(organizationId);
+               const latestRes = await dbGetLatestContentItem(organizationId, auth.email);
                if (latestRes.data?.id) contentItemId = latestRes.data.id;
              }
            }
