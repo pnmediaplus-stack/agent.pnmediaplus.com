@@ -226,14 +226,6 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
         delete cleanPayload.n;
         delete cleanPayload.size;
         delete cleanPayload.model; // Legacy endpoints reject the model parameter
-      } else if (requestContract === 'standard_generations') {
-        cleanPayload.aspectRatio = cleanPayload.size === '1024x1024' ? '1:1' : '16:9';
-        cleanPayload.outputFormat = "jpeg";
-        cleanPayload.enableTranslation = true;
-        delete cleanPayload.messages;
-        delete cleanPayload.n;
-        delete cleanPayload.size;
-        // Keep cleanPayload.model intact!
       } else {
         throw new Error(`UNKNOWN_REQUEST_CONTRACT: Adapter returned unsupported contract '${requestContract}'`);
       }
@@ -264,7 +256,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
 
     // --- KIE AI ASYNC POLLING LOGIC ---
     // Either legacy outputFormat or new jobs API format
-    if (providerId === 'kie_ai' && responseData.data && responseData.data.taskId && (requestContract === 'legacy_generate' || requestContract === 'jobs_create_task' || requestContract === 'standard_generations')) {
+    if (providerId === 'kie_ai' && responseData.data && responseData.data.taskId && (requestContract === 'legacy_generate' || requestContract === 'jobs_create_task')) {
       const taskId = responseData.data.taskId;
 
       // If async mode is requested, return immediately without polling or parsing usage
@@ -283,7 +275,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
       } else if (requestContract === 'jobs_create_task') {
         pollingUrl = endpointUrl.replace(/\/createTask$/, '/recordInfo') + `?taskId=${taskId}`;
       } else {
-        pollingUrl = endpointUrl.replace(/\/[^/]+$/, '/recordInfo') + `?taskId=${taskId}`;
+        throw new Error(`UNKNOWN_REQUEST_CONTRACT: '${requestContract}'`);
       }
       
       let isComplete = false;
