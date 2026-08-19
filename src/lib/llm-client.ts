@@ -201,9 +201,12 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
       delete cleanPayload.response_format;
     }
     
-    let requestContract = 'jobs_create_task';
+    let requestContract = '';
     if (providerId === 'kie_ai' && cleanPayload.size) { // size indicates it's an image generation request
-      requestContract = adapter.getRequestContract ? await adapter.getRequestContract(payload, options) : 'standard_generations';
+      if (!adapter.getRequestContract) {
+         throw new Error(`UNABLE_TO_DETERMINE_REQUEST_CONTRACT: Provider ${providerId} adapter must implement getRequestContract for image generation`);
+      }
+      requestContract = await adapter.getRequestContract(payload, options);
 
       if (requestContract === 'jobs_create_task') {
         cleanPayload.input = {
@@ -223,8 +226,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
         delete cleanPayload.n;
         delete cleanPayload.size;
         delete cleanPayload.model; // Legacy endpoints reject the model parameter
-      } else {
-        // requestContract === 'standard_generations'
+      } else if (requestContract === 'standard_generations') {
         cleanPayload.aspectRatio = cleanPayload.size === '1024x1024' ? '1:1' : '16:9';
         cleanPayload.outputFormat = "jpeg";
         cleanPayload.enableTranslation = true;
@@ -232,6 +234,8 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
         delete cleanPayload.n;
         delete cleanPayload.size;
         // Keep cleanPayload.model intact!
+      } else {
+        throw new Error(`UNKNOWN_REQUEST_CONTRACT: Adapter returned unsupported contract '${requestContract}'`);
       }
     }
 
@@ -260,7 +264,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
 
     // --- KIE AI ASYNC POLLING LOGIC ---
     // Either legacy outputFormat or new jobs API format
-    if (providerId === 'kie_ai' && responseData.data && responseData.data.taskId && (requestContract === 'legacy_generate' || requestContract === 'jobs_create_task' || cleanPayload.outputFormat)) {
+    if (providerId === 'kie_ai' && responseData.data && responseData.data.taskId && (requestContract === 'legacy_generate' || requestContract === 'jobs_create_task' || requestContract === 'standard_generations')) {
       const taskId = responseData.data.taskId;
 
       // If async mode is requested, return immediately without polling or parsing usage

@@ -9,10 +9,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12144,
-        -2176
+        15296,
+        -3744
       ],
-      "id": "e62c83fb-8261-4cc6-b7a7-b12092432d9f"
+      "id": "d71fb244-00d4-427d-8792-2208135f633a"
     },
     {
       "parameters": {
@@ -36,10 +36,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        11936,
-        -2176
+        15088,
+        -3744
       ],
-      "id": "56e07a9e-19ef-4821-84d4-5fa41b5b4f27"
+      "id": "74c42515-4c6f-4250-98e1-becc5bfaf3b4"
     },
     {
       "parameters": {
@@ -50,10 +50,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        11744,
-        -2176
+        14896,
+        -3744
       ],
-      "id": "26741df1-169a-4824-a56e-c4b48c164971"
+      "id": "0a20d4cc-41d8-441a-a6d4-90d2e596393a"
     },
     {
       "parameters": {
@@ -68,10 +68,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        11536,
-        -2176
+        14704,
+        -3744
       ],
-      "id": "e552acba-c327-4e24-9f24-f6ef80c0a273"
+      "id": "3580075a-0fb2-46f9-9f1d-93a48b348977"
     },
     {
       "parameters": {
@@ -97,10 +97,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        10256,
-        -2176
+        13856,
+        -3984
       ],
-      "id": "97e352cc-43b7-459b-a380-df492015faf9",
+      "id": "df682056-70a5-4f0c-902e-554680da3f34",
       "credentials": {
         "httpHeaderAuth": {
           "id": "nlRh1UkRewsK7CCR",
@@ -143,10 +143,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        9024,
-        -2144
+        12624,
+        -3952
       ],
-      "id": "fe497993-1198-4f6c-9ccd-3c8176ef87b2",
+      "id": "20ed18bb-64fb-4925-83cd-4d1fe2182546",
       "name": "Preserve Reference Token"
     },
     {
@@ -157,10 +157,10 @@
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
       "position": [
-        9408,
-        -1936
+        13008,
+        -3744
       ],
-      "id": "66396768-66f3-4ef2-9506-b479a554e1f8"
+      "id": "97e4fde7-6769-4725-b31d-1af79aa955e2"
     },
     {
       "parameters": {
@@ -177,10 +177,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        9408,
-        -2144
+        13008,
+        -3952
       ],
-      "id": "777d0888-e555-4bec-9f48-f0efadada472"
+      "id": "67da1442-9261-45f2-b9a3-ac1921ae92a9"
     },
     {
       "parameters": {
@@ -213,10 +213,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        9216,
-        -2144
+        12816,
+        -3952
       ],
-      "id": "245b64f9-c005-48be-a4a2-77a9dedebbfe"
+      "id": "fddf22d2-5140-4262-9c3c-3f26eb77fc69"
     },
     {
       "parameters": {
@@ -239,10 +239,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        11952,
-        -1936
+        15104,
+        -3520
       ],
-      "id": "4b389f95-2a30-4e98-b626-475b6873f989",
+      "id": "0966d109-9992-47e7-8919-03060a5849d7",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -258,10 +258,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        11760,
-        -1936
+        14912,
+        -3520
       ],
-      "id": "ff2327af-3b3c-4372-a1b0-7dfd823aed41"
+      "id": "38de93ae-17df-4c4a-92d6-bd10b66bf7b8"
     },
     {
       "parameters": {
@@ -284,10 +284,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        11552,
-        -1936
+        14688,
+        -3520
       ],
-      "id": "126fa18a-fc0d-496d-897a-22220ceb5af0",
+      "id": "8ae1cfcc-c966-4ee4-aea2-250133f1b4a3",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -303,10 +303,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        11360,
-        -1936
+        14480,
+        -3520
       ],
-      "id": "7a8dc288-a123-48dc-9a2e-038002112c77"
+      "id": "ace92bff-0cfc-43cc-88f3-1594f250a87c"
     },
     {
       "parameters": {
@@ -329,10 +329,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        11152,
-        -1936
+        14272,
+        -3520
       ],
-      "id": "d7d94607-d836-466d-8be3-9d51b1747180",
+      "id": "f903c08a-06a3-4c15-9308-0884697a8f4f",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -348,10 +348,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        11296,
-        -2176
+        14480,
+        -3744
       ],
-      "id": "9e413fd1-08a0-4ef3-9157-a694d0f6ee5f"
+      "id": "fd373671-4fcb-4aa7-83b7-0d85ae4da969"
     },
     {
       "parameters": {
@@ -366,10 +366,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        11220,
-        -2176
+        13632,
+        -3760
       ],
-      "id": "poll-image-status-node"
+      "id": "9a4000c6-7947-422a-af76-87ddea6ceb49"
     },
     {
       "parameters": {
@@ -392,10 +392,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        10880,
-        -2176
+        14464,
+        -3984
       ],
-      "id": "18d5044d-d5ce-4e00-83ce-4b6100740f40",
+      "id": "52b33b0c-7713-43e4-94cb-1373449ad689",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -411,10 +411,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        10656,
-        -2176
+        14256,
+        -3984
       ],
-      "id": "38893e40-fadd-4399-ae0d-fcee68bd6119"
+      "id": "0c10478a-4315-4909-adff-a8263855f679"
     },
     {
       "parameters": {
@@ -424,10 +424,10 @@
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
       "position": [
-        9824,
-        -1936
+        13424,
+        -3744
       ],
-      "id": "744dec05-72c6-4f73-b6c9-a103539878b7"
+      "id": "e789cd7e-3e26-4141-b8b2-038078d59839"
     },
     {
       "parameters": {
@@ -444,10 +444,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        9824,
-        -2160
+        13424,
+        -3968
       ],
-      "id": "dc007946-025b-4125-aefd-d577691a7b37"
+      "id": "7a7f23ae-da50-4a8e-83a5-31c78f56e0a2"
     },
     {
       "parameters": {
@@ -458,10 +458,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        9632,
-        -2160
+        13232,
+        -3968
       ],
-      "id": "26f58bfc-25dc-4496-99dd-477d16b0d791"
+      "id": "0a17a007-a233-45cd-8a3a-8b1c6288da69"
     },
     {
       "parameters": {
@@ -471,10 +471,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12160,
-        -1936
+        15312,
+        -3520
       ],
-      "id": "e1e3fa2f-1d6d-4a73-8a14-14621fa10846"
+      "id": "0ab88142-6fdd-4a8b-a51b-55ea91797605"
     },
     {
       "parameters": {
@@ -491,10 +491,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        12360,
-        -1936
+        15520,
+        -3520
       ],
-      "id": "push-to-chat-db-node",
+      "id": "0c5377a4-f2a1-402d-8193-1515d8d0ae13",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -526,10 +526,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        11088,
-        -2176
+        14688,
+        -3984
       ],
-      "id": "25f29e60-3a95-4d0c-b53c-45af995ccaac",
+      "id": "3956c7d9-64c6-4844-bc35-36f02d11f26e",
       "credentials": {
         "httpHeaderAuth": {
           "id": "nlRh1UkRewsK7CCR",
@@ -545,10 +545,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        10432,
-        -2176
+        14064,
+        -3984
       ],
-      "id": "e8b2fe52-2279-4cff-bf1b-cdd7ef3b3ae5"
+      "id": "187d5a4b-8af3-450b-a0f5-028b37a251c1"
     },
     {
       "parameters": {
@@ -558,10 +558,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        10048,
-        -2176
+        13648,
+        -3984
       ],
-      "id": "21b02ec9-a896-44cf-a4ac-4788cc77d169"
+      "id": "215199b7-039c-46d1-aff2-76953de8b21b"
     },
     {
       "parameters": {
@@ -574,10 +574,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        8800,
-        -2144
+        12400,
+        -3952
       ],
-      "id": "2ae9bee0-24e4-460d-a27c-b8d0004d8367",
+      "id": "e17ee3d3-4980-4e11-9ffd-657a6c5e1200",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -589,18 +589,17 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "generate-content",
-        "responseMode": "onReceived",
         "options": {}
       },
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        8608,
-        -2144
+        12208,
+        -3952
       ],
       "webhookId": "generate-content-webhook-id",
-      "id": "0971b918-10cd-4210-be62-d9fcb4bac6d9"
+      "id": "6c33c794-3bd9-47b8-81c9-4af823a85a22"
     },
     {
       "parameters": {
@@ -610,10 +609,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        11370,
-        -2176
+        13856,
+        -3760
       ],
-      "id": "limit-polling-node"
+      "id": "ba135968-5682-4e02-9351-f08a8da4e49d"
     },
     {
       "parameters": {
@@ -630,10 +629,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        11520,
-        -2176
+        14048,
+        -3760
       ],
-      "id": "check-status-node"
+      "id": "353b6243-ff92-45df-8701-a32bdda30d5e"
     },
     {
       "parameters": {
@@ -644,10 +643,11 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
-        11570,
-        -1976
+        14256,
+        -3776
       ],
-      "id": "wait-5s-node"
+      "id": "a510c930-55ef-42df-88b9-579e2bf118db",
+      "webhookId": "7bc874fb-d834-4328-98a4-fac4ada9e774"
     }
   ],
   "pinData": {},
@@ -986,7 +986,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "d8c8df05-d2bd-4501-b6a0-0d7061bf0ff9",
+  "versionId": "ccbb9dcd-864e-48fd-89a8-93fda76f2891",
   "meta": {
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
   },
