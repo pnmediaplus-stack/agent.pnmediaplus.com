@@ -369,10 +369,7 @@
         11220,
         -2176
       ],
-      "id": "poll-image-status-node",
-      "retryOnFail": true,
-      "maxTries": 24,
-      "waitBetweenTries": 5000
+      "id": "poll-image-status-node"
     },
     {
       "parameters": {
@@ -604,6 +601,53 @@
       ],
       "webhookId": "generate-content-webhook-id",
       "id": "0971b918-10cd-4210-be62-d9fcb4bac6d9"
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('node');\nstaticData.pollCount = (staticData.pollCount || 0) + 1;\nif (staticData.pollCount > 24) {\n  throw new Error('POLL_TIMEOUT: Image generation took too long');\n}\nreturn $input.all();"
+      },
+      "name": "Limit Polling",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        11370,
+        -2176
+      ],
+      "id": "limit-polling-node"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.status}}",
+              "value2": "processing"
+            }
+          ]
+        }
+      },
+      "name": "Check Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        11520,
+        -2176
+      ],
+      "id": "check-status-node"
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "name": "Wait 5s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        11570,
+        -1976
+      ],
+      "id": "wait-5s-node"
     }
   ],
   "pinData": {},
@@ -846,7 +890,7 @@
       "main": [
         [
           {
-            "node": "Extract Visual",
+            "node": "Limit Polling",
             "type": "main",
             "index": 0
           }
@@ -891,6 +935,46 @@
         [
           {
             "node": "Get Item (Webhook)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit Polling": {
+      "main": [
+        [
+          {
+            "node": "Check Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Status": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Visual",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s": {
+      "main": [
+        [
+          {
+            "node": "Poll Image Status",
             "type": "main",
             "index": 0
           }
