@@ -14,32 +14,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    if (provider !== 'kie_ai') {
+    const normalizedProvider = provider === 'kie.ai' ? 'kie_ai' : provider;
+
+    if (normalizedProvider !== 'kie_ai') {
       return NextResponse.json({ error: 'Status polling only supported for kie_ai currently' }, { status: 400 });
     }
 
     const supabase = createServiceRoleClient();
 
-    // 1. Fetch provider config to get base URL
-    const { data: providerConfig, error: providerErr } = await supabase
-      .schema('tenant_integration_vault')
-      .from('integration_providers')
-      .select('public_metadata, secret_credentials')
-      .eq('provider_code', provider)
-      .single();
-
-    if (providerErr || !providerConfig) {
-      return NextResponse.json({ error: 'Provider not found' }, { status: 400 });
-    }
-
-    const metadata = providerConfig.public_metadata as any || {};
-    const baseUrl = metadata.base_url ? metadata.base_url.replace(/\/$/, '') : 'https://api.kie.ai/v1';
+    // Skip querying tenant_integration_vault.integration_providers directly because 
+    // it's not exposed via PostgREST and throws PGRST106. Hardcode baseUrl for now.
+    const baseUrl = 'https://api.kie.ai/v1';
     
     // Hardcode recordInfo for now since it's Kie AI specific
     const pollingUrl = `${baseUrl.includes('/api/v1') ? baseUrl : baseUrl.replace('/v1', '/api/v1')}/jobs/recordInfo?taskId=${taskId}`;
     
     // Get API Key
-    const apiKey = await getTenantApiKey(tenant_id, provider);
+    const apiKey = await getTenantApiKey(tenant_id, normalizedProvider);
 
     // 2. Poll KIE AI
     const pollRes = await fetch(pollingUrl, {
