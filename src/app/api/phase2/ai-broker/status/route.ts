@@ -22,9 +22,16 @@ export async function POST(request: Request) {
 
     const supabase = createServiceRoleClient();
 
-    // Skip querying tenant_integration_vault.integration_providers directly because 
-    // it's not exposed via PostgREST and throws PGRST106. Hardcode baseUrl for now.
-    const baseUrl = 'https://api.kie.ai/v1';
+    // 1. Fetch provider config via RPC to bypass PGRST106 schema restriction
+    const { data: providers, error: providerErr } = await supabase.rpc('phase077_get_active_integration_providers');
+    const providerConfig = Array.isArray(providers) ? providers.find(p => p.provider_code === normalizedProvider) : null;
+
+    if (providerErr || !providerConfig) {
+      return NextResponse.json({ error: 'Provider not found in active catalog' }, { status: 400 });
+    }
+
+    const metadata = providerConfig.public_metadata as any || {};
+    const baseUrl = metadata.base_url ? metadata.base_url.replace(/\/$/, '') : 'https://api.kie.ai/v1';
     
     // Hardcode recordInfo for now since it's Kie AI specific
     const pollingUrl = `${baseUrl.includes('/api/v1') ? baseUrl : baseUrl.replace('/v1', '/api/v1')}/jobs/recordInfo?taskId=${taskId}`;
