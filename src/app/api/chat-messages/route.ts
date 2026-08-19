@@ -29,6 +29,25 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
+  // Verify that the thread belongs to the current tenant
+  const ownershipRes = await fetch(`${supabaseUrl}/rest/v1/chat_threads?id=eq.${threadId}&select=departments!inner(organization_id)`, {
+    headers: {
+      'apikey': serviceRoleKey,
+      'Authorization': `Bearer ${serviceRoleKey}`,
+      'Accept-Profile': 'pn_os_ai_department'
+    },
+    cache: 'no-store'
+  });
+  
+  if (!ownershipRes.ok) {
+    return NextResponse.json({ error: 'Failed to verify thread ownership' }, { status: 500 });
+  }
+  
+  const ownershipData = await ownershipRes.json();
+  if (!ownershipData || ownershipData.length === 0 || ownershipData[0].departments?.organization_id !== organizationId) {
+    return NextResponse.json({ error: 'FORBIDDEN', message: 'Thread not found or ownership mismatch' }, { status: 403 });
+  }
+
   try {
     const res = await fetch(`${supabaseUrl}/rest/v1/chat_messages?thread_id=eq.${threadId}&order=created_at.asc`, {
       headers: {

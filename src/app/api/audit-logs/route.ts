@@ -25,6 +25,30 @@ export async function GET(req: Request) {
   const entityId = url.searchParams.get('entity_id');
   const limit = url.searchParams.get('limit') || '100';
 
+  if (entityId) {
+    // Verify that the entity_id belongs to the current tenant's chat_threads
+    const ownershipRes = await fetch(`${supabaseUrl}/rest/v1/chat_threads?id=eq.${entityId}&select=departments!inner(organization_id)`, {
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Accept-Profile': 'pn_os_ai_department'
+      },
+      cache: 'no-store'
+    });
+    
+    if (!ownershipRes.ok) {
+      return NextResponse.json({ error: 'Failed to verify entity ownership' }, { status: 500 });
+    }
+    
+    const ownershipData = await ownershipRes.json();
+    if (!ownershipData || ownershipData.length === 0 || ownershipData[0].departments?.organization_id !== organizationId) {
+      return NextResponse.json({ error: 'FORBIDDEN', message: 'Entity not found or ownership mismatch' }, { status: 403 });
+    }
+  } else {
+    // If no entity_id is provided, reject the request to prevent fetching cross-tenant audit logs
+    return NextResponse.json({ error: 'BAD_REQUEST', message: 'entity_id is required' }, { status: 400 });
+  }
+
   let queryUrl = `${supabaseUrl}/rest/v1/audit_logs?order=created_at.desc&limit=${limit}`;
   if (entityId) {
     queryUrl += `&entity_id=eq.${entityId}`;

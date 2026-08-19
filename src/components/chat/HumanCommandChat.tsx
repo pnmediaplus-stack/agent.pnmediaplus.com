@@ -37,6 +37,8 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     let inFlight = false;
     const interval = setInterval(async () => {
       if (inFlight) return;
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      
       inFlight = true;
       try {
         const [messagesRes, logsRes, latestTasks] = await Promise.all([
@@ -56,7 +58,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
       } finally {
         inFlight = false;
       }
-    }, 3000);
+    }, 5000);
 
     return () => {
       mounted = false;
