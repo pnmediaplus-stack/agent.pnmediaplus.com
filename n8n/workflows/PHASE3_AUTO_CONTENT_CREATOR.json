@@ -371,8 +371,8 @@
       ],
       "id": "poll-image-status-node",
       "retryOnFail": true,
-      "maxTries": 20,
-      "waitBetweenTries": 5000
+      "maxTries": 60,
+      "waitBetweenTries": 10000
     },
     {
       "parameters": {
