@@ -25,7 +25,9 @@ import {
   dbResolveActiveCampaign,
   dbApproveAndCreateCampaign,
   dbUpdateThreadCampaign,
-  dbLoadContextData
+  dbLoadContextData,
+  dbGetLatestContentItem,
+  dbLoadThreadContext
 } from "@/lib/governance-api";
 import { requiresCampaignScope, requiresPublishScope } from "@/lib/validators";
 
@@ -222,9 +224,9 @@ export async function sendChatMessage(threadId: string, body: string) {
         } else if (command === '/status') {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> (Ví dụ: ${command} 12345)`;
         } else if (command === '/publish') {
-          // Bắt buộc dùng integration_key:<id> thay vì fallback bừa
-          if (args.length < 2 || !args[0].startsWith('integration_key:')) {
-            missingArgsMsg = 'Lệnh /publish yêu cầu tham số chuẩn: integration_key:<ID> <content_item_id> (Ví dụ: /publish integration_key:fbp_01a2b3c4 456)';
+          // Chấp nhận /publish integration_key:fbp (bỏ qua content_item_id để tự detect)
+          if (args.length < 1 || !args[0].startsWith('integration_key:')) {
+            missingArgsMsg = 'Lệnh /publish yêu cầu tham số: integration_key:<ID> [content_item_id] (Ví dụ: /publish integration_key:facebook_page_123)';
           }
         } else if (command === '/plan_campaign') {
           if (args.length < 2) missingArgsMsg = 'Lệnh /plan_campaign yêu cầu tham số: <department_id|department_name> <brief>';
@@ -514,6 +516,64 @@ export async function sendChatMessage(threadId: string, body: string) {
             return { success: true, message: successMsgResult.data };
           }
           return { success: false };
+        } else if (command === '/publish') {
+           const integrationKey = args[0].replace('integration_key:', '');
+           let contentItemId = args[1];
+
+           if (!contentItemId) {
+             const threadCtx = await dbLoadThreadContext(organizationId, threadId);
+             const threadContentItemId = threadCtx?.selected_content_item_id || threadCtx?.active_content_item_id;
+             
+             if (threadContentItemId) {
+               contentItemId = threadContentItemId;
+             } else {
+               const latestItemRes = await dbGetLatestContentItem(organizationId, auth.email);
+               if (latestItemRes.data?.id) {
+                 contentItemId = latestItemRes.data.id;
+               } else {
+                 const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+                   threadId,
+                   sender: "system",
+                   body: `Không tìm thấy content item nào gần đây. Lệnh /publish yêu cầu tham số chuẩn: integration_key:<ID> <content_item_id>`,
+                   intentType: "clarify_missing_scope"
+                 });
+                 return { success: false, message: rejectMsgResult.data };
+               }
+             }
+           }
+
+           const tokenRes = await issueReferenceToken(integrationKey, 'facebook_page');
+           if (!tokenRes.ok || !tokenRes.data) {
+             const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+               threadId,
+               sender: "system",
+               body: `Lỗi: Không thể lấy token kết nối cho ${integrationKey} (${tokenRes.reason}). Bạn hãy kiểm tra lại cấu hình Fanpage.`,
+               intentType: "clarify_missing_scope"
+             });
+             return { success: false, message: rejectMsgResult.data };
+           }
+
+           const referenceToken = tokenRes.data.token;
+
+           webhookResult = await postN8nWebhook("webhook/fb-publish-executor", {
+             integration_key: integrationKey,
+             content_item_id: contentItemId,
+             organization_id: organizationId,
+             reference_token: referenceToken
+           });
+
+           const routedMsgResult = await dbInsertChatMessage(organizationId, {
+             threadId,
+             sender: "system",
+             body: `Đã kích hoạt luồng Publish cho content **${contentItemId}** lên kênh **${integrationKey}**.`,
+             intentType: "route_department"
+           });
+
+           return {
+             success: true,
+             message: routedMsgResult.data ? JSON.parse(JSON.stringify(routedMsgResult.data)) : null,
+             webhook: { ok: webhookResult.ok, route: "webhook/fb-publish-executor", status: webhookResult.status || 200, message: webhookResult.message }
+           };
         } else {
            const rejectMsgResult = await dbInsertChatMessage(organizationId, {
              threadId,
@@ -757,6 +817,57 @@ export async function sendChatMessage(threadId: string, body: string) {
         message: clarifyMsgResult.data,
         webhook: { ok: false, route: "not_routed", status: 400, message: "scope clarification requested" }
       };
+    } else if (intentType === "publish_content") {
+       // Extracted valid publish scope
+       const integrationKeyMatch = body.match(/integration_key:([a-zA-Z0-9_-]+)/);
+       const integrationKey = integrationKeyMatch ? integrationKeyMatch[1] : '';
+       const contentItemIdMatch = body.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
+       let contentItemId = contentItemIdMatch ? contentItemIdMatch[1] : '';
+
+       if (!integrationKey) {
+         throw new Error("Missing integrationKey in publish scope");
+       }
+
+       if (!contentItemId) {
+         const threadCtx = await dbLoadThreadContext(organizationId, threadId);
+         const threadContentItemId = threadCtx?.selected_content_item_id || threadCtx?.active_content_item_id;
+         
+         if (threadContentItemId) {
+           contentItemId = threadContentItemId;
+         } else {
+           const latestItemRes = await dbGetLatestContentItem(organizationId, auth.email);
+           if (latestItemRes.data?.id) {
+             contentItemId = latestItemRes.data.id;
+           } else {
+             throw new Error("Không tìm thấy content item nào gần đây để publish. Vui lòng cung cấp ID cụ thể.");
+           }
+         }
+       }
+
+       const tokenRes = await issueReferenceToken(integrationKey, 'facebook_page');
+       if (!tokenRes.ok || !tokenRes.data) {
+         throw new Error(`Failed to issue token: ${tokenRes.reason}`);
+       }
+
+       const webhookResult = await postN8nWebhook("webhook/fb-publish-executor", {
+         integration_key: integrationKey,
+         content_item_id: contentItemId,
+         organization_id: organizationId,
+         reference_token: tokenRes.data.token
+       });
+
+       const routedMsgResult = await dbInsertChatMessage(organizationId, {
+         threadId,
+         sender: "system",
+         body: `Đã kích hoạt luồng Publish cho content **${contentItemId}** lên kênh **${integrationKey}**.`,
+         intentType: "route_department"
+       });
+
+       return {
+         success: true,
+         message: routedMsgResult.data,
+         webhook: { ok: webhookResult.ok, route: "webhook/fb-publish-executor", status: webhookResult.status || 200, message: webhookResult.message }
+       };
     }
 
     // Fail-closed fallback (Should be unreachable)

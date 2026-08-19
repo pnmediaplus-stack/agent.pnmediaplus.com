@@ -165,6 +165,26 @@ export async function dbCreateContentItemFromBrief(organizationId: string, brief
   return { data: data[0] };
 }
 
+export async function dbGetLatestContentItem(organizationId: string, ownerRef: string) {
+  const res = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?organization_id=eq.${organizationId}&owner_ref=eq.${ownerRef}&order=created_at.desc&limit=1`, {
+    headers: getPublicHeaders(),
+    cache: 'no-store'
+  });
+  if (!res.ok) return { error: await res.text(), data: null };
+  const data = await res.json();
+  return { data: data[0] || null };
+}
+
+export async function dbLoadThreadContext(organizationId: string, threadId: string) {
+  const res = await fetch(`${supabaseUrl}/rest/v1/phase1_chat_threads?id=eq.${threadId}`, {
+    headers: getPublicHeaders(),
+    cache: 'no-store'
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data[0] || null;
+}
+
 export async function dbResolveActiveCampaign(organizationId: string, threadId: string, explicitIdentifier: string | null) {
   // 1. Explicit identifier provided
   if (explicitIdentifier) {
