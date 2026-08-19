@@ -35,24 +35,41 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
 
     let artifactVersionId = item.artifact_version_id;
     if (!artifactVersionId && (item.state === 'QA_passed' || item.state === 'scheduled')) {
+      const dummyArtifactId = '516cb800-b1a4-4b5b-8179-f389faa3b02f';
+      
+      // Ensure the base artifact exists to satisfy foreign key constraint
+      await fetch(`${supabaseUrl}/rest/v1/artifacts`, {
+        method: 'POST',
+        headers: { ...headers, 'Accept-Profile': 'pn_os_ai_department', 'Prefer': 'resolution=ignore-duplicates' },
+        body: JSON.stringify({
+          id: dummyArtifactId,
+          organization_id: organizationId,
+          name: 'Auto-generated Content Artifact',
+          artifact_type: 'social_post'
+        })
+      });
+
       artifactVersionId = crypto.randomUUID();
-      await fetch(`${supabaseUrl}/rest/v1/artifact_versions`, {
+      const r1 = await fetch(`${supabaseUrl}/rest/v1/artifact_versions`, {
         method: 'POST',
         headers: { ...headers, 'Accept-Profile': 'pn_os_ai_department' },
         body: JSON.stringify({
           id: artifactVersionId,
-          artifact_id: '516cb800-b1a4-4b5b-8179-f389faa3b02f', // generic content artifact
+          artifact_id: dummyArtifactId,
           version_number: Date.now(),
           state: 'APPROVED',
           created_by_actor_type: 'SYSTEM',
           created_by_external_ref: 'Auto Publisher'
         })
       });
-      await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${contentItemId}`, {
+      if (!r1.ok) console.error('artifact_versions POST fail:', await r1.text());
+
+      const r2 = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${contentItemId}`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ artifact_version_id: artifactVersionId, state: 'scheduled' })
       });
+      if (!r2.ok) console.error('content_items PATCH fail:', await r2.text());
     }
 
     return artifactVersionId || item.artifact_version_id;
