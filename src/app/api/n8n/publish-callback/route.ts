@@ -160,7 +160,8 @@ export async function POST(request: Request) {
           p_idempotency_key: idempotency_key,
           p_sender: sender,
           p_content: body,
-          p_intent_type: intent_type
+          p_intent_type: intent_type,
+          p_metadata: metadata
         })
       });
 

@@ -1,5 +1,9 @@
 -- 20260819000000_update_n8n_chat_append_rpc_metadata.sql
 
+-- 1. Add metadata column to chat_messages
+ALTER TABLE pn_os_ai_department.chat_messages ADD COLUMN IF NOT EXISTS metadata jsonb;
+
+-- 2. Update RPC to accept and insert metadata
 create or replace function public.phase075_n8n_append_chat_message(
   p_thread_id uuid,
   p_idempotency_key text,
