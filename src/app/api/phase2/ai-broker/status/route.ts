@@ -129,14 +129,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: 'failed', error: 'Kie AI async task failed', details: pollJson }, { status: 500 });
     }
 
-    // 4. Still generating
-    // Return 202 Accepted with explicit status for N8N to handle via Do-While loop
+    // 4. Still generating - Explicit check
+    if (pollJson.data && (pollJson.data.successFlag === 0 || pollJson.data.status === 'processing' || pollJson.data.status === 'running' || pollJson.data.status === 'in_progress')) {
+      // Return 202 Accepted with explicit status for N8N to handle via Do-While loop
+      return NextResponse.json({ 
+        status: 'processing', 
+        message: 'Image is still generating. Please retry.',
+        taskId,
+        outbox_id: null
+      }, { status: 202 });
+    }
+
+    // 5. Unknown format or missing successFlag entirely
     return NextResponse.json({ 
-      status: 'processing', 
-      message: 'Image is still generating. Please retry.',
-      taskId,
-      outbox_id: null
-    }, { status: 202 });
+      status: 'failed', 
+      error: 'Unrecognized response format from Kie AI', 
+      details: pollJson 
+    }, { status: 500 });
+
 
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
