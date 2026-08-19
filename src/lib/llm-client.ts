@@ -219,7 +219,9 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
         delete cleanPayload.messages;
         delete cleanPayload.n;
         delete cleanPayload.size;
-        delete cleanPayload.model; // Legacy endpoints reject the model parameter
+        if (endpointUrl.endsWith('/generate')) {
+          delete cleanPayload.model; // Only legacy /generate endpoints reject the model parameter
+        }
       }
     }
 
