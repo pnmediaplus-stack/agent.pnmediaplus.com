@@ -51,7 +51,8 @@ export async function POST(request: Request) {
 
     const pollJson = await pollRes.json();
     
-    if (pollJson.data && pollJson.data.successFlag === 1) {
+    // 4. Check for success based on multiple Kie AI formats
+    if (pollJson.data && (pollJson.data.successFlag === 1 || pollJson.data.state === 'success' || pollJson.data.status === 'success')) {
       let imageUrl = null;
       if (pollJson.data.response && pollJson.data.response.resultImageUrl) {
         imageUrl = pollJson.data.response.resultImageUrl;
@@ -59,6 +60,13 @@ export async function POST(request: Request) {
         imageUrl = typeof pollJson.data.images[0] === 'string' ? pollJson.data.images[0] : pollJson.data.images[0].url;
       } else if (pollJson.data.url) {
         imageUrl = pollJson.data.url;
+      } else if (pollJson.data.resultJson && typeof pollJson.data.resultJson === 'string' && pollJson.data.resultJson.includes('url')) {
+        // sometimes resultJson is a stringified JSON
+        try {
+          const parsed = JSON.parse(pollJson.data.resultJson);
+          if (parsed.images && parsed.images.length > 0) imageUrl = parsed.images[0].url || parsed.images[0];
+          else if (parsed.url) imageUrl = parsed.url;
+        } catch(e) {}
       }
 
       if (imageUrl) {
@@ -113,7 +121,8 @@ export async function POST(request: Request) {
       }
     }
     
-    if (pollJson.data && (pollJson.data.status === 'failed' || pollJson.data.status === 'error' || pollJson.data.status === -1 || pollJson.data.successFlag === -1 || pollJson.data.successFlag === 2 || pollJson.data.successFlag === 3)) {
+    // Check for explicit failure
+    if (pollJson.data && (pollJson.data.status === 'failed' || pollJson.data.state === 'failed' || pollJson.data.status === 'error' || pollJson.data.status === -1 || pollJson.data.successFlag === -1 || pollJson.data.successFlag === 2 || pollJson.data.successFlag === 3)) {
       
       // Mark usage as failed
       await fetch(`${supabaseUrl}/rest/v1/phase2_llm_usage?id=eq.${usage_id}`, {
@@ -129,8 +138,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: 'failed', error: 'Kie AI async task failed', details: pollJson }, { status: 500 });
     }
 
-    // 4. Still generating - Explicit check
-    if (pollJson.data && (pollJson.data.successFlag === 0 || pollJson.data.status === 'processing' || pollJson.data.status === 'running' || pollJson.data.status === 'in_progress')) {
+    // Still generating - Explicit check
+    if (pollJson.data && (pollJson.data.successFlag === 0 || pollJson.data.state === 'waiting' || pollJson.data.state === 'processing' || pollJson.data.status === 'processing' || pollJson.data.status === 'running' || pollJson.data.status === 'in_progress')) {
       // Return 202 Accepted with explicit status for N8N to handle via Do-While loop
       return NextResponse.json({ 
         status: 'processing', 
@@ -140,7 +149,7 @@ export async function POST(request: Request) {
       }, { status: 202 });
     }
 
-    // 5. Unknown format or missing successFlag entirely
+    // Unknown format or missing successFlag/state entirely
     return NextResponse.json({ 
       status: 'failed', 
       error: 'Unrecognized response format from Kie AI', 
