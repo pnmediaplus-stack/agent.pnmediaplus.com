@@ -584,7 +584,8 @@ export async function sendChatMessage(threadId: string, body: string) {
              content_item_id: contentItemId,
              artifact_version_id: artifactVersionId,
              organization_id: organizationId,
-             reference_token: referenceToken
+             reference_token: referenceToken,
+             thread_id: threadId
            });
 
            const routedMsgResult = await dbInsertChatMessage(organizationId, {
@@ -886,7 +887,8 @@ export async function sendChatMessage(threadId: string, body: string) {
          content_item_id: contentItemId,
          artifact_version_id: artifactVersionId,
          organization_id: organizationId,
-         reference_token: tokenRes.data.receipt?.lease_token
+         reference_token: tokenRes.data.receipt?.lease_token,
+         thread_id: threadId
        });
 
        const routedMsgResult = await dbInsertChatMessage(organizationId, {

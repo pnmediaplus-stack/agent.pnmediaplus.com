@@ -135,7 +135,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const payload = $('Fetch Assets').item.json;\nconst accessToken = $('Redeem BYOK Token').item.json.data.access_token;\nconst pageId = $('Redeem BYOK Token').item.json.data.page_id;\nconst contentItemId = $('Webhook Trigger').item.json.body.content_item_id;\nconst organizationId = $('Webhook Trigger').item.json.body.organization_id;\n\nreturn {\n  caption: payload.caption || '',\n  image: payload.image || '',\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId,\n  organizationId: organizationId\n};"
+        "jsCode": "const payload = $('Fetch Assets').item.json;\nconst accessToken = $('Redeem BYOK Token').item.json.data.access_token;\nconst pageId = $('Redeem BYOK Token').item.json.data.page_id;\nconst contentItemId = $('Webhook Trigger').item.json.body.content_item_id;\nconst organizationId = $('Webhook Trigger').item.json.body.organization_id;\nconst threadId = $('Webhook Trigger').item.json.body.thread_id;\n\nreturn {\n  caption: payload.caption || '',\n  image: payload.image || '',\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId,\n  organizationId: organizationId,\n  threadId: threadId\n};"
       },
       "name": "Extract FB Assets",
       "type": "n8n-nodes-base.code",
@@ -259,6 +259,10 @@
             {
               "name": "externalUrl",
               "value": ""
+            },
+            {
+              "name": "threadId",
+              "value": "={{ $('Extract FB Assets').item.json.threadId }}"
             }
           ]
         },

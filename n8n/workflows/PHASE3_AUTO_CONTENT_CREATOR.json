@@ -648,6 +648,53 @@
       ],
       "id": "a510c930-55ef-42df-88b9-579e2bf118db",
       "webhookId": "7bc874fb-d834-4328-98a4-fac4ada9e774"
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('node');\nstaticData.pollCount = (staticData.pollCount || 0) + 1;\nif (staticData.pollCount > 24) {\n  throw new Error('POLL_TIMEOUT: Image generation took too long');\n}\nreturn $input.all();"
+      },
+      "name": "Limit Polling",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13782,
+        -3760
+      ],
+      "id": "limit-polling-node"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.status}}",
+              "value2": "processing"
+            }
+          ]
+        }
+      },
+      "name": "Check Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        13932,
+        -3760
+      ],
+      "id": "check-status-node"
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "name": "Wait 5s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        13982,
+        -3560
+      ],
+      "id": "wait-5s-node"
     }
   ],
   "pinData": {},
