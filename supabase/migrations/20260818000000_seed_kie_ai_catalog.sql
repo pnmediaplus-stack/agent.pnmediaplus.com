@@ -16,14 +16,16 @@ values (
         "capability": "image",
         "prompt_cost": 0,
         "completion_cost": 25.0,
-        "endpoint": "https://api.kie.ai/api/v1/flux/kontext/generate"
+        "endpoint": "https://api.kie.ai/api/v1/flux/kontext/generate",
+        "request_contract": "legacy_generate"
       },
       {
         "code": "nano-banana-2-lite",
         "capability": "image",
         "prompt_cost": 0,
         "completion_cost": 15.0,
-        "endpoint_template": "/images/generations"
+        "endpoint_template": "/images/generations",
+        "request_contract": "jobs_create_task"
       }
     ]
   }'::jsonb

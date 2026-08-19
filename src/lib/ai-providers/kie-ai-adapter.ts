@@ -56,13 +56,9 @@ export const kieAiAdapter: AiProviderAdapter = {
         return modelConfig.request_contract;
     }
     
-    // Fallback heuristic based on configured endpoint if contract is missing from DB
-    const finalEndpoint = modelConfig?.endpoint_template || modelConfig?.endpoint || '';
-    if (finalEndpoint.endsWith('/generate')) {
-        return 'legacy_generate';
-    }
-    
-    return 'jobs_create_task';
+    throw new Error(
+      `UNABLE_TO_DETERMINE_REQUEST_CONTRACT: Model '${payload.model}' does not have request_contract configured in integration_providers.public_metadata.`
+    );
   },
 
   injectAuth: (headers: Record<string, string>, tenantKey?: string) => {
