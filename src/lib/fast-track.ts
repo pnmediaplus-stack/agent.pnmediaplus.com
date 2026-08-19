@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 export async function fastTrackApproveAndSchedule(organizationId: string, contentItemId: string) {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -22,7 +22,7 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
         method: 'POST',
         headers,
         body: JSON.stringify({
-          content_item_id: contentItemId, reviewer_ref: 'system_auto_publish', verdict: 'pass', average_score: 10.0, overclaim_risk: 0, missing_asset: false, evidence_ref: 'evidence://auto-publish', notes: 'Auto-approved via /publish slash command'
+          content_item_id: contentItemId, reviewer_ref: 'system_auto_publish', verdict: 'pass', average_score: 10.0, overclaim_risk: 0, missing_asset: false, evidence_ref: 'evidence://auto-publish', notes: 'Approved via /approve slash command'
         })
       });
       await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${contentItemId}`, {
@@ -35,7 +35,7 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
 
     let artifactVersionId = item.artifact_version_id;
     if (!artifactVersionId && (item.state === 'QA_passed' || item.state === 'scheduled')) {
-      artifactVersionId = uuidv4();
+      artifactVersionId = crypto.randomUUID();
       await fetch(`${supabaseUrl}/rest/v1/artifact_versions`, {
         method: 'POST',
         headers: { ...headers, 'Accept-Profile': 'pn_os_ai_department' },

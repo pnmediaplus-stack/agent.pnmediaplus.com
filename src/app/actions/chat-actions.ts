@@ -1,6 +1,6 @@
 "use server";
 
-import { v4 as uuidv4 } from 'uuid';
+
 import { postN8nWebhook } from "@/lib/n8n-client";
 import type { ChatIntentType } from "@/types/state";
 import { verifyActionAuth } from "@/lib/action-auth-guard";
@@ -235,6 +235,8 @@ export async function sendChatMessage(threadId: string, body: string) {
         } else if (command === '/brainstorm') {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <văn bản mô tả ý tưởng> (Ví dụ: ${command} Lên 15 chủ đề cho 15 ngày)`;
         } else if (command === '/status') {
+          if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> (Ví dụ: ${command} 12345)`;
+        } else if (command === '/approve') {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> (Ví dụ: ${command} 12345)`;
         } else if (command === '/publish') {
           // Chấp nhận /publish integration_key:fbp (bỏ qua content_item_id để tự detect)
@@ -529,6 +531,27 @@ export async function sendChatMessage(threadId: string, body: string) {
             return { success: true, message: successMsgResult.data };
           }
           return { success: false };
+        } else if (command === '/approve') {
+           const contentItemId = args[0];
+           const artifactVersionId = await fastTrackApproveAndSchedule(organizationId, contentItemId);
+
+           if (!artifactVersionId) {
+             const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+               threadId,
+               sender: "system",
+               body: `Lỗi: Không thể duyệt nội dung **${contentItemId}**. Hãy kiểm tra lại ID hoặc trạng thái nội dung (chỉ áp dụng cho bài chờ duyệt QA_ready).`,
+               intentType: "approve_or_reject"
+             });
+             return { success: false, message: rejectMsgResult.data };
+           }
+
+           const routedMsgResult = await dbInsertChatMessage(organizationId, {
+             threadId,
+             sender: "system",
+             body: `✅ Đã duyệt nội dung **${contentItemId}** thành công!\n\nTrạng thái đã được chuyển sang "scheduled" (Sẵn sàng xuất bản).\nBạn có thể xuất bản bài viết này lên Facebook bằng lệnh:\n\`/publish integration_key:facebook_page_721220587889282 ${contentItemId}\``,
+             intentType: "approve_or_reject"
+           });
+           return { success: true, message: routedMsgResult.data };
         } else if (command === '/publish') {
            const integrationKey = args[0].replace('integration_key:', '');
            let contentItemId = args[1];
@@ -569,20 +592,13 @@ export async function sendChatMessage(threadId: string, body: string) {
            const referenceToken = tokenRes.data.receipt?.lease_token;
 
            const ctxRes = await dbLoadContextData(organizationId, 'content', contentItemId);
-           let artifactVersionId = ctxRes.data?.artifact_version_id || null;
-           let currentState = ctxRes.data?.state;
+           const artifactVersionId = ctxRes.data?.artifact_version_id || null;
 
-           // Fast-track QA Approval and Scheduling if user triggers /publish
-           if (currentState === 'QA_ready' || currentState === 'QA_passed' || (currentState === 'scheduled' && !artifactVersionId)) {
-              artifactVersionId = await fastTrackApproveAndSchedule(organizationId, contentItemId);
-              currentState = 'scheduled';
-           }
-
-           if (!artifactVersionId || currentState !== 'scheduled') {
+           if (!artifactVersionId || ctxRes.data?.state !== 'scheduled') {
              const rejectMsgResult = await dbInsertChatMessage(organizationId, {
                threadId,
                sender: "system",
-               body: `Nội dung **${contentItemId}** chưa sẵn sàng để xuất bản. Trạng thái hiện tại: **${currentState || 'unknown'}**. Bạn cần hoàn tất tạo nội dung và chuyển sang trạng thái "scheduled".`,
+               body: `Nội dung **${contentItemId}** chưa sẵn sàng để xuất bản. Trạng thái hiện tại: **${ctxRes.data?.state || 'unknown'}**. Bạn cần dùng lệnh \`/approve ${contentItemId}\` để chuyển sang trạng thái "scheduled".`,
                intentType: "clarify_missing_scope"
              });
              return { success: false, message: rejectMsgResult.data };
@@ -885,17 +901,10 @@ export async function sendChatMessage(threadId: string, body: string) {
        }
 
        const ctxRes = await dbLoadContextData(organizationId, 'content', contentItemId);
-       let artifactVersionId = ctxRes.data?.artifact_version_id || null;
-       let currentState = ctxRes.data?.state;
+       const artifactVersionId = ctxRes.data?.artifact_version_id || null;
 
-       // Fast-track QA Approval and Scheduling if user triggers /publish
-       if (currentState === 'QA_ready' || currentState === 'QA_passed' || (currentState === 'scheduled' && !artifactVersionId)) {
-          artifactVersionId = await fastTrackApproveAndSchedule(organizationId, contentItemId);
-          currentState = 'scheduled';
-       }
-
-       if (!artifactVersionId || currentState !== 'scheduled') {
-         throw new Error(`Nội dung ${contentItemId} chưa sẵn sàng để xuất bản (Trạng thái: ${currentState || 'unknown'}). Yêu cầu hoàn tất tạo Artifact và chuyển trạng thái scheduled.`);
+       if (!artifactVersionId || ctxRes.data?.state !== 'scheduled') {
+         throw new Error(`Nội dung ${contentItemId} chưa sẵn sàng để xuất bản (Trạng thái: ${ctxRes.data?.state || 'unknown'}). Yêu cầu duyệt bài bằng lệnh /approve ${contentItemId} để chuyển trạng thái scheduled.`);
        }
 
        const webhookResult = await postN8nWebhook("webhook/fb-publish-executor", {
