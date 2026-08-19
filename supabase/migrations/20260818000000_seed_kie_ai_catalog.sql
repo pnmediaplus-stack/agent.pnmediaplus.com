@@ -36,5 +36,3 @@ on conflict (provider_code) do update set
   auth_type = excluded.auth_type,
   capabilities = excluded.capabilities,
   public_metadata = excluded.public_metadata;
-
-commit;
