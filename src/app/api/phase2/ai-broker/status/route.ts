@@ -107,6 +107,9 @@ export async function POST(request: Request) {
         }
         
         return NextResponse.json({ status: 'completed', outbox_id: outboxId, data: [ { url: imageUrl } ] }, { status: 200 });
+      } else {
+        // Task completed but format is completely unrecognized
+        return NextResponse.json({ status: 'failed', error: 'Kie AI async task succeeded but image URL format is unrecognized', details: pollJson.data }, { status: 500 });
       }
     }
     
@@ -126,11 +129,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: 'failed', error: 'Kie AI async task failed', details: pollJson }, { status: 500 });
     }
 
-    // 4. Still generating or format unrecognized
+    // 4. Still generating
     // Return 202 Accepted with explicit status for N8N to handle via Do-While loop
     return NextResponse.json({ 
       status: 'processing', 
-      message: `Image is still generating or format unrecognized. Raw response: ${JSON.stringify(pollJson.data)}`,
+      message: 'Image is still generating. Please retry.',
       taskId,
       outbox_id: null
     }, { status: 202 });
