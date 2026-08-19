@@ -6,7 +6,7 @@ export const revalidate = 0;
 
 const ALLOWED_PREFIXES = ['campaign-media', 'chat-attachments'];
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ key: string[] }> | { key: string[] } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ key: string[] }> }) {
   try {
     const resolvedParams = await params;
     const keyArray = resolvedParams.key;
