@@ -203,7 +203,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
     
     let requestContract = 'jobs_create_task';
     if (providerId === 'kie_ai' && cleanPayload.size) { // size indicates it's an image generation request
-      requestContract = adapter.getRequestContract ? await adapter.getRequestContract(payload, options) : 'jobs_create_task';
+      requestContract = adapter.getRequestContract ? await adapter.getRequestContract(payload, options) : 'standard_generations';
 
       if (requestContract === 'jobs_create_task') {
         cleanPayload.input = {
@@ -224,7 +224,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
         delete cleanPayload.size;
         delete cleanPayload.model; // Legacy endpoints reject the model parameter
       } else {
-        // Default standard image generations behavior
+        // requestContract === 'standard_generations'
         cleanPayload.aspectRatio = cleanPayload.size === '1024x1024' ? '1:1' : '16:9';
         cleanPayload.outputFormat = "jpeg";
         cleanPayload.enableTranslation = true;
