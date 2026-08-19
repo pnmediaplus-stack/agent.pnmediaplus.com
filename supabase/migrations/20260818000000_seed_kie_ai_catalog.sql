@@ -25,7 +25,7 @@ values (
         "prompt_cost": 0,
         "completion_cost": 15.0,
         "endpoint_template": "/images/generations",
-        "request_contract": "standard_generations"
+        "request_contract": "jobs_create_task"
       }
     ]
   }'::jsonb

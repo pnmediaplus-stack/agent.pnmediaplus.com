@@ -72,13 +72,18 @@ export async function POST(request: Request) {
         imageUrl = typeof pollJson.data.images[0] === 'string' ? pollJson.data.images[0] : pollJson.data.images[0].url;
       } else if (pollJson.data.url) {
         imageUrl = pollJson.data.url;
-      } else if (pollJson.data.resultJson && typeof pollJson.data.resultJson === 'string' && pollJson.data.resultJson.includes('url')) {
+      } else if (pollJson.data.resultJson && typeof pollJson.data.resultJson === 'string') {
         // sometimes resultJson is a stringified JSON
         try {
           const parsed = JSON.parse(pollJson.data.resultJson);
+          console.log("PARSED:", parsed);
           if (parsed.images && parsed.images.length > 0) imageUrl = parsed.images[0].url || parsed.images[0];
           else if (parsed.url) imageUrl = parsed.url;
+          else if (parsed.resultUrls && parsed.resultUrls.length > 0) imageUrl = parsed.resultUrls[0];
+          console.log("IMAGE URL EXTRACTED:", imageUrl);
         } catch(e) {}
+      } else if (pollJson.data.resultJson && typeof pollJson.data.resultJson === 'object' && pollJson.data.resultJson.resultUrls && pollJson.data.resultJson.resultUrls.length > 0) {
+        imageUrl = pollJson.data.resultJson.resultUrls[0];
       }
 
       if (imageUrl) {
