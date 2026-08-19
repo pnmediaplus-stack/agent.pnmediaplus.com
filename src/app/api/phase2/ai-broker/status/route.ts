@@ -33,10 +33,18 @@ export async function POST(request: Request) {
     const metadata = providerConfig.public_metadata as any || {};
     const baseUrl = metadata.base_url ? metadata.base_url.replace(/\/$/, '') : 'https://api.kie.ai/v1';
     
-    // Hardcode recordInfo for now unless overridden in metadata
-    const pollPath = metadata.poll_path ? (metadata.poll_path.startsWith('/') ? metadata.poll_path : `/${metadata.poll_path}`) : '/jobs/recordInfo';
+    const pollPath = metadata.poll_path?.trim();
+
+    if (!pollPath) {
+      return NextResponse.json(
+        { error: 'Provider catalog missing required poll_path' },
+        { status: 400 }
+      );
+    }
+
+    const normalizedPollPath = pollPath.startsWith('/') ? pollPath : `/${pollPath}`;
     const apiBaseUrl = baseUrl.includes('/api/v1') ? baseUrl : baseUrl.replace('/v1', '/api/v1');
-    const pollingUrl = `${apiBaseUrl}${pollPath}?taskId=${taskId}`;
+    const pollingUrl = `${apiBaseUrl}${normalizedPollPath}?taskId=${taskId}`;
     
     // Get API Key
     const apiKey = await getTenantApiKey(tenant_id, normalizedProvider);
