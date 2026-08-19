@@ -33,32 +33,25 @@ export async function POST(request: Request) {
     const metadata = providerConfig.public_metadata as any || {};
     const baseUrl = metadata.base_url ? metadata.base_url.replace(/\/$/, '') : 'https://api.kie.ai/v1';
     
+    // Hardcode recordInfo for now unless overridden in metadata
+    const pollPath = metadata.poll_path ? (metadata.poll_path.startsWith('/') ? metadata.poll_path : `/${metadata.poll_path}`) : '/jobs/recordInfo';
     const apiBaseUrl = baseUrl.includes('/api/v1') ? baseUrl : baseUrl.replace('/v1', '/api/v1');
-    const pollingUrl1 = `${apiBaseUrl}/jobs/recordInfo?taskId=${taskId}`;
-    const pollingUrl2 = `${apiBaseUrl}/jobs/record-info?taskId=${taskId}`;
+    const pollingUrl = `${apiBaseUrl}${pollPath}?taskId=${taskId}`;
     
     // Get API Key
     const apiKey = await getTenantApiKey(tenant_id, normalizedProvider);
 
-    // 2. Poll KIE AI from both endpoints because different models use different endpoints
-    const [pollRes1, pollRes2] = await Promise.all([
-      fetch(pollingUrl1, { method: 'GET', headers: { 'Authorization': `Bearer ${apiKey}` } }),
-      fetch(pollingUrl2, { method: 'GET', headers: { 'Authorization': `Bearer ${apiKey}` } })
-    ]);
+    // 2. Poll KIE AI using the endpoint specified in the catalog
+    const pollRes = await fetch(pollingUrl, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    });
 
-    const [json1, json2] = await Promise.all([
-      pollRes1.ok ? pollRes1.json().catch(() => null) : null,
-      pollRes2.ok ? pollRes2.json().catch(() => null) : null
-    ]);
-
-    let pollJson = null;
-    if (json1 && json1.data !== null) pollJson = json1;
-    else if (json2 && json2.data !== null) pollJson = json2;
-    else pollJson = json1 || json2; // fallback to whatever error was returned
-
-    if (!pollJson) {
+    if (!pollRes.ok) {
        return NextResponse.json({ status: 'error', message: 'Failed to poll upstream' }, { status: 502 });
     }
+
+    const pollJson = await pollRes.json();
     
     // 4. Check for success based on multiple Kie AI formats
     if (pollJson.data && (pollJson.data.successFlag === 1 || pollJson.data.state === 'success' || pollJson.data.status === 'success')) {
