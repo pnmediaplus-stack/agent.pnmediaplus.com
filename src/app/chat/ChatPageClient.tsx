@@ -20,9 +20,12 @@ export function ChatPageClient() {
     fetcher
   );
 
-  const { data: auditData, isLoading: isLoadingAudit } = useSWR<{ audit_logs: AuditLog[] }>("/api/audit-logs", fetcher);
+  const { data: auditData, isLoading: isLoadingAudit } = useSWR<{ audit_logs: AuditLog[] }>(
+    thread ? `/api/audit-logs?entity_id=${thread.id}` : null,
+    fetcher
+  );
 
-  const isLoading = isLoadingThreads || (thread && isLoadingMessages) || isLoadingAudit;
+  const isLoading = isLoadingThreads || (thread && isLoadingMessages) || (thread && isLoadingAudit);
 
   if (isLoading) {
     return (

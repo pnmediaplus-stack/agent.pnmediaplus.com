@@ -41,14 +41,13 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
       try {
         const [messagesRes, logsRes, latestTasks] = await Promise.all([
           fetch(`/api/chat-messages?thread_id=${thread.id}`).then(r => r.json()),
-          fetch(`/api/audit-logs`).then(r => r.json()),
+          fetch(`/api/audit-logs?entity_id=${thread.id}`).then(r => r.json()),
           pollActiveTasks()
         ]);
         if (mounted) {
           if (messagesRes.chat_messages) setMessages(messagesRes.chat_messages);
           if (logsRes.audit_logs) {
-            const threadLogs = logsRes.audit_logs.filter((l: AuditLog) => l.entity_id === thread.id && l.entity_type === 'chat_thread');
-            setAuditLogs(threadLogs);
+            setAuditLogs(logsRes.audit_logs);
           }
           setActiveTasks(latestTasks);
         }
@@ -100,13 +99,12 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
       
       const [messagesRes, logsRes, latestTasks] = await Promise.all([
         fetch(`/api/chat-messages?thread_id=${thread.id}`).then(r => r.json()),
-        fetch(`/api/audit-logs`).then(r => r.json()),
+        fetch(`/api/audit-logs?entity_id=${thread.id}`).then(r => r.json()),
         pollActiveTasks()
       ]);
       if (messagesRes.chat_messages) setMessages(messagesRes.chat_messages);
       if (logsRes.audit_logs) {
-        const threadLogs = logsRes.audit_logs.filter((l: AuditLog) => l.entity_id === thread.id && l.entity_type === 'chat_thread');
-        setAuditLogs(threadLogs);
+        setAuditLogs(logsRes.audit_logs);
       }
       setActiveTasks(latestTasks);
     } catch (err) {
@@ -146,13 +144,12 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
       
       const [messagesRes, logsRes, latestTasks] = await Promise.all([
         fetch(`/api/chat-messages?thread_id=${thread.id}`).then(r => r.json()),
-        fetch(`/api/audit-logs`).then(r => r.json()),
+        fetch(`/api/audit-logs?entity_id=${thread.id}`).then(r => r.json()),
         pollActiveTasks()
       ]);
       if (messagesRes.chat_messages) setMessages(messagesRes.chat_messages);
       if (logsRes.audit_logs) {
-        const threadLogs = logsRes.audit_logs.filter((l: AuditLog) => l.entity_id === thread.id && l.entity_type === 'chat_thread');
-        setAuditLogs(threadLogs);
+        setAuditLogs(logsRes.audit_logs);
       }
       setActiveTasks(latestTasks);
     } catch (err) {

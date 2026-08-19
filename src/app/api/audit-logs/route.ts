@@ -21,8 +21,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
+  const url = new URL(req.url);
+  const entityId = url.searchParams.get('entity_id');
+  const limit = url.searchParams.get('limit') || '100';
+
+  let queryUrl = `${supabaseUrl}/rest/v1/audit_logs?order=created_at.desc&limit=${limit}`;
+  if (entityId) {
+    queryUrl += `&entity_id=eq.${entityId}`;
+  }
+
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/audit_logs?order=created_at.desc`, {
+    const res = await fetch(queryUrl, {
       headers: {
         'apikey': serviceRoleKey,
         'Authorization': `Bearer ${serviceRoleKey}`,
