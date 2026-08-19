@@ -237,7 +237,7 @@ export async function sendChatMessage(threadId: string, body: string) {
         } else if (command === '/status') {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> (Ví dụ: ${command} 12345)`;
         } else if (command === '/approve') {
-          if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> (Ví dụ: ${command} 12345)`;
+          // Will auto-detect if no args are provided
         } else if (command === '/publish') {
           // Chấp nhận /publish integration_key:fbp (bỏ qua content_item_id để tự detect)
           if (args.length < 1 || !args[0].startsWith('integration_key:')) {
@@ -532,7 +532,27 @@ export async function sendChatMessage(threadId: string, body: string) {
           }
           return { success: false };
         } else if (command === '/approve') {
-           const contentItemId = args[0];
+           let contentItemId = args[0];
+           if (!contentItemId) {
+             const threadCtx = await dbLoadThreadContext(organizationId, threadId);
+             const threadContentItemId = threadCtx?.selected_content_item_id || threadCtx?.active_content_item_id;
+             if (threadContentItemId) {
+               contentItemId = threadContentItemId;
+             } else {
+               const latestRes = await dbGetLatestContentItem(organizationId);
+               if (latestRes.data?.id) contentItemId = latestRes.data.id;
+             }
+           }
+           if (!contentItemId) {
+             const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+               threadId,
+               sender: "system",
+               body: `Lỗi: Không tìm thấy bài viết để duyệt. Vui lòng cung cấp ID.`,
+               intentType: "approve_or_reject"
+             });
+             return { success: false, message: rejectMsgResult.data };
+           }
+
            const artifactVersionId = await fastTrackApproveAndSchedule(organizationId, contentItemId);
 
            if (!artifactVersionId) {
@@ -598,7 +618,7 @@ export async function sendChatMessage(threadId: string, body: string) {
              const rejectMsgResult = await dbInsertChatMessage(organizationId, {
                threadId,
                sender: "system",
-               body: `Nội dung **${contentItemId}** chưa sẵn sàng để xuất bản. Trạng thái hiện tại: **${ctxRes.data?.state || 'unknown'}**. Bạn cần dùng lệnh \`/approve ${contentItemId}\` để chuyển sang trạng thái "scheduled".`,
+               body: `Nội dung **${contentItemId}** chưa sẵn sàng để xuất bản. Trạng thái hiện tại: **${ctxRes.data?.state || 'unknown'}**. Bạn cần dùng lệnh \`/approve\` để duyệt bài và chuyển sang trạng thái "scheduled".`,
                intentType: "clarify_missing_scope"
              });
              return { success: false, message: rejectMsgResult.data };
@@ -904,7 +924,7 @@ export async function sendChatMessage(threadId: string, body: string) {
        const artifactVersionId = ctxRes.data?.artifact_version_id || null;
 
        if (!artifactVersionId || ctxRes.data?.state !== 'scheduled') {
-         throw new Error(`Nội dung ${contentItemId} chưa sẵn sàng để xuất bản (Trạng thái: ${ctxRes.data?.state || 'unknown'}). Yêu cầu duyệt bài bằng lệnh /approve ${contentItemId} để chuyển trạng thái scheduled.`);
+         throw new Error(`Nội dung ${contentItemId} chưa sẵn sàng để xuất bản (Trạng thái: ${ctxRes.data?.state || 'unknown'}). Yêu cầu duyệt bài bằng lệnh /approve để chuyển trạng thái scheduled.`);
        }
 
        const webhookResult = await postN8nWebhook("webhook/fb-publish-executor", {
