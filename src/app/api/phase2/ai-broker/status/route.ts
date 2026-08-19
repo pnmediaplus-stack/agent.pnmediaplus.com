@@ -56,7 +56,9 @@ export async function POST(request: Request) {
     });
 
     if (!pollRes.ok) {
-       return NextResponse.json({ status: 'error', message: 'Failed to poll upstream' }, { status: 502 });
+       const errText = await pollRes.text().catch(() => 'no text');
+       console.error(`Upstream poll failed for ${pollingUrl}: ${pollRes.status} ${errText}`);
+       return NextResponse.json({ status: 'error', message: `Failed to poll upstream: ${pollRes.status}`, details: errText }, { status: 502 });
     }
 
     const pollJson = await pollRes.json();
