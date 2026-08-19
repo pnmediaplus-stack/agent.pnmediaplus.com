@@ -61,6 +61,18 @@ export const kieAiAdapter: AiProviderAdapter = {
     );
   },
 
+  getPollingUrl: async (payload: any, options: any, taskId: string): Promise<string> => {
+    const metadata = await getProviderMetadata('kie_ai');
+    const pollPath = metadata?.poll_path?.trim();
+    if (!pollPath) {
+      throw new Error(`UNABLE_TO_DETERMINE_POLL_PATH: Provider 'kie_ai' does not have poll_path configured in integration_providers.public_metadata.`);
+    }
+    const baseUrl = metadata.base_url ? metadata.base_url.replace(/\/$/, '') : 'https://api.kie.ai/v1';
+    const normalizedPollPath = pollPath.startsWith('/') ? pollPath : `/${pollPath}`;
+    const apiBaseUrl = baseUrl.includes('/api/v1') ? baseUrl : baseUrl.replace('/v1', '/api/v1');
+    return `${apiBaseUrl}${normalizedPollPath}?taskId=${taskId}`;
+  },
+
   injectAuth: (headers: Record<string, string>, tenantKey?: string) => {
     if (!tenantKey) throw new Error('VAULT_CREDENTIAL_NOT_READY: KIE_AI_API_KEY is missing');
     headers['Authorization'] = `Bearer ${tenantKey}`;

@@ -270,12 +270,10 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
       }
 
       let pollingUrl = '';
-      if (requestContract === 'legacy_generate') {
-        pollingUrl = endpointUrl.replace(/\/generate$/, '/record-info') + `?taskId=${taskId}`;
-      } else if (requestContract === 'jobs_create_task') {
-        pollingUrl = endpointUrl.replace(/\/createTask$/, '/recordInfo') + `?taskId=${taskId}`;
+      if (adapter.getPollingUrl) {
+        pollingUrl = await adapter.getPollingUrl(payload, options, taskId);
       } else {
-        throw new Error(`UNKNOWN_REQUEST_CONTRACT: '${requestContract}'`);
+        throw new Error(`UNABLE_TO_DETERMINE_POLLING_URL: Provider ${providerId} adapter must implement getPollingUrl for async tasks`);
       }
       
       let isComplete = false;
