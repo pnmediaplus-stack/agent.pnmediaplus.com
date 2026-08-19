@@ -201,8 +201,11 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
       delete cleanPayload.response_format;
     }
     
+    let requestContract = 'jobs_create_task';
     if (providerId === 'kie_ai' && cleanPayload.size) { // size indicates it's an image generation request
-      if (endpointUrl.includes('/jobs/createTask')) {
+      requestContract = adapter.getRequestContract ? await adapter.getRequestContract(payload, options) : 'jobs_create_task';
+
+      if (requestContract === 'jobs_create_task') {
         cleanPayload.input = {
           prompt: cleanPayload.prompt,
           aspect_ratio: cleanPayload.size === '1024x1024' ? '1:1' : '16:9'
@@ -212,16 +215,23 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
         delete cleanPayload.n;
         delete cleanPayload.size;
         // Keep cleanPayload.model intact!
-      } else {
+      } else if (requestContract === 'legacy_generate') {
         cleanPayload.aspectRatio = cleanPayload.size === '1024x1024' ? '1:1' : '16:9';
         cleanPayload.outputFormat = "jpeg";
         cleanPayload.enableTranslation = true;
         delete cleanPayload.messages;
         delete cleanPayload.n;
         delete cleanPayload.size;
-        if (endpointUrl.endsWith('/generate')) {
-          delete cleanPayload.model; // Only legacy /generate endpoints reject the model parameter
-        }
+        delete cleanPayload.model; // Legacy endpoints reject the model parameter
+      } else {
+        // Default standard image generations behavior
+        cleanPayload.aspectRatio = cleanPayload.size === '1024x1024' ? '1:1' : '16:9';
+        cleanPayload.outputFormat = "jpeg";
+        cleanPayload.enableTranslation = true;
+        delete cleanPayload.messages;
+        delete cleanPayload.n;
+        delete cleanPayload.size;
+        // Keep cleanPayload.model intact!
       }
     }
 
@@ -250,7 +260,7 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
 
     // --- KIE AI ASYNC POLLING LOGIC ---
     // Either legacy outputFormat or new jobs API format
-    if (providerId === 'kie_ai' && responseData.data && responseData.data.taskId && (cleanPayload.outputFormat || endpointUrl.includes('/jobs/createTask'))) {
+    if (providerId === 'kie_ai' && responseData.data && responseData.data.taskId && (requestContract === 'legacy_generate' || requestContract === 'jobs_create_task' || cleanPayload.outputFormat)) {
       const taskId = responseData.data.taskId;
 
       // If async mode is requested, return immediately without polling or parsing usage
@@ -264,9 +274,9 @@ export async function invokeLlm(payload: LlmPayload, options: LlmClientOptions) 
       }
 
       let pollingUrl = '';
-      if (endpointUrl.endsWith('/generate')) {
+      if (requestContract === 'legacy_generate') {
         pollingUrl = endpointUrl.replace(/\/generate$/, '/record-info') + `?taskId=${taskId}`;
-      } else if (endpointUrl.endsWith('/createTask')) {
+      } else if (requestContract === 'jobs_create_task') {
         pollingUrl = endpointUrl.replace(/\/createTask$/, '/recordInfo') + `?taskId=${taskId}`;
       } else {
         pollingUrl = endpointUrl.replace(/\/[^/]+$/, '/recordInfo') + `?taskId=${taskId}`;

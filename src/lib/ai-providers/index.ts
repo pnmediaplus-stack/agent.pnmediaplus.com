@@ -12,6 +12,7 @@ export interface AiProviderAdapter {
   id: string;
   billingUnits: ('tokens' | 'seconds' | 'images' | 'requests')[];
   getEndpointUrl: (payload: any, options: { endpointUrl?: string }) => Promise<string> | string;
+  getRequestContract?: (payload: any, options: any) => Promise<string> | string;
   injectAuth: (headers: Record<string, string>, tenantKey?: string) => void;
   parseUsage: (responseJson: any, payload: any) => Promise<UsageInfo> | UsageInfo;
 }

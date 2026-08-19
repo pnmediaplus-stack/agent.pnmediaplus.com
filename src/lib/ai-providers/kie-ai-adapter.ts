@@ -46,6 +46,25 @@ export const kieAiAdapter: AiProviderAdapter = {
     throw new Error(`UNABLE_TO_DETERMINE_ENDPOINT: Model '${payload.model}' does not have an endpoint configured in integration_providers.public_metadata.`);
   },
 
+  getRequestContract: async (payload: any, options: any): Promise<string> => {
+    const metadata = await getProviderMetadata('kie_ai');
+    const models = metadata?.models || [];
+    const modelConfig = models.find((m: any) => m.code === payload.model);
+    
+    // Explicit contract from metadata
+    if (modelConfig && modelConfig.request_contract) {
+        return modelConfig.request_contract;
+    }
+    
+    // Fallback heuristic based on configured endpoint if contract is missing from DB
+    const finalEndpoint = modelConfig?.endpoint_template || modelConfig?.endpoint || '';
+    if (finalEndpoint.endsWith('/generate')) {
+        return 'legacy_generate';
+    }
+    
+    return 'jobs_create_task';
+  },
+
   injectAuth: (headers: Record<string, string>, tenantKey?: string) => {
     if (!tenantKey) throw new Error('VAULT_CREDENTIAL_NOT_READY: KIE_AI_API_KEY is missing');
     headers['Authorization'] = `Bearer ${tenantKey}`;
