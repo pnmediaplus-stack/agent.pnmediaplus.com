@@ -6,8 +6,9 @@ import type { ChatMessage } from "@/types/chat";
 import { User, Bot, LayoutTemplate, Activity, ExternalLink, CheckCircle, XCircle, RefreshCw, Maximize2, Download, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { PublishSelector } from "./PublishSelector";
 
-export const ChatMessageList = memo(function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[], isTyping?: boolean }) {
+export const ChatMessageList = memo(function ChatMessageList({ messages, isTyping, onCommand }: { messages: ChatMessage[], isTyping?: boolean, onCommand?: (cmd: string) => void }) {
   const { t } = useI18n("chat");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   return (
@@ -157,6 +158,10 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                 >
                   {message.body?.replace('[[CAMPAIGN_PROPOSAL]]', '')}
                 </ReactMarkdown>
+              {message.intent_type === 'publish_prompt' && onCommand && (
+                <PublishSelector contentItemId={message.metadata?.contentItemId || ''} onCommand={onCommand} />
+              )}
+    
               </div>
 
               {message.intent_type ? (

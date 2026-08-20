@@ -26,4 +26,5 @@ export type ChatIntentType =
   | "check_governance"
   | "request_status"
   | "approve_or_reject"
-  | "unknown";
+  | "unknown"
+  | "publish_prompt";

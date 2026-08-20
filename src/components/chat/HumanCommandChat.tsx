@@ -206,7 +206,32 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         )}
         
         <div className="flex-1 min-h-0 overflow-y-auto rounded-2xl p-2">
-          <ChatMessageList messages={messages} isTyping={isSending} />
+          <ChatMessageList 
+      messages={messages} 
+      isTyping={isSending} 
+      onCommand={async (cmd) => {
+        setIsSending(true);
+        // Optimistic UI update
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          organization_id: thread.organization_id,
+          thread_id: thread.id,
+          sender: 'human',
+          body: cmd,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }]);
+        
+        try {
+          const result = await sendChatMessage(thread.id, cmd);
+          if (result?.error) throw new Error(result.error);
+        } catch (e: any) {
+          console.error(e);
+        } finally {
+          setIsSending(false);
+        }
+      }} 
+    />
           <div ref={messagesEndRef} />
         </div>
 
