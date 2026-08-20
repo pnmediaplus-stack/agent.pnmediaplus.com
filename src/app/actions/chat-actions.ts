@@ -225,7 +225,7 @@ export async function sendChatMessage(threadId: string, body: string) {
       const command = parts[0];
       const args = parts.slice(1);
 
-      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status', '/campaign', '/approve_campaign', '/brainstorm', '/approve'];
+      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status', '/campaign', '/approve_campaign', '/brainstorm', '/approve', '/test_qa'];
 
       if (whitelist.includes(command)) {
         // Enforce args
@@ -238,7 +238,15 @@ export async function sendChatMessage(threadId: string, body: string) {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> (Ví dụ: ${command} 12345)`;
         } else if (command === '/approve') {
           // Will auto-detect if no args are provided
-        } else if (command === '/publish') {
+        } else if (command === '/test_qa') {
+             const routedMsgResult = await dbInsertChatMessage(organizationId, {
+               threadId,
+               sender: "system",
+               body: "✅ (TEST UI) Trưởng phòng AI QA đã duyệt bài. Vui lòng chọn Page để xuất bản.",
+               intentType: "publish_prompt"
+             });
+             return { success: true, message: routedMsgResult.data };
+          } else if (command === '/publish') {
           // Chấp nhận /publish integration_key:fbp (bỏ qua content_item_id để tự detect)
           if (args.length < 1 || !args[0].startsWith('integration_key:')) {
             missingArgsMsg = 'Lệnh /publish yêu cầu tham số: integration_key:<ID> [content_item_id] (Ví dụ: /publish integration_key:facebook_page_123)';
