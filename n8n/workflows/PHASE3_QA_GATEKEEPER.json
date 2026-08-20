@@ -32,7 +32,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o-mini\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"user\",\n      content: \"Bạn là AI QA. Đánh giá bài viết sau. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10) }.\\nBài viết:\\n\" + $(\"Webhook\").first().json.body.caption\n    }\n  ]\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o-mini\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"user\",\n      content: \"Bạn là AI QA Manager. Đánh giá bài viết sau. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10), \\\"reason\\\": \\\"Giải thích ngắn gọn lý do tại sao pass hoặc reject (tối đa 2 câu)\\\" }.\\nBài viết:\\n\" + $(\"Webhook\").first().json.body.caption\n    }\n  ]\n}) }}",
         "options": {},
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth"
@@ -86,7 +86,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  content_item_id: $json.originalBody.content_item_id,\n  reviewer_ref: \"ai_qa_gatekeeper\",\n  verdict: $json.result.verdict,\n  average_score: $json.result.average_score || 0,\n  overclaim_risk: $json.result.overclaim_risk || 10,\n  missing_asset: false,\n  evidence_ref: \"evidence://n8n-qa/\" + $execution.id,\n  notes: \"AI Automated QA\"\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  content_item_id: $json.originalBody.content_item_id,\n  reviewer_ref: \"ai_qa_gatekeeper\",\n  verdict: $json.result.verdict,\n  average_score: $json.result.average_score || 0,\n  overclaim_risk: $json.result.overclaim_risk || 10,\n  missing_asset: false,\n  evidence_ref: \"evidence://n8n-qa/\" + $execution.id,\n  notes: $json.result.reason || \"AI Automated QA\"\n}) }}",
         "options": {}
       },
       "name": "Insert QA DB",
@@ -121,7 +121,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  p_thread_id: $(\"Webhook\").first().json.body.thread_id,\n  p_idempotency_key: \"qa_chat_\" + $execution.id,\n  p_sender: \"system\",\n  p_content: $(\"Parse Result\").first().json.result.verdict === \"pass\" ? \"✅ Trưởng phòng AI QA đã duyệt bài xuất sắc (\" + $(\"Parse Result\").first().json.result.average_score + \"/10).\" : \"❌ Bài viết bị từ chối bởi AI QA.\",\n  p_intent_type: $(\"Parse Result\").first().json.result.verdict === \"pass\" ? \"publish_prompt\" : \"clarify_missing_scope\",\n  p_metadata: {\n    contentItemId: $(\"Webhook\").first().json.body.content_item_id\n  }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  p_thread_id: $(\"Webhook\").first().json.body.thread_id,\n  p_idempotency_key: \"qa_chat_\" + $execution.id,\n  p_sender: \"system\",\n  p_content: $(\"Parse Result\").first().json.result.verdict === \"pass\" ? \"✅ **Trưởng phòng AI QA đã duyệt bài xuất sắc (\" + $(\"Parse Result\").first().json.result.average_score + \"/10).**\\n\\n_Đánh giá:_ \" + ($(\"Parse Result\").first().json.result.reason || \"Không có nhận xét thêm.\") : \"❌ **Bài viết bị từ chối bởi AI QA (Điểm: \" + $(\"Parse Result\").first().json.result.average_score + \"/10).**\\n\\n_Lý do từ chối:_ \" + ($(\"Parse Result\").first().json.result.reason || \"Không đạt tiêu chuẩn chất lượng.\"), \n  p_intent_type: $(\"Parse Result\").first().json.result.verdict === \"pass\" ? \"publish_prompt\" : \"clarify_missing_scope\",\n  p_metadata: {\n    contentItemId: $(\"Webhook\").first().json.body.content_item_id\n  }\n}) }}",
         "options": {}
       },
       "name": "Trigger Chat UI",
