@@ -36,7 +36,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Bạn là AI QA. Đánh giá bài viết sau. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10) }.\\nBài viết:\\n\" + JSON.stringify($(\"Webhook\").first().json.body.caption)\n    }\n  ]\n}",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o-mini\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"user\",\n      content: \"Bạn là AI QA. Đánh giá bài viết sau. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10) }.\\nBài viết:\\n\" + $(\"Webhook\").first().json.body.caption\n    }\n  ]\n}) }}",
         "options": {}
       },
       "name": "LLM Evaluator",
@@ -90,7 +90,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"content_item_id\": \"{{$json.originalBody.content_item_id}}\",\n  \"reviewer_ref\": \"ai_qa_gatekeeper\",\n  \"verdict\": \"{{$json.result.verdict}}\",\n  \"average_score\": {{$json.result.average_score || 0}},\n  \"overclaim_risk\": {{$json.result.overclaim_risk || 10}},\n  \"missing_asset\": false,\n  \"notes\": \"AI Automated QA\"\n}",
+        "jsonBody": "={{ JSON.stringify({\n  content_item_id: $json.originalBody.content_item_id,\n  reviewer_ref: \"ai_qa_gatekeeper\",\n  verdict: $json.result.verdict,\n  average_score: $json.result.average_score || 0,\n  overclaim_risk: $json.result.overclaim_risk || 10,\n  missing_asset: false,\n  notes: \"AI Automated QA\"\n}) }}",
         "options": {}
       },
       "name": "Insert QA DB",
@@ -133,7 +133,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"thread_id\": \"{{$(\"Webhook\").first().json.body.thread_id}}\",\n  \"sender\": \"system\",\n  \"body\": \"{{$(\"Parse Result\").first().json.result.verdict === \\\"pass\\\" ? \\\"✅ Trưởng phòng AI QA đã duyệt bài xuất sắc (\\\" + $(\"Parse Result\").first().json.result.average_score + \\\"/10).\\\" : \\\"❌ Bài viết bị từ chối bởi AI QA.\\\"}}\",\n  \"intent_type\": \"{{$(\"Parse Result\").first().json.result.verdict === \\\"pass\\\" ? \\\"publish_prompt\\\" : \\\"clarify_missing_scope\\\"}}\",\n  \"metadata\": {\n    \"contentItemId\": \"{{$(\"Webhook\").first().json.body.content_item_id}}\"\n  }\n}",
+        "jsonBody": "={{ JSON.stringify({\n  thread_id: $(\"Webhook\").first().json.body.thread_id,\n  sender: \"system\",\n  body: $(\"Parse Result\").first().json.result.verdict === \"pass\" ? \"✅ Trưởng phòng AI QA đã duyệt bài xuất sắc (\" + $(\"Parse Result\").first().json.result.average_score + \"/10).\" : \"❌ Bài viết bị từ chối bởi AI QA.\",\n  intent_type: $(\"Parse Result\").first().json.result.verdict === \"pass\" ? \"publish_prompt\" : \"clarify_missing_scope\",\n  metadata: {\n    contentItemId: $(\"Webhook\").first().json.body.content_item_id\n  }\n}) }}",
         "options": {}
       },
       "name": "Trigger Chat UI",
@@ -176,7 +176,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"state\": \"{{$json.result.verdict === \\\"pass\\\" ? \\\"scheduled\\\" : \\\"review\\\"}}\"\n}",
+        "jsonBody": "={{ JSON.stringify({\n  state: $json.result.verdict === \"pass\" ? \"scheduled\" : \"review\"\n}) }}",
         "options": {}
       },
       "name": "Update Item State",
