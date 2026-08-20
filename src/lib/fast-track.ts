@@ -35,15 +35,27 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
 
     let artifactVersionId = item.artifact_version_id;
     if (!artifactVersionId && (item.state === 'QA_passed' || item.state === 'scheduled')) {
+      // Need a department to create an artifact
+      const deptRes = await fetch(`${supabaseUrl}/rest/v1/departments?organization_id=eq.${organizationId}&limit=1`, {
+        headers: { ...headers, 'Accept-Profile': 'pn_os_ai_department' }
+      });
+      let departmentId = null;
+      if (deptRes.ok) {
+        const depts = await deptRes.json();
+        if (depts.length > 0) departmentId = depts[0].id;
+      }
+      if (!departmentId) throw new Error('Không tìm thấy Department nào trong Organization để gắn Artifact');
+
       const dummyArtifactId = crypto.randomUUID();
-      
       const r0 = await fetch(`${supabaseUrl}/rest/v1/artifacts`, {
         method: 'POST',
         headers: { ...headers, 'Accept-Profile': 'pn_os_ai_department', 'Content-Profile': 'pn_os_ai_department', 'Prefer': 'resolution=ignore-duplicates' },
         body: JSON.stringify({
           id: dummyArtifactId,
           organization_id: organizationId,
-          name: 'Auto-generated Content Artifact',
+          department_id: departmentId,
+          artifact_key: 'auto_gen_content_' + Date.now(),
+          canonical_name: 'Auto-generated Content Artifact',
           artifact_type: 'social_post'
         })
       });
