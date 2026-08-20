@@ -30,7 +30,7 @@ interface RawPhase2Review {
   evidence_ref: string;
   created_at: string;
   updated_at: string;
-  content_items?: {
+  phase2_content_items?: {
     organization_id: string;
     artifact_version_id: string | null;
   };
@@ -66,8 +66,8 @@ export async function GET(req: Request) {
       cache: 'no-store'
     });
 
-    // Fetch Phase 2 QA Reviews (Join with content_items to filter by organization_id)
-    const res2 = fetch(`${supabaseUrl}/rest/v1/phase2_qa_reviews?select=*,content_items!inner(organization_id,artifact_version_id)&content_items.organization_id=eq.${organizationId}&order=created_at.desc`, {
+    // Fetch Phase 2 QA Reviews (Join with phase2_content_items to filter by organization_id)
+    const res2 = fetch(`${supabaseUrl}/rest/v1/phase2_qa_reviews?select=*,phase2_content_items!inner(organization_id,artifact_version_id)&phase2_content_items.organization_id=eq.${organizationId}&order=created_at.desc`, {
       headers: {
         'apikey': serviceRoleKey,
         'Authorization': `Bearer ${serviceRoleKey}`
@@ -100,7 +100,7 @@ export async function GET(req: Request) {
       reviewer_actor_type: item.reviewer_actor_type,
       reviewer_agent_id: item.reviewer_agent_id,
       reviewer_external_ref: item.reviewer_external_ref,
-      verdict: item.verdict as QAStatus,
+      verdict: item.verdict.toUpperCase() as QAStatus,
       notes: item.notes,
       evidence_ref: item.evidence_ref,
       created_at: item.created_at,
@@ -109,15 +109,15 @@ export async function GET(req: Request) {
 
     const mappedPhase2Data = phase2Data.map((item: RawPhase2Review) => ({
       id: item.id,
-      organization_id: item.content_items?.organization_id || organizationId,
+      organization_id: item.phase2_content_items?.organization_id || organizationId,
       phase: 'phase2' as const,
       content_item_id: item.content_item_id,
-      artifact_version_id: item.content_items?.artifact_version_id || null, // Real SSOT link
+      artifact_version_id: item.phase2_content_items?.artifact_version_id || null, // Real SSOT link
       agent_task_id: item.agent_task_id,
       reviewer_ref: item.reviewer_ref,
       average_score: item.average_score,
       overclaim_risk: item.overclaim_risk,
-      verdict: item.verdict as QAStatus,
+      verdict: item.verdict.toUpperCase() as QAStatus,
       notes: item.notes,
       evidence_ref: item.evidence_ref,
       created_at: item.created_at,
