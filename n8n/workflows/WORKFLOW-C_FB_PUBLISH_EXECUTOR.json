@@ -326,19 +326,19 @@
           "parameters": [
             {
               "name": "organizationId",
-              "value": "={{ $('Extract FB Assets').item?.json?.organizationId || $env['ORGANIZATION_ID'] }}"
+              "value": "={{ $json.organizationId }}"
             },
             {
               "name": "contentItemId",
-              "value": "={{ $('Extract FB Assets').item?.json?.contentItemId || 'unknown' }}"
+              "value": "={{ $json.contentItemId }}"
             },
             {
               "name": "errorMessage",
-              "value": "={{ $json.execution.error.message }}"
+              "value": "={{ $json.errorMessage }}"
             },
             {
               "name": "threadId",
-              "value": "={{ $('Extract FB Assets').item?.json?.threadId || '' }}"
+              "value": "={{ $json.threadId }}"
             }
           ]
         },
@@ -348,7 +348,19 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        300,
+        400,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nlet threadId = '';\nlet contentItemId = 'unknown';\nlet organizationId = $env['ORGANIZATION_ID'] || '';\nlet errorMessage = $json.execution?.error?.message || 'Unknown Error';\n\ntry {\n  const webhook = $('Webhook Trigger').first();\n  if (webhook && webhook.json && webhook.json.body) {\n    const b = webhook.json.body;\n    if (b.threadId) threadId = b.threadId;\n    if (b.contentItemId) contentItemId = b.contentItemId;\n    if (b.organizationId) organizationId = b.organizationId;\n  }\n} catch (e) {}\n\n// If we cannot get threadId, return empty to skip the push\nif (!threadId) {\n  return [];\n}\n\nreturn {\n  json: {\n    threadId,\n    contentItemId,\n    organizationId,\n    errorMessage\n  }\n};\n"
+      },
+      "name": "Format Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
         600
       ]
     }
@@ -432,6 +444,17 @@
       ]
     },
     "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error": {
       "main": [
         [
           {
