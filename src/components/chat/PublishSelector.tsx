@@ -8,7 +8,7 @@ export function PublishSelector({
   onCommand 
 }: { 
   contentItemId: string;
-  onCommand: (cmd: string) => void;
+  onCommand?: (cmd: string) => void;
 }) {
   const [pages, setPages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,9 +20,9 @@ export function PublishSelector({
       .then(res => res.json())
       .then(data => {
         if (!mounted) return;
-        if (data.data && Array.isArray(data.data)) {
-          // Filter out only facebook pages
-          const fbPages = data.data.filter((integration: any) => integration.provider === 'facebook_page');
+        if (data.integrations && Array.isArray(data.integrations)) {
+          // Lọc đúng cấu trúc dữ liệu: provider_code === 'facebook_page'
+          const fbPages = data.integrations.filter((integration: any) => integration.provider_code === 'facebook_page');
           setPages(fbPages);
         } else {
           setPages([]);
@@ -70,8 +70,9 @@ export function PublishSelector({
       <div className="flex flex-wrap gap-2">
         {pages.map((page) => (
           <button
-            key={page.id}
+            key={page.id || page.integration_key}
             onClick={(e) => {
+              if (!onCommand) return;
               const btn = e.currentTarget;
               btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Đang xử lý...`;
               btn.disabled = true;
@@ -80,7 +81,7 @@ export function PublishSelector({
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-colors shadow-lg shadow-indigo-900/20 border border-indigo-400/30 disabled:opacity-50"
           >
             <Share className="h-4 w-4" />
-            {page.metadata?.page_name || page.integration_key}
+            {page.integration_name || page.integration_key}
           </button>
         ))}
       </div>
