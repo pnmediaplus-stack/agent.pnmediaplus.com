@@ -603,7 +603,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('node');\nstaticData.pollCount = (staticData.pollCount || 0) + 1;\nif (staticData.pollCount > 24) {\n  throw new Error('POLL_TIMEOUT: Image generation took too long');\n}\nreturn $input.all();"
+        "jsCode": "const staticData = $getWorkflowStaticData('node');\nstaticData.pollCount = (staticData.pollCount || 0) + 1;\nif (staticData.pollCount > 120) {\n  throw new Error('POLL_TIMEOUT: Image generation took too long');\n}\nreturn $input.all();"
       },
       "name": "Limit Polling",
       "type": "n8n-nodes-base.code",
@@ -651,7 +651,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('node');\nstaticData.pollCount = (staticData.pollCount || 0) + 1;\nif (staticData.pollCount > 24) {\n  throw new Error('POLL_TIMEOUT: Image generation took too long');\n}\nreturn $input.all();"
+        "jsCode": "const staticData = $getWorkflowStaticData('node');\nstaticData.pollCount = (staticData.pollCount || 0) + 1;\nif (staticData.pollCount > 120) {\n  throw new Error('POLL_TIMEOUT: Image generation took too long');\n}\nreturn $input.all();"
       },
       "name": "Limit Polling",
       "type": "n8n-nodes-base.code",
