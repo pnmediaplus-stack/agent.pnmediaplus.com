@@ -43,5 +43,43 @@ export const AI_ORCHESTRATOR_TOOLS = [
         required: ["department_name", "brief"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_departments",
+      description: "Read tool. Tra cứu danh sách các phòng ban (departments) đang hoạt động trong công ty.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "check_content_status",
+      description: "Read tool. Kiểm tra trạng thái và điểm số QA của một bài viết dựa trên ID.",
+      parameters: {
+        type: "object",
+        properties: {
+          content_item_id: { type: "string", description: "ID của bài viết cần tra cứu" }
+        },
+        required: ["content_item_id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_active_campaigns",
+      description: "Read tool. Liệt kê các chiến dịch marketing đang chạy trong công ty.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: []
+      }
+    }
   }
 ];

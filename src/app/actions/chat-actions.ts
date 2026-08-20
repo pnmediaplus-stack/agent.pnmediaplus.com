@@ -207,7 +207,7 @@ export async function sendChatMessage(threadId: string, body: string) {
 
       // Process Natural Language via AI Orchestrator
       const { processHumanMessage } = await import('@/lib/ai-orchestrator/router');
-      const aiResult = await processHumanMessage(trimmedBody, llmMessages);
+      const aiResult = await processHumanMessage(trimmedBody, llmMessages, organizationId);
       
       intentType = aiResult.intentType;
       if (aiResult.mappedCommand) {
