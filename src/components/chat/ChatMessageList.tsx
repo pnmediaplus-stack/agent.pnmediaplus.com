@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { ChatMessage } from "@/types/chat";
 import { User, Bot, LayoutTemplate, Activity, ExternalLink, CheckCircle, XCircle, RefreshCw, Maximize2, Download, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[], isTyping?: boolean }) {
+export const ChatMessageList = memo(function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[], isTyping?: boolean }) {
   const { t } = useI18n("chat");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   return (
@@ -247,4 +247,4 @@ export function ChatMessageList({ messages, isTyping }: { messages: ChatMessage[
       )}
     </div>
   );
-}
+});
