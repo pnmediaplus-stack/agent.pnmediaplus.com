@@ -50,7 +50,7 @@ export function QAReviewTable({ reviews }: { reviews: QAReview[] }) {
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex items-start gap-2">
-                    {review.verdict === "BLOCKED" || review.verdict === "HOLD" || review.verdict === "reject" ? (
+                    {review.verdict === "BLOCKED" || review.verdict === "HOLD" ? (
                       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
                     ) : null}
                     <span className="text-sm leading-relaxed text-slate-400 group-hover:text-slate-300 transition-colors">{review.notes || "-"}</span>
@@ -64,3 +64,4 @@ export function QAReviewTable({ reviews }: { reviews: QAReview[] }) {
     </div>
   );
 }
+
