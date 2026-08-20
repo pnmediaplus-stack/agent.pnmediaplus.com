@@ -574,7 +574,7 @@ export async function sendChatMessage(threadId: string, body: string) {
              const rejectMsgResult = await dbInsertChatMessage(organizationId, {
                threadId,
                sender: "system",
-               body: `Nội dung **${contentItemId}** chưa sẵn sàng để xuất bản. Trạng thái hiện tại: **${ctxRes.data?.state || 'unknown'}**. Bạn cần dùng lệnh \`/approve\` để duyệt bài và chuyển sang trạng thái "scheduled".`,
+               body: `Nội dung **${contentItemId}** chưa sẵn sàng để xuất bản. Trạng thái hiện tại: **${ctxRes.data?.state || 'unknown'}**. He thong AI QA can danh gia dat yeu cau (trang thai scheduled) truoc khi xuat ban.`,
                intentType: "clarify_missing_scope"
              });
              return { success: false, message: rejectMsgResult.data };

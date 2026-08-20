@@ -169,7 +169,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"thread_id\": \"{{$(\"Webhook\").first().json.body.thread_id}}\",\n  \"sender\": \"system\",\n  \"body\": \"{{$(\"Parse Result\").first().json.result.verdict === \\\"pass\\\" ? \\\"✅ Trưởng phòng AI QA đã duyệt bài xuất sắc (\\\" + $(\"Parse Result\").first().json.result.average_score + \\\"/10).\\\" : \\\"❌ Bài viết bị từ chối bởi AI QA.\\\"}}\",\n  \"intent_type\": \"{{$(\"Parse Result\").first().json.result.verdict === \\\"pass\\\" ? \\\"publish_prompt\\\" : \\\"clarify_missing_scope\\\"  }}\"\n}",
+        "jsonBody": "={\n  \"thread_id\": \"{{$(\"Webhook\").first().json.body.thread_id}}\",\n  \"sender\": \"system\",\n  \"body\": \"{{$(\"Parse Result\").first().json.result.verdict === \\\"pass\\\" ? \\\"✅ Trưởng phòng AI QA đã duyệt bài xuất sắc (\\\" + $(\"Parse Result\").first().json.result.average_score + \\\"/10).\\\" : \\\"❌ Bài viết bị từ chối bởi AI QA.\\\"}}\",\n  \"intent_type\": \"{{$(\"Parse Result\").first().json.result.verdict === \\\"pass\\\" ? \\\"publish_prompt\\\" : \\\"clarify_missing_scope\\\"}}\",\n  \"metadata\": {\n    \"contentItemId\": \"{{$(\"Webhook\").first().json.body.content_item_id}}\"\n  }\n}",
         "options": {}
       },
       "name": "Trigger Chat UI",
