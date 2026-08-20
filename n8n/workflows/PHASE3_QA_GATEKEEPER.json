@@ -142,7 +142,7 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{$env[\"SUPABASE_URL\"] || \"http://supabase:8000\"}}/rest/v1/phase2_content_items?id=eq.{{$json.originalBody.content_item_id}}",
+        "url": "={{$env[\"SUPABASE_URL\"] || \"http://supabase:8000\"}}/rest/v1/phase2_content_items?id=eq.{{$json.content_item_id}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -156,7 +156,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  state: $json.result.verdict === \"pass\" ? \"scheduled\" : \"review\"\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  state: $json.verdict === \"pass\" ? \"scheduled\" : \"review\"\n}) }}",
         "options": {}
       },
       "name": "Update Item State",
