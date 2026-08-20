@@ -70,7 +70,7 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
         body: JSON.stringify({
           id: artifactVersionId,
           artifact_id: dummyArtifactId,
-          version_number: Date.now(),
+          version_number: 1,
           state: 'APPROVED',
           created_by_actor_type: 'SYSTEM',
           created_by_external_ref: 'Auto Publisher'
