@@ -465,7 +465,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const parsed = $('Parse Text').first().json;\nconst visual = $('Extract Visual').first().json;\nconst captionNode = $('Extract Caption').first().json;\nconst webhookItem = $('Webhook Trigger').first().json.body || $('Webhook Trigger').first().json;\nconst threadId = webhookItem.threadId;\n\nconst research = parsed.textContent?.agent_1_research_packet || '';\nconst caption =\n  parsed.textContent?.agent_2_publish_ready_caption ||\n  captionNode.artifacts?.caption ||\n  '';\nconst imageUrl = $('Map R2 URL').item.json.r2_url || '';\n\nconst outboxId = $('Poll Image Status').first().json.outbox_id || '';\nconst taskId = $('AI Broker (Image)').item.json.taskId;\nconst providerCode = $('AI Broker (Image)').item.json.provider;\nconst usageId = $('AI Broker (Image)').item.json.usage_id;\nconst modelCode = $('AI Broker (Image)').item.json.model;\n\nconst contentItemId = $('Parse Text').first().json.item.id;\nconst bodyStr = `**Nội dung đã được tạo thành công (QA_ready)**\\n\\n**ID Bài Viết:** \\`${contentItemId}\\`\\n\\n![Generated Image](${imageUrl})\\n\\n**Caption:**\\n${caption}\\n\\n**Research Packet:**\\n\\`\\`\\`json\\n${JSON.stringify(research, null, 2)}\\n\\`\\`\\``;\n\nreturn {\n  json: {\n    p_thread_id: threadId,\n    p_idempotency_key: outboxId || ('fallback_' + $execution.id),\n    p_sender: 'agent',\n    p_intent_type: 'image_generation_completed',\n    p_content: bodyStr,\n    p_metadata: {\n      task_id: taskId,\n      provider_code: providerCode,\n      model_code: modelCode,\n      usage_id: usageId,\n      outbox_id: outboxId,\n      result_image_url: imageUrl\n    }\n  }\n};"
+        "jsCode": "const parsed = $('Parse Text').first().json;\nconst visual = $('Extract Visual').first().json;\nconst captionNode = $('Extract Caption').first().json;\nconst webhookItem = $('Webhook Trigger').first().json.body || $('Webhook Trigger').first().json;\nconst threadId = webhookItem.threadId;\n\nconst research = parsed.textContent?.agent_1_research_packet || '';\nconst caption =\n  parsed.textContent?.agent_2_publish_ready_caption ||\n  captionNode.artifacts?.caption ||\n  '';\nconst imageUrl = $('Map R2 URL').item.json.r2_url || '';\n\nconst outboxId = $('Poll Image Status').first().json.outbox_id || '';\nconst taskId = $('AI Broker (Image)').item.json.taskId;\nconst providerCode = $('AI Broker (Image)').item.json.provider;\nconst usageId = $('AI Broker (Image)').item.json.usage_id;\nconst modelCode = $('AI Broker (Image)').item.json.model;\n\nconst contentItemId = $('Parse Text').first().json.item.id;\nconst bodyStr = `⏳ **Nội dung đã tạo xong. Đang chuyển sang Trưởng phòng AI QA kiểm định...**\\n\\n**ID Bài Viết:** \\`${contentItemId}\\`\\n\\n![Generated Image](${imageUrl})\\n\\n**Caption:**\\n${caption}\\n\\n**Research Packet:**\\n\\`\\`\\`json\\n${JSON.stringify(research, null, 2)}\\n\\`\\`\\``;\n\nreturn {\n  json: {\n    p_thread_id: threadId,\n    p_idempotency_key: outboxId || ('fallback_' + $execution.id),\n    p_sender: 'agent',\n    p_intent_type: 'image_generation_completed',\n    p_content: bodyStr,\n    p_metadata: {\n      task_id: taskId,\n      provider_code: providerCode,\n      model_code: modelCode,\n      usage_id: usageId,\n      outbox_id: outboxId,\n      result_image_url: imageUrl\n    }\n  }\n};"
       },
       "name": "Format Output",
       "type": "n8n-nodes-base.code",
@@ -745,6 +745,24 @@
           "name": "SupabaseAuth"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/qa-gatekeeper",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content_item_id\": $('Parse Text').first().json.item.id,\n  \"organization_id\": $('Webhook Trigger').first().json.body.organization_id || $('Webhook Trigger').first().json.organization_id || $('Webhook Trigger').first().json.tenant_id,\n  \"thread_id\": $('Webhook Trigger').first().json.body.threadId || $('Webhook Trigger').first().json.threadId || $('Webhook Trigger').first().json.thread_id\n}",
+        "options": {}
+      },
+      "name": "Trigger QA Gatekeeper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        15700,
+        -3520
+      ],
+      "id": "f8040c5b-4269-4a59-9126-6cb225401003"
     }
   ],
   "pinData": {},
@@ -1094,6 +1112,17 @@
         [
           {
             "node": "Push Error to Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Push to Chat DB": {
+      "main": [
+        [
+          {
+            "node": "Trigger QA Gatekeeper",
             "type": "main",
             "index": 0
           }

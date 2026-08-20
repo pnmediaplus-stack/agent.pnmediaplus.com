@@ -1,0 +1,308 @@
+{
+  "name": "PHASE3_QA_GATEKEEPER",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "qa-gatekeeper",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "32a68982-160e-4e55-892c-b7a1b846449e",
+      "id": "dcfb9538-c434-41a2-a745-c9d11b4e0cbc"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"SUPABASE_URL\"] || \"http://supabase:8000\"}}/rest/v1/phase2_content_items?id=eq.{{$json.body.content_item_id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env[\"SUPABASE_SERVICE_ROLE_KEY\"]}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"SUPABASE_SERVICE_ROLE_KEY\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Get Content Item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        200,
+        0
+      ],
+      "id": "9c1bc358-2716-4151-8a37-32047aa71edf",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"OPENAI_API_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Bạn là AI QA. Đánh giá bài viết sau. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10) }.\\nBài viết:\\n\" + JSON.stringify($json[0].agent_2_publish_ready_caption)\n    }\n  ]\n}",
+        "options": {}
+      },
+      "name": "LLM Evaluator",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        400,
+        0
+      ],
+      "id": "dae4f3d1-ecd3-49af-ba36-18cb50e75b58"
+    },
+    {
+      "parameters": {
+        "jsCode": "let response = $json.choices[0].message.content;\ntry { response = JSON.parse(response); } catch(e){}\nreturn { json: { result: response, originalBody: $(\"Webhook\").first().json.body } };"
+      },
+      "name": "Parse Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ],
+      "id": "c7ccdee5-b429-4736-be8c-599c105c657a"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || \"http://supabase:8000\"}}/rest/v1/phase2_qa_reviews",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env[\"SUPABASE_SERVICE_ROLE_KEY\"]}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"SUPABASE_SERVICE_ROLE_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content_item_id\": \"{{$json.originalBody.content_item_id}}\",\n  \"reviewer_ref\": \"ai_qa_gatekeeper\",\n  \"verdict\": \"{{$json.result.verdict}}\",\n  \"average_score\": {{$json.result.average_score || 10}},\n  \"overclaim_risk\": {{$json.result.overclaim_risk || 0}},\n  \"missing_asset\": false,\n  \"notes\": \"AI Automated QA\"\n}",
+        "options": {}
+      },
+      "name": "Insert QA DB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        800,
+        0
+      ],
+      "id": "22ac752d-29dc-4c56-9841-37b47c8b84db",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || \"http://supabase:8000\"}}/rest/v1/phase1_chat_messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env[\"SUPABASE_SERVICE_ROLE_KEY\"]}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"SUPABASE_SERVICE_ROLE_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"thread_id\": \"{{$(\"Webhook\").first().json.body.thread_id}}\",\n  \"sender\": \"system\",\n  \"body\": \"{{$(\"Parse Result\").first().json.result.verdict === \\\"pass\\\" ? \\\"✅ Trưởng phòng AI QA đã duyệt bài xuất sắc (\\\" + $(\"Parse Result\").first().json.result.average_score + \\\"/10).\\\" : \\\"❌ Bài viết bị từ chối bởi AI QA.\\\"}}\",\n  \"intent_type\": \"{{$(\"Parse Result\").first().json.result.verdict === \\\"pass\\\" ? \\\"publish_prompt\\\" : \\\"clarify_missing_scope\\\"  }}\"\n}",
+        "options": {}
+      },
+      "name": "Trigger Chat UI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1000,
+        0
+      ],
+      "id": "9b3162b1-e69f-4385-aac4-5aeb51cfc49a",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{$env[\"SUPABASE_URL\"] || \"http://supabase:8000\"}}/rest/v1/phase2_content_items?id=eq.{{$json.originalBody.content_item_id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env[\"SUPABASE_SERVICE_ROLE_KEY\"]}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"SUPABASE_SERVICE_ROLE_KEY\"]}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"state\": \"{{$json.result.verdict === \\\"pass\\\" ? \\\"scheduled\\\" : \\\"review\\\"}}\"\n}",
+        "options": {}
+      },
+      "name": "Update Item State",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        900,
+        0
+      ],
+      "id": "691c1232-e7c1-48d0-b274-a4bbe473bda4",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Content Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Content Item": {
+      "main": [
+        [
+          {
+            "node": "LLM Evaluator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Evaluator": {
+      "main": [
+        [
+          {
+            "node": "Parse Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Result": {
+      "main": [
+        [
+          {
+            "node": "Insert QA DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert QA DB": {
+      "main": [
+        [
+          {
+            "node": "Update Item State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Item State": {
+      "main": [
+        [
+          {
+            "node": "Trigger Chat UI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "247ae008-7f8b-40b5-8f79-f2ff640d2753",
+  "id": "phase3-qa-gatekeeper"
+}
