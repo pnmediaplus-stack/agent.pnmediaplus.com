@@ -289,6 +289,68 @@
         100,
         300
       ]
+    },
+    {
+      "parameters": {},
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        100,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env['NEXTJS_CONTROL_PLANE_BASE_URL'] || '').replace(new RegExp('/$'), '') + '/api/phase3/publish-error' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env['CONTROL_PLANE_SECRET'] }}"
+            },
+            {
+              "name": "x-request-id",
+              "value": "={{ 'phase3-fb-err-' + $execution.id }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "organizationId",
+              "value": "={{ $('Extract FB Assets').item?.json?.organizationId || $env['ORGANIZATION_ID'] }}"
+            },
+            {
+              "name": "contentItemId",
+              "value": "={{ $('Extract FB Assets').item?.json?.contentItemId || 'unknown' }}"
+            },
+            {
+              "name": "errorMessage",
+              "value": "={{ $json.execution.error.message }}"
+            },
+            {
+              "name": "threadId",
+              "value": "={{ $('Extract FB Assets').item?.json?.threadId || '' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Callback Error",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        300,
+        600
+      ]
     }
   ],
   "connections": {
@@ -363,6 +425,17 @@
         [
           {
             "node": "Fetch Facebook Integration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Callback Error",
             "type": "main",
             "index": 0
           }
