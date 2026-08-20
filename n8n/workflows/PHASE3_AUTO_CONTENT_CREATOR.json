@@ -695,6 +695,56 @@
         -3560
       ],
       "id": "wait-5s-node"
+    },
+    {
+      "parameters": {},
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        13000,
+        -4500
+      ],
+      "id": "err-trigger-1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookItem = $('Webhook Trigger').first().json.body || $('Webhook Trigger').first().json;\nconst threadId = webhookItem.threadId;\nconst errorMsg = $json.execution.error.message || 'Unknown Error';\n\nconst bodyStr = `❌ **Tạo bài viết thất bại!**\\n\\nHệ thống gặp lỗi trong quá trình xử lý:\\n*${errorMsg}*\\n\\nVui lòng thử lại sau.`;\n\nreturn {\n  json: {\n    p_thread_id: threadId,\n    p_idempotency_key: 'err_' + $execution.id,\n    p_sender: 'system',\n    p_intent_type: 'notify_error',\n    p_content: bodyStr,\n    p_metadata: {}\n  }\n};"
+      },
+      "name": "Format Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13200,
+        -4500
+      ],
+      "id": "err-format-1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/rpc/phase075_n8n_append_chat_message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json)}}",
+        "options": {}
+      },
+      "name": "Push Error to Chat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        13400,
+        -4500
+      ],
+      "id": "err-push-1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -1022,6 +1072,28 @@
         [
           {
             "node": "Poll Image Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error": {
+      "main": [
+        [
+          {
+            "node": "Push Error to Chat",
             "type": "main",
             "index": 0
           }
