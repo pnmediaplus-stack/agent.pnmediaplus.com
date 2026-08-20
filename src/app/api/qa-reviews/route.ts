@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyUiAuth } from '@/lib/ui-auth-guard';
 import { readPortalAccessToken, loadPortalOrganizationContext } from '@/lib/portal-auth';
+import type { QAStatus } from '@/types/state';
 
 interface RawPhase1Review {
   id: string;
@@ -99,7 +100,7 @@ export async function GET(req: Request) {
       reviewer_actor_type: item.reviewer_actor_type,
       reviewer_agent_id: item.reviewer_agent_id,
       reviewer_external_ref: item.reviewer_external_ref,
-      verdict: item.verdict as any, // Cast to QAStatus
+      verdict: item.verdict as QAStatus,
       notes: item.notes,
       evidence_ref: item.evidence_ref,
       created_at: item.created_at,
@@ -116,7 +117,7 @@ export async function GET(req: Request) {
       reviewer_ref: item.reviewer_ref,
       average_score: item.average_score,
       overclaim_risk: item.overclaim_risk,
-      verdict: item.verdict as any, // Cast to QAStatus
+      verdict: item.verdict as QAStatus,
       notes: item.notes,
       evidence_ref: item.evidence_ref,
       created_at: item.created_at,
