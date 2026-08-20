@@ -37,8 +37,7 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
     if (!artifactVersionId && (item.state === 'QA_passed' || item.state === 'scheduled')) {
       const dummyArtifactId = crypto.randomUUID();
       
-      // Ensure the base artifact exists to satisfy foreign key constraint
-      await fetch(`${supabaseUrl}/rest/v1/artifacts`, {
+      const r0 = await fetch(`${supabaseUrl}/rest/v1/artifacts`, {
         method: 'POST',
         headers: { ...headers, 'Accept-Profile': 'pn_os_ai_department', 'Content-Profile': 'pn_os_ai_department', 'Prefer': 'resolution=ignore-duplicates' },
         body: JSON.stringify({
@@ -48,6 +47,7 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
           artifact_type: 'social_post'
         })
       });
+      if (!r0.ok) throw new Error('Artifact POST failed: ' + await r0.text());
 
       artifactVersionId = crypto.randomUUID();
       const r1 = await fetch(`${supabaseUrl}/rest/v1/artifact_versions`, {
@@ -62,19 +62,19 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
           created_by_external_ref: 'Auto Publisher'
         })
       });
-      if (!r1.ok) console.error('artifact_versions POST fail:', await r1.text());
+      if (!r1.ok) throw new Error('Artifact Version POST failed: ' + await r1.text());
 
       const r2 = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${contentItemId}`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ artifact_version_id: artifactVersionId, state: 'scheduled' })
       });
-      if (!r2.ok) console.error('content_items PATCH fail:', await r2.text());
+      if (!r2.ok) throw new Error('Content Item PATCH failed: ' + await r2.text());
     }
 
     return artifactVersionId || item.artifact_version_id;
-  } catch (e) {
+  } catch (e: any) {
     console.error('Fast track failed:', e);
-    return null;
+    throw e; // Bubble up the error
   }
 }

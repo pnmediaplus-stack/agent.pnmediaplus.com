@@ -553,7 +553,18 @@ export async function sendChatMessage(threadId: string, body: string) {
              return { success: false, message: rejectMsgResult.data };
            }
 
-           const artifactVersionId = await fastTrackApproveAndSchedule(organizationId, contentItemId);
+           let artifactVersionId;
+           try {
+             artifactVersionId = await fastTrackApproveAndSchedule(organizationId, contentItemId);
+           } catch (e: any) {
+             const rejectMsgResult = await dbInsertChatMessage(organizationId, {
+               threadId,
+               sender: "system",
+               body: `Lỗi Database khi duyệt: ${e.message}`,
+               intentType: "approve_or_reject"
+             });
+             return { success: false, message: rejectMsgResult.data };
+           }
 
            if (!artifactVersionId) {
              const rejectMsgResult = await dbInsertChatMessage(organizationId, {
