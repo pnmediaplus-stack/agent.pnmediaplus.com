@@ -57,12 +57,28 @@ export async function GET(req: Request) {
       console.error("Phase 2 Fetch Error:", await r2.text());
     }
 
-    const mappedPhase1Data = phase1Data.map((item: any) => ({
+    const mappedPhase1Data = phase1Data.map((item: Record<string, unknown>) => ({
       ...item,
       phase: 'phase1'
     }));
 
-    const mappedPhase2Data = phase2Data.map((item: any) => ({
+    const mappedPhase2Data = phase2Data.map((item: {
+      id: string;
+      content_item_id: string;
+      agent_task_id: string | null;
+      reviewer_ref: string;
+      average_score: number | null;
+      overclaim_risk: number | null;
+      verdict: string;
+      notes: string | null;
+      evidence_ref: string;
+      created_at: string;
+      updated_at: string;
+      content_items?: {
+        organization_id: string;
+        artifact_version_id: string | null;
+      };
+    }) => ({
       id: item.id,
       organization_id: item.content_items?.organization_id,
       phase: 'phase2',
