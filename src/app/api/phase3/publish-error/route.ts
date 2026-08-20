@@ -9,7 +9,7 @@ const PublishErrorPayloadSchema = z.object({
   organizationId: z.string().uuid(),
   contentItemId: z.string().uuid(),
   errorMessage: z.string(),
-  threadId: z.string().uuid().optional(),
+  threadId: z.string().optional(),
 });
 
 export async function POST(req: Request) {

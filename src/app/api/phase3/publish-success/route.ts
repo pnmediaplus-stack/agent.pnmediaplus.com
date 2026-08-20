@@ -11,7 +11,7 @@ const PublishSuccessPayloadSchema = z.object({
   channel: z.string().min(1),
   externalId: z.string().min(1),
   externalUrl: z.string().url().optional().or(z.literal('')),
-  threadId: z.string().uuid().optional(),
+  threadId: z.string().optional(),
 });
 
 export async function POST(req: Request) {
