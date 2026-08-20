@@ -35,12 +35,12 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
 
     let artifactVersionId = item.artifact_version_id;
     if (!artifactVersionId && (item.state === 'QA_passed' || item.state === 'scheduled')) {
-      const dummyArtifactId = '516cb800-b1a4-4b5b-8179-f389faa3b02f';
+      const dummyArtifactId = crypto.randomUUID();
       
       // Ensure the base artifact exists to satisfy foreign key constraint
       await fetch(`${supabaseUrl}/rest/v1/artifacts`, {
         method: 'POST',
-        headers: { ...headers, 'Accept-Profile': 'pn_os_ai_department', 'Prefer': 'resolution=ignore-duplicates' },
+        headers: { ...headers, 'Accept-Profile': 'pn_os_ai_department', 'Content-Profile': 'pn_os_ai_department', 'Prefer': 'resolution=ignore-duplicates' },
         body: JSON.stringify({
           id: dummyArtifactId,
           organization_id: organizationId,
@@ -52,7 +52,7 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
       artifactVersionId = crypto.randomUUID();
       const r1 = await fetch(`${supabaseUrl}/rest/v1/artifact_versions`, {
         method: 'POST',
-        headers: { ...headers, 'Accept-Profile': 'pn_os_ai_department' },
+        headers: { ...headers, 'Accept-Profile': 'pn_os_ai_department', 'Content-Profile': 'pn_os_ai_department' },
         body: JSON.stringify({
           id: artifactVersionId,
           artifact_id: dummyArtifactId,
