@@ -57,7 +57,8 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
           artifact_key: 'auto_gen_content_' + Date.now(),
           canonical_name: 'Auto-generated Content Artifact',
           artifact_type: 'social_post',
-          creator_actor_type: 'SYSTEM'
+          creator_actor_type: 'SYSTEM',
+          creator_external_ref: 'Auto Publisher'
         })
       });
       if (!r0.ok) throw new Error('Artifact POST failed: ' + await r0.text());
