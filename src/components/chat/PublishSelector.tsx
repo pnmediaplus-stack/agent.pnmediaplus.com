@@ -20,9 +20,10 @@ export function PublishSelector({
       .then(res => res.json())
       .then(data => {
         if (!mounted) return;
-        if (data.integrations && Array.isArray(data.integrations)) {
+        const integrations = data.data?.integrations || data.integrations;
+        if (integrations && Array.isArray(integrations)) {
           // Lọc đúng cấu trúc dữ liệu: provider_code === 'facebook_page'
-          const fbPages = data.integrations.filter((integration: any) => integration.provider_code === 'facebook_page');
+          const fbPages = integrations.filter((integration: any) => integration.provider_code === 'facebook_page');
           setPages(fbPages);
         } else {
           setPages([]);
