@@ -31,8 +31,8 @@ function stripPlanCommandPrefix(body: string) {
   return compactWhitespace(
     body
       .replace(/^\/plan_campaign\b/i, "")
-      .replace(/\bdepartment[_\s-]?id\s*:\s*[^\s]+/gi, "")
-      .replace(/\bdepartment[_\s-]?name\s*:\s*[^,;|]+/gi, "")
+      .replace(/\bdepartment[_\s-]?id\s*:\s*[^\s;,]+/gi, "")
+      .replace(/\bdepartment[_\s-]?name\s*:\s*[^,;|]+[,;|]?\s*/gi, "")
   );
 }
 

@@ -96,7 +96,7 @@ export async function processHumanMessage(text: string, history: any[] = [], org
         } else if (funcName === "plan_campaign") {
           return {
             intentType: "plan_campaign",
-            mappedCommand: `/plan_campaign department_name:${args.department_name} ${args.brief}`
+            mappedCommand: `/plan_campaign department_name:${args.department_name}; ${args.brief}`
           };
         }
         

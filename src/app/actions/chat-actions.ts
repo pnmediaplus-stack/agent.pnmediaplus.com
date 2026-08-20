@@ -534,7 +534,7 @@ export async function sendChatMessage(threadId: string, body: string) {
             webhook: { ok: true, route: "handled_internally", status: 200, message: "Campaign approved and activated" }
           };
         } else if (command === '/plan_campaign') {
-          return await routePlanCampaignCommand(organizationId, threadId, requestId, auth, humanMessageId, body);
+          return await routePlanCampaignCommand(organizationId, threadId, requestId, auth, humanMessageId, executionBody);
         } else if (command === '/campaign') {
           if (args[0] === 'set') {
             const explicitCampaign = args.slice(1).join(' ');
@@ -865,7 +865,7 @@ export async function sendChatMessage(threadId: string, body: string) {
       };
     }
 
-    if (intentType === "publish_content" && requiresPublishScope(body)) {
+    if (intentType === "publish_content" && requiresPublishScope(executionBody)) {
       const clarifyReply = buildMissingScopeReply(intentType);
       const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
         threadId,
@@ -893,9 +893,9 @@ export async function sendChatMessage(threadId: string, body: string) {
       };
     } else if (intentType === "publish_content") {
        // Extracted valid publish scope
-       const integrationKeyMatch = body.match(/integration_key:([a-zA-Z0-9_-]+)/);
+       const integrationKeyMatch = executionBody.match(/integration_key:([a-zA-Z0-9_-]+)/);
        const integrationKey = integrationKeyMatch ? integrationKeyMatch[1] : '';
-       const contentItemIdMatch = body.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
+       const contentItemIdMatch = executionBody.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
        let contentItemId = contentItemIdMatch ? contentItemIdMatch[1] : '';
 
        if (!integrationKey) {
