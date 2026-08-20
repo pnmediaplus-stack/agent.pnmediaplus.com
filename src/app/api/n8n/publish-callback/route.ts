@@ -161,7 +161,7 @@ export async function POST(request: Request) {
           p_sender: sender,
           p_content: body,
           p_intent_type: intent_type,
-          p_metadata: metadata
+          p_metadata: metadata || null
         })
       });
 
