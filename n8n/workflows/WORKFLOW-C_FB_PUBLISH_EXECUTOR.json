@@ -194,7 +194,7 @@
           "parameters": [
             {
               "name": "url",
-              "value": "={{ $('Extract FB Assets').item.json.image }}"
+              "value": "={{ $('Extract FB Assets').item.json.image.startsWith('http') ? $('Extract FB Assets').item.json.image : ($env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com') + $('Extract FB Assets').item.json.image }}"
             },
             {
               "name": "message",
