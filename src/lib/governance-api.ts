@@ -142,59 +142,25 @@ export async function dbCreateContentItemFromBrief(organizationId: string, brief
     title += '...';
   }
 
-  // 1. Create a dummy SSOT Artifact to satisfy production constraints
-  const artifactRes = await fetch(`${supabaseUrl}/rest/v1/artifacts`, {
-    method: 'POST',
-    headers: { ...getPublicHeaders(), 'Prefer': 'return=representation' },
-    body: JSON.stringify({
-      organization_id: organizationId,
-      artifact_type: 'social_post',
-      format_id: 'social_fb_post',
-      title: title,
-      state: 'approved'
-    })
-  });
-  if (!artifactRes.ok) return { error: await artifactRes.text(), data: null };
-  const artifactData = await artifactRes.json();
-  const artifactId = artifactData[0].id;
-
-  // 2. Create the SSOT Artifact Version
-  const versionRes = await fetch(`${supabaseUrl}/rest/v1/artifact_versions`, {
-    method: 'POST',
-    headers: { ...getPublicHeaders(), 'Prefer': 'return=representation' },
-    body: JSON.stringify({
-      artifact_id: artifactId,
-      version_number: 1,
-      payload: { brief: trimmedBrief }
-    })
-  });
-  if (!versionRes.ok) return { error: await versionRes.text(), data: null };
-  const versionData = await versionRes.json();
-  const artifactVersionId = versionData[0].id;
-
-  // 3. Create the Phase 2 Content Item mapped to the SSOT
   const bodyData: any = {
     organization_id: organizationId,
     content_key: 'auto_' + crypto.randomUUID().replace(/-/g, ''),
     owner_ref: ownerRef,
     title: title,
     brief: trimmedBrief,
-    state: 'idea',
-    artifact_version_id: artifactVersionId
+    state: 'idea'
   };
   if (campaignId) bodyData.campaign_id = campaignId;
 
-  const res = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items`, {
+  const contentRes = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items`, {
     method: 'POST',
     headers: { ...getPublicHeaders(), 'Prefer': 'return=representation' },
     body: JSON.stringify(bodyData)
   });
-  
-  if (!res.ok) {
-    return { error: await res.text(), data: null };
-  }
-  const data = await res.json();
-  return { data: data[0] };
+
+  if (!contentRes.ok) return { error: await contentRes.text(), data: null };
+  const contentData = await contentRes.json();
+  return { data: contentData[0] };
 }
 
 export async function dbGetLatestContentItem(organizationId: string, ownerRef: string) {
