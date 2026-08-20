@@ -156,7 +156,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  state: $json.verdict === \"pass\" ? \"publish_ready\" : \"review\"\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  state: $json.verdict === \"pass\" ? \"QA_passed\" : \"review\"\n}) }}",
         "options": {}
       },
       "name": "Update Item State",
