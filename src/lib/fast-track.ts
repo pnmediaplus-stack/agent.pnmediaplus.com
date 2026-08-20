@@ -74,7 +74,8 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
           state: 'APPROVED',
           created_by_actor_type: 'SYSTEM',
           created_by_external_ref: 'Auto Publisher',
-          content_ref: 'virtual://auto-generated-content'
+          content_ref: 'virtual://auto-generated-content',
+          content_sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
         })
       });
       if (!r1.ok) throw new Error('Artifact Version POST failed: ' + await r1.text());
