@@ -170,7 +170,8 @@ export async function sendChatMessage(threadId: string, body: string) {
   let intentType: import('@/types/state').ChatIntentType = "unknown";
   
   const trimmedBody = body.trim();
-  const lowerBody = trimmedBody.toLowerCase();
+  let executionBody = trimmedBody;
+  let agentReplyToSave: string | undefined = undefined;
 
   if (trimmedBody.startsWith('/')) {
     const cmd = trimmedBody.split(/\s+/)[0];
@@ -180,13 +181,16 @@ export async function sendChatMessage(threadId: string, body: string) {
     else if (cmd === '/plan_campaign') intentType = 'plan_campaign';
     else if (cmd === '/status') intentType = 'request_status';
   } else {
-    // Basic NLP Regex Fallback since AI Classifier is not yet integrated
-    if (lowerBody.includes('đăng nội dung') || lowerBody.includes('đăng bài') || lowerBody.includes('publish')) {
-      intentType = 'publish_content';
-    } else if (lowerBody.includes('tạo nội dung') || lowerBody.includes('viết bài') || lowerBody.includes('lên bài')) {
-      intentType = 'create_content';
-    } else if (lowerBody.includes('chiến dịch') || lowerBody.includes('campaign')) {
-      intentType = 'plan_campaign';
+    // Process Natural Language via AI Orchestrator
+    const { processHumanMessage } = await import('@/lib/ai-orchestrator/router');
+    const aiResult = await processHumanMessage(trimmedBody);
+    
+    intentType = aiResult.intentType;
+    if (aiResult.mappedCommand) {
+      executionBody = aiResult.mappedCommand;
+    }
+    if (aiResult.agentReply) {
+      agentReplyToSave = aiResult.agentReply;
     }
   }
 
@@ -218,9 +222,32 @@ export async function sendChatMessage(threadId: string, body: string) {
 
     humanMessageId = messageResult.data.id;
 
+    if (agentReplyToSave) {
+      const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
+        threadId,
+        sender: "agent",
+        body: agentReplyToSave,
+        intentType: "clarify_missing_scope"
+      });
+
+      await dbInsertAuditLog(organizationId, {
+        entityId: threadId,
+        entityType: "chat_thread",
+        action: "ai_orchestrator_clarification",
+        actor: "System AI",
+        details: `intent=${intentType} requestId=${requestId}`
+      });
+
+      return {
+        success: true,
+        message: clarifyMsgResult.data ? JSON.parse(JSON.stringify(clarifyMsgResult.data)) : null,
+        webhook: { ok: true, route: "handled_internally", status: 200, message: "AI Orchestrator asked a clarifying question" }
+      };
+    }
+
     // === SLASH COMMAND PARSER ===
-    if (trimmedBody.startsWith('/')) {
-      const parts = trimmedBody.split(/\s+/);
+    if (executionBody.startsWith('/')) {
+      const parts = executionBody.split(/\s+/);
       const command = parts[0];
       const args = parts.slice(1);
 
