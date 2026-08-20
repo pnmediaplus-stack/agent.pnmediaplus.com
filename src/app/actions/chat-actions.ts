@@ -225,7 +225,7 @@ export async function sendChatMessage(threadId: string, body: string) {
       const command = parts[0];
       const args = parts.slice(1);
 
-      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status', '/campaign', '/approve_campaign', '/brainstorm', '/approve'];
+      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status', '/campaign', '/approve_campaign', '/brainstorm'];
 
       if (whitelist.includes(command)) {
         // Enforce args
@@ -236,8 +236,6 @@ export async function sendChatMessage(threadId: string, body: string) {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <văn bản mô tả ý tưởng> (Ví dụ: ${command} Lên 15 chủ đề cho 15 ngày)`;
         } else if (command === '/status') {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> (Ví dụ: ${command} 12345)`;
-        } else if (command === '/approve') {
-          // Will auto-detect if no args are provided
         } else if (command === '/publish') {
           // Chấp nhận /publish integration_key:fbp (bỏ qua content_item_id để tự detect)
           if (args.length < 1 || !args[0].startsWith('integration_key:')) {
