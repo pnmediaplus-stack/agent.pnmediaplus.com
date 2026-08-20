@@ -23,30 +23,42 @@ export function QAReviewTable({ reviews }: { reviews: QAReview[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800/60">
-          {reviews.map((review) => (
-            <tr key={review.id} className="text-slate-300 transition-colors hover:bg-slate-900/40 group">
-              <td className="px-5 py-4">
-                <div className="font-medium text-white group-hover:text-indigo-300 transition-colors truncate max-w-[200px]" title={review.artifact_version_id}>{review.artifact_version_id}</div>
-                <div className="font-mono text-[10px] text-slate-500 truncate max-w-[150px]" title={review.id}>{review.id}</div>
-              </td>
-              <td className="px-5 py-4">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-slate-200">{review.reviewer_external_ref || review.reviewer_actor_type}</span>
-                </div>
-              </td>
-              <td className="px-5 py-4">
-                <StateBadge label={review.verdict} displayLabel={t(`qa.verdict.${review.verdict}`) ?? review.verdict} />
-              </td>
-              <td className="px-5 py-4">
-                <div className="flex items-start gap-2">
-                  {review.verdict === "BLOCKED" || review.verdict === "HOLD" ? (
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-                  ) : null}
-                  <span className="text-sm leading-relaxed text-slate-400 group-hover:text-slate-300 transition-colors">{review.notes || "-"}</span>
-                </div>
-              </td>
-            </tr>
-          ))}
+          {reviews.map((review) => {
+            const isPhase1 = review.phase === 'phase1';
+            const displayId = isPhase1 ? review.artifact_version_id : (review.artifact_version_id || review.content_item_id);
+            const reviewerName = isPhase1 ? (review.reviewer_external_ref || review.reviewer_actor_type) : review.reviewer_ref;
+            const subtitle = isPhase1 ? 'SSOT v1' : 'P2: ' + review.content_item_id;
+
+            return (
+              <tr key={review.id} className="text-slate-300 transition-colors hover:bg-slate-900/40 group">
+                <td className="px-5 py-4">
+                  <div className="font-medium text-white group-hover:text-indigo-300 transition-colors truncate max-w-[200px]" title={displayId}>{displayId}</div>
+                  <div className="font-mono text-[10px] text-slate-500 truncate max-w-[150px]" title={review.id}>{subtitle}</div>
+                </td>
+                <td className="px-5 py-4">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-slate-200">{reviewerName}</span>
+                    {!isPhase1 && review.average_score != null && (
+                      <span className="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">
+                        Điểm: {review.average_score}/10
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-5 py-4">
+                  <StateBadge label={review.verdict} displayLabel={t(`qa.verdict.${review.verdict}`) ?? review.verdict} />
+                </td>
+                <td className="px-5 py-4">
+                  <div className="flex items-start gap-2">
+                    {review.verdict === "BLOCKED" || review.verdict === "HOLD" || review.verdict === "reject" ? (
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                    ) : null}
+                    <span className="text-sm leading-relaxed text-slate-400 group-hover:text-slate-300 transition-colors">{review.notes || "-"}</span>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
