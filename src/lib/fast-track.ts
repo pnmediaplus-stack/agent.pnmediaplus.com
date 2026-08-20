@@ -73,7 +73,8 @@ export async function fastTrackApproveAndSchedule(organizationId: string, conten
           version_number: 1,
           state: 'APPROVED',
           created_by_actor_type: 'SYSTEM',
-          created_by_external_ref: 'Auto Publisher'
+          created_by_external_ref: 'Auto Publisher',
+          content_ref: 'virtual://auto-generated-content'
         })
       });
       if (!r1.ok) throw new Error('Artifact Version POST failed: ' + await r1.text());
