@@ -5,13 +5,13 @@ import { useI18n } from "@/lib/i18n/useI18n";
 import { Paperclip, X, Loader2, Bot, FileText, AlertTriangle, Hash, Slash, Users, CheckSquare } from "lucide-react";
 
 type ChatComposerProps = {
-  value: string;
-  onChange: (value: string) => void;
-  onSubmit: () => void;
-  onRequestCreateTask?: () => void;
+  initialValue?: string;
+  onSubmit: (value: string) => void;
+  onRequestCreateTask?: (currentValue: string) => void;
 };
 
-export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }: ChatComposerProps) {
+export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask }: ChatComposerProps) {
+  const [value, setValue] = useState(initialValue);
   const { t } = useI18n("chat");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -194,7 +194,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
-    onChange(text);
+    setValue(text);
 
     const cursorPosition = textareaRef.current?.selectionStart || text.length;
     const textBeforeCursor = text.substring(0, cursorPosition);
@@ -326,7 +326,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
     const cursor = textareaRef.current?.selectionStart || value.length;
     const after = value.substring(cursor);
 
-    onChange(before + replacement + after);
+    setValue(before + replacement + after);
     setPopupState(prev => ({ ...prev, isOpen: false }));
 
     setTimeout(() => {
@@ -404,11 +404,12 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
           ? `\n\n![${selectedFile.name}](${data.signedUrl})`
           : `\n\n[📎 ${selectedFile.name}](${data.signedUrl})`;
 
-        onChange(value + markdown);
+        const finalValue = value + markdown;
+        setValue("");
         setSelectedFile(null);
 
         setTimeout(() => {
-          onSubmit();
+          onSubmit(finalValue);
           setIsUploading(false);
         }, 100);
 
@@ -418,7 +419,9 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
         return;
       }
     } else {
-      onSubmit();
+      const finalValue = value;
+      setValue("");
+      onSubmit(finalValue);
     }
   };
 
@@ -592,7 +595,7 @@ export function ChatComposer({ value, onChange, onSubmit, onRequestCreateTask }:
           {onRequestCreateTask && (
             <button
               type="button"
-              onClick={onRequestCreateTask}
+              onClick={() => onRequestCreateTask(value)}
               className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors"
             >
               <CheckSquare className="h-4 w-4" />

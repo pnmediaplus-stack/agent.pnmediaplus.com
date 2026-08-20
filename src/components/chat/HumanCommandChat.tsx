@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { DraftContentModal } from "@/components/chat/DraftContentModal";
@@ -18,7 +18,7 @@ type HumanCommandChatProps = {
 };
 
 export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: HumanCommandChatProps) {
-  const [draft, setDraft] = useState("");
+  const [modalDraft, setModalDraft] = useState("");
   const [messages, setMessages] = useState(initialMessages);
   const [auditLogs, setAuditLogs] = useState(initialAuditLogs);
   const [activeTasks, setActiveTasks] = useState<any[]>([]);
@@ -71,13 +71,12 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     return latest?.body ?? (tChat("chat.summary.latestFallback") ?? "Latest message will appear here.");
   }, [messages, tChat]);
 
-  async function handleSubmit() {
-    const trimmed = draft.trim();
+  async function handleSubmit(text: string) {
+    const trimmed = text.trim();
     if (!trimmed || isSending) return;
 
     setIsSending(true);
     setSendError(null);
-    setDraft("");
 
     const optimisticMessage: any = {
       id: `optimistic-${Date.now()}`,
@@ -163,6 +162,29 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     }
   }
 
+  const handleCommand = useCallback(async (cmd: string) => {
+    setIsSending(true);
+    // Optimistic UI update
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      organization_id: thread.organization_id,
+      thread_id: thread.id,
+      sender: 'human',
+      body: cmd,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    } as any]);
+    
+    try {
+      const result = await sendChatMessage(thread.id, cmd);
+      if (result?.error) throw new Error(result.error);
+    } catch (e: any) {
+      console.error(e);
+    } finally {
+      setIsSending(false);
+    }
+  }, [thread.id, thread.organization_id]);
+
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]" style={{ height: 'calc(100vh - 120px)' }}>
       <div className="space-y-4 flex flex-col h-full min-h-0 min-w-0">
@@ -185,7 +207,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
                     )}
                     <div>
                       <div className="text-sm font-medium text-slate-200">{task.title}</div>
-                      <div className="text-xs text-slate-500 font-mono mt-1">{task.intent_type} • {task.state}</div>
+                      <div className="text-xs text-slate-500 font-mono mt-1">{task.intent_type}   {task.state}</div>
                     </div>
                   </div>
                 </div>
@@ -207,40 +229,20 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         
         <div className="flex-1 min-h-0 overflow-y-auto rounded-2xl p-2">
           <ChatMessageList 
-      messages={messages} 
-      isTyping={isSending} 
-      onCommand={async (cmd) => {
-        setIsSending(true);
-        // Optimistic UI update
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          organization_id: thread.organization_id,
-          thread_id: thread.id,
-          sender: 'human',
-          body: cmd,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }]);
-        
-        try {
-          const result = await sendChatMessage(thread.id, cmd);
-          if (result?.error) throw new Error(result.error);
-        } catch (e: any) {
-          console.error(e);
-        } finally {
-          setIsSending(false);
-        }
-      }} 
-    />
+            messages={messages} 
+            isTyping={isSending} 
+            onCommand={handleCommand} 
+          />
           <div ref={messagesEndRef} />
         </div>
 
         <div className="shrink-0 pt-2">
           <ChatComposer 
-            value={draft} 
-            onChange={setDraft} 
             onSubmit={handleSubmit} 
-            onRequestCreateTask={() => setIsContentModalOpen(true)}
+            onRequestCreateTask={(currentDraft) => {
+              setModalDraft(currentDraft);
+              setIsContentModalOpen(true);
+            }}
           />
         </div>
       </div>
@@ -260,9 +262,9 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
                 <div className="mt-2 text-sm text-slate-200">
                   {log.metadata ? (
                     <div className="space-y-1">
-                      {log.metadata.reason && <div><span className="text-slate-400">Chi tiết:</span> {log.metadata.reason}</div>}
+                      {log.metadata.reason && <div><span className="text-slate-400">Chi ti?t:</span> {log.metadata.reason}</div>}
                       {log.metadata.before && log.metadata.after && (
-                        <div><span className="text-slate-400">Trạng thái:</span> <span className="font-mono text-xs">{log.metadata.before}</span> &rarr; <span className="font-mono text-xs">{log.metadata.after}</span></div>
+                        <div><span className="text-slate-400">Tr?ng thi:</span> <span className="font-mono text-xs">{log.metadata.before}</span> &rarr; <span className="font-mono text-xs">{log.metadata.after}</span></div>
                       )}
                       {(!log.metadata.reason && !log.metadata.before) && (
                         <div className="font-mono text-[10px] break-all">{JSON.stringify(log.metadata)}</div>
@@ -278,7 +280,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
 
       {isContentModalOpen && (
         <DraftContentModal 
-          initialTitle={draft} 
+          initialTitle={modalDraft} 
           onClose={() => setIsContentModalOpen(false)} 
           onSuccess={handleDirectSubmit}
         />
