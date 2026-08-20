@@ -25,10 +25,6 @@
         "headerParameters": {
           "parameters": [
             {
-              "name": "Authorization",
-              "value": "=Bearer {{$env[\"OPENAI_API_KEY\"]}}"
-            },
-            {
               "name": "Content-Type",
               "value": "application/json"
             }
@@ -37,7 +33,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o-mini\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"user\",\n      content: \"Bạn là AI QA. Đánh giá bài viết sau. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10) }.\\nBài viết:\\n\" + $(\"Webhook\").first().json.body.caption\n    }\n  ]\n}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "name": "LLM Evaluator",
       "type": "n8n-nodes-base.httpRequest",
@@ -46,7 +44,13 @@
         400,
         0
       ],
-      "id": "dae4f3d1-ecd3-49af-ba36-18cb50e75b58"
+      "id": "dae4f3d1-ecd3-49af-ba36-18cb50e75b58",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "OpenAI_Auth"
+        }
+      }
     },
     {
       "parameters": {
