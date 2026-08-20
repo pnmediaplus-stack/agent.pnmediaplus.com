@@ -126,7 +126,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"content_item_id\": \"{{$json.originalBody.content_item_id}}\",\n  \"reviewer_ref\": \"ai_qa_gatekeeper\",\n  \"verdict\": \"{{$json.result.verdict}}\",\n  \"average_score\": {{$json.result.average_score || 10}},\n  \"overclaim_risk\": {{$json.result.overclaim_risk || 0}},\n  \"missing_asset\": false,\n  \"notes\": \"AI Automated QA\"\n}",
+        "jsonBody": "={\n  \"content_item_id\": \"{{$json.originalBody.content_item_id}}\",\n  \"reviewer_ref\": \"ai_qa_gatekeeper\",\n  \"verdict\": \"{{$json.result.verdict}}\",\n  \"average_score\": {{$json.result.average_score || 0}},\n  \"overclaim_risk\": {{$json.result.overclaim_risk || 10}},\n  \"missing_asset\": false,\n  \"notes\": \"AI Automated QA\"\n}",
         "options": {}
       },
       "name": "Insert QA DB",
