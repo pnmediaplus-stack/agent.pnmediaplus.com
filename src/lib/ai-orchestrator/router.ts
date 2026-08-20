@@ -18,6 +18,9 @@ export async function processHumanMessage(text: string): Promise<IntentResult> {
     return fallbackRegexMatch(text);
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -25,6 +28,7 @@ export async function processHumanMessage(text: string): Promise<IntentResult> {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`
       },
+      signal: controller.signal,
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
@@ -40,8 +44,11 @@ export async function processHumanMessage(text: string): Promise<IntentResult> {
       })
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      console.error("AI Orchestrator LLM call failed:", response.statusText);
+      const errText = await response.text().catch(() => "");
+      console.error(`[AI_ORCHESTRATOR_ERROR] LLM call failed with status ${response.status}: ${errText}`);
       return fallbackRegexMatch(text);
     }
 
@@ -50,13 +57,21 @@ export async function processHumanMessage(text: string): Promise<IntentResult> {
 
     if (message?.tool_calls && message.tool_calls.length > 0) {
       const toolCall = message.tool_calls[0];
-      const args = JSON.parse(toolCall.function.arguments || "{}");
+      let args: any = {};
+      try {
+        args = JSON.parse(toolCall.function.arguments || "{}");
+      } catch (parseErr) {
+        console.error("[AI_ORCHESTRATOR_ERROR] Failed to parse tool arguments:", toolCall.function.arguments);
+        return fallbackRegexMatch(text);
+      }
 
       switch (toolCall.function.name) {
         case "create_content":
           return {
             intentType: "create_content",
-            mappedCommand: `/auto_content ${args.content_item_id || "new"} ${args.topic}`
+            mappedCommand: args.content_item_id 
+              ? `/auto_content ${args.content_item_id} ${args.topic}`
+              : `/auto_content ${args.topic}`
           };
         case "publish_content":
           return {
@@ -69,6 +84,7 @@ export async function processHumanMessage(text: string): Promise<IntentResult> {
             mappedCommand: `/plan_campaign department_name:${args.department_name} ${args.brief}`
           };
         default:
+          console.warn("[AI_ORCHESTRATOR_WARN] Unknown tool called:", toolCall.function.name);
           return fallbackRegexMatch(text);
       }
     } else if (message?.content) {
@@ -81,7 +97,8 @@ export async function processHumanMessage(text: string): Promise<IntentResult> {
 
     return fallbackRegexMatch(text);
   } catch (error) {
-    console.error("AI Orchestrator error:", error);
+    clearTimeout(timeoutId);
+    console.error("[AI_ORCHESTRATOR_ERROR] Exception during LLM routing:", error);
     return fallbackRegexMatch(text);
   }
 }
