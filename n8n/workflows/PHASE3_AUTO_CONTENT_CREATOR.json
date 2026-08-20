@@ -752,7 +752,7 @@
         "url": "http://localhost:5678/webhook/qa-gatekeeper",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"content_item_id\": $('Parse Text').first().json.item.id,\n  \"organization_id\": $('Webhook Trigger').first().json.body.organization_id || $('Webhook Trigger').first().json.organization_id || $('Webhook Trigger').first().json.tenant_id,\n  \"thread_id\": $('Webhook Trigger').first().json.body.threadId || $('Webhook Trigger').first().json.threadId || $('Webhook Trigger').first().json.thread_id\n}",
+        "jsonBody": "={\n  \"content_item_id\": $('Parse Text').first().json.item.id,\n  \"organization_id\": $('Webhook Trigger').first().json.body.organization_id || $('Webhook Trigger').first().json.organization_id || $('Webhook Trigger').first().json.tenant_id,\n  \"thread_id\": $('Webhook Trigger').first().json.body.threadId || $('Webhook Trigger').first().json.threadId || $('Webhook Trigger').first().json.thread_id,\n  \"caption\": $('Parse Text').first().json.textContent.agent_2_publish_ready_caption\n}",
         "options": {}
       },
       "name": "Trigger QA Gatekeeper",

@@ -19,42 +19,6 @@
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "={{$env[\"SUPABASE_URL\"] || \"http://supabase:8000\"}}/rest/v1/phase2_content_items?id=eq.{{$json.body.content_item_id}}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{$env[\"SUPABASE_SERVICE_ROLE_KEY\"]}}"
-            },
-            {
-              "name": "Authorization",
-              "value": "Bearer {{$env[\"SUPABASE_SERVICE_ROLE_KEY\"]}}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "name": "Get Content Item",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        200,
-        0
-      ],
-      "id": "9c1bc358-2716-4151-8a37-32047aa71edf",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
-        }
-      }
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "https://api.openai.com/v1/chat/completions",
         "sendHeaders": true,
@@ -72,7 +36,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Bạn là AI QA. Đánh giá bài viết sau. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10) }.\\nBài viết:\\n\" + JSON.stringify($json[0].agent_2_publish_ready_caption)\n    }\n  ]\n}",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Bạn là AI QA. Đánh giá bài viết sau. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10) }.\\nBài viết:\\n\" + JSON.stringify($(\"Webhook\").first().json.body.caption)\n    }\n  ]\n}",
         "options": {}
       },
       "name": "LLM Evaluator",
@@ -236,7 +200,7 @@
       "main": [
         [
           {
-            "node": "Get Content Item",
+            "node": "LLM Evaluator",
             "type": "main",
             "index": 0
           }
@@ -299,7 +263,7 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
