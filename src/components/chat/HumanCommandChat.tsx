@@ -122,7 +122,6 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     setIsContentModalOpen(false);
     setIsSending(true);
     setSendError(null);
-    setDraft("");
 
     const commandStr = `/auto_content ${contentItemId} ${title}`;
 
