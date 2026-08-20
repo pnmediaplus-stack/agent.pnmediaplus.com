@@ -635,6 +635,17 @@ export async function sendChatMessage(threadId: string, body: string) {
              return { success: false, message: rejectMsgResult.data };
            }
 
+           // PATCH target_integration_key into the item so phase076_get_publish_payload doesn't fail
+           await fetch(`${process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/phase2_content_items?id=eq.${contentItemId}`, {
+             method: 'PATCH',
+             headers: {
+               'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+               'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+               'Content-Type': 'application/json'
+             },
+             body: JSON.stringify({ target_integration_key: integrationKey })
+           });
+
            webhookResult = await postN8nWebhook("webhook/fb-publish-executor", {
              integration_key: integrationKey,
              content_item_id: contentItemId,
