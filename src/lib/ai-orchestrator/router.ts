@@ -10,7 +10,7 @@ export type IntentResult = {
  * processHumanMessage routes a natural language message into a system command
  * using an LLM. It maps the intent to the existing strict backend commands.
  */
-export async function processHumanMessage(text: string): Promise<IntentResult> {
+export async function processHumanMessage(text: string, history: { role: string, content: string }[] = []): Promise<IntentResult> {
   const apiKey = process.env.OPENAI_API_KEY;
   
   if (!apiKey) {
@@ -36,6 +36,7 @@ export async function processHumanMessage(text: string): Promise<IntentResult> {
             role: "system",
             content: "You are an AI Orchestrator for a marketing system. The user will ask you to do tasks. Call the appropriate tool to execute the task. If you don't have enough information (like missing integration_key or topic), do NOT call a tool, just ask the user for the missing info in Vietnamese."
           },
+          ...history,
           { role: "user", content: text }
         ],
         tools: AI_ORCHESTRATOR_TOOLS,

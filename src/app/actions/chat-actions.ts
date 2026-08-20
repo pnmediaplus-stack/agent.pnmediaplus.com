@@ -173,27 +173,6 @@ export async function sendChatMessage(threadId: string, body: string) {
   let executionBody = trimmedBody;
   let agentReplyToSave: string | undefined = undefined;
 
-  if (trimmedBody.startsWith('/')) {
-    const cmd = trimmedBody.split(/\s+/)[0];
-    if (cmd === '/auto_content') intentType = 'create_content';
-    else if (cmd === '/viral_research') intentType = 'create_content';
-    else if (cmd === '/publish') intentType = 'publish_content';
-    else if (cmd === '/plan_campaign') intentType = 'plan_campaign';
-    else if (cmd === '/status') intentType = 'request_status';
-  } else {
-    // Process Natural Language via AI Orchestrator
-    const { processHumanMessage } = await import('@/lib/ai-orchestrator/router');
-    const aiResult = await processHumanMessage(trimmedBody);
-    
-    intentType = aiResult.intentType;
-    if (aiResult.mappedCommand) {
-      executionBody = aiResult.mappedCommand;
-    }
-    if (aiResult.agentReply) {
-      agentReplyToSave = aiResult.agentReply;
-    }
-  }
-
   let organizationId = "";
   let humanMessageId: string | undefined;
   let auditLogId: string | undefined;
@@ -208,6 +187,36 @@ export async function sendChatMessage(threadId: string, body: string) {
 
     organizationId = auth.tenantId;
     requestId = crypto.randomUUID();
+
+    if (trimmedBody.startsWith('/')) {
+      const cmd = trimmedBody.split(/\s+/)[0];
+      if (cmd === '/auto_content') intentType = 'create_content';
+      else if (cmd === '/viral_research') intentType = 'create_content';
+      else if (cmd === '/publish') intentType = 'publish_content';
+      else if (cmd === '/plan_campaign') intentType = 'plan_campaign';
+      else if (cmd === '/status') intentType = 'request_status';
+    } else {
+      // Load recent history to give AI context
+      const historyRes = await dbLoadChatMessages(organizationId, threadId);
+      const history = (historyRes.data || []).slice(-10); // Take last 10 messages for context
+      
+      const llmMessages = history.map((m: any) => ({
+        role: m.sender === 'human' ? 'user' : 'assistant',
+        content: m.body
+      }));
+
+      // Process Natural Language via AI Orchestrator
+      const { processHumanMessage } = await import('@/lib/ai-orchestrator/router');
+      const aiResult = await processHumanMessage(trimmedBody, llmMessages);
+      
+      intentType = aiResult.intentType;
+      if (aiResult.mappedCommand) {
+        executionBody = aiResult.mappedCommand;
+      }
+      if (aiResult.agentReply) {
+        agentReplyToSave = aiResult.agentReply;
+      }
+    }
 
     const messageResult = await dbInsertChatMessage(organizationId, {
       threadId,
