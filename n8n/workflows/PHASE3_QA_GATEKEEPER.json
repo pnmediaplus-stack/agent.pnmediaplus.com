@@ -275,7 +275,7 @@
         "url": "http://localhost:5678/webhook/generate-content",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ content_item_id: $(\"Webhook\").first().json.body.content_item_id, organization_id: $(\"Webhook\").first().json.body.organization_id, threadId: $(\"Webhook\").first().json.body.thread_id, qa_retry_count: ($(\"Webhook\").first().json.body.qa_retry_count || 0) + 1, qa_feedback: $(\"Parse Result\").first().json.result.reason }) }}",
+        "jsonBody": "={{ JSON.stringify({ \n  content_item_id: $(\"Webhook\").first().json.body.content_item_id, \n  contentItemId: $(\"Webhook\").first().json.body.content_item_id, \n  organization_id: $(\"Webhook\").first().json.body.organization_id, \n  thread_id: $(\"Webhook\").first().json.body.thread_id,\n  threadId: $(\"Webhook\").first().json.body.thread_id,\n  qa_retry_count: ($(\"Webhook\").first().json.body.qa_retry_count || 0) + 1, \n  qa_feedback: $(\"Parse Result\").first().json.result.reason \n}) }}",
         "options": {}
       },
       "name": "Trigger Auto Content Creator",
