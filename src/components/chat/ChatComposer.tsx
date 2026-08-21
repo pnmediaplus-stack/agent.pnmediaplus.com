@@ -578,17 +578,40 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       )}
 
       {selectedFile && (
-        <div className="mb-3 flex items-center gap-2 rounded-lg border border-cyan-500/20 bg-cyan-950/30 p-2 text-sm text-cyan-200">
-          <Paperclip className="h-4 w-4 text-cyan-400" />
-          <span className="flex-1 truncate">{selectedFile.name}</span>
+        <div className="mb-3 relative rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-2 w-max max-w-full">
           <button
             type="button"
             onClick={() => setSelectedFile(null)}
-            className="rounded hover:bg-cyan-900/50 p-1"
+            className="absolute -right-2 -top-2 rounded-full border border-cyan-800 bg-slate-900 p-1 text-slate-400 hover:bg-slate-800 hover:text-white z-10 shadow-lg"
             disabled={isUploading}
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
+          
+          {previewUrl ? (
+            <div className="flex flex-col gap-2">
+              <img 
+                src={previewUrl} 
+                alt="Preview" 
+                className="max-h-32 rounded-md object-contain border border-cyan-900/50 bg-black/20" 
+              />
+              <div className="flex items-center gap-1.5 text-xs text-cyan-300/80 px-1">
+                <Paperclip className="h-3 w-3" />
+                <span className="truncate max-w-[200px]">{selectedFile.name}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-2 py-1 text-sm text-cyan-200 min-w-[200px]">
+              <Paperclip className="h-4 w-4 text-cyan-400" />
+              <span className="flex-1 truncate">{selectedFile.name}</span>
+            </div>
+          )}
+          
+          {isUploading && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-slate-900/70 backdrop-blur-sm">
+              <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
+            </div>
+          )}
         </div>
       )}
 
