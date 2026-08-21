@@ -31,26 +31,32 @@ async function parseVisionContentAsync(text: string) {
     }
     
     let url = match[1];
+    let fetchUrl = url;
+    
+    // Always fetch from localhost internally to avoid DNS/Prod URL issues
     if (url.startsWith('/')) {
-      url = baseUrl + url;
+      const port = process.env.PORT || 3000;
+      fetchUrl = `http://127.0.0.1:${port}` + url;
+      // Also format the fallback URL properly for OpenAI just in case
+      url = (process.env.NEXT_PUBLIC_APP_URL || "https://agent.pnmediaplus.com") + url;
     }
 
     try {
       // Fetch the image and convert to base64
-      const response = await fetch(url);
+      const response = await fetch(fetchUrl);
       if (response.ok) {
         const buffer = await response.arrayBuffer();
         const base64 = Buffer.from(buffer).toString('base64');
         const mimeType = response.headers.get('content-type') || 'image/jpeg';
         contentArray.push({ type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } });
       } else {
-        console.error("Failed to fetch image for vision:", url, response.status);
-        // Fallback to URL
-        contentArray.push({ type: "image_url", image_url: { url } });
+        console.error("Failed to fetch image for vision internally:", fetchUrl, response.status);
+        // If we fail to base64 it, we just send text to avoid OpenAI crashing with 400 Bad Request
+        contentArray.push({ type: "text", text: `[Image URL: ${url} - Unreachable]` });
       }
     } catch (err) {
-      console.error("Error fetching image for vision:", url, err);
-      contentArray.push({ type: "image_url", image_url: { url } });
+      console.error("Error fetching image for vision internally:", fetchUrl, err);
+      contentArray.push({ type: "text", text: `[Image URL: ${url} - Unreachable]` });
     }
     
     lastIndex = match.index + match[0].length;
