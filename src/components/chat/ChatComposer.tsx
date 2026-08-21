@@ -419,15 +419,27 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       setIsUploading(true);
       setUploadError(null);
 
-      const formData = new FormData();
-      formData.append("file", selectedFile);
+            // Convert file to base64 to bypass Next.js multipart/form-data bugs on VPS
+      const base64Str = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(selectedFile);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+      });
 
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+        
         const res = await fetch("/api/chat-attachments", {
           method: "POST",
-          body: formData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: selectedFile.name,
+            type: selectedFile.type,
+            size: selectedFile.size,
+            fileBase64: base64Str
+          }),
           signal: controller.signal
         });
         clearTimeout(timeoutId);

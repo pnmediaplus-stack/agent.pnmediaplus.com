@@ -32,45 +32,48 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'SERVER_CONFIG_ERROR', message: 'Supabase credentials missing' }, { status: 500 });
     }
 
-    console.log('Reading formData...');
-    const formData = await req.formData();
-    console.log('FormData read successfully!');
-    const file = formData.get('file') as File | null;
-
-    if (!file) {
+        console.log('Reading JSON body instead of formData...');
+    const body = await req.json();
+    console.log('JSON body read successfully!');
+    
+    if (!body || !body.fileBase64) {
       return NextResponse.json({ error: 'BAD_REQUEST', message: 'No file provided' }, { status: 400 });
     }
 
+    const { name: fileName, type: fileType, size: fileSize, fileBase64 } = body;
+
+    // Extract base64 part (remove data:image/png;base64, prefix)
+    const base64Data = fileBase64.split(',')[1] || fileBase64;
+    const fileBuffer = Buffer.from(base64Data, 'base64');
+    const bytes = new Uint8Array(fileBuffer);
+
     // 1. Validate Size, Name & MIME Type
-    if (file.size === 0) {
+    if (fileBuffer.length === 0) {
       return NextResponse.json({ error: 'EMPTY_FILE', message: 'File cannot be empty' }, { status: 400 });
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    if (fileBuffer.length > MAX_FILE_SIZE) {
       return NextResponse.json({ error: 'FILE_TOO_LARGE', message: 'File exceeds 50MB limit' }, { status: 400 });
     }
 
-    if (!file.name || file.name.trim() === '') {
+    if (!fileName || fileName.trim() === '') {
       return NextResponse.json({ error: 'INVALID_FILENAME', message: 'File name cannot be empty' }, { status: 400 });
     }
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    if (!ALLOWED_MIME_TYPES.includes(fileType)) {
       return NextResponse.json({ error: 'INVALID_FILE_TYPE', message: 'File type not allowed' }, { status: 400 });
     }
-
-    const fileBuffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(fileBuffer);
     let isMagicValid = false;
 
-    if (file.type === 'application/pdf') {
+    if (fileType === 'application/pdf') {
       isMagicValid = bytes.length >= 4 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46; // %PDF
-    } else if (file.type === 'image/png') {
+    } else if (fileType === 'image/png') {
       isMagicValid = bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47; // PNG
-    } else if (file.type === 'image/jpeg') {
+    } else if (fileType === 'image/jpeg') {
       isMagicValid = bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF; // JPEG
-    } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       isMagicValid = bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4B && bytes[2] === 0x03 && bytes[3] === 0x04; // ZIP/DOCX
-    } else if (file.type === 'text/plain') {
+    } else if (fileType === 'text/plain') {
       isMagicValid = true; // Hard to validate txt via magic bytes, skip for now.
     }
 
@@ -81,7 +84,7 @@ export async function POST(req: NextRequest) {
     // 2. Namespace the object name
     const timestamp = Date.now();
     // Normalize filename to prevent path traversal
-    const safeFilename = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    const safeFilename = fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
     const objectPath = `${organizationId}/${auth.user.id}/${timestamp}_${safeFilename}`;
 
     // 3. Upload to Cloudflare R2
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
     
         try {
       console.log('Starting R2 upload for:', r2ObjectKey);
-      const uploadPromise = uploadBufferToR2(r2ObjectKey, new Uint8Array(fileBuffer), file.type);
+      const uploadPromise = uploadBufferToR2(r2ObjectKey, new Uint8Array(fileBuffer), fileType);
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("R2_UPLOAD_TIMEOUT")), 15000));
       await Promise.race([uploadPromise, timeoutPromise]);
       console.log('R2 upload finished successfully');
