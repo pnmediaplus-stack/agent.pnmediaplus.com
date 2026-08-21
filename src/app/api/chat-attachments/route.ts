@@ -88,10 +88,17 @@ export async function POST(req: NextRequest) {
 
     const r2ObjectKey = `chat-attachments/${objectPath}`;
     
-    try {
-      await uploadBufferToR2(r2ObjectKey, new Uint8Array(fileBuffer), file.type);
-    } catch (err) {
+        try {
+      console.log('Starting R2 upload for:', r2ObjectKey);
+      const uploadPromise = uploadBufferToR2(r2ObjectKey, new Uint8Array(fileBuffer), file.type);
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("R2_UPLOAD_TIMEOUT")), 15000));
+      await Promise.race([uploadPromise, timeoutPromise]);
+      console.log('R2 upload finished successfully');
+    } catch (err: any) {
       console.error('R2 Upload Error:', err);
+      if (err.message === "R2_UPLOAD_TIMEOUT") {
+        return NextResponse.json({ error: 'UPLOAD_TIMEOUT', message: 'Kết nối từ VPS tới Cloudflare R2 bị timeout (Treo do IPv6 hoặc Firewall)' }, { status: 504 });
+      }
       return NextResponse.json({ error: 'UPLOAD_FAILED', message: 'Failed to upload to R2' }, { status: 500 });
     }
 
