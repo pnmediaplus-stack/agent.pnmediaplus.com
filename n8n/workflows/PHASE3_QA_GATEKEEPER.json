@@ -11,11 +11,11 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        6560,
-        -1808
+        6288,
+        -2032
       ],
       "webhookId": "32a68982-160e-4e55-892c-b7a1b846449e",
-      "id": "cc3a4fb1-5bd7-402b-826c-f81bf8d33a89"
+      "id": "a81ed7aa-4366-4bd9-84a6-d47ff5b997d7"
     },
     {
       "parameters": {
@@ -34,17 +34,17 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"user\",\n      content: [\n        {\n          type: \"text\",\n          text: \"Bạn là AI QA Manager. Đánh giá nội dung và hình ảnh này. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10), \\\"reason\\\": \\\"Giải thích ngắn gọn lý do tại sao pass hoặc reject (tối đa 2 câu)\\\" }.\\nĐÁNH TRƯỢT NGAY LẬP TỨC (<5 ĐIỂM) NẾU:\\n- Màn hình thiết bị (laptop, điện thoại) bị ngược hoặc bị dán ở mặt lưng.\\n- Có logo rác hoặc chữ rác không có nghĩa.\\n\\nBài viết:\\n\" + $(\"Webhook\").first().json.body.caption\n        },\n        {\n          type: \"image_url\",\n          image_url: { \"url\": $(\"Webhook\").first().json.body.image_url || \"\" }\n        }\n      ]\n    }\n  ]\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"user\",\n      content: [\n        {\n          type: \"text\",\n          text: \"Bạn là AI QA Manager. Đánh giá nội dung và hình ảnh này. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10), \\\"reason\\\": \\\"Giải thích ngắn gọn lý do tại sao pass hoặc reject (tối đa 2 câu)\\\" }.\\nĐÁNH TRƯỢT NGAY LẬP TỨC (<5 ĐIỂM) NẾU:\\n- Màn hình thiết bị (laptop, điện thoại) bị ngược hoặc bị dán ở mặt lưng.\\n- Có logo rác hoặc chữ rác không có nghĩa.\\n\\nBài viết:\\n\" + $(\"Webhook\").first().json.body.caption\n        },\n        {\n          type: \"image_url\",\n          image_url: { \"url\": ($(\"Webhook\").first().json.body.image_url || \"\").startsWith(\"/\") ? \"https://agent.pnmediaplus.com\" + $(\"Webhook\").first().json.body.image_url : $(\"Webhook\").first().json.body.image_url }\n        }\n      ]\n    }\n  ]\n}) }}",
         "options": {}
       },
       "name": "LLM Evaluator",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        6768,
-        -1808
+        6496,
+        -2032
       ],
-      "id": "e4258ae6-d8c2-4850-9363-e0fc76317ce8",
+      "id": "9484d09d-ab45-4797-850e-6a7007cf592f",
       "credentials": {
         "httpHeaderAuth": {
           "id": "u1GGrgkWgG2z9d4K",
@@ -60,10 +60,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        6976,
-        -1808
+        6704,
+        -2032
       ],
-      "id": "dd2a7a5d-3877-4339-b4b8-40606ad7fa80"
+      "id": "d998f1af-364e-4cdb-b35d-e1dc8b2f6ea1"
     },
     {
       "parameters": {
@@ -93,10 +93,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        7216,
-        -1808
+        6944,
+        -2032
       ],
-      "id": "4be87df7-60fb-4baa-b668-5e6036d77a12",
+      "id": "0fb40dd8-e48c-43de-9760-3d0c451444cf",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -128,10 +128,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        7440,
-        -1632
+        7760,
+        -1760
       ],
-      "id": "0a6e046f-4e90-4ed4-96bc-314ce48eb41a",
+      "id": "cfe5a7c9-6df9-41d7-af2e-bfed58bcc7bd",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -167,10 +167,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        7680,
-        -1824
+        7536,
+        -2048
       ],
-      "id": "1b4e2f89-4dbd-4dc8-8a43-26b73f192faa",
+      "id": "f9c2c02a-d58e-4267-879f-7b769e058ede",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -206,10 +206,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        7888,
-        -1824
+        7744,
+        -2048
       ],
-      "id": "fef54e8a-68e7-427a-800f-016ef3df795d",
+      "id": "e0098168-0bfc-4d9b-8e96-ba9f9f1bfcee",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -244,10 +244,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        7440,
-        -1808
+        7168,
+        -2032
       ],
-      "id": "a44faffc-9d3b-4b5f-bd44-015e11df99a7"
+      "id": "371444c8-553b-4ffa-92c2-bbbcd617667a"
     },
     {
       "parameters": {
@@ -255,7 +255,6 @@
           "number": [
             {
               "value1": "={{ $(\"Webhook\").first().json.body.qa_retry_count || 0 }}",
-              "operation": "smaller",
               "value2": 3
             }
           ]
@@ -265,10 +264,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        7650,
-        -1400
+        7168,
+        -1776
       ],
-      "id": "check-retry-id"
+      "id": "40f30b65-2553-4e85-bb53-8719a252f262"
     },
     {
       "parameters": {
@@ -283,10 +282,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        7850,
-        -1500
+        7328,
+        -1792
       ],
-      "id": "trigger-auto-id"
+      "id": "d69cb8e3-d448-47f1-b7bb-bffe1d2280d0"
     },
     {
       "parameters": {
@@ -312,10 +311,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        8050,
-        -1500
+        7536,
+        -1792
       ],
-      "id": "notify-progress-id",
+      "id": "240ce5d1-cbf2-46a2-b1d3-9e794e64941a",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -581,7 +580,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "77e0a6e4-bb3f-4013-a629-82522ce3c8d7",
+  "versionId": "f1796655-5258-4106-adae-159c46a24987",
   "meta": {
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
   },
