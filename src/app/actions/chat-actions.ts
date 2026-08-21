@@ -604,7 +604,6 @@ export async function sendChatMessage(threadId: string, body: string) {
            const referenceToken = tokenRes.data.receipt?.lease_token;
 
            const ctxRes = await dbLoadContextData(organizationId, 'content', contentItemId);
-           const artifactVersionId = ctxRes.data?.artifact_version_id || null;
 
            if (ctxRes.data?.state !== 'scheduled') {
              const rejectMsgResult = await dbInsertChatMessage(organizationId, {
@@ -630,7 +629,7 @@ export async function sendChatMessage(threadId: string, body: string) {
            webhookResult = await postN8nWebhook("webhook/fb-publish-executor", {
              integration_key: integrationKey,
              content_item_id: contentItemId,
-             artifact_version_id: artifactVersionId,
+             
              organization_id: organizationId,
              reference_token: referenceToken,
              thread_id: threadId
@@ -924,16 +923,14 @@ export async function sendChatMessage(threadId: string, body: string) {
        }
 
        const ctxRes = await dbLoadContextData(organizationId, 'content', contentItemId);
-       const artifactVersionId = ctxRes.data?.artifact_version_id || null;
 
-       if (!artifactVersionId || ctxRes.data?.state !== 'scheduled') {
+       if (ctxRes.data?.state !== 'scheduled') {
          throw new Error(`Nội dung ${contentItemId} chưa sẵn sàng để xuất bản (Trạng thái: ${ctxRes.data?.state || 'unknown'}). Hệ thống AI QA cần đánh giá đạt yêu cầu (trạng thái scheduled) trước khi xuất bản.`);
        }
 
        const webhookResult = await postN8nWebhook("webhook/fb-publish-executor", {
          integration_key: integrationKey,
          content_item_id: contentItemId,
-         artifact_version_id: artifactVersionId,
          organization_id: organizationId,
          reference_token: tokenRes.data.receipt?.lease_token,
          thread_id: threadId

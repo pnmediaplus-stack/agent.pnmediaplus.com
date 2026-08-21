@@ -11,16 +11,18 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        0,
-        0
+        6560,
+        -1808
       ],
       "webhookId": "32a68982-160e-4e55-892c-b7a1b846449e",
-      "id": "dcfb9538-c434-41a2-a745-c9d11b4e0cbc"
+      "id": "cc3a4fb1-5bd7-402b-826c-f81bf8d33a89"
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -33,22 +35,20 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o-mini\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"user\",\n      content: \"Bạn là AI QA Manager. Đánh giá bài viết sau. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10), \\\"reason\\\": \\\"Giải thích ngắn gọn lý do tại sao pass hoặc reject (tối đa 2 câu)\\\" }.\\nBài viết:\\n\" + $(\"Webhook\").first().json.body.caption\n    }\n  ]\n}) }}",
-        "options": {},
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth"
+        "options": {}
       },
       "name": "LLM Evaluator",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        400,
-        0
+        6768,
+        -1808
       ],
-      "id": "dae4f3d1-ecd3-49af-ba36-18cb50e75b58",
+      "id": "e4258ae6-d8c2-4850-9363-e0fc76317ce8",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "",
-          "name": "OpenAI_Auth"
+          "id": "u1GGrgkWgG2z9d4K",
+          "name": "OpenAI"
         }
       }
     },
@@ -60,10 +60,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        600,
-        0
+        6976,
+        -1808
       ],
-      "id": "c7ccdee5-b429-4736-be8c-599c105c657a"
+      "id": "dd2a7a5d-3877-4339-b4b8-40606ad7fa80"
     },
     {
       "parameters": {
@@ -93,10 +93,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        800,
-        0
+        7216,
+        -1808
       ],
-      "id": "22ac752d-29dc-4c56-9841-37b47c8b84db",
+      "id": "4be87df7-60fb-4baa-b668-5e6036d77a12",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -128,10 +128,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1350,
-        0
+        7440,
+        -1632
       ],
-      "id": "9b3162b1-e69f-4385-aac4-5aeb51cfc49a",
+      "id": "0a6e046f-4e90-4ed4-96bc-314ce48eb41a",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -167,10 +167,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        950,
-        -100
+        7680,
+        -1824
       ],
-      "id": "691c1232-e7c1-48d0-b274-a4bbe473bda4",
+      "id": "1b4e2f89-4dbd-4dc8-8a43-26b73f192faa",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -206,10 +206,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1150,
-        -100
+        7888,
+        -1824
       ],
-      "id": "node-mark-scheduled-1787220348561",
+      "id": "fef54e8a-68e7-427a-800f-016ef3df795d",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -244,25 +244,152 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        750,
-        0
+        7440,
+        -1808
       ],
-      "id": "node-if-verdict-1787222231933"
+      "id": "a44faffc-9d3b-4b5f-bd44-015e11df99a7"
     }
   ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "accept": "application/json,text/html,application/xhtml+xml,application/xml,text/*;q=0.9, image/*;q=0.8, */*;q=0.7",
+            "content-type": "application/json",
+            "user-agent": "axios/1.12.0",
+            "content-length": "883",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "host": "localhost:5678",
+            "connection": "close"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "content_item_id": "ec968fdd-e024-4d63-b140-69e83b7cd7de",
+            "organization_id": "8289488a-b255-4cb6-9bff-c9d2e71af160",
+            "thread_id": "55555555-5555-5555-5555-555555555555",
+            "caption": "📈 Bạn có đang sử dụng Excel để quản lý khách hàng? Hãy để ý rằng điều này có thể khiến doanh nghiệp bạn bỏ lỡ nhiều cơ hội quan trọng! \n\nHãy khám phá sức mạnh của CRM – giải pháp không thể thiếu giúp tối ưu hóa quản lý mối quan hệ với khách hàng. So với Excel và Word, CRM mang lại sự khác biệt rõ rệt trong việc tổ chức thông tin và tạo trải nghiệm tuyệt vời cho khách hàng. Bạn đã sẵn sàng thay đổi để phát triển doanh nghiệp một cách hiệu quả hơn chưa?\n\n👉 Chia sẻ bài viết này và cho chúng tôi biết quan điểm của bạn về CRM nhé!"
+          },
+          "webhookUrl": "https://n8n.pnmediaplus.com/webhook/qa-gatekeeper",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "LLM Evaluator": [
+      {
+        "json": {
+          "id": "chatcmpl-EEuqBL6cwIsWRKBT5N7n9a33cD2tk",
+          "object": "chat.completion",
+          "created": 1787223795,
+          "model": "gpt-4o-mini-2024-07-18",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "{\n  \"verdict\": \"pass\",\n  \"average_score\": 7,\n  \"overclaim_risk\": 3\n}",
+                "refusal": null,
+                "annotations": []
+              },
+              "logprobs": null,
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 201,
+            "completion_tokens": 28,
+            "total_tokens": 229,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          },
+          "service_tier": "default",
+          "system_fingerprint": "fp_6ec6bfb92d"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Parse Result": [
+      {
+        "json": {
+          "result": {
+            "verdict": "pass",
+            "average_score": 7,
+            "overclaim_risk": 3
+          },
+          "originalBody": {
+            "content_item_id": "ec968fdd-e024-4d63-b140-69e83b7cd7de",
+            "organization_id": "8289488a-b255-4cb6-9bff-c9d2e71af160",
+            "thread_id": "55555555-5555-5555-5555-555555555555",
+            "caption": "📈 Bạn có đang sử dụng Excel để quản lý khách hàng? Hãy để ý rằng điều này có thể khiến doanh nghiệp bạn bỏ lỡ nhiều cơ hội quan trọng! \n\nHãy khám phá sức mạnh của CRM – giải pháp không thể thiếu giúp tối ưu hóa quản lý mối quan hệ với khách hàng. So với Excel và Word, CRM mang lại sự khác biệt rõ rệt trong việc tổ chức thông tin và tạo trải nghiệm tuyệt vời cho khách hàng. Bạn đã sẵn sàng thay đổi để phát triển doanh nghiệp một cách hiệu quả hơn chưa?\n\n👉 Chia sẻ bài viết này và cho chúng tôi biết quan điểm của bạn về CRM nhé!"
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Insert QA DB": [
+      {
+        "json": {
+          "id": "564069f4-c84a-4e34-9070-9c83b9abe63c",
+          "content_item_id": "ec968fdd-e024-4d63-b140-69e83b7cd7de",
+          "agent_task_id": null,
+          "reviewer_ref": "ai_qa_gatekeeper",
+          "verdict": "pass",
+          "average_score": 7,
+          "overclaim_risk": 3,
+          "missing_asset": false,
+          "evidence_ref": "evidence://n8n-qa/231886",
+          "notes": "AI Automated QA",
+          "reviewed_at": "2026-08-20T11:03:16.240307+00:00",
+          "created_at": "2026-08-20T11:03:16.240307+00:00",
+          "updated_at": "2026-08-20T11:03:16.240307+00:00"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Update Item State": [
+      {
+        "json": {
+          "id": "ec968fdd-e024-4d63-b140-69e83b7cd7de",
+          "content_key": "auto_86a8f6e43d62413ca036893f1c4d98b0",
+          "owner_ref": "pnmediaplus@gmail.com",
+          "title": "tạo bài viết ngắn về chủ đề tầm quan trọng của CRM...",
+          "brief": "tạo bài viết ngắn về chủ đề tầm quan trọng của CRM sme cho doanh nghiệp, đâu là lựa chọn đúng đắn và so sánh execel, word và CRM sme để tạo nên sự khác biệt",
+          "state": "QA_passed",
+          "scheduled_at": null,
+          "published_at": null,
+          "created_at": "2026-08-20T11:02:41.349447+00:00",
+          "updated_at": "2026-08-20T11:03:16.608379+00:00",
+          "campaign_id": "1eac6963-0d02-4d08-80f8-7d0a7bebd14f",
+          "organization_id": "8289488a-b255-4cb6-9bff-c9d2e71af160",
+          "target_integration_key": null,
+          "artifact_version_id": null
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
   "connections": {
     "Webhook": {
-      "main": [
-        [
-          {
-            "node": "LLM Evaluator",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Content Item": {
       "main": [
         [
           {
@@ -351,6 +478,10 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "247ae008-7f8b-40b5-8f79-f2ff640d2753",
-  "id": "phase3-qa-gatekeeper"
+  "versionId": "77e0a6e4-bb3f-4013-a629-82522ce3c8d7",
+  "meta": {
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "id": "EF6ol2H820yF4Kx5",
+  "tags": []
 }
