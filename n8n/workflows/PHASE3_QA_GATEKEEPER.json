@@ -248,6 +248,80 @@
         -1808
       ],
       "id": "a44faffc-9d3b-4b5f-bd44-015e11df99a7"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $(\"Webhook\").first().json.body.qa_retry_count || 0 }}",
+              "operation": "smaller",
+              "value2": 3
+            }
+          ]
+        }
+      },
+      "name": "Check Retry Count",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        7650,
+        -1400
+      ],
+      "id": "check-retry-id"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/generate-content",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content_item_id: $(\"Webhook\").first().json.body.content_item_id, organization_id: $(\"Webhook\").first().json.body.organization_id, threadId: $(\"Webhook\").first().json.body.thread_id, qa_retry_count: ($(\"Webhook\").first().json.body.qa_retry_count || 0) + 1, qa_feedback: $(\"Parse Result\").first().json.result.reason }) }}",
+        "options": {}
+      },
+      "name": "Trigger Auto Content Creator",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        7850,
+        -1500
+      ],
+      "id": "trigger-auto-id"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || \"http://supabase:8000\"}}/rest/v1/rpc/phase075_n8n_append_chat_message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_thread_id: $(\"Webhook\").first().json.body.thread_id, p_idempotency_key: \"qa_retry_\" + $execution.id, p_sender: \"system\", p_content: \"⏳ **Trưởng phòng QA phát hiện lỗi:** \" + $(\"Parse Result\").first().json.result.reason + \"\\nĐang yêu cầu Agent sửa lại (Lần thử \" + (($(\"Webhook\").first().json.body.qa_retry_count || 0) + 1) + \"/3)...\", p_intent_type: \"agent_progress\", p_metadata: { contentItemId: $(\"Webhook\").first().json.body.content_item_id } }) }}",
+        "options": {}
+      },
+      "name": "Notify Progress",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        8050,
+        -1500
+      ],
+      "id": "notify-progress-id",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
     }
   ],
   "pinData": {
@@ -466,7 +540,36 @@
         ],
         [
           {
+            "node": "Check Retry Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Retry Count": {
+      "main": [
+        [
+          {
+            "node": "Trigger Auto Content Creator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "Trigger Chat UI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Auto Content Creator": {
+      "main": [
+        [
+          {
+            "node": "Notify Progress",
             "type": "main",
             "index": 0
           }
