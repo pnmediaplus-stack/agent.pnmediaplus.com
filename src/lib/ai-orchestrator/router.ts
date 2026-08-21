@@ -1,5 +1,5 @@
 import { AI_ORCHESTRATOR_TOOLS } from "./tools/schema";
-import { generateR2PresignedDownloadUrl } from "@/lib/r2-client";
+import { generateR2PresignedDownloadUrl } from "../r2-client";
 
 export type IntentResult = {
   intentType: "create_content" | "publish_content" | "plan_campaign" | "request_status" | "unknown";
