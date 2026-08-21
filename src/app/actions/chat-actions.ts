@@ -606,7 +606,7 @@ export async function sendChatMessage(threadId: string, body: string) {
            const ctxRes = await dbLoadContextData(organizationId, 'content', contentItemId);
            const artifactVersionId = ctxRes.data?.artifact_version_id || null;
 
-           if (!artifactVersionId || ctxRes.data?.state !== 'scheduled') {
+           if (ctxRes.data?.state !== 'scheduled') {
              const rejectMsgResult = await dbInsertChatMessage(organizationId, {
                threadId,
                sender: "system",
