@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/useI18n";
 import { Paperclip, X, Loader2, Bot, FileText, AlertTriangle, Hash, Slash, Users, CheckSquare } from "lucide-react";
 
@@ -16,6 +16,21 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedFile) {
+      setPreviewUrl(null);
+      return;
+    }
+    if (selectedFile.type.startsWith("image/")) {
+      const objectUrl = URL.createObjectURL(selectedFile);
+      setPreviewUrl(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl);
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [selectedFile]);
 
   // Autocomplete State
   const [agents, setAgents] = useState<any[]>([]);
