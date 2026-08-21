@@ -12,15 +12,16 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
   const { t } = useI18n("chat");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   
-        const displayBody = message.body?.startsWith('/publish ')
-          ? message.body.replace(/\/publish integration_key:\S+ ([a-f0-9-]+)(?: --page="([^"]+)")?/, "Lệnh đăng bài **$1...** lên page **'$2'**")
-          : message.body;
         return (
     
     <div className="space-y-3">
       {messages.map((message) => {
         const isHuman = message.sender === "human";
         const isAgent = message.sender === "agent";
+
+        const displayBody = message.body?.startsWith('/publish ')
+          ? message.body.replace(/\/publish integration_key:\S+ ([a-f0-9-]+)(?: --page="([^"]+)")?/, "Lệnh đăng bài **$1...** lên page **'$2'**")
+          : message.body;
 
         return (
           <div
