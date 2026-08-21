@@ -112,7 +112,7 @@ export async function processHumanMessage(text: string, history: any[] = [], org
       if (!response.ok) {
         const errText = await response.text().catch(() => "");
         console.error(`[AI_ORCHESTRATOR_ERROR] LLM call failed with status ${response.status}: ${errText}`);
-        return fallbackRegexMatch(text);
+        return { intentType: "unknown", agentReply: `Lỗi kết nối AI (${response.status}): ${errText}` };
       }
 
       const data = await response.json();
@@ -179,7 +179,7 @@ export async function processHumanMessage(text: string, history: any[] = [], org
           agentReply: message.content
         };
       } else {
-        return fallbackRegexMatch(text);
+        return { intentType: "unknown", agentReply: "AI không trả về nội dung hoặc lệnh hợp lệ." };
       }
     } catch (error: any) {
       clearTimeout(timeoutId);
