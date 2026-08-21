@@ -32,7 +32,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'SERVER_CONFIG_ERROR', message: 'Supabase credentials missing' }, { status: 500 });
     }
 
+    console.log('Reading formData...');
     const formData = await req.formData();
+    console.log('FormData read successfully!');
     const file = formData.get('file') as File | null;
 
     if (!file) {
