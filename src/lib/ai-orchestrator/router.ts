@@ -20,7 +20,6 @@ async function parseVisionContentAsync(text: string) {
   
   if (matches.length === 0) return text;
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const contentArray: any[] = [];
   let lastIndex = 0;
   
@@ -31,33 +30,22 @@ async function parseVisionContentAsync(text: string) {
     }
     
     let url = match[1];
-    let fetchUrl = url;
     
-    // Always fetch from localhost internally to avoid DNS/Prod URL issues
-    if (url.startsWith('/')) {
-      const port = process.env.PORT || 3000;
-      fetchUrl = `http://127.0.0.1:${port}` + url;
-      // Also format the fallback URL properly for OpenAI just in case
-      url = (process.env.NEXT_PUBLIC_APP_URL || "https://agent.pnmediaplus.com") + url;
+    // Resolve internal R2 URLs directly to bypass Next.js dev server deadlock
+    if (url.startsWith('/api/assets/public/')) {
+      const key = url.replace('/api/assets/public/', '');
+      try {
+        const { generateR2PresignedDownloadUrl } = await import("@/lib/r2-client");
+        url = await generateR2PresignedDownloadUrl(key, 3600);
+      } catch (err) {
+        console.error("Failed to generate presigned URL for vision:", err);
+      }
+    } else if (url.startsWith('/')) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://agent.pnmediaplus.com";
+      url = baseUrl + url;
     }
 
-    try {
-      // Fetch the image and convert to base64
-      const response = await fetch(fetchUrl);
-      if (response.ok) {
-        const buffer = await response.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString('base64');
-        const mimeType = response.headers.get('content-type') || 'image/jpeg';
-        contentArray.push({ type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } });
-      } else {
-        console.error("Failed to fetch image for vision internally:", fetchUrl, response.status);
-        // If we fail to base64 it, we just send text to avoid OpenAI crashing with 400 Bad Request
-        contentArray.push({ type: "text", text: `[Image URL: ${url} - Unreachable]` });
-      }
-    } catch (err) {
-      console.error("Error fetching image for vision internally:", fetchUrl, err);
-      contentArray.push({ type: "text", text: `[Image URL: ${url} - Unreachable]` });
-    }
+    contentArray.push({ type: "image_url", image_url: { url } });
     
     lastIndex = match.index + match[0].length;
   }
