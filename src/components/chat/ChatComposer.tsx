@@ -432,11 +432,22 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         });
         clearTimeout(timeoutId);
 
+        
+        if (!res.ok) {
+          if (res.status === 413) {
+            throw new Error("Dung lượng file quá lớn (Server Nginx chặn 413). Vui lòng cấu hình lại Nginx client_max_body_size.");
+          }
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const data = await res.json();
+            throw new Error(data.message || "Upload failed");
+          } else {
+            const textError = await res.text();
+            throw new Error(`Server Error (${res.status}): ${textError.substring(0, 50)}`);
+          }
+        }
         const data = await res.json();
 
-        if (!res.ok) {
-          throw new Error(data.message || "Upload failed");
-        }
 
         const isImage = selectedFile.type.startsWith("image/");
         const markdown = isImage
