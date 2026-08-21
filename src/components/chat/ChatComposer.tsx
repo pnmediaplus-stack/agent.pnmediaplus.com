@@ -423,10 +423,14 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       formData.append("file", selectedFile);
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
         const res = await fetch("/api/chat-attachments", {
           method: "POST",
           body: formData,
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         const data = await res.json();
 
