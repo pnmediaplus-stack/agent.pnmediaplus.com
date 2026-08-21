@@ -1,4 +1,4 @@
-import { loadDepartmentGovernanceBundle } from "@/lib/department-governance-loader";
+import { loadDepartmentGovernanceBundle } from "../../department-governance-loader";
 
 export async function handleQueryDepartments() {
   try {

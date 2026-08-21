@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyUiAuth } from '@/lib/ui-auth-guard';
+import { uploadBufferToR2 } from '@/lib/r2-client';
 import { readPortalAccessToken, loadPortalOrganizationContext } from '@/lib/portal-auth';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest) {
     const objectPath = `${organizationId}/${auth.user.id}/${timestamp}_${safeFilename}`;
 
     // 3. Upload to Cloudflare R2
-    const { uploadBufferToR2 } = await import('@/lib/r2-client');
+
     const r2ObjectKey = `chat-attachments/${objectPath}`;
     
     try {
