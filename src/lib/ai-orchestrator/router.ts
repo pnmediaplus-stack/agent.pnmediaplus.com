@@ -1,4 +1,5 @@
 import { AI_ORCHESTRATOR_TOOLS } from "./tools/schema";
+import { generateR2PresignedDownloadUrl } from "@/lib/r2-client";
 
 export type IntentResult = {
   intentType: "create_content" | "publish_content" | "plan_campaign" | "request_status" | "unknown";
@@ -16,7 +17,7 @@ export type IntentResult = {
 
 async function parseVisionContentAsync(text: string) {
   const imgRegex = /!\[.*?\]\(([^\s)]+)\)/g;
-  const matches = [...text.matchAll(imgRegex)];
+  const matches = Array.from(text.matchAll(imgRegex));
   
   if (matches.length === 0) return text;
 
@@ -35,7 +36,7 @@ async function parseVisionContentAsync(text: string) {
     if (url.startsWith('/api/assets/public/')) {
       const key = url.replace('/api/assets/public/', '');
       try {
-        const { generateR2PresignedDownloadUrl } = await import("@/lib/r2-client");
+        
         url = await generateR2PresignedDownloadUrl(key, 3600);
       } catch (err) {
         console.error("Failed to generate presigned URL for vision:", err);
