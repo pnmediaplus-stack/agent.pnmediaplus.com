@@ -11,14 +11,16 @@ export type IntentResult = {
  * using an LLM. It maps the intent to the existing strict backend commands.
  */
 
-function parseVisionContent(text: string) {
+
+
+
+async function parseVisionContentAsync(text: string) {
   const imgRegex = /!\[.*?\]\(([^\s)]+)\)/g;
   const matches = [...text.matchAll(imgRegex)];
   
   if (matches.length === 0) return text;
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://agent.pnmediaplus.com";
-
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const contentArray: any[] = [];
   let lastIndex = 0;
   
@@ -32,8 +34,25 @@ function parseVisionContent(text: string) {
     if (url.startsWith('/')) {
       url = baseUrl + url;
     }
-    contentArray.push({ type: "image_url", image_url: { url } });
 
+    try {
+      // Fetch the image and convert to base64
+      const response = await fetch(url);
+      if (response.ok) {
+        const buffer = await response.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        const mimeType = response.headers.get('content-type') || 'image/jpeg';
+        contentArray.push({ type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } });
+      } else {
+        console.error("Failed to fetch image for vision:", url, response.status);
+        // Fallback to URL
+        contentArray.push({ type: "image_url", image_url: { url } });
+      }
+    } catch (err) {
+      console.error("Error fetching image for vision:", url, err);
+      contentArray.push({ type: "image_url", image_url: { url } });
+    }
+    
     lastIndex = match.index + match[0].length;
   }
   
@@ -55,17 +74,17 @@ export async function processHumanMessage(text: string, history: any[] = [], org
     return fallbackRegexMatch(text);
   }
 
-  const processedHistory = history.map(m => {
-    return { ...m, content: typeof m.content === 'string' ? parseVisionContent(m.content) : m.content };
-  });
+  const processedHistory = await Promise.all(history.map(async m => {
+    return { ...m, content: typeof m.content === 'string' ? await parseVisionContentAsync(m.content) : m.content };
+  }));
 
   let messages: any[] = [
     {
       role: "system",
-      content: "You are a highly capable AI Orchestrator for a marketing system. When interacting, always adopt a professional and respectful persona in the designated language. Your ONLY job is to call the appropriate tool to execute the user's task. NEVER pretend to execute tasks yourself. NEVER generate fake system success messages, invent IDs, or simulate workflow outputs. If you lack information, politely ask for it. You must rely purely on function calling for execution."
+      content: "You are a highly capable AI Orchestrator for a marketing system. When interacting, always adopt a professional and respectful persona in the designated language. Your primary job is to call the appropriate tool to execute the user's task. NEVER pretend to execute workflows yourself. NEVER generate fake system success messages, invent IDs, or simulate workflow outputs. However, if the user asks a general question, asks you to analyze an image, or if no tool is appropriate for their request, you MAY answer them directly and helpfully in natural language. Only use tools when an action is explicitly required."
     },
     ...processedHistory,
-    { role: "user", content: parseVisionContent(text) }
+    { role: "user", content: await parseVisionContentAsync(text) }
   ];
 
   let iterations = 0;
