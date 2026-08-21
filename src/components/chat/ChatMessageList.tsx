@@ -11,7 +11,12 @@ import { PublishSelector } from "./PublishSelector";
 export const ChatMessageList = memo(function ChatMessageList({ messages, isTyping, onCommand }: { messages: ChatMessage[], isTyping?: boolean, onCommand?: (cmd: string) => void }) {
   const { t } = useI18n("chat");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  return (
+  
+        const displayBody = message.body?.startsWith('/publish ')
+          ? message.body.replace(/\/publish integration_key:\S+ ([a-f0-9-]+)(?: --page="([^"]+)")?/, "Lệnh đăng bài **$1...** lên page **'$2'**")
+          : message.body;
+        return (
+    
     <div className="space-y-3">
       {messages.map((message) => {
         const isHuman = message.sender === "human";
@@ -156,7 +161,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                     }
                   }}
                 >
-                  {message.body?.replace('[[CAMPAIGN_PROPOSAL]]', '')}
+                  {displayBody?.replace('[[CAMPAIGN_PROPOSAL]]', '')}
                 </ReactMarkdown>
               {message.intent_type === 'publish_prompt' && onCommand && (
                 <PublishSelector contentItemId={message.metadata?.contentItemId || ''} onCommand={onCommand} />

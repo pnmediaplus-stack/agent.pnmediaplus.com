@@ -638,7 +638,7 @@ export async function sendChatMessage(threadId: string, body: string) {
            const routedMsgResult = await dbInsertChatMessage(organizationId, {
              threadId,
              sender: "system",
-             body: `Đã kích hoạt luồng Publish cho content **${contentItemId}** lên kênh **${integrationKey}**.`,
+             body: `Đã kích hoạt luồng đăng bài với nội dung **${contentItemId.split('-')[0]}...** lên page **'${executionBody.match(/--page=\"([^\"]+)\"/)?.[1] || integrationKey}'**.`, // Patched
              intentType: "route_department"
            });
 
@@ -939,7 +939,7 @@ export async function sendChatMessage(threadId: string, body: string) {
        const routedMsgResult = await dbInsertChatMessage(organizationId, {
          threadId,
          sender: "system",
-         body: `Đã kích hoạt luồng Publish cho content **${contentItemId}** lên kênh **${integrationKey}**.`,
+         body: `Đã kích hoạt luồng đăng bài với nội dung **${contentItemId.split('-')[0]}...** lên page **'${executionBody.match(/--page=\"([^\"]+)\"/)?.[1] || integrationKey}'**.`, // Patched
          intentType: "route_department"
        });
 
