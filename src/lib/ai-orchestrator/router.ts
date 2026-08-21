@@ -70,7 +70,12 @@ export async function processHumanMessage(text: string, history: any[] = [], org
   }
 
   const processedHistory = await Promise.all(history.map(async m => {
-    return { ...m, content: typeof m.content === 'string' ? await parseVisionContentAsync(m.content) : m.content };
+    // OpenAI strictly forbids image_url objects in 'assistant' or 'system' messages.
+    // We must ONLY apply Vision parsing to 'user' messages.
+    if (m.role === 'user' && typeof m.content === 'string') {
+      return { ...m, content: await parseVisionContentAsync(m.content) };
+    }
+    return m; // Leave assistant messages as raw text/markdown
   }));
 
   let messages: any[] = [
