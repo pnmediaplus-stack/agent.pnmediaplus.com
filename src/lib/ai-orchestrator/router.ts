@@ -10,6 +10,41 @@ export type IntentResult = {
  * processHumanMessage routes a natural language message into a system command
  * using an LLM. It maps the intent to the existing strict backend commands.
  */
+
+function parseVisionContent(text: string) {
+  const imgRegex = /!\[.*?\]\(([^\s)]+)\)/g;
+  const matches = [...text.matchAll(imgRegex)];
+  
+  if (matches.length === 0) return text;
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://agent.pnmediaplus.com";
+
+  const contentArray: any[] = [];
+  let lastIndex = 0;
+  
+  for (const match of matches) {
+    const textPart = text.substring(lastIndex, match.index);
+    if (textPart.trim()) {
+      contentArray.push({ type: "text", text: textPart });
+    }
+    
+    let url = match[1];
+    if (url.startsWith('/')) {
+      url = baseUrl + url;
+    }
+    contentArray.push({ type: "image_url", image_url: { url } });
+
+    lastIndex = match.index + match[0].length;
+  }
+  
+  const remaining = text.substring(lastIndex);
+  if (remaining.trim()) {
+    contentArray.push({ type: "text", text: remaining });
+  }
+  
+  return contentArray;
+}
+
 import { handleQueryDepartments, handleCheckContentStatus, handleListActiveCampaigns } from "./tools/read_handlers";
 
 export async function processHumanMessage(text: string, history: any[] = [], organizationId: string = ""): Promise<IntentResult> {
@@ -20,13 +55,17 @@ export async function processHumanMessage(text: string, history: any[] = [], org
     return fallbackRegexMatch(text);
   }
 
+  const processedHistory = history.map(m => {
+    return { ...m, content: typeof m.content === 'string' ? parseVisionContent(m.content) : m.content };
+  });
+
   let messages: any[] = [
     {
       role: "system",
       content: "You are a highly capable AI Orchestrator for a marketing system. When interacting, always adopt a professional and respectful persona in the designated language. Your ONLY job is to call the appropriate tool to execute the user's task. NEVER pretend to execute tasks yourself. NEVER generate fake system success messages, invent IDs, or simulate workflow outputs. If you lack information, politely ask for it. You must rely purely on function calling for execution."
     },
-    ...history,
-    { role: "user", content: text }
+    ...processedHistory,
+    { role: "user", content: parseVisionContent(text) }
   ];
 
   let iterations = 0;

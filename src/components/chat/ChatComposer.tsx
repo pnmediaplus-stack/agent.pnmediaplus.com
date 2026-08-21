@@ -370,6 +370,26 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
     }
   };
 
+  
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        const file = items[i].getAsFile();
+        if (file) {
+          // Khởi tạo file mới với tên rõ ràng hơn nếu cần
+          const pastedFile = new File([file], `pasted-image-${Date.now()}.png`, { type: file.type });
+          setSelectedFile(pastedFile);
+          setUploadError(null);
+          e.preventDefault();
+          break;
+        }
+      }
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
@@ -567,6 +587,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         ref={textareaRef}
         value={value}
         onChange={handleInput}
+        onPaste={handlePaste}
         onKeyDown={handleKeyDown}
         rows={3}
         disabled={isUploading}
