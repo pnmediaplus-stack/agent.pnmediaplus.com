@@ -66,7 +66,7 @@ export async function processHumanMessage(text: string, history: any[] = [], org
   
   if (!apiKey) {
     console.warn("AI Orchestrator: No OPENAI_API_KEY found. Falling back to basic NLP regex.");
-    return fallbackRegexMatch(text);
+    return { intentType: "unknown", agentReply: `Lỗi kết nối AI (${response.status}): ${errText}` };
   }
 
   const processedHistory = await Promise.all(history.map(async m => {
@@ -181,10 +181,10 @@ export async function processHumanMessage(text: string, history: any[] = [], org
       } else {
         return fallbackRegexMatch(text);
       }
-    } catch (error) {
+    } catch (error: any) {
       clearTimeout(timeoutId);
       console.error("[AI_ORCHESTRATOR_ERROR] Exception during LLM routing:", error);
-      return fallbackRegexMatch(text);
+      return { intentType: "unknown", agentReply: `Ngoại lệ xử lý AI: ${error?.message || "Unknown error"}` };
     }
   }
 
