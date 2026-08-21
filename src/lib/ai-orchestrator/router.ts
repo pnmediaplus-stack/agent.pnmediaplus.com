@@ -65,8 +65,8 @@ export async function processHumanMessage(text: string, history: any[] = [], org
   const apiKey = process.env.OPENAI_API_KEY;
   
   if (!apiKey) {
-    console.warn("AI Orchestrator: No OPENAI_API_KEY found. Falling back to basic NLP regex.");
-    return { intentType: "unknown", agentReply: `Lỗi kết nối AI (${response.status}): ${errText}` };
+    console.warn("AI Orchestrator: No OPENAI_API_KEY found.");
+    return { intentType: "unknown", agentReply: "Thiếu cấu hình OPENAI_API_KEY. Không thể gọi AI Orchestrator." };
   }
 
   const processedHistory = await Promise.all(history.map(async m => {
@@ -126,9 +126,9 @@ export async function processHumanMessage(text: string, history: any[] = [], org
         let args: any = {};
         try {
           args = JSON.parse(toolCall.function.arguments || "{}");
-        } catch (parseErr) {
+        } catch (parseErr: any) {
           console.error("[AI_ORCHESTRATOR_ERROR] Failed to parse tool arguments:", toolCall.function.arguments);
-          return fallbackRegexMatch(text);
+          return { intentType: "unknown", agentReply: `Lỗi AI: Tham số tool trả về không hợp lệ (${parseErr?.message || "Unknown"}).` };
         }
 
         const funcName = toolCall.function.name;
