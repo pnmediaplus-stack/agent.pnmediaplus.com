@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.phase076_get_publish_payload(
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pn_content_phase2, pg_temp
-AS \\$\$
+AS $$
 DECLARE
   v_item record;
   v_caption text;
@@ -72,4 +72,4 @@ BEGIN
 
   RETURN jsonb_build_object('caption', v_caption, 'image', v_image);
 END;
-\$\$;
+$$;
