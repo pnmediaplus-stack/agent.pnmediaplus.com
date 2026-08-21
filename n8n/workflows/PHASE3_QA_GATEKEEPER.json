@@ -11,11 +11,11 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        6288,
-        -2032
+        5008,
+        -2896
       ],
       "webhookId": "32a68982-160e-4e55-892c-b7a1b846449e",
-      "id": "a81ed7aa-4366-4bd9-84a6-d47ff5b997d7"
+      "id": "ebf95638-48ca-4b30-af1b-1e9547ba53d0"
     },
     {
       "parameters": {
@@ -34,17 +34,17 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"user\",\n      content: [\n        {\n          type: \"text\",\n          text: \"Bạn là Chuyên gia Kiểm định Hình ảnh AI (AI Vision QA) cực kỳ khắt khe. Nhiệm vụ của bạn là soi thật kỹ bức ảnh để tìm các lỗi ảo giác (hallucination) vật lý của AI.\\n\\nTrả về JSON: { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10), \\\"reason\\\": \\\"Giải thích...\\\" }\\n\\nCÁC LỖI NGHIÊM TRỌNG BẮT BUỘC ĐÁNH TRƯỢT (<5 ĐIỂM) VÀ REJECT NGAY:\\n1. Lỗi cấu trúc Laptop/Điện thoại: Hãy nhìn kỹ vị trí bàn phím, hướng mắt người dùng và vị trí màn hình. Nếu màn hình bị vẽ ở MẶT LƯNG (mặt ngoài) của laptop (tức là màn hình hướng về phía camera người xem, còn người dùng thì lại đang gõ phím ở phía sau), HOẶC màn hình nằm cùng một mặt với logo Apple/logo hãng ở vỏ ngoài máy, ĐÂY LÀ LỖI ẢO GIÁC VẬT LÝ NẶNG. Phải REJECT ngay.\\n2. Chữ rác/Logo rác: Chữ viết trên bảng, giấy, áo bị sai chính tả vô nghĩa.\\n3. Cơ thể dị dạng: Tay thừa ngón, khớp vặn vẹo.\\n\\nBài viết:\\n\" + $(\"Webhook\").first().json.body.caption\n        },\n        {\n          type: \"image_url\",\n          image_url: { \"url\": ($(\"Webhook\").first().json.body.image_url || \"\").startsWith(\"/\") ? \"https://agent.pnmediaplus.com\" + $(\"Webhook\").first().json.body.image_url : $(\"Webhook\").first().json.body.image_url }\n        }\n      ]\n    }\n  ]\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"user\",\n      content: [\n        {\n          type: \"text\",\n          text: \"Nhiệm vụ của bạn là kiểm tra xem trong ảnh có bất kỳ chữ viết nào chứa ký tự '@' (a còng) hay không.\\n\\nTrả về JSON: { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10), \\\"reason\\\": \\\"Giải thích...\\\" }\\n\\nLUẬT KIỂM ĐỊNH TỐI CAO:\\nĐÁNH TRƯỢT NGAY LẬP TỨC (<5 ĐIỂM) NẾU: Trong ảnh CÓ sự xuất hiện của ký tự '@' (a còng). (Ví dụ: @CRM_System, @company, v.v.). Nếu thấy chữ '@' thì phải REJECT.\\n\\nBài viết:\\n\" + $(\"Webhook\").first().json.body.caption\n        },\n        {\n          type: \"image_url\",\n          image_url: { \"url\": ($(\"Webhook\").first().json.body.image_url || \"\").startsWith(\"/\") ? \"https://agent.pnmediaplus.com\" + $(\"Webhook\").first().json.body.image_url : $(\"Webhook\").first().json.body.image_url }\n        }\n      ]\n    }\n  ]\n}) }}",
         "options": {}
       },
       "name": "LLM Evaluator",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        6496,
-        -2032
+        5216,
+        -2896
       ],
-      "id": "9484d09d-ab45-4797-850e-6a7007cf592f",
+      "id": "23ccc563-b1e5-4f9b-9ac3-fe56c6c63b73",
       "credentials": {
         "httpHeaderAuth": {
           "id": "u1GGrgkWgG2z9d4K",
@@ -60,10 +60,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        6704,
-        -2032
+        5424,
+        -2896
       ],
-      "id": "d998f1af-364e-4cdb-b35d-e1dc8b2f6ea1"
+      "id": "0b1f34d0-9398-428a-ae3f-8fbb6c4322ac"
     },
     {
       "parameters": {
@@ -93,10 +93,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        6944,
-        -2032
+        5664,
+        -2896
       ],
-      "id": "0fb40dd8-e48c-43de-9760-3d0c451444cf",
+      "id": "354ac8b6-75b2-410e-a094-a21e889d588b",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -121,17 +121,17 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  p_thread_id: $(\"Webhook\").first().json.body.thread_id,\n  p_idempotency_key: \"qa_chat_\" + $execution.id,\n  p_sender: \"system\",\n  p_content: $(\"Parse Result\").first().json.result.verdict === \"pass\" ? \"✅ **Trưởng phòng AI QA đã duyệt bài xuất sắc (\" + $(\"Parse Result\").first().json.result.average_score + \"/10).**\\n\\n_Đánh giá:_ \" + ($(\"Parse Result\").first().json.result.reason || \"Không có nhận xét thêm.\") : \"❌ **Bài viết bị từ chối bởi AI QA (Điểm: \" + $(\"Parse Result\").first().json.result.average_score + \"/10).**\\n\\n_Lý do từ chối:_ \" + ($(\"Parse Result\").first().json.result.reason || \"Không đạt tiêu chuẩn chất lượng.\"), \n  p_intent_type: $(\"Parse Result\").first().json.result.verdict === \"pass\" ? \"publish_prompt\" : \"clarify_missing_scope\",\n  p_metadata: {\n    contentItemId: $(\"Webhook\").first().json.body.content_item_id\n  }\n}) }}",
+        "jsonBody": "={{ (() => {\n  const webhook = $(\"Webhook\").first().json.body;\n  const qa = $(\"Parse Result\").first().json.result;\n  \n  const bodyStr = `✅ **Trưởng phòng AI QA đã duyệt bài xuất sắc (${qa.average_score}/10).**\\n\\n_Đánh giá:_ ${qa.reason}\\n\\n**ID Bài Viết:** \\`${webhook.content_item_id}\\`\\n\\n![Generated Image](${webhook.image_url})\\n\\n**Caption:**\\n${webhook.caption}\\n\\n**Research Packet:**\\n\\`\\`\\`json\\n${JSON.stringify(webhook.research, null, 2)}\\n\\`\\`\\``;\n  \n  return JSON.stringify({\n    p_thread_id: webhook.thread_id,\n    p_idempotency_key: webhook.outboxId || ('qa_pass_' + $execution.id),\n    p_sender: \"agent\",\n    p_content: bodyStr,\n    p_intent_type: \"image_generation_completed\",\n    p_metadata: {\n      contentItemId: webhook.content_item_id,\n      task_id: webhook.taskId,\n      provider_code: webhook.providerCode,\n      model_code: webhook.modelCode,\n      usage_id: webhook.usageId,\n      outbox_id: webhook.outboxId,\n      result_image_url: webhook.image_url\n    }\n  });\n})() }}",
         "options": {}
       },
       "name": "Trigger Chat UI",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        7760,
-        -1760
+        6480,
+        -2624
       ],
-      "id": "cfe5a7c9-6df9-41d7-af2e-bfed58bcc7bd",
+      "id": "39dab09f-3bcf-438e-8550-1d71226ba399",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -167,10 +167,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        7536,
-        -2048
+        6256,
+        -2912
       ],
-      "id": "f9c2c02a-d58e-4267-879f-7b769e058ede",
+      "id": "edc5fa6a-af75-48fb-93fe-d3a45a772a69",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -206,10 +206,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        7744,
-        -2048
+        6464,
+        -2912
       ],
-      "id": "e0098168-0bfc-4d9b-8e96-ba9f9f1bfcee",
+      "id": "272ac390-1321-4a80-b7a0-1f7a871f32a3",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -244,10 +244,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        7168,
-        -2032
+        5888,
+        -2896
       ],
-      "id": "371444c8-553b-4ffa-92c2-bbbcd617667a"
+      "id": "d82492bf-3ea7-47a5-8747-9251ac6926b4"
     },
     {
       "parameters": {
@@ -264,10 +264,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        7168,
-        -1776
+        5888,
+        -2640
       ],
-      "id": "40f30b65-2553-4e85-bb53-8719a252f262"
+      "id": "3465a83d-7005-4f8b-8e70-63352b37bfd5"
     },
     {
       "parameters": {
@@ -282,10 +282,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        7328,
-        -1792
+        6048,
+        -2656
       ],
-      "id": "d69cb8e3-d448-47f1-b7bb-bffe1d2280d0"
+      "id": "77511eb0-89a6-4279-b70b-18bb42c871e5"
     },
     {
       "parameters": {
@@ -311,10 +311,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        7536,
-        -1792
+        6256,
+        -2656
       ],
-      "id": "240ce5d1-cbf2-46a2-b1d3-9e794e64941a",
+      "id": "ca67551d-384e-4cc6-8acf-f24da919b882",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -323,144 +323,7 @@
       }
     }
   ],
-  "pinData": {
-    "Webhook": [
-      {
-        "json": {
-          "headers": {
-            "accept": "application/json,text/html,application/xhtml+xml,application/xml,text/*;q=0.9, image/*;q=0.8, */*;q=0.7",
-            "content-type": "application/json",
-            "user-agent": "axios/1.12.0",
-            "content-length": "883",
-            "accept-encoding": "gzip, compress, deflate, br",
-            "host": "localhost:5678",
-            "connection": "close"
-          },
-          "params": {},
-          "query": {},
-          "body": {
-            "content_item_id": "ec968fdd-e024-4d63-b140-69e83b7cd7de",
-            "organization_id": "8289488a-b255-4cb6-9bff-c9d2e71af160",
-            "thread_id": "55555555-5555-5555-5555-555555555555",
-            "caption": "📈 Bạn có đang sử dụng Excel để quản lý khách hàng? Hãy để ý rằng điều này có thể khiến doanh nghiệp bạn bỏ lỡ nhiều cơ hội quan trọng! \n\nHãy khám phá sức mạnh của CRM – giải pháp không thể thiếu giúp tối ưu hóa quản lý mối quan hệ với khách hàng. So với Excel và Word, CRM mang lại sự khác biệt rõ rệt trong việc tổ chức thông tin và tạo trải nghiệm tuyệt vời cho khách hàng. Bạn đã sẵn sàng thay đổi để phát triển doanh nghiệp một cách hiệu quả hơn chưa?\n\n👉 Chia sẻ bài viết này và cho chúng tôi biết quan điểm của bạn về CRM nhé!"
-          },
-          "webhookUrl": "https://n8n.pnmediaplus.com/webhook/qa-gatekeeper",
-          "executionMode": "production"
-        },
-        "pairedItem": {
-          "item": 0
-        }
-      }
-    ],
-    "LLM Evaluator": [
-      {
-        "json": {
-          "id": "chatcmpl-EEuqBL6cwIsWRKBT5N7n9a33cD2tk",
-          "object": "chat.completion",
-          "created": 1787223795,
-          "model": "gpt-4o-mini-2024-07-18",
-          "choices": [
-            {
-              "index": 0,
-              "message": {
-                "role": "assistant",
-                "content": "{\n  \"verdict\": \"pass\",\n  \"average_score\": 7,\n  \"overclaim_risk\": 3\n}",
-                "refusal": null,
-                "annotations": []
-              },
-              "logprobs": null,
-              "finish_reason": "stop"
-            }
-          ],
-          "usage": {
-            "prompt_tokens": 201,
-            "completion_tokens": 28,
-            "total_tokens": 229,
-            "prompt_tokens_details": {
-              "cached_tokens": 0,
-              "audio_tokens": 0
-            },
-            "completion_tokens_details": {
-              "reasoning_tokens": 0,
-              "audio_tokens": 0,
-              "accepted_prediction_tokens": 0,
-              "rejected_prediction_tokens": 0
-            }
-          },
-          "service_tier": "default",
-          "system_fingerprint": "fp_6ec6bfb92d"
-        },
-        "pairedItem": {
-          "item": 0
-        }
-      }
-    ],
-    "Parse Result": [
-      {
-        "json": {
-          "result": {
-            "verdict": "pass",
-            "average_score": 7,
-            "overclaim_risk": 3
-          },
-          "originalBody": {
-            "content_item_id": "ec968fdd-e024-4d63-b140-69e83b7cd7de",
-            "organization_id": "8289488a-b255-4cb6-9bff-c9d2e71af160",
-            "thread_id": "55555555-5555-5555-5555-555555555555",
-            "caption": "📈 Bạn có đang sử dụng Excel để quản lý khách hàng? Hãy để ý rằng điều này có thể khiến doanh nghiệp bạn bỏ lỡ nhiều cơ hội quan trọng! \n\nHãy khám phá sức mạnh của CRM – giải pháp không thể thiếu giúp tối ưu hóa quản lý mối quan hệ với khách hàng. So với Excel và Word, CRM mang lại sự khác biệt rõ rệt trong việc tổ chức thông tin và tạo trải nghiệm tuyệt vời cho khách hàng. Bạn đã sẵn sàng thay đổi để phát triển doanh nghiệp một cách hiệu quả hơn chưa?\n\n👉 Chia sẻ bài viết này và cho chúng tôi biết quan điểm của bạn về CRM nhé!"
-          }
-        },
-        "pairedItem": {
-          "item": 0
-        }
-      }
-    ],
-    "Insert QA DB": [
-      {
-        "json": {
-          "id": "564069f4-c84a-4e34-9070-9c83b9abe63c",
-          "content_item_id": "ec968fdd-e024-4d63-b140-69e83b7cd7de",
-          "agent_task_id": null,
-          "reviewer_ref": "ai_qa_gatekeeper",
-          "verdict": "pass",
-          "average_score": 7,
-          "overclaim_risk": 3,
-          "missing_asset": false,
-          "evidence_ref": "evidence://n8n-qa/231886",
-          "notes": "AI Automated QA",
-          "reviewed_at": "2026-08-20T11:03:16.240307+00:00",
-          "created_at": "2026-08-20T11:03:16.240307+00:00",
-          "updated_at": "2026-08-20T11:03:16.240307+00:00"
-        },
-        "pairedItem": {
-          "item": 0
-        }
-      }
-    ],
-    "Update Item State": [
-      {
-        "json": {
-          "id": "ec968fdd-e024-4d63-b140-69e83b7cd7de",
-          "content_key": "auto_86a8f6e43d62413ca036893f1c4d98b0",
-          "owner_ref": "pnmediaplus@gmail.com",
-          "title": "tạo bài viết ngắn về chủ đề tầm quan trọng của CRM...",
-          "brief": "tạo bài viết ngắn về chủ đề tầm quan trọng của CRM sme cho doanh nghiệp, đâu là lựa chọn đúng đắn và so sánh execel, word và CRM sme để tạo nên sự khác biệt",
-          "state": "QA_passed",
-          "scheduled_at": null,
-          "published_at": null,
-          "created_at": "2026-08-20T11:02:41.349447+00:00",
-          "updated_at": "2026-08-20T11:03:16.608379+00:00",
-          "campaign_id": "1eac6963-0d02-4d08-80f8-7d0a7bebd14f",
-          "organization_id": "8289488a-b255-4cb6-9bff-c9d2e71af160",
-          "target_integration_key": null,
-          "artifact_version_id": null
-        },
-        "pairedItem": {
-          "item": 0
-        }
-      }
-    ]
-  },
+  "pinData": {},
   "connections": {
     "Webhook": {
       "main": [
@@ -580,7 +443,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "f1796655-5258-4106-adae-159c46a24987",
+  "versionId": "3fa105a1-0fe9-4add-bef5-02a5c1bb7b78",
   "meta": {
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
   },
