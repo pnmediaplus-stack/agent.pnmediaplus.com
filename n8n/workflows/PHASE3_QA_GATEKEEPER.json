@@ -34,7 +34,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o-mini\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"user\",\n      content: \"Bạn là AI QA Manager. Đánh giá bài viết sau. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10), \\\"reason\\\": \\\"Giải thích ngắn gọn lý do tại sao pass hoặc reject (tối đa 2 câu)\\\" }.\\nBài viết:\\n\" + $(\"Webhook\").first().json.body.caption\n    }\n  ]\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"user\",\n      content: [\n        {\n          type: \"text\",\n          text: \"Bạn là AI QA Manager. Đánh giá nội dung và hình ảnh này. Trả về JSON chứa { \\\"verdict\\\": \\\"pass\\\" hoặc \\\"reject\\\", \\\"average_score\\\": number (1-10), \\\"overclaim_risk\\\": number (0-10), \\\"reason\\\": \\\"Giải thích ngắn gọn lý do tại sao pass hoặc reject (tối đa 2 câu)\\\" }.\\nĐÁNH TRƯỢT NGAY LẬP TỨC (<5 ĐIỂM) NẾU:\\n- Màn hình thiết bị (laptop, điện thoại) bị ngược hoặc bị dán ở mặt lưng.\\n- Có logo rác hoặc chữ rác không có nghĩa.\\n\\nBài viết:\\n\" + $(\"Webhook\").first().json.body.caption\n        },\n        {\n          type: \"image_url\",\n          image_url: { \"url\": $(\"Webhook\").first().json.body.image_url || \"\" }\n        }\n      ]\n    }\n  ]\n}) }}",
         "options": {}
       },
       "name": "LLM Evaluator",
