@@ -83,9 +83,7 @@ export async function processHumanMessage(text: string, history: any[] = [], org
     return m; // Leave assistant messages as raw text/markdown
   }));
 
-  const forceToolRouting = /viết bài|tạo nội dung|lên bài|đăng bài|publish|campaign|tạo ảnh|viết.*mẫu|viết.*content/i.test(text);
-
-  let messages: any[] = [
+    let messages: any[] = [
     {
       role: "system",
       content: `You are the AI Orchestrator (Router) for a marketing system.
@@ -138,6 +136,7 @@ Violating these rules and attempting to do the specialized work yourself will br
 
       const data = await response.json();
       const message = data.choices?.[0]?.message;
+      const routedIntent = message?.tool_calls?.[0]?.function?.name || null;
 
       if (message?.tool_calls && message.tool_calls.length > 0) {
         const toolCall = message.tool_calls[0];
@@ -197,8 +196,7 @@ Violating these rules and attempting to do the specialized work yourself will br
         // HARD ARCHITECTURAL GUARD:
         // If the user request demands professional execution (content/image/campaign),
         // we strictly forbid the AI from answering directly via text.
-        if (forceToolRouting) {
-          console.warn("[AI_ORCHESTRATOR_GUARD] Model attempted to bypass tool for professional task. Forcing tool routing via fallback.");
+        if (routedIntent === "create_content" || routedIntent === "publish_content" || routedIntent === "plan_campaign") {
           return fallbackRegexMatch(text);
         }
 
