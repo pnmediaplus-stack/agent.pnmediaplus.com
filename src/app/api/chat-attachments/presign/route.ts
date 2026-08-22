@@ -15,6 +15,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Missing file info" }, { status: 400 });
     }
 
+    // Tự động kiểm tra dung lượng (Max 50MB)
+    const MAX_SIZE = 50 * 1024 * 1024;
+    if (size && size > MAX_SIZE) {
+      return NextResponse.json({ success: false, message: "File exceeds 50MB limit" }, { status: 413 });
+    }
+
     // Tách phần mở rộng của file
     const nameParts = name.split(".");
     const extension = nameParts.length > 1 ? nameParts.pop() : "bin";
