@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 const GenerateContentPayloadSchema = z.object({
   contentItemId: z.string().uuid('Must be a valid UUID'),
   tenant_id: z.string(), // REQUIRED FOR BILLING
+  threadId: z.string().optional(),
 });
 
 export async function POST(req: Request) {

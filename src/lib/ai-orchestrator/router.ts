@@ -70,6 +70,11 @@ export async function processHumanMessage(text: string, history: any[] = [], org
   }
 
   const processedHistory = await Promise.all(history.map(async m => {
+    // SECURITY PATCH: Strip any lingering Base64 strings from history to prevent 200k Token Bomb
+    if (typeof m.content === 'string') {
+      m.content = m.content.replace(/data:image\/[^;]+;base64,[^\\)]+/g, 'BỨC_ẢNH_ĐÃ_BỊ_ẨN');
+    }
+    
     // OpenAI strictly forbids image_url objects in 'assistant' or 'system' messages.
     // We must ONLY apply Vision parsing to 'user' messages.
     if (m.role === 'user' && typeof m.content === 'string') {
@@ -93,7 +98,7 @@ export async function processHumanMessage(text: string, history: any[] = [], org
   while (iterations < MAX_ITERATIONS) {
     iterations++;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout for Vision
 
     try {
       const response = await fetch("https://api.openai.com/v1/chat/completions", {

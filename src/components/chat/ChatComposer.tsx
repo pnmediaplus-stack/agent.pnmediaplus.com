@@ -455,47 +455,41 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       setIsUploading(true);
       setUploadError(null);
 
-            // Convert file to base64 to bypass Next.js multipart/form-data bugs on VPS
-      const base64Str = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(selectedFile);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = error => reject(error);
-      });
-
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-        
-        const res = await fetch("/api/chat-attachments", {
+        // Bước 1: Xin thẻ bài Presigned URL từ máy chủ Next.js
+        const presignRes = await fetch("/api/chat-attachments/presign", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: selectedFile.name,
             type: selectedFile.type,
-            size: selectedFile.size,
-            fileBase64: base64Str
-          }),
-          signal: controller.signal
+            size: selectedFile.size
+          })
         });
-        clearTimeout(timeoutId);
 
-        
-        if (!res.ok) {
-          if (res.status === 413) {
-            throw new Error("Dung lượng file quá lớn (Server Nginx chặn 413). Vui lòng cấu hình lại Nginx client_max_body_size.");
-          }
-          const contentType = res.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const data = await res.json();
-            throw new Error(data.message || "Upload failed");
-          } else {
-            const textError = await res.text();
-            throw new Error(`Server Error (${res.status}): ${textError.substring(0, 50)}`);
-          }
+        if (!presignRes.ok) {
+          const textError = await presignRes.text();
+          throw new Error("Không thể lấy quyền Upload: " + textError.substring(0, 50));
         }
-        const data = await res.json();
+        
+        const presignData = await presignRes.json();
+        if (!presignData.success) throw new Error(presignData.message || "Xin quyền thất bại");
 
+        // Bước 2: Bắn thẳng file Binary lên mây Cloudflare R2 thông qua URL vừa được cấp
+        const uploadRes = await fetch(presignData.presignedUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": selectedFile.type,
+          },
+          body: selectedFile
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error(`Máy chủ đám mây từ chối file (${uploadRes.status})`);
+        }
+        
+        // Bước 3: Hoàn thành, lấy link Public để chèn vào Markdown
+        const data = { signedUrl: presignData.publicUrl };
 
         const isImage = selectedFile.type.startsWith("image/");
         const markdown = isImage

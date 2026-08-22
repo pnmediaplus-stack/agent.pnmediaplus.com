@@ -9,10 +9,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        15296,
-        -3744
+        35952,
+        -3888
       ],
-      "id": "d71fb244-00d4-427d-8792-2208135f633a"
+      "id": "26057732-29cf-469d-9523-a4888e5bea5a"
     },
     {
       "parameters": {
@@ -36,10 +36,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        15088,
-        -3744
+        35744,
+        -3888
       ],
-      "id": "74c42515-4c6f-4250-98e1-becc5bfaf3b4"
+      "id": "c914a097-4bb7-4bcc-bc0b-c7a5dd713dfd"
     },
     {
       "parameters": {
@@ -50,10 +50,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        14896,
-        -3744
+        35552,
+        -3888
       ],
-      "id": "0a20d4cc-41d8-441a-a6d4-90d2e596393a"
+      "id": "fdaa0801-8041-483d-89e6-85956c86f757"
     },
     {
       "parameters": {
@@ -68,10 +68,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        14704,
-        -3744
+        35360,
+        -3888
       ],
-      "id": "3580075a-0fb2-46f9-9f1d-93a48b348977"
+      "id": "2de99fd0-e32b-4388-8502-ff03a7f87e4d"
     },
     {
       "parameters": {
@@ -90,17 +90,17 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ (() => {\n  const cfg = $('Fetch Tenant AI Config').item.json;\n  const textBinding = cfg.provider_bindings?.text;\n  if (!textBinding?.provider_code || !textBinding?.model_code) {\n    throw new Error('TEXT_LANE_BINDING_MISSING');\n  }\n  \n  let contentPayload = $json.prompt;\n  const imgRegex = /!\\[.*?\\]\\((https?:\\/\\/[^\\s)]+)\\)/g;\n  const matches = [...$json.prompt.matchAll(imgRegex)];\n  \n  if (matches.length > 0) {\n    const contentArray = [];\n    let lastIndex = 0;\n    for (const match of matches) {\n      const textPart = $json.prompt.substring(lastIndex, match.index);\n      if (textPart.trim()) contentArray.push({ type: \"text\", text: textPart });\n      let url = match[1];\n      if (url.startsWith('/')) url = 'https://agent.pnmediaplus.com' + url;\n      contentArray.push({ type: \"image_url\", image_url: { url: url } });\n      lastIndex = match.index + match[0].length;\n    }\n    const remaining = $json.prompt.substring(lastIndex);\n    if (remaining.trim()) contentArray.push({ type: \"text\", text: remaining });\n    contentPayload = contentArray;\n  }\n\n  return {\n    provider: textBinding.provider_code,\n    model: textBinding.model_code,\n    messages: [{ role: 'user', content: contentPayload }],\n    response_format: { type: 'json_object' },\n    tenant_id: $json.tenant_id,\n    lane_key: 'text',\n    tenant_binding_id: cfg.tenant_binding_id || ''\n  };\n})() }}",
+        "jsonBody": "={{ (() => {\n  const cfg = $('Fetch Tenant AI Config').item.json;\n  const textBinding = cfg.provider_bindings?.text;\n  if (!textBinding?.provider_code || !textBinding?.model_code) {\n    throw new Error('TEXT_LANE_BINDING_MISSING');\n  }\n  \n  let contentPayload = $json.prompt;\n  const imgRegex = /!\\[.*?\\]\\(([^)\\s]+)\\)/g;\n  const matches = [...$json.prompt.matchAll(imgRegex)];\n  \n  if (matches.length > 0) {\n    const contentArray = [];\n    let lastIndex = 0;\n    for (const match of matches) {\n      const textPart = $json.prompt.substring(lastIndex, match.index);\n      if (textPart.trim()) contentArray.push({ type: \"text\", text: textPart });\n      let url = match[1];\n      if (url.startsWith('/')) url = 'https://agent.pnmediaplus.com' + url;\n      contentArray.push({ type: \"image_url\", image_url: { url: url } });\n      lastIndex = match.index + match[0].length;\n    }\n    const remaining = $json.prompt.substring(lastIndex);\n    if (remaining.trim()) contentArray.push({ type: \"text\", text: remaining });\n    contentPayload = contentArray;\n  }\n\n  return {\n    provider: textBinding.provider_code,\n    model: textBinding.model_code,\n    messages: [{ role: 'user', content: contentPayload }],\n    response_format: { type: 'json_object' },\n    tenant_id: $json.tenant_id,\n    lane_key: 'text',\n    tenant_binding_id: cfg.tenant_binding_id || ''\n  };\n})() }}",
         "options": {}
       },
       "name": "AI Broker (Text)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        13856,
-        -3984
+        34512,
+        -4128
       ],
-      "id": "df682056-70a5-4f0c-902e-554680da3f34",
+      "id": "351e365d-f991-4abe-a372-3c9c21321055",
       "credentials": {
         "httpHeaderAuth": {
           "id": "nlRh1UkRewsK7CCR",
@@ -143,10 +143,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        12624,
-        -3952
+        33280,
+        -4096
       ],
-      "id": "20ed18bb-64fb-4925-83cd-4d1fe2182546",
+      "id": "373f6da7-47d5-4ebb-91a6-80b11fa47f83",
       "name": "Preserve Reference Token"
     },
     {
@@ -157,10 +157,10 @@
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
       "position": [
-        13008,
-        -3744
+        33664,
+        -3888
       ],
-      "id": "97e4fde7-6769-4725-b31d-1af79aa955e2"
+      "id": "023d1465-d6b5-44a5-aa0d-4c49189abff3"
     },
     {
       "parameters": {
@@ -177,10 +177,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        13008,
-        -3952
+        33664,
+        -4096
       ],
-      "id": "67da1442-9261-45f2-b9a3-ac1921ae92a9"
+      "id": "4e47dda6-17ab-4962-b680-c709292849cf"
     },
     {
       "parameters": {
@@ -213,10 +213,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        12816,
-        -3952
+        33472,
+        -4096
       ],
-      "id": "fddf22d2-5140-4262-9c3c-3f26eb77fc69"
+      "id": "d2e7d663-81c8-4db1-8948-393b47b28f7d"
     },
     {
       "parameters": {
@@ -239,10 +239,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        15104,
-        -3520
+        35760,
+        -3664
       ],
-      "id": "0966d109-9992-47e7-8919-03060a5849d7",
+      "id": "08037adc-60d3-4e51-8f3d-4df84e02a0c1",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -258,10 +258,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        14912,
-        -3520
+        35568,
+        -3664
       ],
-      "id": "38de93ae-17df-4c4a-92d6-bd10b66bf7b8"
+      "id": "67bec4c6-2a11-4a44-a2b0-6a6e8f9fe2a0"
     },
     {
       "parameters": {
@@ -284,10 +284,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        14688,
-        -3520
+        35344,
+        -3664
       ],
-      "id": "8ae1cfcc-c966-4ee4-aea2-250133f1b4a3",
+      "id": "b22509e2-3fe5-4ba4-8379-7596d54aeb14",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -303,10 +303,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        14480,
-        -3520
+        35136,
+        -3664
       ],
-      "id": "ace92bff-0cfc-43cc-88f3-1594f250a87c"
+      "id": "d260ae73-64c8-46ec-a576-6e57f700f6df"
     },
     {
       "parameters": {
@@ -329,10 +329,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        14272,
-        -3520
+        34928,
+        -3664
       ],
-      "id": "f903c08a-06a3-4c15-9308-0884697a8f4f",
+      "id": "dd8e4974-a8bd-4439-a70d-a41e4d4dd428",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -348,10 +348,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        14480,
-        -3744
+        35136,
+        -3888
       ],
-      "id": "fd373671-4fcb-4aa7-83b7-0d85ae4da969"
+      "id": "e7cd3334-57e5-4816-8039-2c775ac23cd9"
     },
     {
       "parameters": {
@@ -366,10 +366,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        13632,
-        -3760
+        34288,
+        -3904
       ],
-      "id": "9a4000c6-7947-422a-af76-87ddea6ceb49"
+      "id": "e484c173-4677-4e52-ae8b-ff3aa6884f14"
     },
     {
       "parameters": {
@@ -392,10 +392,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        14464,
-        -3984
+        35120,
+        -4128
       ],
-      "id": "52b33b0c-7713-43e4-94cb-1373449ad689",
+      "id": "de5b511e-2b14-45a2-abfd-9d4fcc3047d8",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -411,10 +411,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        14256,
-        -3984
+        34912,
+        -4128
       ],
-      "id": "0c10478a-4315-4909-adff-a8263855f679"
+      "id": "9adb093d-7537-4ea4-b41d-aadb2b95894b"
     },
     {
       "parameters": {
@@ -424,10 +424,10 @@
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
       "position": [
-        13424,
-        -3744
+        34080,
+        -3888
       ],
-      "id": "e789cd7e-3e26-4141-b8b2-038078d59839"
+      "id": "f0da3595-3209-40fc-a3d7-f5a9438d6a04"
     },
     {
       "parameters": {
@@ -444,10 +444,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        13424,
-        -3968
+        34080,
+        -4112
       ],
-      "id": "7a7f23ae-da50-4a8e-83a5-31c78f56e0a2"
+      "id": "8b039bf2-3e33-4883-abc3-40568467de36"
     },
     {
       "parameters": {
@@ -458,10 +458,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        13232,
-        -3968
+        33888,
+        -4112
       ],
-      "id": "0a17a007-a233-45cd-8a3a-8b1c6288da69"
+      "id": "ae14b48b-3dfd-43ae-8aba-6989bc45b709"
     },
     {
       "parameters": {
@@ -471,10 +471,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        15312,
-        -3520
+        35968,
+        -3664
       ],
-      "id": "0ab88142-6fdd-4a8b-a51b-55ea91797605"
+      "id": "88ded49b-3685-4ca5-b3f9-ccc0f53b17e4"
     },
     {
       "parameters": {
@@ -491,10 +491,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        15520,
-        -3520
+        36176,
+        -3664
       ],
-      "id": "0c5377a4-f2a1-402d-8193-1515d8d0ae13",
+      "id": "3bae8bd8-8b16-45da-9bf9-2b740b73f72d",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -526,10 +526,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        14688,
-        -3984
+        35744,
+        -4112
       ],
-      "id": "3956c7d9-64c6-4844-bc35-36f02d11f26e",
+      "id": "76021345-9f2e-4a95-a2d8-e4abcdc42541",
       "credentials": {
         "httpHeaderAuth": {
           "id": "nlRh1UkRewsK7CCR",
@@ -545,23 +545,23 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        14064,
-        -3984
+        34720,
+        -4128
       ],
-      "id": "187d5a4b-8af3-450b-a0f5-028b37a251c1"
+      "id": "ddef21d2-6768-4940-8c54-f3e225daef2f"
     },
     {
       "parameters": {
-        "jsCode": "const ideaItem = $('Get Item (Webhook)').item.json[0] || $('Get Item (Webhook)').item.json;\nconst govData = $('Fetch Governance Registry').item.json.data;\nconst webhookBody = $('Webhook Trigger').first().json.body || $('Webhook Trigger').first().json;\nconst qa_retry_count = webhookBody.qa_retry_count || 0;\nconst qa_feedback = webhookBody.qa_feedback || '';\n\n\nif (!ideaItem) {\n  throw new Error('CONTENT_ITEM_NOT_FOUND');\n}\n\n// Find agents\nconst agent1 = govData.agents.find(a => a.role_id === 'marketing_agent_1_viral_research_angle');\nconst agent2 = govData.agents.find(a => a.role_id === 'marketing_agent_2_social_caption_architect');\nconst agent3 = govData.agents.find(a => a.role_id === 'marketing_agent_3_image_prompt_architect');\n\nif (!agent1 || !agent2 || !agent3) {\n  throw new Error('MARKETING_AGENT_REGISTRY_INCOMPLETE');\n}\n\nif (!agent1.capability_boundary || !agent2.capability_boundary || !agent3.capability_boundary) {\n  throw new Error('MARKETING_AGENT_CAPABILITY_BOUNDARY_MISSING');\n}\n\nconst prompt = `You are an orchestration of 3 specialized AI Marketing Agents working in sequence.\nYou MUST respect the capabilities (MUST) and strictly avoid the prohibitions (MUST NOT) of each agent.\nThe governance rules are currently in DRAFT_METADATA_ONLY mode.\n\n[AGENT 1: VIRAL RESEARCH ANGLE]\nMUST: ${agent1.capability_boundary.must.join(', ')}\nMUST NOT: ${agent1.capability_boundary.must_not.join(', ')}\n\n[AGENT 2: SOCIAL CAPTION ARCHITECT]\nMUST: ${agent2.capability_boundary.must.join(', ')}\nMUST NOT: ${agent2.capability_boundary.must_not.join(', ')}\n\n[AGENT 3: IMAGE PROMPT ARCHITECT]\nMUST: ${agent3.capability_boundary.must.join(', ')}\nMUST NOT: ${agent3.capability_boundary.must_not.join(', ')}\n\n---\nIdea Title: ${ideaItem.title}${qa_retry_count > 0 ? '\\n\\n[QA FEEDBACK FROM PREVIOUS RUN - MUST FIX]\\n' + qa_feedback : ''}\nBrief: ${ideaItem.brief || 'No brief provided.'}\\n${providedImageUrl ? '\\n[SYSTEM NOTE: The human has provided an image (' + providedImageUrl + '). Agent 1 and Agent 2 MUST use this image as the primary visual context for the caption. Do NOT hallucinate things not in the image.]' : ''}\n\nIMPORTANT LANGUAGE & CONTEXT INSTRUCTION:\n\n- You MUST write \"agent_1_research_packet\" and \"agent_2_publish_ready_caption\" entirely in natural, fluent Vietnamese (Tiếng Việt).\n\nAGENT 1 — RESEARCH & VIRAL ANGLE:\n- \"agent_1_research_packet\" must provide a concise but meaningful analysis of:\n  1. the core topic or event;\n  2. the most interesting audience insight;\n  3. the strongest social-media angle;\n  4. why people may stop, comment, share, or relate to it;\n  5. factual boundaries — what is known versus uncertain;\n  6. the recommended hook direction;\n  7. the recommended visual direction.\n- Prioritize useful insights over generic summaries.\n- Do NOT invent facts, statistics, quotes, trends, names, dates, or claims.\n\nAGENT 2 — PUBLISH-READY SOCIAL CAPTION:\n- For \"agent_2_publish_ready_caption\", act as a top-tier Vietnamese Social Media Copywriter.\n- The caption MUST feel human, contemporary, engaging, and publication-ready.\n- Do NOT write generic, robotic, overly formal, or short/abrupt copy.\n- Start with a strong scroll-stopping hook.\n- Build curiosity, relatability, emotion, humor, tension, or useful insight where appropriate to the topic.\n- Use relevant emojis strategically. Do not spam emojis.\n- Use natural conversational Vietnamese suitable for social media.\n- Encourage meaningful interaction such as comments, tagging, sharing, or discussion where appropriate.\n- End with one clear Call-to-Action.\n- Avoid clickbait that misrepresents the actual content.\n\nFACTUAL INTEGRITY CONSTRAINT:\n- \"agent_2_publish_ready_caption\" MUST be based only on information supported by the provided input and \"agent_1_research_packet\".\n- Never fabricate statistics, facts, quotes, events, names, dates, prices, trends, or claims for the sake of engagement.\n- Creativity is allowed in wording, storytelling, hooks, humor, emotional framing, and CTA — never in factual claims.\n- If a factual detail is uncertain, omit it rather than invent it.\n\nCROSS-AGENT CONSISTENCY:\n- \"agent_2_publish_ready_caption\" MUST use the strongest social angle identified in \"agent_1_research_packet\".\n- \"agent_3_image_prompt\" MUST visually communicate the same core idea, hook, emotional tone, and audience context as the caption.\n- All three outputs must form ONE coherent social-media creative concept.\n\nJSON ESCAPING CONSTRAINT:\n- \"agent_2_publish_ready_caption\" MUST NOT contain unescaped raw line-break characters inside the JSON string.\n- Represent intended paragraph breaks using the standard JSON escape sequence (\\\\n).\n- Properly escape all double quotes and other JSON-sensitive characters.\n- The final response MUST remain parseable as strict JSON.\n\nAGENT 3 — IMAGE PROMPT:\n- \"agent_3_image_prompt\" MUST be written entirely in English.\n- Write it as a detailed, production-quality prompt for an image-generation model.\n\nVISUAL DEMOGRAPHICS:\n- The target audience is Vietnamese.\n- Explicitly depict authentic Vietnamese subjects whenever people appear, such as Vietnamese Gen-Z professionals, young Vietnamese office workers, or Vietnamese youth appropriate to the topic.\n- Use natural, contemporary Vietnamese appearance and workplace/lifestyle context.\n- Avoid exaggerated cultural stereotypes.\n\nVISUAL AESTHETIC:\n- Trendy, youthful, clean, elegant, contemporary office-teen / Gen-Z professional aesthetic.\n- Premium commercial campaign and high-end editorial magazine quality.\n- Cinematic but bright lighting.\n- Bright pastel or vibrant tones where appropriate.\n- Clean wardrobe styling and polished composition.\n- Strong visual hierarchy.\n- Scroll-stopping social-feed composition.\n- Mobile-first readability.\n- Expressive but natural body language and facial expressions.\n- Avoid grungy, sloppy, dirty, dystopian, cyberpunk, or aggressive streetwear aesthetics unless explicitly required by the topic.\n\nTEXT RENDERING CONSTRAINT — MANDATORY:\n- The generated image MUST contain exactly ONE short Vietnamese catchphrase/headline of 1–4 words.\n- The phrase MUST be directly relevant to the actual topic and creative concept.\n- Explicitly include the exact Vietnamese phrase inside quotation marks in \"agent_3_image_prompt\".\n- Instruct the image generator to reproduce that exact phrase without changing, translating, paraphrasing, adding, or removing any character.\n- Every Vietnamese letter, accent, and diacritic must be preserved exactly as written.\n- The headline must be highly legible, intentional, and integrated into the composition.\n- VIRAL TYPOGRAPHY: Instruct the image generator to render the text using premium, highly legible, professional typography. AVOID cheap or cheesy 3D effects. The font must look like a high-end editorial magazine layout, sleek minimalist sans-serif, or a bold professional overlay, perfectly integrated into the composition without looking artificial or distorted. The text MUST NOT look like ugly or plain text pasted on top.\n- STRICT LIMIT: Do NOT render any additional words, pseudo-text, watermarks, logos, random letters, labels, or filler typography. The viral typography serves ONLY the single main headline to avoid cluttering the image.\n- Example phrases are illustrative only and MUST NOT be copied unless genuinely relevant to the topic.\n\nCRITICAL OUTPUT FORMAT:\n- Respond ONLY with one strict, valid JSON object.\n- Do NOT use Markdown code fences.\n- Do NOT add explanations, comments, labels, or conversational text before or after the JSON.\n- Return exactly these three top-level keys and no additional keys.\n- All values MUST be JSON strings.\n- Ensure all internal quotation marks and special characters are correctly escaped.\n\n{\n  \"agent_1_research_packet\": \"Nội dung phân tích và góc khai thác social...\",\n  \"agent_2_publish_ready_caption\": \"Hook hấp dẫn...\\\\n\\\\nNội dung...\\\\n\\\\nCall to action...\",\n  \"agent_3_image_prompt\": \"A detailed production-quality image-generation prompt in English...\"\n}\n`;\n\nconst imgMatch = (ideaItem.brief || '').match(/!\\[.*?\\]\\((https?:\\/\\/[^\\s)]+)\\)/);\nconst providedImageUrl = imgMatch ? imgMatch[1] : null;\n\nreturn { json: { prompt: prompt, item: ideaItem, providedImageUrl, tenant_id: ideaItem.organization_id, organization_id: ideaItem.organization_id } };"
+        "jsCode": "const ideaItem = $('Get Item (Webhook)').item.json[0] || $('Get Item (Webhook)').item.json;\nconst govData = $('Fetch Governance Registry').item.json.data;\nconst webhookBody = $('Webhook Trigger').first().json.body || $('Webhook Trigger').first().json;\nconst qa_retry_count = webhookBody.qa_retry_count || 0;\nconst qa_feedback = webhookBody.qa_feedback || '';\n\n\nif (!ideaItem) {\n  throw new Error('CONTENT_ITEM_NOT_FOUND');\n}\n\n// Find agents\nconst agent1 = govData.agents.find(a => a.role_id === 'marketing_agent_1_viral_research_angle');\nconst agent2 = govData.agents.find(a => a.role_id === 'marketing_agent_2_social_caption_architect');\nconst agent3 = govData.agents.find(a => a.role_id === 'marketing_agent_3_image_prompt_architect');\n\nif (!agent1 || !agent2 || !agent3) {\n  throw new Error('MARKETING_AGENT_REGISTRY_INCOMPLETE');\n}\n\nif (!agent1.capability_boundary || !agent2.capability_boundary || !agent3.capability_boundary) {\n  throw new Error('MARKETING_AGENT_CAPABILITY_BOUNDARY_MISSING');\n}\n\nconst prompt = `You are an orchestration of 3 specialized AI Marketing Agents working in sequence.\nYou MUST respect the capabilities (MUST) and strictly avoid the prohibitions (MUST NOT) of each agent.\nThe governance rules are currently in DRAFT_METADATA_ONLY mode.\n\n[AGENT 1: VIRAL RESEARCH ANGLE]\nMUST: ${agent1.capability_boundary.must.join(', ')}\nMUST NOT: ${agent1.capability_boundary.must_not.join(', ')}\n\n[AGENT 2: SOCIAL CAPTION ARCHITECT]\nMUST: ${agent2.capability_boundary.must.join(', ')}\nMUST NOT: ${agent2.capability_boundary.must_not.join(', ')}\n\n[AGENT 3: IMAGE PROMPT ARCHITECT]\nMUST: ${agent3.capability_boundary.must.join(', ')}\nMUST NOT: ${agent3.capability_boundary.must_not.join(', ')}\n\n---\nIdea Title: ${ideaItem.title}${qa_retry_count > 0 ? '\\n\\n[QA FEEDBACK FROM PREVIOUS RUN - MUST FIX]\\n' + qa_feedback : ''}\nBrief: ${ideaItem.brief || 'No brief provided.'}\\n${providedImageUrl ? '\\n[SYSTEM NOTE: The human has provided an image (' + providedImageUrl + '). Agent 1 and Agent 2 MUST use this image as the primary visual context for the caption. Do NOT hallucinate things not in the image.]' : ''}\n\nIMPORTANT LANGUAGE & CONTEXT INSTRUCTION:\n\n- You MUST write \"agent_1_research_packet\" and \"agent_2_publish_ready_caption\" entirely in natural, fluent Vietnamese (Tiếng Việt).\n\nAGENT 1 — RESEARCH & VIRAL ANGLE:\n- \"agent_1_research_packet\" must provide a concise but meaningful analysis of:\n  1. the core topic or event;\n  2. the most interesting audience insight;\n  3. the strongest social-media angle;\n  4. why people may stop, comment, share, or relate to it;\n  5. factual boundaries — what is known versus uncertain;\n  6. the recommended hook direction;\n  7. the recommended visual direction.\n- Prioritize useful insights over generic summaries.\n- Do NOT invent facts, statistics, quotes, trends, names, dates, or claims.\n\nAGENT 2 — PUBLISH-READY SOCIAL CAPTION:\n- For \"agent_2_publish_ready_caption\", act as a top-tier Vietnamese Social Media Copywriter.\n- The caption MUST feel human, contemporary, engaging, and publication-ready.\n- Do NOT write generic, robotic, overly formal, or short/abrupt copy.\n- Start with a strong scroll-stopping hook.\n- Build curiosity, relatability, emotion, humor, tension, or useful insight where appropriate to the topic.\n- Use relevant emojis strategically. Do not spam emojis.\n- Use natural conversational Vietnamese suitable for social media.\n- Encourage meaningful interaction such as comments, tagging, sharing, or discussion where appropriate.\n- End with one clear Call-to-Action.\n- Avoid clickbait that misrepresents the actual content.\n\nFACTUAL INTEGRITY CONSTRAINT:\n- \"agent_2_publish_ready_caption\" MUST be based only on information supported by the provided input and \"agent_1_research_packet\".\n- Never fabricate statistics, facts, quotes, events, names, dates, prices, trends, or claims for the sake of engagement.\n- Creativity is allowed in wording, storytelling, hooks, humor, emotional framing, and CTA — never in factual claims.\n- If a factual detail is uncertain, omit it rather than invent it.\n\nCROSS-AGENT CONSISTENCY:\n- \"agent_2_publish_ready_caption\" MUST use the strongest social angle identified in \"agent_1_research_packet\".\n- \"agent_3_image_prompt\" MUST visually communicate the same core idea, hook, emotional tone, and audience context as the caption.\n- All three outputs must form ONE coherent social-media creative concept.\n\nJSON ESCAPING CONSTRAINT:\n- \"agent_2_publish_ready_caption\" MUST NOT contain unescaped raw line-break characters inside the JSON string.\n- Represent intended paragraph breaks using the standard JSON escape sequence (\\\\n).\n- Properly escape all double quotes and other JSON-sensitive characters.\n- The final response MUST remain parseable as strict JSON.\n\nAGENT 3 — IMAGE PROMPT:\n- \"agent_3_image_prompt\" MUST be written entirely in English.\n- Write it as a detailed, production-quality prompt for an image-generation model.\n\nVISUAL DEMOGRAPHICS:\n- The target audience is Vietnamese.\n- Explicitly depict authentic Vietnamese subjects whenever people appear, such as Vietnamese Gen-Z professionals, young Vietnamese office workers, or Vietnamese youth appropriate to the topic.\n- Use natural, contemporary Vietnamese appearance and workplace/lifestyle context.\n- Avoid exaggerated cultural stereotypes.\n\nVISUAL AESTHETIC:\n- Trendy, youthful, clean, elegant, contemporary office-teen / Gen-Z professional aesthetic.\n- Premium commercial campaign and high-end editorial magazine quality.\n- Cinematic but bright lighting.\n- Bright pastel or vibrant tones where appropriate.\n- Clean wardrobe styling and polished composition.\n- Strong visual hierarchy.\n- Scroll-stopping social-feed composition.\n- Mobile-first readability.\n- Expressive but natural body language and facial expressions.\n- Avoid grungy, sloppy, dirty, dystopian, cyberpunk, or aggressive streetwear aesthetics unless explicitly required by the topic.\n\nTEXT RENDERING CONSTRAINT — MANDATORY:\n- The generated image MUST contain exactly ONE short Vietnamese catchphrase/headline of 1–4 words.\n- The phrase MUST be directly relevant to the actual topic and creative concept.\n- Explicitly include the exact Vietnamese phrase inside quotation marks in \"agent_3_image_prompt\".\n- Instruct the image generator to reproduce that exact phrase without changing, translating, paraphrasing, adding, or removing any character.\n- Every Vietnamese letter, accent, and diacritic must be preserved exactly as written.\n- The headline must be highly legible, intentional, and integrated into the composition.\n- VIRAL TYPOGRAPHY: Instruct the image generator to render the text using premium, highly legible, professional typography. AVOID cheap or cheesy 3D effects. The font must look like a high-end editorial magazine layout, sleek minimalist sans-serif, or a bold professional overlay, perfectly integrated into the composition without looking artificial or distorted. The text MUST NOT look like ugly or plain text pasted on top.\n- STRICT LIMIT: Do NOT render any additional words, pseudo-text, watermarks, logos, random letters, labels, or filler typography. The viral typography serves ONLY the single main headline to avoid cluttering the image.\n- Example phrases are illustrative only and MUST NOT be copied unless genuinely relevant to the topic.\n\nCRITICAL OUTPUT FORMAT:\n- Respond ONLY with one strict, valid JSON object.\n- Do NOT use Markdown code fences.\n- Do NOT add explanations, comments, labels, or conversational text before or after the JSON.\n- Return exactly these three top-level keys and no additional keys.\n- All values MUST be JSON strings.\n- Ensure all internal quotation marks and special characters are correctly escaped.\n\n{\n  \"agent_1_research_packet\": \"Nội dung phân tích và góc khai thác social...\",\n  \"agent_2_publish_ready_caption\": \"Hook hấp dẫn...\\\\n\\\\nNội dung...\\\\n\\\\nCall to action...\",\n  \"agent_3_image_prompt\": \"A detailed production-quality image-generation prompt in English...\"\n}\n`;\n\nconst imgMatch = (ideaItem.brief || '').match(/!\\[.*?\\]\\(([^)\\s]+)\\)/);\nlet providedImageUrl = imgMatch ? imgMatch[1] : null;\nif (providedImageUrl && providedImageUrl.startsWith('/')) {\n   providedImageUrl = 'https://agent.pnmediaplus.com' + providedImageUrl;\n}\n\nreturn { json: { prompt: prompt, item: ideaItem, providedImageUrl, tenant_id: ideaItem.organization_id, organization_id: ideaItem.organization_id } };"
       },
       "name": "Format Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        13648,
-        -3984
+        34304,
+        -4128
       ],
-      "id": "215199b7-039c-46d1-aff2-76953de8b21b"
+      "id": "1b0c6736-6c85-4d8e-983f-65a0b953c4a8"
     },
     {
       "parameters": {
@@ -574,10 +574,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        12400,
-        -3952
+        33056,
+        -4096
       ],
-      "id": "e17ee3d3-4980-4e11-9ffd-657a6c5e1200",
+      "id": "78f3c8f6-fdcc-4afb-9563-1bced39140cf",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -595,11 +595,11 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        12208,
-        -3952
+        32864,
+        -4096
       ],
       "webhookId": "generate-content-webhook-id",
-      "id": "6c33c794-3bd9-47b8-81c9-4af823a85a22"
+      "id": "e8958e6f-16ba-44d2-ae80-c34f85d4f409"
     },
     {
       "parameters": {
@@ -609,10 +609,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        13856,
-        -3760
+        34432,
+        -3904
       ],
-      "id": "ba135968-5682-4e02-9351-f08a8da4e49d"
+      "id": "285cb404-581c-4412-bde9-dce4e208f4e0"
     },
     {
       "parameters": {
@@ -629,10 +629,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        14048,
-        -3760
+        34592,
+        -3904
       ],
-      "id": "353b6243-ff92-45df-8701-a32bdda30d5e"
+      "id": "9313af3e-3bf1-4ad6-8772-8680638b8cb7"
     },
     {
       "parameters": {
@@ -643,58 +643,11 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
-        14256,
-        -3776
+        34640,
+        -3696
       ],
-      "id": "a510c930-55ef-42df-88b9-579e2bf118db",
-      "webhookId": "7bc874fb-d834-4328-98a4-fac4ada9e774"
-    },
-    {
-      "parameters": {
-        "jsCode": "\nconst staticData = $getWorkflowStaticData('node');\nstaticData.pollCount = (staticData.pollCount || 0) + 1;\nif (staticData.pollCount > 120) {\n  let threadId = 'unknown';\n  try { threadId = $('Webhook Trigger').first().json.body.threadId || $('Webhook Trigger').first().json.threadId; } catch(e) {}\n  throw new Error('POLL_TIMEOUT|' + threadId + '|Image generation took too long');\n}\nreturn $input.all();\n"
-      },
-      "name": "Limit Polling",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        13782,
-        -3760
-      ],
-      "id": "limit-polling-node"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "string": [
-            {
-              "value1": "={{$json.status}}",
-              "value2": "processing"
-            }
-          ]
-        }
-      },
-      "name": "Check Status",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [
-        13932,
-        -3760
-      ],
-      "id": "check-status-node"
-    },
-    {
-      "parameters": {
-        "amount": 5,
-        "unit": "seconds"
-      },
-      "name": "Wait 5s",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1,
-      "position": [
-        13982,
-        -3560
-      ],
-      "id": "wait-5s-node"
+      "id": "c2d30f3b-747d-4e78-ad34-7823c823a61f",
+      "webhookId": "0717134c-ad10-41c2-b687-b53ac2f28fb3"
     },
     {
       "parameters": {},
@@ -702,10 +655,10 @@
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
       "position": [
-        13000,
-        -4500
+        33648,
+        -4640
       ],
-      "id": "err-trigger-1"
+      "id": "950d2b2e-c38a-417c-8475-c1daa62e9870"
     },
     {
       "parameters": {
@@ -715,10 +668,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        13200,
-        -4500
+        33856,
+        -4640
       ],
-      "id": "err-format-1"
+      "id": "a9f2b6de-abc7-433f-ab15-86473344123c"
     },
     {
       "parameters": {
@@ -735,10 +688,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        13400,
-        -4500
+        34048,
+        -4640
       ],
-      "id": "err-push-1",
+      "id": "4c3b842c-dd6e-4fb6-aa5a-04458697f659",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -759,10 +712,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        15700,
-        -3520
+        36352,
+        -3664
       ],
-      "id": "f8040c5b-4269-4a59-9126-6cb225401003"
+      "id": "48f3cfc2-e7e0-4eef-a730-842b6337f2bd"
     },
     {
       "parameters": {
@@ -787,26 +740,26 @@
         },
         "options": {}
       },
-      "id": "has-image-switch-id",
+      "id": "65956608-9815-465e-b612-58f8f8008ad5",
       "name": "Has Image in Brief?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        14438,
-        -4084
+        35328,
+        -4128
       ]
     },
     {
       "parameters": {
         "jsCode": "const item = $json;\nitem.r2_url = $('Format Prompt').first().json.providedImageUrl;\nif (!item.artifacts) item.artifacts = {};\nitem.artifacts.image = item.r2_url;\nreturn { json: item };"
       },
-      "id": "set-provided-image-id",
+      "id": "bb48308e-110a-4e7b-918b-ddc26fc1a14c",
       "name": "Set Provided Image",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        14688,
-        -4234
+        35952,
+        -4144
       ]
     }
   ],
@@ -1186,7 +1139,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "ccbb9dcd-864e-48fd-89a8-93fda76f2891",
+  "versionId": "e9f45b2f-186e-4ec7-a508-43eac5500180",
   "meta": {
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
   },
