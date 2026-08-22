@@ -52,7 +52,14 @@ export function WorkflowRunTable({ runs, namespace = "workflows" }: WorkflowRunT
                   </div>
                 </td>
                 <td className="px-6 py-4 text-center">
-                  <StateBadge label={run.run_status} displayLabel={t(`${namespace}.state.${run.run_status}`) ?? run.run_status} />
+                  <div className="flex flex-col items-center gap-2">
+                    <StateBadge label={run.run_status} displayLabel={t(`${namespace}.state.${run.run_status}`) ?? run.run_status} />
+                    {run.context_status && (
+                      <span className={run.context_status === "error" ? "max-w-[220px] truncate rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-rose-300" : "max-w-[220px] truncate rounded-full border border-slate-600/50 bg-slate-800/50 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-300"}>
+                        {run.context_status}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex flex-col gap-1 text-xs text-slate-400">
@@ -78,6 +85,11 @@ export function WorkflowRunTable({ runs, namespace = "workflows" }: WorkflowRunT
                       <span className="text-amber-500 font-mono">n8n: {run.n8n_execution_id}</span>
                     ) : (
                       <span className="text-slate-500 italic">{t(`${namespace}.table.noN8n`) ?? "Không có dữ liệu n8n"}</span>
+                    )}
+                    {run.context_last_error && (
+                      <span className="line-clamp-2 text-rose-300">
+                        {run.context_last_error}
+                      </span>
                     )}
                   </div>
                 </td>

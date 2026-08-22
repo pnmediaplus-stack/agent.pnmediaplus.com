@@ -394,13 +394,17 @@ export async function sendChatMessage(threadId: string, body: string) {
              });
            }
 
+           const { randomUUID } = await import("crypto");
+           const workflowRunId = randomUUID();
+           
            webhookResult = await postN8nWebhook("webhook/generate-content", {
              contentItemId: contentItemId,
              organization_id: organizationId,
              tenant_id: organizationId,
              reference_token: referenceToken,
              campaignContext: resolvedCampaign, // Send context to N8N
-             threadId: threadId // Send threadId for async chat message injection
+             threadId: threadId, // Send threadId for async chat message injection
+             workflow_run_id: workflowRunId
            });
 
            const routedMsgResult = await dbInsertChatMessage(organizationId, {

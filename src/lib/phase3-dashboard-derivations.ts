@@ -53,11 +53,15 @@ export function createPhase3BlockedData(): Phase3DashboardData {
         value: "0",
         state: "ready"
       }
-    ]
+    ],
+    latestWorkflowContext: null
   };
 }
 
-export function derivePhase3DashboardData(phase2: Phase2DashboardData): Phase3DashboardData {
+export function derivePhase3DashboardData(
+  phase2: Phase2DashboardData,
+  latestWorkflowContext: Phase3DashboardData["latestWorkflowContext"] = null
+): Phase3DashboardData {
   const contentItemsCount = phase2.contentItems.length;
   const performanceRecordsCount = phase2.performanceRecords.length;
   const qaReviewCount = phase2.qaReviews.length;
@@ -106,6 +110,7 @@ export function derivePhase3DashboardData(phase2: Phase2DashboardData): Phase3Da
         value: String(publishedCount + performanceRecordsCount),
         state: "ready"
       }
-    ]
+    ],
+    latestWorkflowContext
   };
 }

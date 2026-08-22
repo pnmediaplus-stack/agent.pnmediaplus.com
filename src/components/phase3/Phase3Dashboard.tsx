@@ -78,6 +78,33 @@ export function Phase3Dashboard({ data, loadReason, loadState }: Phase3Dashboard
         </div>
       )}
 
+      {data.latestWorkflowContext?.status && (
+        <div className="rounded-2xl border border-slate-700/60 bg-slate-950/70 p-4">
+          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+            {t("phase3.labels.workflowContext") ?? "Workflow context"}
+          </div>
+          <div className="mt-3 flex flex-col gap-2">
+            <div className="text-sm font-semibold text-white">
+              {t("phase3.labels.contextStatus") ?? "Status"}:{" "}
+              <span className={data.latestWorkflowContext.status === "error" ? "text-rose-400" : "text-emerald-400"}>
+                {data.latestWorkflowContext.status}
+              </span>
+            </div>
+            {data.latestWorkflowContext.lastError && (
+              <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                <span className="font-semibold">
+                  {t("phase3.labels.lastError") ?? "Last error"}:
+                </span>{" "}
+                {data.latestWorkflowContext.lastError}
+              </div>
+            )}
+            <div className="text-xs text-slate-400">
+              {t("phase3.labels.workflowRunId") ?? "Workflow run"}: {data.latestWorkflowContext.workflowRunId ?? "n/a"}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryCard label={t("phase3.summary.surfaces") ?? "Surfaces"} value={String(data.surfaces.length)} />
         <SummaryCard label={t("phase3.summary.ready") ?? "Ready"} value={String(readySurfaces)} />

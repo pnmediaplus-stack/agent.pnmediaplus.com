@@ -36,7 +36,38 @@ export async function GET(req: Request) {
     }
 
     const runs = await res.json();
-    return NextResponse.json({ runs });
+
+    const contextRowsRes = await fetch(`${supabaseUrl}/rest/v1/workflow_run_context?organization_id=eq.${organizationId}&select=workflow_run_id,status,last_error,updated_at`, {
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Accept-Profile': 'public'
+      },
+      cache: 'no-store'
+    });
+
+    let contexts: Array<{ workflow_run_id: string; status: string | null; last_error: string | null }> = [];
+    if (contextRowsRes.ok) {
+      const contextRows = await contextRowsRes.json();
+      contexts = Array.isArray(contextRows) ? contextRows : [];
+    }
+
+    const contextByRunId = new Map(
+      contexts.map((row) => [row.workflow_run_id, row])
+    );
+
+    const runsWithContext = Array.isArray(runs)
+      ? runs.map((run: any) => {
+          const context = contextByRunId.get(run.id);
+          return {
+            ...run,
+            context_status: context?.status ?? null,
+            context_last_error: context?.last_error ?? null
+          };
+        })
+      : [];
+
+    return NextResponse.json({ runs: runsWithContext });
   } catch (error: any) {
     console.error('API Error:', error);
     return NextResponse.json({ error: 'Failed to fetch workflow runs' }, { status: 500 });
