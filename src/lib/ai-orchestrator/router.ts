@@ -144,9 +144,7 @@ Violating these rules and attempting to do the specialized work yourself will br
         requestIntent === "publish_content" ||
         requestIntent === "plan_campaign";
 
-      if (isProfessionalRequest && message?.content) {
-        return fallbackRegexMatch(text);
-      }
+      
 
       if (message?.tool_calls && message.tool_calls.length > 0) {
         const toolCall = message.tool_calls[0];
@@ -203,6 +201,10 @@ Violating these rules and attempting to do the specialized work yourself will br
         });
 
       } else if (message?.content) {
+        if (isProfessionalRequest && (!message?.tool_calls || message?.tool_calls?.length === 0)) {
+          console.warn("[AI_ORCHESTRATOR_GUARD] Fallback routing activated for text-only professional request.");
+          return fallbackRegexMatch(text);
+        }
         // HARD ARCHITECTURAL GUARD:
         // If the user request demands professional execution (content/image/campaign),
         // we strictly forbid the AI from answering directly via text.
