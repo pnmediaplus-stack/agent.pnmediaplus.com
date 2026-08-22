@@ -2,7 +2,8 @@
 -- This is used for n8n retry loops where the token is already consumed but we still need to prove tenant scope.
 
 create or replace function public.byok_verify_reference_token(
-  p_lease_token text
+  p_lease_token text,
+  p_organization_id uuid default null
 )
 returns table (
   credential_ref text,
@@ -21,7 +22,14 @@ begin
     t.expires_at
   from pn_vault.vault_reference_tokens t
   join pn_vault.vault_credentials c on c.id = t.credential_id
-  where t.token_hash = pn_vault.hash_reference_token(p_lease_token);
+  where t.token_hash = pn_vault.hash_reference_token(p_lease_token)
+  and (
+    p_organization_id is null or exists (
+      select 1 from tenant_integration_vault.tenant_integrations ti
+      where ti.vault_credential_ref = c.credential_ref
+      and ti.organization_id = p_organization_id
+    )
+  );
 end;
 $$;
 

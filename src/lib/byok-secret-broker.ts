@@ -564,18 +564,19 @@ export async function runBrokeredLlmCall(request: ByokLlmProxyRequest, actor: Br
 
 export { authorizeHumanRequest };
 
-export async function verifyReferenceToken(referenceToken: string) {
+export async function verifyReferenceToken(referenceToken: string, organizationId?: string) {
   if (!referenceToken.trim()) {
     throw new ByokBrokerError(400, "MISSING_REFERENCE_TOKEN", "reference_token is required.");
   }
 
   const rows = await callVaultRpc<any>("byok_verify_reference_token", {
-    p_lease_token: referenceToken
+    p_lease_token: referenceToken,
+    p_organization_id: organizationId || null
   });
 
   const token = rows[0];
   if (!token) {
-    throw new ByokBrokerError(404, "TOKEN_NOT_FOUND", "Token does not exist.");
+    throw new ByokBrokerError(404, "TOKEN_NOT_FOUND", "Token does not exist or does not belong to the requested organization.");
   }
 
   return token;

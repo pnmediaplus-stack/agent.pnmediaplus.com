@@ -24,26 +24,13 @@ export async function GET(request: Request) {
 
   try {
     const { verifyReferenceToken } = await import("@/lib/byok-secret-broker");
-    const verifiedToken = await verifyReferenceToken(referenceToken);
+    
+    // Hard DB check: verifies token AND ensures credential_ref actually belongs to this organization in a single RPC
+    const verifiedToken = await verifyReferenceToken(referenceToken, organizationId);
     
     // Check if token has expired
     if (verifiedToken.expires_at && new Date(verifiedToken.expires_at) <= new Date()) {
        return NextResponse.json({ state: "blocked", reason: "REFERENCE_TOKEN_EXPIRED" }, { status: 403 });
-    }
-
-    const supabase = createServiceRoleClient();
-    
-    // Hard DB check: verify the credential_ref actually belongs to this organization
-    const { data: tenantMapping, error: dbError } = await supabase
-      .from('tenant_integrations')
-      .select('id')
-      .eq('organization_id', organizationId)
-      .eq('vault_credential_ref', verifiedToken.credential_ref)
-      .limit(1)
-      .single();
-
-    if (!tenantMapping) {
-      return NextResponse.json({ state: "blocked", reason: "TENANT_SCOPE_MISMATCH" }, { status: 403 });
     }
   } catch (error: any) {
     return NextResponse.json(
