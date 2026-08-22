@@ -138,6 +138,16 @@ Violating these rules and attempting to do the specialized work yourself will br
       const message = data.choices?.[0]?.message;
       const routedIntent = message?.tool_calls?.[0]?.function?.name || null;
 
+      const requestIntent = fallbackRegexMatch(text).intentType;
+      const isProfessionalRequest =
+        requestIntent === "create_content" ||
+        requestIntent === "publish_content" ||
+        requestIntent === "plan_campaign";
+
+      if (isProfessionalRequest && message?.content) {
+        return fallbackRegexMatch(text);
+      }
+
       if (message?.tool_calls && message.tool_calls.length > 0) {
         const toolCall = message.tool_calls[0];
         
@@ -196,9 +206,7 @@ Violating these rules and attempting to do the specialized work yourself will br
         // HARD ARCHITECTURAL GUARD:
         // If the user request demands professional execution (content/image/campaign),
         // we strictly forbid the AI from answering directly via text.
-        if (routedIntent === "create_content" || routedIntent === "publish_content" || routedIntent === "plan_campaign") {
-          return fallbackRegexMatch(text);
-        }
+        
 
         // The AI decided to ask a clarifying question or answer based on read tools
         return {
