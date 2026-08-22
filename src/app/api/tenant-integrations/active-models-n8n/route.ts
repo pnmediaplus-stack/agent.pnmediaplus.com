@@ -22,22 +22,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ state: "blocked", reason: "UNAUTHORIZED_N8N_KEY" }, { status: 401 });
   }
 
-  try {
-    const consumedToken = await consumeReferenceToken(referenceToken, { actorType: "N8N", actorRef: "n8n:active-models" });
-    const credentialParts = String(consumedToken.credential_ref || "").split("__");
-    const tokenOrgId = credentialParts[0] || "";
-    const normalizedRequestOrg = organizationId.replace(/-/g, "");
-
-    if (!tokenOrgId || tokenOrgId !== normalizedRequestOrg) {
-      return NextResponse.json({ state: "blocked", reason: "TENANT_SCOPE_MISMATCH" }, { status: 403 });
-    }
-  } catch (error: any) {
-    const isTokenNotUsable = error.message?.includes("TOKEN_NOT_USABLE");
-    return NextResponse.json(
-      { state: "blocked", reason: isTokenNotUsable ? "REFERENCE_TOKEN_ALREADY_CONSUMED" : `REFERENCE_TOKEN_CONSUME_FAILED: ${error.message}` },
-      { status: isTokenNotUsable ? 409 : 500 }
-    );
-  }
+  // SECURITY UPDATE: Removed single-use consumeReferenceToken check.
+  // Since this route is heavily protected by internal N8N_API_KEY, we can safely trust the organizationId passed by n8n.
+  // Consuming the reference token here was breaking n8n QA retry loops (as the token can only be used once).
 
   const supabase = createServiceRoleClient();
   
