@@ -662,7 +662,7 @@
     },
     {
       "parameters": {
-        "jsCode": "let threadId = null;\nlet contentItemId = 'unknown';\nlet errorMsg = $json.execution?.error?.message || 'Unknown Error';\n\n// 1. Try customData (Best practice for n8n 1.0+)\ntry {\n  threadId = $execution.customData.get('threadId');\n  const cId = $execution.customData.get('contentItemId');\n  if (cId) contentItemId = cId;\n} catch(e) {}\n\n// 2. Try staticData fallback (Bulletproof global share)\nif (!threadId) {\n  try {\n    const staticData = $getWorkflowStaticData('global');\n    const data = staticData[$execution.id];\n    if (data) {\n      if (data.threadId) threadId = data.threadId;\n      if (data.contentItemId) contentItemId = data.contentItemId;\n      delete staticData[$execution.id]; // Cleanup to prevent memory leak\n    }\n  } catch(e) {}\n}\n\nif (!threadId) {\n  try {\n    const pt = $('Parse Text').first();\n    if (pt && pt.json) {\n      if (pt.json.threadId) threadId = pt.json.threadId;\n      if (pt.json.item && pt.json.item.id) contentItemId = pt.json.item.id;\n    }\n  } catch(e) {}\n}\n\nconst bodyStr = '❌ **Tạo bài viết thất bại!**\\n\\nHệ thống gặp lỗi:\\n*' + errorMsg + '*\\n\\nVui lòng thử lại sau.';\n\nreturn {\n  json: {\n    p_thread_id: threadId || '00000000-0000-0000-0000-000000000000',\n    p_idempotency_key: 'err_' + $execution.id,\n    p_sender: 'system',\n    p_intent_type: 'notify_error',\n    p_content: bodyStr,\n    p_metadata: { contentItemId }\n  }\n};"
+        "jsCode": "let threadId = null;\nlet contentItemId = 'unknown';\nlet errorMsg = $('Error Trigger').first().json.execution?.error?.message || 'Unknown Error';\n\ntry {\n  const dbContext = $('Load Workflow Context').first().json[0] || {};\n  if (dbContext.thread_id) threadId = dbContext.thread_id;\n  if (dbContext.content_item_id) contentItemId = dbContext.content_item_id;\n} catch(e) {}\n\nconst bodyStr = '❌ **Tạo bài viết thất bại!**\\n\\nHệ thống gặp lỗi:\\n*' + errorMsg + '*\\n\\nVui lòng thử lại sau.';\n\nreturn {\n  json: {\n    p_thread_id: threadId || '00000000-0000-0000-0000-000000000000',\n    p_idempotency_key: 'err_' + $('Error Trigger').first().json.execution?.id,\n    p_sender: 'system',\n    p_intent_type: 'notify_error',\n    p_content: bodyStr,\n    p_metadata: { contentItemId }\n  }\n};"
       },
       "name": "Format Error",
       "type": "n8n-nodes-base.code",
@@ -764,15 +764,60 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst tId = body.threadId || body.thread_id;\nconst cId = body.contentItemId || body.content_item_id || body.id;\n\nif (tId) {\n  $execution.customData.set('threadId', tId);\n}\nif (cId) {\n  $execution.customData.set('contentItemId', cId);\n}\n\n// Bulletproof fallback using staticData (shared across the workflow)\ntry {\n  const staticData = $getWorkflowStaticData('global');\n  staticData[$execution.id] = {\n    threadId: tId,\n    contentItemId: cId\n  };\n} catch(e) {}\n\nreturn $input.all();"
+        "method": "POST",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"workflow_run_id\": \"{{$execution.id}}\",\n  \"organization_id\": \"{{$json.body.organization_id || $json.organization_id}}\",\n  \"thread_id\": \"{{$json.body.threadId || $json.body.thread_id}}\",\n  \"content_item_id\": \"{{$json.body.contentItemId || $json.body.content_item_id || 'unknown'}}\",\n  \"workflow_name\": \"PHASE3_AUTO_CONTENT_CREATOR\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        },
+        "options": {}
       },
-      "name": "Save Context",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "name": "Upsert Workflow Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
       "position": [
         200,
         200
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?workflow_run_id=eq.{{$execution.id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": false,
+        "options": {}
+      },
+      "name": "Load Workflow Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        200,
+        600
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -1048,7 +1093,7 @@
       "main": [
         [
           {
-            "node": "Save Context",
+            "node": "Upsert Workflow Context",
             "type": "main",
             "index": 0
           }
@@ -1099,7 +1144,7 @@
       "main": [
         [
           {
-            "node": "Format Error",
+            "node": "Load Workflow Context",
             "type": "main",
             "index": 0
           }
@@ -1146,11 +1191,22 @@
         ]
       ]
     },
-    "Save Context": {
+    "Upsert Workflow Context": {
       "main": [
         [
           {
             "node": "Get Item (Webhook)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Workflow Context": {
+      "main": [
+        [
+          {
+            "node": "Format Error",
             "type": "main",
             "index": 0
           }
