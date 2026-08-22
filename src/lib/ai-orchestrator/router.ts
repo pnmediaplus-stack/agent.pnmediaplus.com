@@ -83,6 +83,8 @@ export async function processHumanMessage(text: string, history: any[] = [], org
     return m; // Leave assistant messages as raw text/markdown
   }));
 
+  const forceToolRouting = /viết bài|tạo nội dung|lên bài|đăng bài|publish|campaign|tạo ảnh|viết.*mẫu|viết.*content/i.test(text);
+
   let messages: any[] = [
     {
       role: "system",
@@ -192,6 +194,14 @@ Violating these rules and attempting to do the specialized work yourself will br
         });
 
       } else if (message?.content) {
+        // HARD ARCHITECTURAL GUARD:
+        // If the user request demands professional execution (content/image/campaign),
+        // we strictly forbid the AI from answering directly via text.
+        if (forceToolRouting) {
+          console.warn("[AI_ORCHESTRATOR_GUARD] Model attempted to bypass tool for professional task. Forcing tool routing via fallback.");
+          return fallbackRegexMatch(text);
+        }
+
         // The AI decided to ask a clarifying question or answer based on read tools
         return {
           intentType: "unknown",
