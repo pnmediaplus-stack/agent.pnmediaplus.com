@@ -34,8 +34,8 @@ end;
 $$;
 
 -- Grant access to service_role
-grant execute on function public.byok_verify_reference_token(text) to service_role;
-revoke execute on function public.byok_verify_reference_token(text) from public, anon, authenticated;
+grant execute on function public.byok_verify_reference_token(text, uuid) to service_role;
+revoke execute on function public.byok_verify_reference_token(text, uuid) from public, anon, authenticated;
   
 -- Reload schema  
 NOTIFY pgrst, 'reload schema'; 
