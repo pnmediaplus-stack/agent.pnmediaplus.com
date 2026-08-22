@@ -17,6 +17,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (!selectedFile) {
@@ -412,6 +413,41 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
     }
   };
 
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    // Check if the related target is outside the main container to avoid flickering
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const validTypes = ["image/png", "image/jpeg", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"];
+      if (validTypes.includes(file.type)) {
+        setSelectedFile(file);
+        setUploadError(null);
+      } else {
+        setUploadError("File type not supported via drag and drop.");
+      }
+    }
+  };
+
   const handleSend = async () => {
     if (!value.trim() && !selectedFile) return;
 
@@ -488,7 +524,25 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
   };
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 relative">
+    <div 
+      className={`rounded-2xl border transition-all duration-200 p-4 relative ${
+        isDragging 
+          ? "border-cyan-500 bg-cyan-950/20 shadow-[0_0_15px_rgba(6,182,212,0.3)] border-dashed" 
+          : "border-slate-800 bg-slate-950/70"
+      }`}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center rounded-2xl bg-slate-900/80 backdrop-blur-sm pointer-events-none border-2 border-dashed border-cyan-400">
+          <div className="text-cyan-400 flex flex-col items-center gap-2">
+            <Paperclip className="h-8 w-8 animate-bounce" />
+            <span className="font-semibold tracking-wider uppercase text-sm">Drop file here</span>
+          </div>
+        </div>
+      )}
       {/* Autocomplete Popup */}
       {popupState.isOpen && (filteredSuggestions.length > 0 || (popupState.type === 'campaign' && campaignsStatus !== 'ready') || (popupState.type === 'page' && pagesStatus !== 'ready')) && (
         <div className="absolute bottom-full mb-2 left-4 w-80 max-h-64 overflow-y-auto rounded-xl border border-indigo-500/30 bg-slate-900/95 backdrop-blur-md p-2 shadow-2xl z-50">
