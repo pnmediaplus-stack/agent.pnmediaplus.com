@@ -12,27 +12,31 @@
           ]
         }
       },
-      "id": "e4b9e112-8e7c-4a3d-b284-5a2a11b60b81",
+      "id": "291cb588-c846-4204-b719-1a94b85ea4ba",
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [ 460, 300 ]
+      "position": [
+        304,
+        80
+      ]
     },
     {
       "parameters": {
         "url": "https://agent.pnmediaplus.com/api/cron/process-llm-ledger",
-        "method": "GET",
-        "sendHeaders": false,
-        "sendBody": false,
         "options": {}
       },
-      "id": "b1b7a69c-0c3d-4c3e-8c01-7b7914f6b1e5",
+      "id": "ea923224-adb7-4346-88dd-022cd936dd57",
       "name": "HTTP Request",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [ 680, 300 ]
+      "position": [
+        528,
+        80
+      ]
     }
   ],
+  "pinData": {},
   "connections": {
     "Schedule Trigger": {
       "main": [
@@ -46,9 +50,14 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "f7ab0d2f-1fc9-4f7f-8c3b-55c3c2b11ef2"
+  "versionId": "d742c9d0-17aa-40ee-8fa4-97e5bb2a4bcc",
+  "meta": {
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "id": "KV05cY3jhjkYrVGe",
+  "tags": []
 }

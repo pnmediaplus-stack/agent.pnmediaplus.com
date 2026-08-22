@@ -9,10 +9,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        35952,
-        -3888
+        45616,
+        3296
       ],
-      "id": "26057732-29cf-469d-9523-a4888e5bea5a"
+      "id": "ff2c62b9-7af6-4e09-869a-791770798b81"
     },
     {
       "parameters": {
@@ -36,10 +36,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        35744,
-        -3888
+        45408,
+        3296
       ],
-      "id": "c914a097-4bb7-4bcc-bc0b-c7a5dd713dfd"
+      "id": "edb44596-e4c2-42c2-9169-1ad9b83e8501"
     },
     {
       "parameters": {
@@ -50,10 +50,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        35552,
-        -3888
+        45216,
+        3296
       ],
-      "id": "fdaa0801-8041-483d-89e6-85956c86f757"
+      "id": "2b4ad919-2207-4b61-add5-18d56d22140e"
     },
     {
       "parameters": {
@@ -68,10 +68,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        35360,
-        -3888
+        45024,
+        3296
       ],
-      "id": "2de99fd0-e32b-4388-8502-ff03a7f87e4d"
+      "id": "d7dbd445-f3ee-46ba-9f7c-e084ea833f95"
     },
     {
       "parameters": {
@@ -97,10 +97,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        34512,
-        -4128
+        44176,
+        3056
       ],
-      "id": "351e365d-f991-4abe-a372-3c9c21321055",
+      "id": "4824d0e3-e508-49e4-aa88-652045bf6177",
       "credentials": {
         "httpHeaderAuth": {
           "id": "nlRh1UkRewsK7CCR",
@@ -143,10 +143,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        33280,
-        -4096
+        42944,
+        3088
       ],
-      "id": "373f6da7-47d5-4ebb-91a6-80b11fa47f83",
+      "id": "d805a7d1-a4fd-4995-bea4-a65dcf5ae61a",
       "name": "Preserve Reference Token"
     },
     {
@@ -157,10 +157,10 @@
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
       "position": [
-        33664,
-        -3888
+        43328,
+        3296
       ],
-      "id": "023d1465-d6b5-44a5-aa0d-4c49189abff3"
+      "id": "8d3b06e7-6fa8-4ca5-96a0-d66562c26df8"
     },
     {
       "parameters": {
@@ -177,10 +177,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        33664,
-        -4096
+        43328,
+        3088
       ],
-      "id": "4e47dda6-17ab-4962-b680-c709292849cf"
+      "id": "1bf0b0ff-f8b7-4c48-9630-c30a66a9248a"
     },
     {
       "parameters": {
@@ -213,10 +213,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        33472,
-        -4096
+        43136,
+        3088
       ],
-      "id": "d2e7d663-81c8-4db1-8948-393b47b28f7d"
+      "id": "3593035e-cc22-43b3-9ecb-ff08d61002ce"
     },
     {
       "parameters": {
@@ -239,10 +239,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        35760,
-        -3664
+        45424,
+        3520
       ],
-      "id": "08037adc-60d3-4e51-8f3d-4df84e02a0c1",
+      "id": "0d2109de-2a23-425a-b7af-446c4123c15f",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -258,10 +258,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        35568,
-        -3664
+        45232,
+        3520
       ],
-      "id": "67bec4c6-2a11-4a44-a2b0-6a6e8f9fe2a0"
+      "id": "737afaf0-43e6-4258-bd79-8392e865ef24"
     },
     {
       "parameters": {
@@ -284,10 +284,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        35344,
-        -3664
+        45008,
+        3520
       ],
-      "id": "b22509e2-3fe5-4ba4-8379-7596d54aeb14",
+      "id": "605b64e6-7f38-439c-aa4a-a99f0a30a4fe",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -303,10 +303,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        35136,
-        -3664
+        44800,
+        3520
       ],
-      "id": "d260ae73-64c8-46ec-a576-6e57f700f6df"
+      "id": "b51d5293-2cf7-454f-86e8-e20cd0e076e6"
     },
     {
       "parameters": {
@@ -329,10 +329,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        34928,
-        -3664
+        44592,
+        3520
       ],
-      "id": "dd8e4974-a8bd-4439-a70d-a41e4d4dd428",
+      "id": "fd092890-1c4b-4791-b0ba-fc3a182e9206",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -348,10 +348,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        35136,
-        -3888
+        44800,
+        3296
       ],
-      "id": "e7cd3334-57e5-4816-8039-2c775ac23cd9"
+      "id": "ee2c3a2e-3b22-416d-8dc4-6d34972bd7bb"
     },
     {
       "parameters": {
@@ -366,10 +366,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        34288,
-        -3904
+        43952,
+        3280
       ],
-      "id": "e484c173-4677-4e52-ae8b-ff3aa6884f14"
+      "id": "8572076f-c739-4848-b2f3-759e70f16479"
     },
     {
       "parameters": {
@@ -392,10 +392,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        35120,
-        -4128
+        44784,
+        3056
       ],
-      "id": "de5b511e-2b14-45a2-abfd-9d4fcc3047d8",
+      "id": "86ff4470-3366-41c5-950a-f62ff24a4319",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -411,10 +411,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        34912,
-        -4128
+        44576,
+        3056
       ],
-      "id": "9adb093d-7537-4ea4-b41d-aadb2b95894b"
+      "id": "c9cf5fd5-4936-4567-96f2-7cb66ccebee0"
     },
     {
       "parameters": {
@@ -424,10 +424,10 @@
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
       "position": [
-        34080,
-        -3888
+        43744,
+        3296
       ],
-      "id": "f0da3595-3209-40fc-a3d7-f5a9438d6a04"
+      "id": "6880e375-f7c5-4cc7-9b63-1c423ab9220f"
     },
     {
       "parameters": {
@@ -444,10 +444,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        34080,
-        -4112
+        43744,
+        3072
       ],
-      "id": "8b039bf2-3e33-4883-abc3-40568467de36"
+      "id": "7f24bec8-94fc-41dd-b427-f188ee3f9026"
     },
     {
       "parameters": {
@@ -458,10 +458,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        33888,
-        -4112
+        43552,
+        3072
       ],
-      "id": "ae14b48b-3dfd-43ae-8aba-6989bc45b709"
+      "id": "88172ec9-5e95-4c60-b966-09304624a028"
     },
     {
       "parameters": {
@@ -471,10 +471,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        35968,
-        -3664
+        45632,
+        3520
       ],
-      "id": "88ded49b-3685-4ca5-b3f9-ccc0f53b17e4"
+      "id": "eb8fe568-4530-4abb-bd3a-11f52a56abd0"
     },
     {
       "parameters": {
@@ -491,10 +491,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        36176,
-        -3664
+        45840,
+        3520
       ],
-      "id": "3bae8bd8-8b16-45da-9bf9-2b740b73f72d",
+      "id": "ed58ce65-a012-4c6b-9e9c-034dd16f5067",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -526,10 +526,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        35744,
-        -4112
+        45408,
+        3072
       ],
-      "id": "76021345-9f2e-4a95-a2d8-e4abcdc42541",
+      "id": "f10ce294-1e9f-4255-bbff-a5b5fec846bf",
       "credentials": {
         "httpHeaderAuth": {
           "id": "nlRh1UkRewsK7CCR",
@@ -545,10 +545,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        34720,
-        -4128
+        44384,
+        3056
       ],
-      "id": "ddef21d2-6768-4940-8c54-f3e225daef2f"
+      "id": "1a091619-1d18-4fba-b792-dff5e5df2c4a"
     },
     {
       "parameters": {
@@ -558,10 +558,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        34304,
-        -4128
+        43968,
+        3056
       ],
-      "id": "1b0c6736-6c85-4d8e-983f-65a0b953c4a8"
+      "id": "8b35bebb-6396-4e2e-8cd6-687529bac652"
     },
     {
       "parameters": {
@@ -574,10 +574,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        33056,
-        -4096
+        42720,
+        3088
       ],
-      "id": "78f3c8f6-fdcc-4afb-9563-1bced39140cf",
+      "id": "38397334-08ab-4c5e-bef7-8cdac715ced7",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -595,11 +595,11 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        32864,
-        -4096
+        42048,
+        3088
       ],
       "webhookId": "generate-content-webhook-id",
-      "id": "e8958e6f-16ba-44d2-ae80-c34f85d4f409"
+      "id": "70562a58-c7cb-4018-96a6-7e808cf216e4"
     },
     {
       "parameters": {
@@ -609,10 +609,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        34432,
-        -3904
+        44096,
+        3280
       ],
-      "id": "285cb404-581c-4412-bde9-dce4e208f4e0"
+      "id": "539329b5-e6bc-4b97-9855-99a06a10d593"
     },
     {
       "parameters": {
@@ -629,10 +629,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        34592,
-        -3904
+        44256,
+        3280
       ],
-      "id": "9313af3e-3bf1-4ad6-8772-8680638b8cb7"
+      "id": "616c0d86-c4d0-4628-8f35-ef8e092ef8b6"
     },
     {
       "parameters": {
@@ -643,10 +643,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
-        34640,
-        -3696
+        44304,
+        3488
       ],
-      "id": "c2d30f3b-747d-4e78-ad34-7823c823a61f",
+      "id": "ae2d8c7c-6554-4c71-9d75-a1c6facd16b1",
       "webhookId": "0717134c-ad10-41c2-b687-b53ac2f28fb3"
     },
     {
@@ -655,10 +655,10 @@
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
       "position": [
-        33648,
-        -4640
+        42048,
+        3488
       ],
-      "id": "950d2b2e-c38a-417c-8475-c1daa62e9870"
+      "id": "ae2914f4-1e1c-428b-92b3-edf9b9d460f3"
     },
     {
       "parameters": {
@@ -668,10 +668,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        33856,
-        -4640
+        42480,
+        3488
       ],
-      "id": "a9f2b6de-abc7-433f-ab15-86473344123c"
+      "id": "36447fd6-051f-4bd5-ba98-0bc804859978"
     },
     {
       "parameters": {
@@ -688,10 +688,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        34048,
-        -4640
+        42672,
+        3488
       ],
-      "id": "4c3b842c-dd6e-4fb6-aa5a-04458697f659",
+      "id": "f0df0aa2-4aad-4dce-8c5d-4e6b9c5923a0",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -712,10 +712,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        36352,
-        -3664
+        46016,
+        3520
       ],
-      "id": "48f3cfc2-e7e0-4eef-a730-842b6337f2bd"
+      "id": "077c41a9-3bea-4b69-bc7e-7cc1375a3ad6"
     },
     {
       "parameters": {
@@ -740,44 +740,43 @@
         },
         "options": {}
       },
-      "id": "65956608-9815-465e-b612-58f8f8008ad5",
+      "id": "5054c426-f9f7-4098-b63a-104d011381fd",
       "name": "Has Image in Brief?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        35328,
-        -4128
+        44992,
+        3056
       ]
     },
     {
       "parameters": {
         "jsCode": "const item = $json;\nitem.r2_url = $('Format Prompt').first().json.providedImageUrl;\nif (!item.artifacts) item.artifacts = {};\nitem.artifacts.image = item.r2_url;\nreturn { json: item };"
       },
-      "id": "bb48308e-110a-4e7b-918b-ddc26fc1a14c",
+      "id": "8807627a-4b26-464a-886a-aabdbf199adf",
       "name": "Set Provided Image",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        35952,
-        -4144
+        45616,
+        3040
       ]
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?workflow_run_id=eq.{{$json.workflow_run_id || $('Webhook Trigger').first().json.body.workflow_run_id || $('Webhook Trigger').first().json.workflow_run_id}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendBody": false,
         "options": {}
       },
       "name": "Load Workflow Context",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        200,
-        600
+        42272,
+        3488
       ],
+      "id": "d9654ad6-e447-4b30-9a28-ba6aa5a31457",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -793,9 +792,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        200,
-        100
-      ]
+        42272,
+        3088
+      ],
+      "id": "55783e84-7d5a-40e5-91b1-3b32f6060c4a"
     },
     {
       "parameters": {
@@ -803,9 +803,6 @@
         "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?on_conflict=workflow_run_id",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"workflow_run_id\": \"{{$json.workflow_run_id}}\",\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"workflow_name\": \"PHASE3_AUTO_CONTENT_CREATOR\"\n}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -815,15 +812,19 @@
             }
           ]
         },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"workflow_run_id\": \"{{$json.workflow_run_id}}\",\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"workflow_name\": \"PHASE3_AUTO_CONTENT_CREATOR\"\n}",
         "options": {}
       },
       "name": "Upsert Workflow Context",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        200,
-        300
+        42496,
+        3088
       ],
+      "id": "f6ff07be-6e98-46ef-8325-a35cb076b99e",
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -1241,7 +1242,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "e9f45b2f-186e-4ec7-a508-43eac5500180",
+  "versionId": "579315da-b880-433c-919a-77c11fe04e4b",
   "meta": {
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
   },
