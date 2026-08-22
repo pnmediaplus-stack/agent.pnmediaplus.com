@@ -565,7 +565,7 @@
     },
     {
       "parameters": {
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?id=eq.{{$json.body.contentItemId}}&organization_id=eq.{{$json.body.organization_id}}",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?id=eq.{{$json.content_item_id || $('Webhook Trigger').first().json.body.contentItemId}}&organization_id=eq.{{$json.organization_id || $('Webhook Trigger').first().json.body.organization_id}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -764,7 +764,7 @@
     },
     {
       "parameters": {
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?workflow_run_id=eq.{{$json.workflow_run_id || $('Webhook Trigger').first().json.body.workflow_run_id || $('Webhook Trigger').first().json.workflow_run_id}}",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?payload->>n8n_execution_id=eq.{{$execution.id}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -814,7 +814,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"workflow_run_id\": \"{{$json.workflow_run_id}}\",\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"workflow_name\": \"PHASE3_AUTO_CONTENT_CREATOR\"\n}",
+        "jsonBody": "={\n  \"workflow_run_id\": \"{{$json.workflow_run_id}}\",\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"workflow_name\": \"PHASE3_AUTO_CONTENT_CREATOR\",\n  \"payload\": { \"n8n_execution_id\": \"{{$execution.id}}\" }\n}",
         "options": {}
       },
       "name": "Upsert Workflow Context",
