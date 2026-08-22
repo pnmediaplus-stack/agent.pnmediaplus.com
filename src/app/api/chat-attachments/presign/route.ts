@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     // Tách phần mở rộng của file
     const nameParts = name.split(".");
     const extension = nameParts.length > 1 ? nameParts.pop() : "bin";
-    const objectKey = `chat_uploads/${crypto.randomUUID()}.${extension}`;
+    const objectKey = `chat-attachments/${crypto.randomUUID()}.${extension}`;
 
     // Cấp Presigned URL (chỉ sống trong 300 giây = 5 phút)
     const presignedUrl = await generateR2PresignedUploadUrl(objectKey, 300, type);
