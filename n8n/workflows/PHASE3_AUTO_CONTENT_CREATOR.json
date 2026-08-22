@@ -662,7 +662,7 @@
     },
     {
       "parameters": {
-        "jsCode": "let threadId = null;\nlet organizationId = null;\nlet contentItemId = 'unknown';\nlet workflowRunId = null;\nlet errorMsg = $('Error Trigger').first().json.execution?.error?.message || 'Unknown Error';\nlet contextMissing = false;\n\ntry {\n  const dbContextList = $('Load Workflow Context').first().json;\n  if (dbContextList && dbContextList.length > 0) {\n    const dbContext = dbContextList[0];\n    if (dbContext.thread_id) threadId = dbContext.thread_id;\n    if (dbContext.organization_id) organizationId = dbContext.organization_id;\n    if (dbContext.content_item_id) contentItemId = dbContext.content_item_id;\n    if (dbContext.workflow_run_id) workflowRunId = dbContext.workflow_run_id;\n  }\n} catch (e) {}\n\nif (!workflowRunId) {\n  workflowRunId = 'unknown-' + $('Error Trigger').first().json.execution?.id;\n  contextMissing = true;\n  errorMsg = '[ERROR_PATH_CONTEXT_MISSING] ' + errorMsg;\n}\n\nconst webhookBody = $('Webhook Trigger').first().json.body || $('Webhook Trigger').first().json;\nif (!organizationId) {\n  organizationId = webhookBody.organization_id || webhookBody.organizationId || null;\n}\n\nreturn {\n  json: {\n    workflow_run_id: workflowRunId,\n    organization_id: organizationId,\n    thread_id: threadId,\n    content_item_id: contentItemId,\n    error_message: errorMsg,\n    metadata: { contentItemId, contextMissing, workflowRunId }\n  }\n};"
+        "jsCode": "let threadId = null;\nlet organizationId = null;\nlet contentItemId = 'unknown';\nlet workflowRunId = null;\nlet errorMsg = $('Error Trigger').first().json.execution?.error?.message || 'Unknown Error';\nlet contextMissing = false;\n\ntry {\n  const dbContextList = $('Load Workflow Context').first().json;\n  if (dbContextList && dbContextList.length > 0) {\n    const dbContext = dbContextList[0];\n    if (dbContext.thread_id) threadId = dbContext.thread_id;\n    if (dbContext.organization_id) organizationId = dbContext.organization_id;\n    if (dbContext.content_item_id) contentItemId = dbContext.content_item_id;\n    if (dbContext.workflow_run_id) workflowRunId = dbContext.workflow_run_id;\n  }\n} catch (e) {}\n\n\n\nconst webhookBody = $('Webhook Trigger').first().json.body || $('Webhook Trigger').first().json;\nif (!organizationId) {\n  organizationId = webhookBody.organization_id || webhookBody.organizationId || null;\n}\n\nreturn {\n  json: {\n    workflow_run_id: workflowRunId,\n    organization_id: organizationId,\n    thread_id: threadId,\n    content_item_id: contentItemId,\n    error_message: errorMsg,\n    metadata: { contentItemId, contextMissing, workflowRunId }\n  }\n};"
       },
       "name": "Format Error",
       "type": "n8n-nodes-base.code",
@@ -764,7 +764,7 @@
     },
     {
       "parameters": {
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?payload->>n8n_execution_id=eq.{{$execution.id}}",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?workflow_run_id=eq.{{$json.workflow_run_id || $('Webhook Trigger').first().json.body.workflow_run_id}}&select=workflow_run_id,organization_id,thread_id,content_item_id,status,last_error,payload",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -814,7 +814,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"workflow_run_id\": \"{{$json.workflow_run_id}}\",\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"workflow_name\": \"PHASE3_AUTO_CONTENT_CREATOR\",\n  \"payload\": { \"n8n_execution_id\": \"{{$execution.id}}\" }\n}",
+        "jsonBody": "={\n  \"workflow_run_id\": \"{{$json.workflow_run_id}}\",\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"workflow_name\": \"PHASE3_AUTO_CONTENT_CREATOR\",\n  \"payload\": { \"source\": \"PHASE3_AUTO_CONTENT_CREATOR\" }\n}",
         "options": {}
       },
       "name": "Upsert Workflow Context",
