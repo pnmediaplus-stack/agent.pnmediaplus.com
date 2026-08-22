@@ -208,10 +208,11 @@ export async function processHumanMessage(text: string, history: any[] = [], org
 function fallbackRegexMatch(text: string): IntentResult {
   const lowerBody = text.toLowerCase();
   
-  if (lowerBody.includes('đăng nội dung') || lowerBody.includes('đăng bài') || lowerBody.includes('publish')) {
-    return { intentType: 'publish_content' };
-  } else if (lowerBody.includes('tạo nội dung') || lowerBody.includes('viết bài') || lowerBody.includes('lên bài')) {
+  // create_content trumps publish_content if both are mentioned ("viết bài để đăng")
+  if (/viết.*bài|tạo.*nội dung|lên.*bài|viết.*mẫu|viết.*content/i.test(lowerBody)) {
     return { intentType: 'create_content' };
+  } else if (lowerBody.includes('đăng nội dung') || lowerBody.includes('đăng bài') || lowerBody.includes('publish') || lowerBody.includes('đăng lên')) {
+    return { intentType: 'publish_content' };
   } else if (lowerBody.includes('chiến dịch') || lowerBody.includes('campaign')) {
     return { intentType: 'plan_campaign' };
   }

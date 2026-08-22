@@ -3,7 +3,7 @@ export const AI_ORCHESTRATOR_TOOLS = [
     type: "function",
     function: {
       name: "create_content",
-      description: "Trigger the creation of marketing content or viral research for a campaign or topic.",
+      description: "Trigger the creation of marketing content or viral research for a campaign or topic. MUST be called whenever the user asks to write (viết), draft, create a post, or asks for a sample article (bài mẫu).",
       parameters: {
         type: "object",
         properties: {
