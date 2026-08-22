@@ -34,14 +34,13 @@ export async function GET(request: Request) {
     const supabase = createServiceRoleClient();
     
     // Hard DB check: verify the credential_ref actually belongs to this organization
-    const { data: tenantMapping } = await supabase
-      .schema('tenant_integration_vault')
+    const { data: tenantMapping, error: dbError } = await supabase
       .from('tenant_integrations')
       .select('id')
       .eq('organization_id', organizationId)
       .eq('vault_credential_ref', verifiedToken.credential_ref)
       .limit(1)
-      .maybeSingle();
+      .single();
 
     if (!tenantMapping) {
       return NextResponse.json({ state: "blocked", reason: "TENANT_SCOPE_MISMATCH" }, { status: 403 });
