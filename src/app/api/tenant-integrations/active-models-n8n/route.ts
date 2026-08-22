@@ -22,9 +22,28 @@ export async function GET(request: Request) {
     return NextResponse.json({ state: "blocked", reason: "UNAUTHORIZED_N8N_KEY" }, { status: 401 });
   }
 
-  // SECURITY UPDATE: Removed single-use consumeReferenceToken check.
-  // Since this route is heavily protected by internal N8N_API_KEY, we can safely trust the organizationId passed by n8n.
-  // Consuming the reference token here was breaking n8n QA retry loops (as the token can only be used once).
+  try {
+    const { verifyReferenceToken } = await import("@/lib/byok-secret-broker");
+    const verifiedToken = await verifyReferenceToken(referenceToken);
+    
+    // Check if token has expired
+    if (verifiedToken.expires_at && new Date(verifiedToken.expires_at) <= new Date()) {
+       return NextResponse.json({ state: "blocked", reason: "REFERENCE_TOKEN_EXPIRED" }, { status: 403 });
+    }
+
+    const credentialParts = String(verifiedToken.credential_ref || "").split("__");
+    const tokenOrgId = credentialParts[0] || "";
+    const normalizedRequestOrg = organizationId.replace(/-/g, "");
+
+    if (!tokenOrgId || tokenOrgId !== normalizedRequestOrg) {
+      return NextResponse.json({ state: "blocked", reason: "TENANT_SCOPE_MISMATCH" }, { status: 403 });
+    }
+  } catch (error: any) {
+    return NextResponse.json(
+      { state: "blocked", reason: `REFERENCE_TOKEN_VERIFY_FAILED: ${error.message}` },
+      { status: 403 }
+    );
+  }
 
   const supabase = createServiceRoleClient();
   

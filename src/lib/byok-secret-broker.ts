@@ -563,3 +563,20 @@ export async function runBrokeredLlmCall(request: ByokLlmProxyRequest, actor: Br
 }
 
 export { authorizeHumanRequest };
+\n
+export async function verifyReferenceToken(referenceToken: string) {
+  if (!referenceToken.trim()) {
+    throw new ByokBrokerError(400, "MISSING_REFERENCE_TOKEN", "reference_token is required.");
+  }
+
+  const rows = await callVaultRpc<any>("byok_verify_reference_token", {
+    p_lease_token: referenceToken
+  });
+
+  const token = rows[0];
+  if (!token) {
+    throw new ByokBrokerError(404, "TOKEN_NOT_FOUND", "Token does not exist.");
+  }
+
+  return token;
+}
