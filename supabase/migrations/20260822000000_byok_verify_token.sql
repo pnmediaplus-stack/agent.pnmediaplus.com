@@ -1,6 +1,8 @@
 -- Migration to allow verifying a reference token's scope without consuming it
 -- This is used for n8n retry loops where the token is already consumed but we still need to prove tenant scope.
 
+drop function if exists public.byok_verify_reference_token(text);
+
 create or replace function public.byok_verify_reference_token(
   p_lease_token text,
   p_organization_id uuid default null
