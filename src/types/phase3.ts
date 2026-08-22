@@ -20,6 +20,12 @@ export type Phase3Metric = {
 export type Phase3DashboardData = {
   surfaces: Phase3Surface[];
   metrics: Phase3Metric[];
+  latestWorkflowContext?: {
+    workflowRunId: string | null;
+    status: string | null;
+    lastError: string | null;
+    updatedAt: string | null;
+  } | null;
 };
 
 export type Phase3DashboardLoadResult = {
