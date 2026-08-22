@@ -563,7 +563,7 @@ export async function runBrokeredLlmCall(request: ByokLlmProxyRequest, actor: Br
 }
 
 export { authorizeHumanRequest };
-\n
+
 export async function verifyReferenceToken(referenceToken: string) {
   if (!referenceToken.trim()) {
     throw new ByokBrokerError(400, "MISSING_REFERENCE_TOKEN", "reference_token is required.");
