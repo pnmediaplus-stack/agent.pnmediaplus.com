@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { consumeReferenceToken } from "@/lib/byok-secret-broker";
+
 import { resolveLaneProviderBinding } from "@/lib/lane-provider-binding";
 import { createServiceRoleClient } from "@/lib/supabase-server";
 
@@ -31,11 +31,19 @@ export async function GET(request: Request) {
        return NextResponse.json({ state: "blocked", reason: "REFERENCE_TOKEN_EXPIRED" }, { status: 403 });
     }
 
-    const credentialParts = String(verifiedToken.credential_ref || "").split("__");
-    const tokenOrgId = credentialParts[0] || "";
-    const normalizedRequestOrg = organizationId.replace(/-/g, "");
+    const supabase = createServiceRoleClient();
+    
+    // Hard DB check: verify the credential_ref actually belongs to this organization
+    const { data: tenantMapping } = await supabase
+      .schema('tenant_integration_vault')
+      .from('tenant_integrations')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .eq('vault_credential_ref', verifiedToken.credential_ref)
+      .limit(1)
+      .maybeSingle();
 
-    if (!tokenOrgId || tokenOrgId !== normalizedRequestOrg) {
+    if (!tenantMapping) {
       return NextResponse.json({ state: "blocked", reason: "TENANT_SCOPE_MISMATCH" }, { status: 403 });
     }
   } catch (error: any) {
