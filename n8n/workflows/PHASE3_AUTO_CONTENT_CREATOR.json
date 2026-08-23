@@ -720,7 +720,7 @@
         "options": {}
       },
       "id": "5054c426-f9f7-4098-b63a-104d011381fd",
-      "name": "Has Image in Brief?",
+      "name": "Should Use Provided Image?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
@@ -970,7 +970,7 @@
       "main": [
         [
           {
-            "node": "Has Image in Brief?",
+            "node": "Should Use Provided Image?",
             "type": "main",
             "index": 0
           }
@@ -1156,24 +1156,6 @@
         ]
       ]
     },
-    "Has Image in Brief?": {
-      "main": [
-        [
-          {
-            "node": "Set Provided Image",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "AI Broker (Image)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Set Provided Image": {
       "main": [
         [
@@ -1212,6 +1194,24 @@
         [
           {
             "node": "Upsert Workflow Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Use Provided Image?": {
+      "main": [
+        [
+          {
+            "node": "Set Provided Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Broker (Image)",
             "type": "main",
             "index": 0
           }
