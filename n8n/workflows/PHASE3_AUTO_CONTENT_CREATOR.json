@@ -465,45 +465,6 @@
     },
     {
       "parameters": {
-        "jsCode": "const parsed = $('Parse Text').first().json;\nconst visual = $('Extract Visual').first().json;\nconst captionNode = $('Extract Caption').first().json;\nconst webhookItem = $('Webhook Trigger').first().json.body || $('Webhook Trigger').first().json;\nconst threadId = webhookItem.threadId;\n\nconst research = parsed.textContent?.agent_1_research_packet || '';\nconst caption =\n  parsed.textContent?.agent_2_publish_ready_caption ||\n  captionNode.artifacts?.caption ||\n  '';\nconst imageUrl = $('Map R2 URL').item.json.r2_url || '';\n\nconst outboxId = $('Poll Image Status').first().json.outbox_id || '';\nconst taskId = $('AI Broker (Image)').item.json.taskId;\nconst providerCode = $('AI Broker (Image)').item.json.provider;\nconst usageId = $('AI Broker (Image)').item.json.usage_id;\nconst modelCode = $('AI Broker (Image)').item.json.model;\n\nconst contentItemId = $('Parse Text').first().json.item.id;\nconst bodyStr = `⏳ **Nội dung đã tạo xong. Đang chuyển sang Trưởng phòng AI QA kiểm định...**\\n\\n**ID Bài Viết:** \\`${contentItemId}\\`\\n\\n![Generated Image](${imageUrl})\\n\\n**Caption:**\\n${caption}\\n\\n**Research Packet:**\\n\\`\\`\\`json\\n${JSON.stringify(research, null, 2)}\\n\\`\\`\\``;\n\nif (!outboxId) throw new Error('MISSING_OUTBOX_ID_FOR_FORMAT_OUTPUT');\n\nreturn {\n  json: {\n    p_thread_id: threadId,\n    p_idempotency_key: outboxId,\n    p_sender: 'agent',\n    p_intent_type: 'image_generation_completed',\n    p_content: bodyStr,\n    p_metadata: {\n      task_id: taskId,\n      provider_code: providerCode,\n      model_code: modelCode,\n      usage_id: usageId,\n      outbox_id: outboxId,\n      result_image_url: imageUrl\n    }\n  }\n};"
-      },
-      "name": "Format Output",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        45632,
-        3520
-      ],
-      "id": "eb8fe568-4530-4abb-bd3a-11f52a56abd0"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/rpc/phase075_n8n_append_chat_message",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{JSON.stringify($json)}}",
-        "options": {}
-      },
-      "name": "Push to Chat DB",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        45840,
-        3520
-      ],
-      "id": "ed58ce65-a012-4c6b-9e9c-034dd16f5067",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
-        }
-      }
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/phase2/ai-broker",
         "authentication": "genericCredentialType",
