@@ -1,47 +1,62 @@
-# Migrate Chat Attachments to Cloudflare R2
+# Canonical Visual Assets Contract
 
-Mục tiêu: Chuyển đổi toàn bộ lưu trữ file đính kèm trong khung chat và file do AI (Kie) tạo ra từ Supabase Storage sang Cloudflare R2. Đồng thời, giải quyết triệt để lỗi Facebook không đọc được ảnh bằng cách thiết lập cơ chế URL Public an toàn (bỏ giới hạn 5 phút và bỏ Auth chặn Facebook).
+Mục tiêu: chuẩn hóa toàn bộ pipeline ảnh thành một contract duy nhất là `visual_assets`, để mọi tầng từ Chat UI, `chat-actions`, n8n, QA, đến Facebook publish đều đọc và ghi cùng một kiểu dữ liệu. Không thêm storage migration vào plan này.
 
-## User Review Required
-> [!IMPORTANT]
-> - Cloudflare R2 mặc định là Private. Nếu bạn đã có **Public Custom Domain** cho R2, hệ thống sẽ trả về link trực tiếp. 
-> - Nếu chưa có Public Domain, mình sẽ tạo một endpoint `/api/assets/public` có chức năng Redirect 302 sang Link Presigned của R2 (không cần token xác thực). Facebook hỗ trợ Redirect nên vẫn sẽ lấy được ảnh bình thường.
+## Phạm vi
+- Chuẩn hóa tên field cho ảnh sang `visual_assets` end-to-end.
+- Loại bỏ các tên trung gian dễ gây lệch contract như `image_url`, `image_urls`, `providedImageUrl`, `providedImageUrls`, `artifacts.image`, `artifacts.images` khi đi qua ranh giới hệ thống.
+- Giữ nguyên hạ tầng lưu file hiện tại trong plan này. Nếu cần đổi storage sau, sẽ tách thành plan riêng.
+
+## Contract Mục Tiêu
+`visual_assets` là mảng duy nhất mô tả ảnh của một content item.
+- Mỗi phần tử là một object có tối thiểu: `url`, `type`, `source`, `batch_id`.
+- `type` phân biệt ảnh upload từ user, ảnh AI tạo, hoặc ảnh tham chiếu.
+- `source` ghi rõ từ đâu sinh ra asset để debug và audit.
 
 ## Proposed Changes
 
 ---
 
-### Cloudflare R2 Client
+### Frontend Chat
 
-#### [MODIFY] [r2-client.ts](file:///d:/Projects/agent.pnmediaplus.com/src/lib/r2-client.ts)
-- Bổ sung hàm `uploadBufferToR2(objectKey, buffer, contentType)` để Server có thể upload thẳng file bytes lên R2 mà không cần phải đi vòng qua Presigned Upload URL.
-- Bổ sung hàm lấy Public URL: Trả về link Custom Domain nếu có, hoặc trả về link gọi tới proxy public.
+#### [MODIFY] [src/components/chat/ChatComposer.tsx](file:///d:/Projects/agent.pnmediaplus.com/src/components/chat/ChatComposer.tsx)
+- Chỉ lưu một canonical mảng `visual_assets` ở state submit.
+- Khi user chọn nhiều file, tất cả file hợp lệ đều được map vào `visual_assets`.
+- Không còn xuất ra nhiều biến song song cho cùng một ý nghĩa.
 
----
+### Chat Actions
 
-### Chat Attachments API
+#### [MODIFY] [src/app/actions/chat-actions.ts](file:///d:/Projects/agent.pnmediaplus.com/src/app/actions/chat-actions.ts)
+- Đảm bảo payload gửi sang AI Orchestrator và n8n luôn mang `visual_assets`.
+- Khi router map intent, không tạo thêm field ảnh tạm khác ngoài contract chuẩn.
 
-#### [MODIFY] [route.ts](file:///d:/Projects/agent.pnmediaplus.com/src/app/api/chat-attachments/route.ts)
-- Gỡ bỏ hoàn toàn logic fetch sang REST API của Supabase Storage (`/storage/v1/object/...`).
-- Gỡ bỏ logic tạo Signed URL 5 phút.
-- Gắn hàm `uploadBufferToR2` vừa tạo để lưu file đính kèm của người dùng thẳng lên R2.
-- Trả về đường dẫn public (hoặc proxy public) để Chat UI render ổn định.
+### AI Orchestrator
 
----
+#### [MODIFY] [src/lib/ai-orchestrator/router.ts](file:///d:/Projects/agent.pnmediaplus.com/src/lib/ai-orchestrator/router.ts)
+- Duy trì routing image action theo flag quyết định hiện có.
+- Chuẩn hóa payload để output xuống n8n chỉ còn một field ảnh canonical là `visual_assets`.
 
-### Public Asset Proxy (New)
+### Phase 3 n8n Workflow
 
-#### [NEW] [route.ts](file:///d:/Projects/agent.pnmediaplus.com/src/app/api/assets/public/route.ts)
-- Tạo một API route mới không bị kiểm duyệt bởi `verifyActionAuth()` (cho phép Facebook cào data).
-- Route này sẽ nhận `key` và kiểm tra bảo mật (chỉ cho phép truy xuất các thư mục được public như `campaign-media` hoặc `chat-attachments`).
-- Tự động sinh R2 Presigned URL (1 tiếng) và trả về `302 Redirect`. Bot Facebook sẽ đi theo Redirect này để lấy ảnh.
+#### [MODIFY] [n8n/workflows/PHASE3_AUTO_CONTENT_CREATOR.json](file:///d:/Projects/agent.pnmediaplus.com/n8n/workflows/PHASE3_AUTO_CONTENT_CREATOR.json)
+- `Format Prompt` chỉ đọc từ `visual_assets`.
+- `Set Provided Image` được đổi thành bước normalize `visual_assets`.
+- `Submit Visual` ghi xuống DB theo batch contract thống nhất.
+- Bỏ các biến ảnh cũ sau khi đã có canonical field.
+
+### Phase 4 Facebook Publish
+
+#### [MODIFY] [n8n/workflows/WORKFLOW-C_FB_PUBLISH_EXECUTOR.json](file:///d:/Projects/agent.pnmediaplus.com/n8n/workflows/WORKFLOW-C_FB_PUBLISH_EXECUTOR.json)
+- `Extract FB Assets` chỉ đọc `visual_assets`.
+- `Validate FB Publish` và `Callback Success` nhận cùng một payload chuẩn, không còn phụ thuộc `image_url` đơn lẻ.
 
 ## Verification Plan
 
 ### Automated Tests
-- Build lại project (TypeScript validation) không báo lỗi.
+- `npx tsc --noEmit` phải xanh.
+- JSON workflow của cả 2 file n8n phải parse được.
 
 ### Manual Verification
-1. Gắn thử một file ảnh vào khung chat -> File tải lên thành công, link ảnh được render ổn định.
-2. Kiểm tra Bucket R2 trên Cloudflare Dashboard -> Ảnh chat đã xuất hiện trong R2.
-3. Kích hoạt lại lệnh `/publish` một content bất kỳ của Kie -> Link ảnh được truyền sang Facebook thành công và không bị báo lỗi `Missing or invalid image file`.
+1. Upload 2 ảnh từ Chat UI và xác nhận payload đi qua các tầng chỉ còn `visual_assets`.
+2. Chạy Phase 3 và kiểm tra DB lưu đủ toàn bộ ảnh theo cùng batch.
+3. Chạy Phase 4 publish và xác nhận Facebook nhận đúng tập ảnh, không rơi về ảnh đầu tiên בלבד.

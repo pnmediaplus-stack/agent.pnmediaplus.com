@@ -1,0 +1,10 @@
+const fs = require('fs');
+const file = 'D:/Projects/agent.pnmediaplus.com/n8n/workflows/PHASE3_AUTO_CONTENT_CREATOR.json';
+const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+const node = data.nodes.find(n => n.name === 'Format Prompt');
+const oldBlock = 'PHYSICAL LOGIC & ANATOMY:\\n- ALWAYS specify correct physical logic and perspective for technology (laptops, phones, monitors).\\n- Explicitly instruct: "Laptops and phones must be held or positioned correctly. The screen must face the user, NOT the camera or the back of the device. Keyboards must face up."\\n- Prevent anatomical AI errors (e.g., six fingers, floating limbs) by requesting realistic poses and lighting.\\n\\nVISUAL AESTHETIC:\n- TEXT CONSTRAINT';
+const newBlock = 'PHYSICAL LOGIC & ANATOMY (ONLY IF THE IMAGE INCLUDES A PHONE, LAPTOP, OR MONITOR):\\n- ONLY apply these rules when the scene contains a phone, laptop, or monitor.\\n- Explicitly instruct: "If a phone, laptop, or monitor appears, it must be held or positioned correctly. The screen must face the user, NOT the camera or the back of the device. Keyboards must face up. Do not invert or mirror the device."\\n- Prevent anatomical AI errors (e.g., six fingers, floating limbs) by requesting realistic poses, hands, and lighting.\\n\\nVISUAL AESTHETIC:\n- TEXT CONSTRAINT';
+if (!node.parameters.jsCode.includes(oldBlock)) throw new Error('Old block not found');
+node.parameters.jsCode = node.parameters.jsCode.replace(oldBlock, newBlock);
+fs.writeFileSync(file, JSON.stringify(data, null, 2));
+console.log('patched');

@@ -166,7 +166,7 @@ async function issueAutoContentReferenceToken(organizationId: string) {
   return leaseToken;
 }
 
-export async function sendChatMessage(threadId: string, body: string) {
+export async function sendChatMessage(threadId: string, body: string, visual_assets: string[] = []) {
   let intentType: import('@/types/state').ChatIntentType = "unknown";
   
   const trimmedBody = body.trim();
@@ -368,7 +368,8 @@ export async function sendChatMessage(threadId: string, body: string) {
                organizationId, 
                briefText, 
                auth.email, 
-               resolvedCampaign ? resolvedCampaign.id : null
+               resolvedCampaign ? resolvedCampaign.id : null,
+               visual_assets
              );
              
              if (newItemResult.error || !newItemResult.data) {

@@ -71,7 +71,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     return latest?.body ?? (tChat("chat.summary.latestFallback") ?? "Latest message will appear here.");
   }, [messages, tChat]);
 
-  async function handleSubmit(text: string) {
+  async function handleSubmit(text: string, visual_assets: string[] = []) {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
 
@@ -90,7 +90,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     setMessages((prev) => [...prev, optimisticMessage]);
 
     try {
-      const result = await sendChatMessage(thread.id, trimmed);
+      const result = await sendChatMessage(thread.id, trimmed, visual_assets);
       // If result.error exists, it is a fatal server error
       if (result?.error) {
         throw new Error(result.error);
