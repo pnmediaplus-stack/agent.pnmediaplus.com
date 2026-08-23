@@ -33,10 +33,11 @@ export async function POST(request: Request) {
 
   for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
     try {
+      const currentRequestId = attempt === 1 ? requestId : `${requestId}_retry_${attempt}`;
       const responseData = await invokeLlm(payload, {
         actorId: 'n8n_ai_broker',
         tenantId: payload.tenant_id,
-        requestId,
+        requestId: currentRequestId,
         async: payload.async === true
       });
 

@@ -623,7 +623,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nlet threadId = null;\nlet organizationId = null;\nlet contentItemId = 'unknown';\nlet workflowRunId = null;\nlet errorMsg = $('Error Trigger').first().json.execution?.error?.message || 'Unknown Error';\n\ntry {\n  const dbContextList = $('Load Workflow Context').first().json;\n  if (dbContextList && dbContextList.length > 0) {\n    const dbContext = dbContextList[0];\n    if (dbContext.thread_id) threadId = dbContext.thread_id;\n    if (dbContext.organization_id) organizationId = dbContext.organization_id;\n    if (dbContext.content_item_id) contentItemId = dbContext.content_item_id;\n    if (dbContext.workflow_run_id) workflowRunId = dbContext.workflow_run_id;\n  }\n} catch (e) {}\n\nreturn {\n  json: {\n    workflow_run_id: workflowRunId,\n    organization_id: organizationId,\n    thread_id: threadId,\n    content_item_id: contentItemId,\n    error_message: errorMsg,\n    metadata: { contentItemId, workflowRunId }\n  }\n};"
+        "jsCode": "\nlet threadId = $json.execution?.customData?.thread_id || null;\nlet organizationId = $json.execution?.customData?.organization_id || null;\nlet contentItemId = $json.execution?.customData?.content_item_id || 'unknown';\nlet workflowRunId = $json.execution?.customData?.workflow_run_id || 'unknown';\nlet errorMsg = $('Error Trigger').first().json.execution?.error?.message || 'Unknown Error';\n\ntry {\n  const dbContextList = $('Load Workflow Context').first().json;\n  if (dbContextList && dbContextList.length > 0) {\n    const dbContext = dbContextList[0];\n    if (!threadId && dbContext.thread_id) threadId = dbContext.thread_id;\n    if (!organizationId && dbContext.organization_id) organizationId = dbContext.organization_id;\n    if (contentItemId === 'unknown' && dbContext.content_item_id) contentItemId = dbContext.content_item_id;\n    if (workflowRunId === 'unknown' && dbContext.workflow_run_id) workflowRunId = dbContext.workflow_run_id;\n  }\n} catch (e) {}\n\nreturn {\n  json: {\n    workflow_run_id: workflowRunId,\n    organization_id: organizationId,\n    thread_id: threadId,\n    content_item_id: contentItemId,\n    error_message: errorMsg,\n    metadata: { contentItemId, workflowRunId }\n  }\n};"
       },
       "name": "Format Error",
       "type": "n8n-nodes-base.code",
@@ -743,10 +743,12 @@
     },
     {
       "parameters": {
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?workflow_run_id=eq.{{ $if($('Set Workflow Run ID').isExecuted, $('Set Workflow Run ID').first().json.workflow_run_id, 'unexecuted') }}&select=workflow_run_id,organization_id,thread_id,content_item_id,status,last_error,payload",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?workflow_run_id=eq.{{ $json.execution?.customData?.workflow_run_id || 'fallback' }}&select=workflow_run_id,organization_id,thread_id,content_item_id,status,last_error,payload",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "options": {}
+        "options": {
+          "alwaysOutputData": true
+        }
       },
       "name": "Load Workflow Context",
       "type": "n8n-nodes-base.httpRequest",
@@ -765,7 +767,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst workflow_run_id = body.workflow_run_id;\nconst organization_id = body.organization_id;\nconst thread_id = body.threadId || body.thread_id;\nconst content_item_id = body.contentItemId || body.content_item_id || body.id || 'unknown';\n\nreturn { json: { ...$input.first().json, workflow_run_id: workflow_run_id, organization_id, thread_id, content_item_id } };"
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst workflow_run_id = body.workflow_run_id;\nconst organization_id = body.organization_id;\nconst thread_id = body.threadId || body.thread_id;\nconst content_item_id = body.contentItemId || body.content_item_id || body.id || 'unknown';\n\ntry {\n  $execution.customData.set('workflow_run_id', workflow_run_id);\n  $execution.customData.set('organization_id', organization_id);\n  $execution.customData.set('thread_id', thread_id);\n  $execution.customData.set('content_item_id', content_item_id);\n} catch (e) {}\n\nreturn { json: { ...$input.first().json, workflow_run_id: workflow_run_id, organization_id, thread_id, content_item_id } };"
       },
       "name": "Set Workflow Run ID",
       "type": "n8n-nodes-base.code",
