@@ -173,6 +173,9 @@ Violating these rules and attempting to do the specialized work yourself will br
 
         // --- WRITE / ACTION TOOLS (Terminate loop) ---
         if (funcName === "create_content") {
+          if (!args.image_action || !['use_provided', 'generate_new'].includes(args.image_action)) {
+             return { intentType: "unknown", agentReply: "Lỗi AI: Thiếu hoặc sai tham số image_action bắt buộc trong lệnh tạo nội dung." };
+          }
           const flag = args.image_action === 'use_provided' ? '--image-action=use_provided' : '--image-action=generate_new';
           return {
             intentType: "create_content",
