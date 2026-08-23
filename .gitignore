@@ -10,3 +10,4 @@ yarn-debug.log*
 yarn-error.log*
 docs/NODE.txt
 *.tsbuildinfo
+scratch/
