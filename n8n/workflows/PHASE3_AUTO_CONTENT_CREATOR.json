@@ -623,7 +623,7 @@
     },
     {
       "parameters": {
-        "jsCode": "let threadId = null;\nlet organizationId = null;\nlet contentItemId = 'unknown';\nlet workflowRunId = null;\nlet errorMsg = $('Error Trigger').first().json.execution?.error?.message || 'Unknown Error';\nlet contextMissing = false;\n\ntry {\n  const dbContextList = $('Load Workflow Context').first().json;\n  if (dbContextList && dbContextList.length > 0) {\n    const dbContext = dbContextList[0];\n    if (dbContext.thread_id) threadId = dbContext.thread_id;\n    if (dbContext.organization_id) organizationId = dbContext.organization_id;\n    if (dbContext.content_item_id) contentItemId = dbContext.content_item_id;\n    if ($json.workflow_run_id) workflowRunId = $json.workflow_run_id;\n  }\n} catch (e) {}\n\n\n\n\n\n\ntry {\n  const webhookBody = $('Webhook Trigger').first().json.body;\n  if (!threadId && webhookBody.threadId) threadId = webhookBody.threadId;\n  if (!organizationId && webhookBody.organization_id) organizationId = webhookBody.organization_id;\n  if (contentItemId === 'unknown' && webhookBody.contentItemId) contentItemId = webhookBody.contentItemId;\n  if (!workflowRunId && webhookBody.workflow_run_id) workflowRunId = webhookBody.workflow_run_id;\n} catch (e) {}\n\nreturn {\n  json: {\n    workflow_run_id: workflowRunId,\n    organization_id: organizationId,\n    thread_id: threadId,\n    content_item_id: contentItemId,\n    error_message: errorMsg,\n    metadata: { contentItemId, contextMissing, workflowRunId }\n  }\n};"
+        "jsCode": "\nlet threadId = null;\nlet organizationId = null;\nlet contentItemId = 'unknown';\nlet workflowRunId = $json.execution?.id ? 'wf_run_' + $json.execution.id : 'unknown';\nlet errorMsg = $('Error Trigger').first().json.execution?.error?.message || 'Unknown Error';\nlet contextMissing = false;\n\ntry {\n  const dbContextList = $('Load Workflow Context').first().json;\n  if (dbContextList && dbContextList.length > 0) {\n    const dbContext = dbContextList[0];\n    if (dbContext.thread_id) threadId = dbContext.thread_id;\n    if (dbContext.organization_id) organizationId = dbContext.organization_id;\n    if (dbContext.content_item_id) contentItemId = dbContext.content_item_id;\n    if (dbContext.workflow_run_id) workflowRunId = dbContext.workflow_run_id;\n  } else {\n    contextMissing = true;\n  }\n} catch (e) {\n  contextMissing = true;\n}\n\n// Gatekeeper strict contract: do not touch Webhook Trigger here.\n\nreturn {\n  json: {\n    workflow_run_id: workflowRunId,\n    organization_id: organizationId,\n    thread_id: threadId,\n    content_item_id: contentItemId,\n    error_message: errorMsg,\n    metadata: { contentItemId, contextMissing, workflowRunId }\n  }\n};\n"
       },
       "name": "Format Error",
       "type": "n8n-nodes-base.code",
@@ -743,7 +743,7 @@
     },
     {
       "parameters": {
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?workflow_run_id=eq.{{ $('Webhook Trigger').first().json.body.workflow_run_id || $json.workflow_run_id }}&select=workflow_run_id,organization_id,thread_id,content_item_id,status,last_error,payload",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?workflow_run_id=eq.{{ $('Set Workflow Run ID').first().json.workflow_run_id || $json.execution.id }}&select=workflow_run_id,organization_id,thread_id,content_item_id,status,last_error,payload",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
