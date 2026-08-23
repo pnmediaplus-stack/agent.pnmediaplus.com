@@ -268,7 +268,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1500,
+        1700,
         300
       ]
     },
@@ -350,7 +350,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nlet threadId = '';\nlet contentItemId = 'unknown';\nlet organizationId = $env['ORGANIZATION_ID'] || '';\nlet errorMessage = $json.execution?.error?.message || 'Unknown Error';\n\ntry {\n  const webhook = $('Webhook Trigger').first();\n  if (webhook && webhook.json && webhook.json.body) {\n    const b = webhook.json.body;\n    if (b.threadId) threadId = b.threadId;\n    if (b.contentItemId) contentItemId = b.contentItemId;\n    if (b.organizationId) organizationId = b.organizationId;\n  }\n} catch (e) {}\n\n// If we cannot get threadId, return empty to skip the push\nif (!threadId) {\n  return [];\n}\n\nreturn {\n  json: {\n    threadId,\n    contentItemId,\n    organizationId,\n    errorMessage\n  }\n};\n"
+        "jsCode": "let threadId = '';\nlet contentItemId = 'unknown';\nlet organizationId = $env['ORGANIZATION_ID'] || '';\nlet errorMessage = $json.execution?.error?.message || 'Unknown Error';\n\ntry {\n  const webhook = $('Webhook Trigger').first();\n  if (webhook && webhook.json && webhook.json.body) {\n    const b = webhook.json.body;\n    if (b.threadId) threadId = b.threadId;\n    if (b.content_item_id) contentItemId = b.content_item_id;\n    if (b.organization_id) organizationId = b.organization_id;\n  }\n} catch (e) {}\n\nreturn {\n  json: {\n    threadId: threadId || 'fallback-thread',\n    contentItemId: contentItemId || 'unknown',\n    organizationId: organizationId || 'unknown',\n    errorMessage\n  }\n};"
       },
       "name": "Format Error",
       "type": "n8n-nodes-base.code",
@@ -358,6 +358,19 @@
       "position": [
         200,
         600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fbResponse = $json;\n\nif (fbResponse.error) {\n  throw new Error('Facebook API Error: ' + fbResponse.error.message);\n}\n\n// Facebook batch API returns an array of responses\nif (Array.isArray(fbResponse)) {\n  for (let i = 0; i < fbResponse.length; i++) {\n    const res = fbResponse[i];\n    if (res.code !== 200) {\n      const body = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;\n      const errorMsg = body?.error?.message || 'Unknown batch error';\n      throw new Error(`Facebook Batch Error at step ${i}: ${errorMsg}`);\n    }\n  }\n} else if (fbResponse.id) {\n  // Single image publish success, do nothing\n} else {\n  throw new Error('Unexpected Facebook API response: ' + JSON.stringify(fbResponse));\n}\n\nreturn { json: { status: 'ok', fbResponse } };"
+      },
+      "id": "validate-fb-publish-node",
+      "name": "Validate FB Publish",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        300
       ]
     }
   ],
@@ -421,7 +434,7 @@
       "main": [
         [
           {
-            "node": "Callback Success",
+            "node": "Validate FB Publish",
             "type": "main",
             "index": 0
           }
@@ -455,6 +468,17 @@
         [
           {
             "node": "Callback Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate FB Publish": {
+      "main": [
+        [
+          {
+            "node": "Callback Success",
             "type": "main",
             "index": 0
           }
