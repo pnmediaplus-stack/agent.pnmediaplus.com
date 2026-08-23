@@ -368,8 +368,7 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
                organizationId, 
                briefText, 
                auth.email, 
-               resolvedCampaign ? resolvedCampaign.id : null,
-               visual_assets
+               resolvedCampaign ? resolvedCampaign.id : null
              );
              
              if (newItemResult.error || !newItemResult.data) {
