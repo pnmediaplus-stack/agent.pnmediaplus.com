@@ -135,7 +135,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const payload = $('Fetch Assets').item.json;\nconst accessToken = $('Redeem BYOK Token').item.json.data.access_token;\nconst pageId = $('Redeem BYOK Token').item.json.data.page_id;\nconst contentItemId = $('Webhook Trigger').item.json.body.content_item_id;\nconst organizationId = $('Webhook Trigger').item.json.body.organization_id;\nconst threadId = $('Webhook Trigger').item.json.body.thread_id;\n\nreturn {\n  caption: payload.caption || '',\n  image: payload.image || '',\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId,\n  organizationId: organizationId,\n  threadId: threadId\n};"
+        "jsCode": "const payload = $('Fetch Assets').item.json;\nconst accessToken = $('Redeem BYOK Token').item.json.data.access_token;\nconst pageId = $('Redeem BYOK Token').item.json.data.page_id;\nconst contentItemId = $('Webhook Trigger').item.json.body.content_item_id;\nconst organizationId = $('Webhook Trigger').item.json.body.organization_id;\nconst threadId = $('Webhook Trigger').item.json.body.thread_id;\n\nconst images = payload.images || [payload.image].filter(Boolean);\nlet batch = [];\n\nif (images.length === 1) {\n  const url = images[0].startsWith('http') ? images[0] : (($env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com') + images[0]);\n  batch.push({\n    method: \"POST\",\n    relative_url: `${pageId}/photos`,\n    body: `url=${encodeURIComponent(url)}&message=${encodeURIComponent(payload.caption)}&published=true`\n  });\n} else if (images.length > 1) {\n  let attachedMedia = [];\n  images.forEach((img, i) => {\n    const url = img.startsWith('http') ? img : (($env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com') + img);\n    batch.push({\n      method: \"POST\",\n      relative_url: `${pageId}/photos`,\n      name: `photo${i}`,\n      omit_response_on_success: false,\n      body: `url=${encodeURIComponent(url)}&published=false`\n    });\n    attachedMedia.push({ \"media_fbid\": `{result=photo${i}:$.id}` });\n  });\n  \n  batch.push({\n    method: \"POST\",\n    relative_url: `${pageId}/feed`,\n    body: `message=${encodeURIComponent(payload.caption)}&attached_media=${encodeURIComponent(JSON.stringify(attachedMedia))}`\n  });\n}\n\nreturn {\n  caption: payload.caption || '',\n  images: images,\n  batch_payload: JSON.stringify(batch),\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId,\n  organizationId: organizationId,\n  threadId: threadId\n};"
       },
       "name": "Extract FB Assets",
       "type": "n8n-nodes-base.code",
@@ -188,21 +188,17 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ 'https://graph.facebook.com/v19.0/' + $('Extract FB Assets').item.json.pageId + '/photos' }}",
+        "url": "={{ 'https://graph.facebook.com/v19.0' }}",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
             {
-              "name": "url",
-              "value": "={{ $('Extract FB Assets').item.json.image.startsWith('http') ? $('Extract FB Assets').item.json.image : ($env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com') + $('Extract FB Assets').item.json.image }}"
-            },
-            {
-              "name": "message",
-              "value": "={{ $('Extract FB Assets').item.json.caption }}"
-            },
-            {
               "name": "access_token",
               "value": "={{ $('Extract FB Assets').item.json.accessToken }}"
+            },
+            {
+              "name": "batch",
+              "value": "={{ $('Extract FB Assets').item.json.batch_payload }}"
             }
           ]
         },
