@@ -106,7 +106,10 @@
           "id": "nlRh1UkRewsK7CCR",
           "name": "ControlPlaneAuth"
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -496,7 +499,10 @@
           "id": "nlRh1UkRewsK7CCR",
           "name": "ControlPlaneAuth"
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
