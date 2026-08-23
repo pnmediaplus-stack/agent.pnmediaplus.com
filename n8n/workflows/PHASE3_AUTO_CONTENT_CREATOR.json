@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "jsCode": "const item = $('Extract Visual').first().json;\nitem.r2_object_key = $('Get Upload Ticket').item.json.objectKey;\nitem.r2_url = '/api/assets/public/' + item.r2_object_key;\n\nif (!item.artifacts) item.artifacts = {};\nitem.artifacts.image = item.r2_url;\n\nreturn { json: item };"
+        "jsCode": "const item = $('Extract Visual').first().json;\nitem.r2_object_key = $('Get Upload Ticket').item.json.objectKey;\nitem.r2_url = '/api/assets/public/' + item.r2_object_key;\n\nif (!item.artifacts) item.artifacts = {};\nitem.artifacts.visual_assets = [item.r2_url];\n\nreturn { json: item };"
       },
       "name": "Map R2 URL",
       "type": "n8n-nodes-base.code",
@@ -316,7 +316,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  p_organization_id: $json.organization_id,\n  p_content_item_id: $json.id,\n  p_expected_current_state: 'research_ready',\n  p_next_state: 'visual_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: `trans_${$execution.id}_visual`,\n  p_stage_payload: {\n    artifacts: ($json.artifacts.visual_assets && $json.artifacts.visual_assets.length > 0)\n      ? $json.artifacts.visual_assets.map((url, i) => ({\n          artifact_key: `vis_${$execution.id}_${i}_${$json.id.replace(/-/g, '_')}`,\n          artifact_type: 'visual_asset',\n          content: url,\n        }))\n      : [\n          {\n            artifact_key: `vis_${$execution.id}_${$json.id.replace(/-/g, '_')}`,\n            artifact_type: 'visual_asset',\n            content: $json.artifacts.visual_assets[0],\n          }\n        ]\n  },\n} }}",
+        "jsonBody": "={{ {\n  p_organization_id: $json.organization_id,\n  p_content_item_id: $json.id,\n  p_expected_current_state: 'research_ready',\n  p_next_state: 'visual_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: `trans_${$execution.id}_visual`,\n  p_stage_payload: {\n    artifacts: ($json.artifacts.visual_assets && $json.artifacts.visual_assets.length > 0)\n      ? $json.artifacts.visual_assets.map((url, i) => ({\n          artifact_key: `vis_${$execution.id}_${i}_${$json.id.replace(/-/g, '_')}`,\n          artifact_type: 'visual_asset',\n          content: url,\n        }))\n      : []\n  },\n} }}",
         "options": {
           "response": {
             "response": {
