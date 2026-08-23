@@ -13,26 +13,22 @@ type ChatComposerProps = {
 export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask }: ChatComposerProps) {
   const [value, setValue] = useState(initialValue);
   const { t } = useI18n("chat");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
-    if (!selectedFile) {
-      setPreviewUrl(null);
-      return;
-    }
-    if (selectedFile.type.startsWith("image/")) {
-      const objectUrl = URL.createObjectURL(selectedFile);
-      setPreviewUrl(objectUrl);
-      return () => URL.revokeObjectURL(objectUrl);
-    } else {
-      setPreviewUrl(null);
-    }
-  }, [selectedFile]);
-
+    const urls = selectedFiles.map(file => {
+      if (file.type.startsWith("image/")) {
+        return URL.createObjectURL(file);
+      }
+      return null;
+    });
+    setPreviewUrls(urls as string[]);
+    return () => urls.forEach(url => { if(url) URL.revokeObjectURL(url) });
+  }, [selectedFiles]);
   // Autocomplete State
   const [agents, setAgents] = useState<any[]>([]);
   const [artifacts, setArtifacts] = useState<any[]>([]);
@@ -397,7 +393,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         if (file) {
           // Khởi tạo file mới với tên rõ ràng hơn nếu cần
           const pastedFile = new File([file], `pasted-image-${Date.now()}.png`, { type: file.type });
-          setSelectedFile(pastedFile);
+          setSelectedFiles(prev => [...prev, pastedFile]);
           setUploadError(null);
           e.preventDefault();
           break;
@@ -407,9 +403,9 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-      setUploadError(null);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setSelectedFiles(prev => [...prev, ...files]);
     }
   };
 
@@ -434,86 +430,64 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
-    
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      const file = files[0];
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
       const validTypes = ["image/png", "image/jpeg", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"];
-      if (validTypes.includes(file.type)) {
-        setSelectedFile(file);
+      const validFiles = files.filter(f => validTypes.includes(f.type));
+      if (validFiles.length > 0) {
+        setSelectedFiles(prev => [...prev, ...validFiles]);
         setUploadError(null);
+        if (validFiles.length < files.length) {
+          setUploadError("Some files were not supported and were skipped.");
+        }
       } else {
-        setUploadError("File type not supported via drag and drop.");
+        setUploadError("File types not supported via drag and drop.");
       }
     }
   };
 
   const handleSend = async () => {
-    if (!value.trim() && !selectedFile) return;
+    if (!value.trim() && selectedFiles.length === 0) return;
 
-    if (selectedFile) {
+    if (selectedFiles.length > 0) {
       setIsUploading(true);
       setUploadError(null);
 
       try {
-        // Bước 1: Xin thẻ bài Presigned URL từ máy chủ Next.js
-        const presignRes = await fetch("/api/chat-attachments/presign", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: selectedFile.name,
-            type: selectedFile.type,
-            size: selectedFile.size
-          })
-        });
-
-        if (!presignRes.ok) {
-          const textError = await presignRes.text();
-          throw new Error("Không thể lấy quyền Upload: " + textError.substring(0, 50));
+        let appendedMarkdown = "";
+        for (const file of selectedFiles) {
+          const presignRes = await fetch("/api/chat-attachments/presign", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: file.name, type: file.type, size: file.size })
+          });
+          if (!presignRes.ok) throw new Error("Không thể lấy quyền Upload");
+          const presignData = await presignRes.json();
+          if (!presignData.success) throw new Error(presignData.message);
+          const uploadRes = await fetch(presignData.presignedUrl, {
+            method: "PUT",
+            headers: { "Content-Type": file.type },
+            body: file
+          });
+          if (!uploadRes.ok) throw new Error("Lỗi tải lên file: " + file.name);
+          const isImage = file.type.startsWith("image/");
+          appendedMarkdown += isImage ? `\n\n![${file.name}](${presignData.publicUrl})` : `\n\n[📎 ${file.name}](${presignData.publicUrl})`;
         }
-        
-        const presignData = await presignRes.json();
-        if (!presignData.success) throw new Error(presignData.message || "Xin quyền thất bại");
 
-        // Bước 2: Bắn thẳng file Binary lên mây Cloudflare R2 thông qua URL vừa được cấp
-        const uploadRes = await fetch(presignData.presignedUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": selectedFile.type,
-          },
-          body: selectedFile
-        });
-
-        if (!uploadRes.ok) {
-          throw new Error(`Máy chủ đám mây từ chối file (${uploadRes.status})`);
-        }
-        
-        // Bước 3: Hoàn thành, lấy link Public để chèn vào Markdown
-        const data = { signedUrl: presignData.publicUrl };
-
-        const isImage = selectedFile.type.startsWith("image/");
-        const markdown = isImage
-          ? `\n\n![${selectedFile.name}](${data.signedUrl})`
-          : `\n\n[📎 ${selectedFile.name}](${data.signedUrl})`;
-
-        const finalValue = value + markdown;
+        const finalValue = value + appendedMarkdown;
         setValue("");
-        setSelectedFile(null);
-
+        setSelectedFiles([]);
         setTimeout(() => {
           onSubmit(finalValue);
           setIsUploading(false);
         }, 100);
-
       } catch (err: any) {
         setUploadError(err.message);
         setIsUploading(false);
-        return;
       }
     } else {
-      const finalValue = value;
+      onSubmit(value);
       setValue("");
-      onSubmit(finalValue);
     }
   };
 
@@ -652,41 +626,39 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         </div>
       )}
 
-      {selectedFile && (
-        <div className="mb-3 relative rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-2 w-max max-w-full">
-          <button
-            type="button"
-            onClick={() => setSelectedFile(null)}
-            className="absolute -right-2 -top-2 rounded-full border border-cyan-800 bg-slate-900 p-1 text-slate-400 hover:bg-slate-800 hover:text-white z-10 shadow-lg"
-            disabled={isUploading}
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-          
-          {previewUrl ? (
-            <div className="flex flex-col gap-2">
-              <img 
-                src={previewUrl} 
-                alt="Preview" 
-                className="max-h-32 rounded-md object-contain border border-cyan-900/50 bg-black/20" 
-              />
-              <div className="flex items-center gap-1.5 text-xs text-cyan-300/80 px-1">
-                <Paperclip className="h-3 w-3" />
-                <span className="truncate max-w-[200px]">{selectedFile.name}</span>
-              </div>
+      {selectedFiles.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-3">
+          {selectedFiles.map((file, idx) => (
+            <div key={idx} className="relative rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-2 w-max max-w-full">
+              <button
+                type="button"
+                onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
+                className="absolute -right-2 -top-2 rounded-full border border-cyan-800 bg-slate-900 p-1 text-slate-400 hover:bg-slate-800 hover:text-white z-10 shadow-lg"
+                disabled={isUploading}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+              {previewUrls[idx] ? (
+                <div className="flex flex-col gap-2">
+                  <img src={previewUrls[idx]} alt="Preview" className="max-h-32 rounded-md object-contain border border-cyan-900/50 bg-black/20" />
+                  <div className="flex items-center gap-1.5 text-xs text-cyan-300/80 px-1">
+                    <Paperclip className="h-3 w-3" />
+                    <span className="truncate max-w-[150px]">{file.name}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 px-2 py-1 text-sm text-cyan-200 min-w-[150px]">
+                  <Paperclip className="h-4 w-4 text-cyan-400" />
+                  <span className="flex-1 truncate">{file.name}</span>
+                </div>
+              )}
+              {isUploading && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-slate-900/70 backdrop-blur-sm">
+                  <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="flex items-center gap-2 px-2 py-1 text-sm text-cyan-200 min-w-[200px]">
-              <Paperclip className="h-4 w-4 text-cyan-400" />
-              <span className="flex-1 truncate">{selectedFile.name}</span>
-            </div>
-          )}
-          
-          {isUploading && (
-            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-slate-900/70 backdrop-blur-sm">
-              <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
-            </div>
-          )}
+          ))}
         </div>
       )}
 
@@ -715,7 +687,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
             ref={fileInputRef}
             onChange={handleFileChange}
             className="hidden"
-            accept="image/png, image/jpeg, application/pdf, .docx, text/plain"
+            accept="image/png, image/jpeg, application/pdf, .docx, text/plain" multiple
           />
           <button
             type="button"
@@ -740,7 +712,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         <button
           type="button"
           onClick={handleSend}
-          disabled={isUploading || (!value.trim() && !selectedFile)}
+          disabled={isUploading || (!value.trim() && selectedFiles.length === 0)}
           className="flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition-colors hover:bg-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isUploading && <Loader2 className="h-4 w-4 animate-spin" />}
