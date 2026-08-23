@@ -212,6 +212,13 @@ export async function sendChatMessage(threadId: string, body: string) {
       intentType = aiResult.intentType;
       if (aiResult.mappedCommand) {
         executionBody = aiResult.mappedCommand;
+        
+        // Preserve any uploaded images that the LLM stripped out of the mapped command
+        const imgRegex = /!\[.*?\]\([^\s)]+\)/g;
+        const originalImages = trimmedBody.match(imgRegex) || [];
+        if (originalImages.length > 0) {
+          executionBody += '\n\n' + originalImages.join('\n');
+        }
       }
       if (aiResult.agentReply) {
         agentReplyToSave = aiResult.agentReply;
