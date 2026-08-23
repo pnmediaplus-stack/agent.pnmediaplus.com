@@ -173,11 +173,12 @@ Violating these rules and attempting to do the specialized work yourself will br
 
         // --- WRITE / ACTION TOOLS (Terminate loop) ---
         if (funcName === "create_content") {
+          const flag = args.image_action === 'use_provided' ? '--image-action=use_provided' : '--image-action=generate_new';
           return {
             intentType: "create_content",
             mappedCommand: args.content_item_id 
-              ? `/auto_content ${args.content_item_id} ${args.topic}`
-              : `/auto_content ${args.topic}`
+              ? `/auto_content ${args.content_item_id} ${flag} ${args.topic}`
+              : `/auto_content ${flag} ${args.topic}`
           };
         } else if (funcName === "publish_content") {
           return {

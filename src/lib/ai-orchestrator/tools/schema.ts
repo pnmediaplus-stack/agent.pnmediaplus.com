@@ -8,9 +8,10 @@ export const AI_ORCHESTRATOR_TOOLS = [
         type: "object",
         properties: {
           content_item_id: { type: "string", description: "Optional ID of an existing content item to base this on" },
-          topic: { type: "string", description: "The brief or topic to write about" }
+          topic: { type: "string", description: "The brief or topic to write about" },
+          image_action: { type: "string", enum: ["use_provided", "generate_new"], description: "If the user uploaded images and wants to post them directly, use 'use_provided'. If they want to draw, redraw, or generate a NEW image based on references, use 'generate_new'." }
         },
-        required: ["topic"]
+        required: ["topic", "image_action"]
       }
     }
   },
