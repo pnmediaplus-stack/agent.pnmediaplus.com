@@ -707,7 +707,7 @@
             },
             {
               "id": "c2",
-              "leftValue": "={{ $json.action_intent || '' }}",
+              "leftValue": "={{ $('Parse Text').first().json.action_intent || '' }}",
               "rightValue": "use_provided_images",
               "operator": {
                 "type": "string",
