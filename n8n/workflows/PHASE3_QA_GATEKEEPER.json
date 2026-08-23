@@ -261,7 +261,8 @@
           "number": [
             {
               "value1": "={{ $(\"Webhook\").first().json.body.qa_retry_count || 0 }}",
-              "value2": 3
+              "value2": 3,
+              "operation": "smaller"
             }
           ]
         }
