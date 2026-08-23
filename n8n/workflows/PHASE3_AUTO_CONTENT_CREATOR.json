@@ -637,7 +637,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"SUPABASE_URL\"] || \"http://supabase:8000\"}}/api/n8n/workflow-error",
+        "url": "={{$env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\"}}/api/n8n/workflow-error",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
