@@ -133,7 +133,7 @@ export async function dbLoadContextData(organizationId: string, referenceType: '
   return { data: data[0] || null };
 }
 
-export async function dbCreateContentItemFromBrief(organizationId: string, brief: string, ownerRef: string, campaignId?: string | null) {
+export async function dbCreateContentItemFromBrief(organizationId: string, brief: string, ownerRef: string, campaignId?: string | null, visual_assets: string[] = []) {
   const trimmedBrief = brief.trim();
   let title = trimmedBrief.substring(0, 50).trim();
   if (!title) {
@@ -151,6 +151,7 @@ export async function dbCreateContentItemFromBrief(organizationId: string, brief
     state: 'idea'
   };
   if (campaignId) bodyData.campaign_id = campaignId;
+  if (visual_assets.length > 0) bodyData.artifacts = { visual_assets };
 
   const contentRes = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items`, {
     method: 'POST',
