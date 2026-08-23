@@ -743,7 +743,7 @@
     },
     {
       "parameters": {
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?workflow_run_id=eq.{{ $('Set Workflow Run ID').first().json.workflow_run_id }}&select=workflow_run_id,organization_id,thread_id,content_item_id,status,last_error,payload",
+        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?payload->>sys_trace_id=eq.{{$json.execution.id}}&select=workflow_run_id,organization_id,thread_id,content_item_id,status,last_error,payload",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -793,7 +793,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"workflow_run_id\": \"{{$json.workflow_run_id}}\",\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"workflow_name\": \"PHASE3_AUTO_CONTENT_CREATOR\",\n  \"payload\": { \"source\": \"PHASE3_AUTO_CONTENT_CREATOR\" }\n}",
+        "jsonBody": "={\n  \"workflow_run_id\": \"{{$json.workflow_run_id}}\",\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"workflow_name\": \"PHASE3_AUTO_CONTENT_CREATOR\",\n  \"payload\": { \"source\": \"PHASE3_AUTO_CONTENT_CREATOR\", \"sys_trace_id\": \"{{$execution.id}}\" }\n}",
         "options": {}
       },
       "name": "Upsert Workflow Context",
