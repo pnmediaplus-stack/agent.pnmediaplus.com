@@ -198,7 +198,7 @@ export async function sendChatMessage(threadId: string, body: string) {
     } else {
       // Load recent history to give AI context
       const historyRes = await dbLoadChatMessages(organizationId, threadId);
-      const history = (historyRes.data || []).slice(-50); // Increased to 50 messages for broader context
+      const history = (historyRes.data || []).slice(-5); // Decreased to 5 messages to strictly minimize token cost
       
       const llmMessages = history.map((m: any) => ({
         role: m.sender === 'human' ? 'user' : 'assistant',
