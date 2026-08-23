@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       return NextResponse.json(responseData, { status: 200 });
     } catch (error: any) {
       lastError = error;
-      const isRateLimit = error?.status === 429 || error?.message?.includes('LLM_QUOTA_EXCEEDED') || error?.message?.includes('RATE_LIMIT_EXCEEDED');
+      const isRateLimit = error?.status === 429 || error?.message?.includes('LLM_QUOTA_EXCEEDED') || error?.message?.includes('RATE_LIMIT_EXCEEDED') || error?.message?.includes(': 429 -') || error?.message?.includes('429 Too Many Requests');
       if (!isRateLimit || attempt >= MAX_RETRY_ATTEMPTS) {
         break;
       }
@@ -64,7 +64,8 @@ export async function POST(request: Request) {
      return NextResponse.json({ error: 'UPSTREAM_TIMEOUT', message: lastError.message }, { status: 504 });
   }
 
-  if (lastError?.status === 429 || (lastError?.message && (lastError.message.includes('LLM_QUOTA_EXCEEDED') || lastError.message.includes('RATE_LIMIT_EXCEEDED')))) {
+  const isRateLimitFinal = lastError?.status === 429 || lastError?.message?.includes('LLM_QUOTA_EXCEEDED') || lastError?.message?.includes('RATE_LIMIT_EXCEEDED') || lastError?.message?.includes(': 429 -') || lastError?.message?.includes('429 Too Many Requests');
+  if (isRateLimitFinal) {
      return NextResponse.json({ error: 'RATE_LIMIT_EXCEEDED', message: lastError.message }, { status: 429 });
   }
 
