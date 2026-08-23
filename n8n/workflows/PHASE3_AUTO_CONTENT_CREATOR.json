@@ -316,7 +316,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ (() => { if (!$json.artifacts.visual_assets || $json.artifacts.visual_assets.length === 0) { throw new Error(\"MISSING_VISUAL_ASSETS_CONTRACT\"); } return { p_organization_id: $json.organization_id, p_content_item_id: $json.id, p_expected_current_state: \"research_ready\", p_next_state: \"visual_ready\", p_actor_ref: \"agent_content_creator\", p_idempotency_key: \"trans_\" + $execution.id + \"_visual\", p_stage_payload: { artifacts: $json.artifacts.visual_assets.map((url, i) => ({ artifact_key: \"vis_\" + $execution.id + \"_\" + i + \"_\" + $json.id.replace(/-/g, \"_\"), artifact_type: \"visual_asset\", content: url })) } }; })() }}",
+        "jsonBody": "={{ (() => {\n  let assets = [];\n  if ($json.artifacts && $json.artifacts.visual_assets && $json.artifacts.visual_assets.length > 0) {\n    assets = $json.artifacts.visual_assets;\n  } else if ($json.artifacts && $json.artifacts.image) {\n    assets = [$json.artifacts.image];\n  }\n  \n  if (assets.length === 0) {\n    throw new Error(\"MISSING_VISUAL_ASSETS_CONTRACT\");\n  }\n  \n  const payload = { \n    p_organization_id: $json.organization_id || $json.tenant_id, \n    p_content_item_id: $json.id, \n    p_expected_current_state: \"research_ready\", \n    p_next_state: \"visual_ready\", \n    p_actor_ref: \"agent_content_creator\", \n    p_idempotency_key: \"trans_\" + $execution.id + \"_visual\", \n    p_stage_payload: { \n      artifacts: assets.map((url, i) => ({ \n        artifact_key: \"vis_\" + $execution.id + \"_\" + i + \"_\" + ($json.id || 'id').replace(/-/g, \"_\"), \n        artifact_type: \"visual_asset\", \n        content: url \n      })) \n    } \n  };\n  \n  return JSON.stringify(payload);\n})() }}",
         "options": {
           "response": {
             "response": {
@@ -342,7 +342,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $('Parse Text').first().json.item;\nconst tenantId = $('Parse Text').first().json.tenant_id || item.owner_ref;\n\nlet imageUrl =\n  $input.first().json.data?.[0]?.url ||\n  'https://placehold.co/1024x1024?text=Image+Generation+Failed';\n\nreturn {\n  json: {\n    status: 'OK',\n    message: 'Content generated successfully',\n    artifacts: {\n      research: $('Parse Text').first().json.textContent.agent_1_research_packet,\n      caption: $('Parse Text').first().json.textContent.agent_2_publish_ready_caption,\n      image: imageUrl,\n    },\n    id: item.id,\n    organization_id: tenantId,\n    tenant_id: tenantId,\n  },\n};"
+        "jsCode": "const item = $('Parse Text').first().json.item;\nconst tenantId = $('Parse Text').first().json.tenant_id || item.owner_ref;\n\nlet imageUrl =\n  $input.first().json.data?.[0]?.url ||\n  'https://placehold.co/1024x1024?text=Image+Generation+Failed';\n\nreturn {\n  json: {\n    status: 'OK',\n    message: 'Content generated successfully',\n    artifacts: {\n      research: $('Parse Text').first().json.textContent.agent_1_research_packet,\n      caption: $('Parse Text').first().json.textContent.agent_2_publish_ready_caption,\n      image: imageUrl,\n      visual_assets: [imageUrl],\n    },\n    id: item.id,\n    organization_id: tenantId,\n    tenant_id: tenantId,\n  },\n};"
       },
       "name": "Extract Visual",
       "type": "n8n-nodes-base.code",
