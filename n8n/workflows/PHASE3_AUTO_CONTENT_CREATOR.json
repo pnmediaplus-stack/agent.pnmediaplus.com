@@ -564,7 +564,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst staticData = $getWorkflowStaticData('node');\nstaticData.pollCount = (staticData.pollCount || 0) + 1;\nif (staticData.pollCount > 120) {\n  let threadId = 'unknown';\n  try { threadId = $('Webhook Trigger').first().json.body.threadId || $('Webhook Trigger').first().json.threadId; } catch(e) {}\n  throw new Error('POLL_TIMEOUT|' + threadId + '|Image generation took too long');\n}\nreturn $input.all();\n"
+        "jsCode": "\nif ($runIndex > 120) {\n  let threadId = 'unknown';\n  try { threadId = $('Webhook Trigger').first().json.body.threadId || $('Webhook Trigger').first().json.threadId; } catch(e) {}\n  throw new Error('POLL_TIMEOUT|' + threadId + '|Image generation took too long');\n}\nreturn $input.all();\n"
       },
       "name": "Limit Polling",
       "type": "n8n-nodes-base.code",
@@ -643,7 +643,16 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{JSON.stringify($json)}}",
-        "options": {}
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-request-id",
+              "value": "={{$execution.id}}-error"
+            }
+          ]
+        }
       },
       "name": "Push Error to Chat",
       "type": "n8n-nodes-base.httpRequest",
@@ -655,8 +664,8 @@
       "id": "f0df0aa2-4aad-4dce-8c5d-4e6b9c5923a0",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
+          "id": "nlRh1UkRewsK7CCR",
+          "name": "ControlPlaneAuth"
         }
       }
     },
