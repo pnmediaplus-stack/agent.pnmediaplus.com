@@ -698,10 +698,10 @@
           "conditions": [
             {
               "id": "c1",
-              "leftValue": "={{ $('Format Prompt').first().json.visual_assets && $('Format Prompt').first().json.visual_assets.length > 0 ? 'true' : 'false' }}",
+              "leftValue": "={{ !!($('Format Prompt').first().json.visual_assets && $('Format Prompt').first().json.visual_assets.length > 0) }}",
               "rightValue": "",
               "operator": {
-                "type": "string",
+                "type": "boolean",
                 "operation": "true"
               }
             },
