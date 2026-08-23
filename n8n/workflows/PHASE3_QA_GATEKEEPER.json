@@ -183,7 +183,7 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{$env[\"SUPABASE_URL\"] || \"http://supabase:8000\"}}/rest/v1/phase2_content_items?id=eq.{{$json.id}}",
+        "url": "={{$env[\"SUPABASE_URL\"] || \"http://supabase:8000\"}}/rest/v1/phase2_content_items?id=eq.{{ $('IF Verdict Pass').item.json.content_item_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -201,7 +201,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ state: \"scheduled\" }) }}",
+        "jsonBody": "={{ (() => {\n  // Gatekeeper Guard: Only allow execution if previous node succeeded OR failed specifically due to Regression\n  const msg = $json.message || '';\n  if (msg && !msg.includes('CONTENT_STATE_REGRESSION_FORBIDDEN')) {\n    throw new Error('UPDATE_ITEM_STATE_NOT_ACCEPTED: ' + msg);\n  }\n  return JSON.stringify({ state: \"scheduled\" });\n})() }}",
         "options": {
           "ignoreResponseCode": true
         }
