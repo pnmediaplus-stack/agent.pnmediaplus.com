@@ -161,9 +161,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ state: \"QA_passed\" }) }}",
-        "options": {
-          "ignoreResponseCode": true
-        }
+        "options": {}
       },
       "name": "Update Item State",
       "type": "n8n-nodes-base.httpRequest",
@@ -178,7 +176,8 @@
           "id": "eUuuv1meIVSpZzFH",
           "name": "SupabaseAuth"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -202,9 +201,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ (() => {\n  // Gatekeeper Guard: Only allow execution if previous node succeeded OR failed specifically due to Regression\n  const msg = $json.error?.message || $json.message || '';\n  if (msg && !msg.includes('CONTENT_STATE_REGRESSION_FORBIDDEN')) {\n    throw new Error('UPDATE_ITEM_STATE_NOT_ACCEPTED: ' + msg);\n  }\n  return JSON.stringify({ state: \"scheduled\" });\n})() }}",
-        "options": {
-          "ignoreResponseCode": true
-        }
+        "options": {}
       },
       "name": "Mark as Scheduled",
       "type": "n8n-nodes-base.httpRequest",
@@ -219,7 +216,8 @@
           "id": "eUuuv1meIVSpZzFH",
           "name": "SupabaseAuth"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
