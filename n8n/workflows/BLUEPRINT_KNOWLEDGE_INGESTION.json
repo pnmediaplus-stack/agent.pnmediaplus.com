@@ -5,15 +5,18 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "knowledge-ingestion",
-        "responseMode": "onReceived",
         "options": {}
       },
-      "id": "node-webhook-trigger",
+      "id": "0dbbe005-ee85-48b4-bccd-535588c34133",
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [ 0, 0 ],
+      "position": [
+        2768,
+        -80
+      ],
       "notesInFlow": true,
+      "webhookId": "af741a80-fcc6-4c3f-9d14-9205324296fa",
       "notes": "Nhận payload { document_id, organization_id, file_path }"
     },
     {
@@ -38,11 +41,20 @@
           }
         }
       },
-      "id": "node-download-file",
+      "id": "d384ec4e-a59b-49c3-b7c5-e81a2fe5f688",
       "name": "Download Document",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [ 200, 0 ]
+      "position": [
+        3152,
+        -80
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
     },
     {
       "parameters": {
@@ -64,11 +76,14 @@
         "jsonBody": "={\n  \"workflow_run_id\": \"{{$execution.id}}\",\n  \"document_id\": \"{{$json.body.document_id}}\",\n  \"organization_id\": \"{{$json.body.organization_id}}\",\n  \"file_path\": \"{{$json.body.file_path}}\",\n  \"file_name\": \"{{$json.body.file_name || ''}}\",\n  \"mime_type\": \"{{$json.body.mime_type || ''}}\",\n  \"status\": \"processing\",\n  \"payload\": {\n    \"source\": \"BLUEPRINT_KNOWLEDGE_INGESTION\",\n    \"document_id\": \"{{$json.body.document_id}}\",\n    \"organization_id\": \"{{$json.body.organization_id}}\",\n    \"file_path\": \"{{$json.body.file_path}}\"\n  }\n}",
         "options": {}
       },
-      "id": "node-persist-ingestion-context",
+      "id": "cd03209b-f6fd-40d9-9ed5-db649f61aab9",
       "name": "Persist Ingestion Context",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [ 200, 120 ],
+      "position": [
+        2960,
+        -80
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -80,60 +95,92 @@
       "parameters": {
         "mode": "insert",
         "tableName": "crm_knowledge_chunks",
-        "columns": "document_id, organization_id, content, metadata, embedding"
+        "options": {}
       },
-      "id": "node-postgres-vector",
+      "id": "71bf8abd-f737-43af-8324-4907993ff02c",
       "name": "Insert to Postgres Vector",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
-      "position": [ 600, 0 ]
+      "position": [
+        3344,
+        -80
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "I2whnvNKGQtwUcks",
+          "name": "Saas App PNM"
+        }
+      }
     },
     {
       "parameters": {
         "dataType": "binary",
         "binaryMode": "specificField",
-        "binaryDataKey": "data",
-        "loader": "auto",
-        "textSplittingMode": "custom",
         "options": {}
       },
-      "id": "node-pdf-loader",
+      "id": "8bf30e6c-f957-48f1-8a8e-9be63e9e313f",
       "name": "Default Data Loader",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
-      "position": [ 600, 200 ]
+      "position": [
+        3360,
+        80
+      ]
     },
     {
       "parameters": {
-        "chunkSize": 1000,
-        "chunkOverlap": 100
+        "chunkOverlap": 100,
+        "options": {}
       },
-      "id": "node-text-splitter",
+      "id": "e9353c8b-099d-4f68-abe9-51803c45b839",
       "name": "Recursive Character Text Splitter",
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
-      "position": [ 600, 350 ]
+      "position": [
+        3360,
+        192
+      ]
     },
     {
       "parameters": {
-        "model": "text-embedding-3-small"
+        "model": "text-embedding-3-small",
+        "options": {}
       },
-      "id": "node-openai-embeddings",
+      "id": "d814486b-2fc5-4d7d-8beb-b5584c686f49",
       "name": "OpenAI Embeddings",
       "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
       "typeVersion": 1,
-      "position": [ 600, 500 ]
+      "position": [
+        3184,
+        192
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "MesMbE0xnztwgTiM",
+          "name": "OpenAi account 2"
+        }
+      }
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE public.crm_knowledge_documents SET status = 'ready' WHERE id = '{{ $('Webhook Trigger').first().json.body.document_id }}'"
+        "query": "UPDATE public.crm_knowledge_documents SET status = 'ready' WHERE id = '{{ $('Webhook Trigger').first().json.body.document_id }}'",
+        "options": {}
       },
-      "id": "node-update-status",
+      "id": "95351331-5bc1-4994-a7d5-e1dd23248b0e",
       "name": "Update Document Status",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.2,
-      "position": [ 800, 0 ]
+      "position": [
+        3664,
+        -80
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "EhOYcO8YGhLwldqf",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
@@ -141,10 +188,6 @@
         "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_ingestion_runs?workflow_run_id=eq.{{$execution.id}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"status\": \"ready\",\n  \"last_error\": null\n}",
-        "options": {},
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -153,13 +196,20 @@
               "value": "return=minimal"
             }
           ]
-        }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"ready\",\n  \"last_error\": null\n}",
+        "options": {}
       },
-      "id": "node-update-ingestion-context-ready",
+      "id": "fa4537a7-4139-4e18-a1fc-cce6f9de98c8",
       "name": "Update Ingestion Context Ready",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [ 1000, 0 ],
+      "position": [
+        3856,
+        -80
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -169,11 +219,14 @@
     },
     {
       "parameters": {},
-      "id": "node-ingestion-error-trigger",
+      "id": "1bc3e296-2e44-4938-98be-f237bcaf515b",
       "name": "Error Trigger",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
-      "position": [ 0, 320 ],
+      "position": [
+        2752,
+        368
+      ],
       "notesInFlow": true,
       "notes": "Nhánh lỗi cho ingestion để document hỏng extraction tự chuyển failed thay vì kẹt processing."
     },
@@ -182,15 +235,16 @@
         "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_ingestion_runs?workflow_run_id=eq.{{$('Error Trigger').first().json.execution.id}}&select=workflow_run_id,document_id,organization_id,file_path,file_name,mime_type,status,last_error,payload",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "alwaysOutputData": true
-        }
+        "options": {}
       },
-      "id": "node-load-ingestion-context",
+      "id": "180ce815-673f-4d2d-ba94-71c433978b80",
       "name": "Load Ingestion Context",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [ 200, 320 ],
+      "position": [
+        2960,
+        368
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
@@ -202,12 +256,14 @@
       "parameters": {
         "jsCode": "const ctxList = Array.isArray($input.first().json) ? $input.first().json : ($input.first().json ? [$input.first().json] : []);\nconst ctx = ctxList[0] || {};\nconst errorMessage = $('Error Trigger').first().json.execution?.error?.message || 'Unknown ingestion error';\n\nreturn {\n  json: {\n    workflow_run_id: ctx.workflow_run_id || $('Error Trigger').first().json.execution?.id || '',\n    document_id: ctx.document_id || '',\n    organization_id: ctx.organization_id || '',\n    error_message: errorMessage,\n    stage: 'text_extraction',\n    metadata: {\n      file_name: ctx.file_name || '',\n      file_path: ctx.file_path || '',\n      mime_type: ctx.mime_type || '',\n      status: ctx.status || 'processing'\n    }\n  }\n};"
       },
-      "id": "node-format-ingestion-error",
+      "id": "7a565b85-6239-4feb-b171-ce7db1fa7e66",
       "name": "Format Ingestion Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [ 400, 320 ],
-      "credentials": {}
+      "position": [
+        3152,
+        368
+      ]
     },
     {
       "parameters": {
@@ -215,10 +271,6 @@
         "url": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/crm/knowledge/ingestion-failed",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{JSON.stringify($json)}}",
-        "options": {},
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -227,13 +279,20 @@
               "value": "={{$execution.id}}-knowledge-failed"
             }
           ]
-        }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json)}}",
+        "options": {}
       },
-      "id": "node-mark-document-failed",
+      "id": "3b298bd3-1d22-40b4-880c-c72fa975798d",
       "name": "Mark Document Failed",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [ 600, 320 ],
+      "position": [
+        3408,
+        368
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "nlRh1UkRewsK7CCR",
@@ -242,39 +301,139 @@
       }
     }
   ],
+  "pinData": {},
   "connections": {
     "Webhook Trigger": {
-      "main": [ [ { "node": "Persist Ingestion Context", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Persist Ingestion Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Persist Ingestion Context": {
-      "main": [ [ { "node": "Download Document", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Download Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Download Document": {
-      "main": [ [ { "node": "Insert to Postgres Vector", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Insert to Postgres Vector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Default Data Loader": {
-      "ai_document": [ [ { "node": "Insert to Postgres Vector", "type": "ai_document", "index": 0 } ] ]
+      "ai_document": [
+        [
+          {
+            "node": "Insert to Postgres Vector",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Recursive Character Text Splitter": {
-      "ai_textSplitter": [ [ { "node": "Default Data Loader", "type": "ai_textSplitter", "index": 0 } ] ]
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
     },
     "OpenAI Embeddings": {
-      "ai_embedding": [ [ { "node": "Insert to Postgres Vector", "type": "ai_embedding", "index": 0 } ] ]
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert to Postgres Vector",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Insert to Postgres Vector": {
-      "main": [ [ { "node": "Update Document Status", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Update Document Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Update Document Status": {
-      "main": [ [ { "node": "Update Ingestion Context Ready", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Update Ingestion Context Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Error Trigger": {
-      "main": [ [ { "node": "Load Ingestion Context", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Load Ingestion Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Load Ingestion Context": {
-      "main": [ [ { "node": "Format Ingestion Error", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Format Ingestion Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Format Ingestion Error": {
-      "main": [ [ { "node": "Mark Document Failed", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Mark Document Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
-  }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0a92da5f-a966-4e59-8060-359361eb5750",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "id": "1G4tqcDW9Gc55QA0",
+  "tags": []
 }
