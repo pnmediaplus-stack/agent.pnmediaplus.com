@@ -4,7 +4,14 @@ import React, { useState } from "react";
 import useSWR from "swr";
 import { UploadCloud, FileText, Loader2, CheckCircle2, XCircle } from "lucide-react";
 
-const fetcher = (url: string) => fetch(url).then(r => r.json());
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || data.error || 'Lỗi tải dữ liệu');
+  }
+  return data;
+};
 
 export default function KnowledgeBasePage() {
   const [isUploading, setIsUploading] = useState(false);
@@ -85,7 +92,7 @@ export default function KnowledgeBasePage() {
           
           {!documents ? (
             <div className="p-10 flex justify-center"><Loader2 className="animate-spin text-gray-400 h-6 w-6"/></div>
-          ) : documents.length === 0 ? (
+          ) : !Array.isArray(documents) || documents.length === 0 ? (
             <div className="p-10 text-center text-gray-500">Chưa có tài liệu nào.</div>
           ) : (
             <table className="min-w-full divide-y divide-gray-200">
