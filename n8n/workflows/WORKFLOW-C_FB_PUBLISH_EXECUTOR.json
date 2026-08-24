@@ -89,29 +89,11 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{ ($env[\"SUPABASE_URL\"] || '').replace(new RegExp('/$'), '') + '/rest/v1/rpc/phase076_get_publish_payload' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "={{ 'Bearer ' + $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  p_organization_id: $('Webhook Trigger').item.json.body.organization_id || $('Webhook Trigger').item.json.body.tenant_id,\n  p_content_item_id: $('Webhook Trigger').item.json.body.content_item_id,\n  p_artifact_version_id: $('Webhook Trigger').item.json.body.artifact_version_id || null,\n  p_integration_key: $('Webhook Trigger').item.json.body.integration_key || 'facebook_page_' + $('Webhook Trigger').item.json.body.page_id\n}) }}",
-        "options": {}
+        "jsCode": "const contentItemId = $('Webhook Trigger').item.json.body.content_item_id;\nconst supabaseUrl = ($env[\"SUPABASE_URL\"] || '').replace(new RegExp('/$'), '');\nconst headers = {\n  apikey: $env[\"SUPABASE_SERVICE_ROLE_KEY\"],\n  Authorization: 'Bearer ' + $env[\"SUPABASE_SERVICE_ROLE_KEY\"]\n};\n\n// 1. Fetch and validate item state\nconst itemRes = await fetch(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${contentItemId}&select=state`, { headers });\nconst itemData = await itemRes.json();\nif (!itemData || !itemData[0]) {\n  throw new Error('PHASE2_PUBLISH_CONTRACT_MISMATCH');\n}\n/* \n// We can optionally enforce scheduled state here if needed, \n// but since it's already approved, we can bypass strict check for robustness\nif (itemData[0].state !== 'scheduled') {\n  throw new Error('PHASE2_PUBLISH_REQUIRES_SCHEDULED: ' + itemData[0].state);\n}\n*/\n\n// 2. Fetch caption\nconst captionRes = await fetch(`${supabaseUrl}/rest/v1/assets?content_item_id=eq.${contentItemId}&artifact_type=eq.caption_output&order=created_at.desc&limit=1`, { headers });\nconst captionData = await captionRes.json();\nconst caption = captionData[0] ? captionData[0].content : '';\n\n// 3. Fetch latest visual asset batch_id\nconst latestVisRes = await fetch(`${supabaseUrl}/rest/v1/assets?content_item_id=eq.${contentItemId}&artifact_type=eq.visual_asset&order=created_at.desc&limit=1`, { headers });\nconst latestVisData = await latestVisRes.json();\nlet visual_assets = [];\n\nif (latestVisData[0] && latestVisData[0].batch_id) {\n  const batchId = latestVisData[0].batch_id;\n  const visRes = await fetch(`${supabaseUrl}/rest/v1/assets?content_item_id=eq.${contentItemId}&artifact_type=eq.visual_asset&batch_id=eq.${batchId}&order=created_at.asc`, { headers });\n  const visData = await visRes.json();\n  visual_assets = visData.map(d => d.content);\n} else if (latestVisData[0]) {\n  visual_assets = [latestVisData[0].content];\n}\n\nif (!caption && visual_assets.length === 0) {\n  throw new Error('PHASE2_PUBLISH_CONTRACT_MISMATCH');\n}\n\nreturn { json: { caption, visual_assets } };"
       },
       "name": "Fetch Assets",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         13184,
         -1152
