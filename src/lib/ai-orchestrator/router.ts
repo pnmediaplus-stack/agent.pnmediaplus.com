@@ -183,12 +183,17 @@ Violating these rules and attempting to do the specialized work yourself will br
           }
           const flag = args.image_action === 'use_provided' ? '--image-action=use_provided' : '--image-action=generate_new';
           const duplicationRequest = isDuplicationRequest(text);
-          return {
-            intentType: "create_content",
-            mappedCommand: duplicationRequest && args.content_item_id
-              ? `/duplicate ${args.content_item_id}`
-              : args.content_item_id
-                ? `/auto_content ${args.content_item_id} ${flag} ${args.topic}`
+            let finalId = args.content_item_id;
+            if (!finalId) {
+              const uuidMatch = text.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+              if (uuidMatch) finalId = uuidMatch[0];
+            }
+            return {
+              intentType: "create_content",
+              mappedCommand: duplicationRequest && finalId
+              ? `/duplicate ${finalId}`
+                : finalId
+                  ? `/auto_content ${finalId} ${flag} ${args.topic}`
                 : `/auto_content ${flag} ${args.topic}`
           };
         } else if (funcName === "publish_content") {
