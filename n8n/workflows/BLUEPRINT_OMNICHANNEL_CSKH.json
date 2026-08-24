@@ -19,8 +19,8 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT bot_system_prompt FROM public.crm_channels WHERE id = $1",
-        "values": "={{ $json.body.channel_id }}"
+        "query": "SELECT bot_system_prompt, channel_external_id FROM public.crm_channels WHERE id = $1",
+        "values": "={{ $('Webhook Trigger (From Next.js)').first().json.body.channel_id }}"
       },
       "id": "node-fetch-prompt",
       "name": "Fetch Dynamic System Prompt",
@@ -34,7 +34,7 @@
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT tag_name FROM public.crm_tenant_tags WHERE organization_id = $1",
-        "values": "={{ $json.body.organization_id }}"
+        "values": "={{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}"
       },
       "id": "node-fetch-tags",
       "name": "Fetch Allowed Tags",
@@ -43,6 +43,90 @@
       "position": [ 400, 0 ],
       "notesInFlow": true,
       "notes": "Kéo danh sách thẻ để truyền vào Tool Update Tags"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env[\"SUPABASE_URL\"] || '').replace(new RegExp('/$'), '') + '/rest/v1/rpc/phase076_find_tenant_integration' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_organization_id",
+              "value": "={{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}"
+            },
+            {
+              "name": "p_integration_key",
+              "value": "={{ 'facebook_page_' + $('Fetch Dynamic System Prompt').first().json.channel_external_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-fetch-facebook-integration",
+      "name": "Fetch Facebook Integration",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 520, 0 ],
+      "notesInFlow": true,
+      "notes": "Lấy vault_credential_ref của Facebook Page từ tenant integration"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env[\"NEXTJS_CONTROL_PLANE_BASE_URL\"] || '').replace(new RegExp('/$'), '') + '/api/byok/redeem' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-broker-internal-secret",
+              "value": "={{ $env[\"BROKER_INTERNAL_SECRET\"] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "reference_token",
+              "value": "={{ $('Fetch Facebook Integration').first().json.vault_credential_ref }}"
+            },
+            {
+              "name": "organization_id",
+              "value": "={{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}"
+            },
+            {
+              "name": "integration_key",
+              "value": "={{ 'facebook_page_' + $('Fetch Dynamic System Prompt').first().json.channel_external_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-redeem-facebook-token",
+      "name": "Redeem BYOK Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 640, 0 ],
+      "notesInFlow": true,
+      "notes": "Đổi vault token ra access token thật để gửi Facebook"
     },
     {
       "parameters": {
@@ -100,7 +184,20 @@
         "name": "update_customer_needs",
         "description": "={{ 'Dùng để gán các thẻ phân loại sau: ' + JSON.stringify($node['Fetch Allowed Tags'].json.tags) }}",
         "method": "POST",
-        "url": "https://agent.pnmediaplus.com/api/internal/customer/tags"
+        "url": "https://agent.pnmediaplus.com/api/internal/customer/tags",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env[\"CONTROL_PLANE_SECRET\"] }}"
+            }
+          ]
+        }
       },
       "id": "node-tool-tags",
       "name": "Tool: Update Tags",
@@ -113,7 +210,20 @@
         "name": "request_human_handoff",
         "description": "Gọi tool này khi khách yêu cầu gặp người thật hoặc khi bạn không có dữ liệu để trả lời.",
         "method": "POST",
-        "url": "https://agent.pnmediaplus.com/api/internal/thread/handoff"
+        "url": "https://agent.pnmediaplus.com/api/internal/thread/handoff",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env[\"CONTROL_PLANE_SECRET\"] }}"
+            }
+          ]
+        }
       },
       "id": "node-tool-handoff",
       "name": "Tool: Handoff to Human",
@@ -125,9 +235,11 @@
       "parameters": {
         "method": "POST",
         "url": "https://graph.facebook.com/v19.0/me/messages",
+        "onError": "continueRegularOutput",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
+            { "name": "access_token", "value": "={{ $('Redeem BYOK Token').first().json.data.access_token }}" },
             { "name": "recipient", "value": "={{ { id: $('Webhook Trigger (From Next.js)').first().json.body.sender_id } }}" },
             { "name": "message", "value": "={{ { text: $json.output } }}" }
           ]
@@ -149,7 +261,7 @@
           "thread_id": "={{ $('Webhook Trigger (From Next.js)').first().json.body.thread_id }}",
           "sender_type": "bot",
           "content": "={{ $('AI Agent (CSKH)').first().json.output }}",
-          "delivery_status": "={{ $json.message_id ? 'sent' : 'failed' }}"
+          "delivery_status": "={{ $json.error || ($json.statusCode && $json.statusCode >= 400) ? 'failed' : 'sent' }}"
         }
       },
       "id": "node-insert-outbound",
@@ -167,6 +279,12 @@
       "main": [ [ { "node": "Fetch Allowed Tags", "type": "main", "index": 0 } ] ]
     },
     "Fetch Allowed Tags": {
+      "main": [ [ { "node": "Fetch Facebook Integration", "type": "main", "index": 0 } ] ]
+    },
+    "Fetch Facebook Integration": {
+      "main": [ [ { "node": "Redeem BYOK Token", "type": "main", "index": 0 } ] ]
+    },
+    "Redeem BYOK Token": {
       "main": [ [ { "node": "AI Agent (CSKH)", "type": "main", "index": 0 } ] ]
     },
     "AI Agent (CSKH)": {

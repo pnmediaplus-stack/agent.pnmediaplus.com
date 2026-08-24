@@ -6,10 +6,28 @@ type SupabaseClient = {
   rpc: (functionName: string, params?: SupabaseRpcParams) => Promise<{ data: any; error: any }>;
   from: (tableName: string) => {
     select: (query: string) => any;
+    insert: (values: any) => any;
+    update: (values: any) => any;
+    upsert: (values: any) => any;
+    delete: () => any;
+    eq: (column: string, value: any) => any;
+    order: (column: string, options?: { ascending?: boolean }) => any;
+    limit: (count: number) => any;
+    maybeSingle: () => Promise<{ data: any; error: any }>;
+    single: () => Promise<{ data: any; error: any }>;
   };
   schema: (schemaName: string) => {
     from: (tableName: string) => {
       select: (query: string) => any;
+      insert: (values: any) => any;
+      update: (values: any) => any;
+      upsert: (values: any) => any;
+      delete: () => any;
+      eq: (column: string, value: any) => any;
+      order: (column: string, options?: { ascending?: boolean }) => any;
+      limit: (count: number) => any;
+      maybeSingle: () => Promise<{ data: any; error: any }>;
+      single: () => Promise<{ data: any; error: any }>;
     };
   };
 };
@@ -74,8 +92,29 @@ export function createServiceRoleClient(): SupabaseClient {
         _order: '',
         _limit: '',
         _single: false,
+        _operation: '',
+        _values: undefined as any,
         select: (query: string) => {
           queryBuilder._select = query;
+          return queryBuilder;
+        },
+        insert: (values: any) => {
+          queryBuilder._operation = "insert";
+          queryBuilder._values = values;
+          return queryBuilder;
+        },
+        update: (values: any) => {
+          queryBuilder._operation = "update";
+          queryBuilder._values = values;
+          return queryBuilder;
+        },
+        upsert: (values: any) => {
+          queryBuilder._operation = "upsert";
+          queryBuilder._values = values;
+          return queryBuilder;
+        },
+        delete: () => {
+          queryBuilder._operation = "delete";
           return queryBuilder;
         },
         eq: (column: string, value: any) => {
@@ -125,6 +164,14 @@ export function createServiceRoleClient(): SupabaseClient {
           const text = await response.text();
           const data = text ? JSON.parse(text) : null;
           return { data, error: null };
+        },
+        maybeSingle: async () => {
+          queryBuilder._single = true;
+          const result = await (queryBuilder.single as any)();
+          if (result.error && result.error?.message?.includes("406")) {
+            return { data: null, error: null };
+          }
+          return result;
         },
         then: function(resolve: any, reject: any) {
           // This allows the query builder itself to be awaited to fetch an array of rows
