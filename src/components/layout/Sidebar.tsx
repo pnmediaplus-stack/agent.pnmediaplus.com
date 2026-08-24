@@ -43,6 +43,7 @@ const navGroups: NavGroup[] = [
     title: "Main",
     items: [
       { href: "/dashboard", labelKey: "nav.dashboard", fallbackLabel: "Dashboard", icon: LayoutDashboard },
+      { href: "/omnichannel" as Route, labelKey: "nav.omnichannel", fallbackLabel: "Omnichannel CSKH", icon: MessagesSquare },
       { href: "/chat", labelKey: "nav.chat", fallbackLabel: "Chat", icon: MessagesSquare },
       { href: "/media-pipeline", labelKey: "nav.mediaPipeline", fallbackLabel: "Media Pipeline", icon: Clapperboard }
     ]
