@@ -388,7 +388,8 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
                threadId,
                contentItemId: clonedItemId,
                referenceToken: referenceToken,
-               topic: "--image-action=use_provided " + sourceBrief
+               topic: sourceBrief,
+               image_action: "use_provided"
              });
 
              return {
