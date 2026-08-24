@@ -2,20 +2,6 @@ export const AI_ORCHESTRATOR_TOOLS = [
   {
     type: "function",
     function: {
-      name: "duplicate_content",
-      description: "Duplicate or clone an existing content item perfectly (reusing its exact text and images) to get a new ID for publishing to a different page.",
-      parameters: {
-        type: "object",
-        properties: {
-          content_item_id: { type: "string", description: "The ID of the existing content item to duplicate" }
-        },
-        required: ["content_item_id"]
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
       name: "create_content",
       description: "Trigger the creation of marketing content or viral research for a campaign or topic. MUST be called whenever the user asks to write (viết), draft, create a post, or asks for a sample article (bài mẫu).",
       parameters: {

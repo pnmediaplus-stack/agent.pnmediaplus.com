@@ -191,7 +191,7 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
     if (trimmedBody.startsWith('/')) {
       const cmd = trimmedBody.split(/\s+/)[0];
       if (cmd === '/auto_content') intentType = 'create_content';
-        else if (cmd === '/duplicate') intentType = 'create_content';
+      else if (cmd === '/duplicate') intentType = 'create_content';
       else if (cmd === '/viral_research') intentType = 'create_content';
       else if (cmd === '/publish') intentType = 'publish_content';
       else if (cmd === '/plan_campaign') intentType = 'plan_campaign';
@@ -273,7 +273,9 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
       if (whitelist.includes(command)) {
         // Enforce args
         let missingArgsMsg = '';
-        if (command === '/auto_content' || command === '/viral_research') {
+        if (command === '/duplicate') {
+          if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> (Ví dụ: ${command} 12345)`;
+        } else if (command === '/auto_content' || command === '/viral_research') {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <content_item_id> hoặc đoạn văn bản (Ví dụ: ${command} 12345 hoặc ${command} Nội dung bài viết...)`;
         } else if (command === '/brainstorm') {
           if (args.length < 1) missingArgsMsg = `Lệnh ${command} yêu cầu tham số: <văn bản mô tả ý tưởng> (Ví dụ: ${command} Lên 15 chủ đề cho 15 ngày)`;
@@ -328,7 +330,62 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
         // Fire mock/real webhook depending on command
         // For /auto_content we hit our newly integrated workflow "generate-content" endpoint
         let webhookResult;
-        if (command === '/auto_content' || command === '/viral_research') {
+        if (command === '/duplicate') {
+           const sourceContentItemId = args[0];
+           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+           if (!uuidRegex.test(sourceContentItemId)) {
+             throw new Error("DUPLICATE_SOURCE_ID_INVALID");
+           }
+
+           const sourceContextRes = await dbLoadContextData(organizationId, 'content', sourceContentItemId);
+           const sourceContext = sourceContextRes.data;
+           if (!sourceContext) {
+             throw new Error(`SOURCE_CONTENT_ITEM_NOT_FOUND: ${sourceContentItemId}`);
+           }
+
+           const sourceBrief = String(sourceContext.brief || sourceContext.title || '').trim();
+           if (!sourceBrief) {
+             throw new Error(`SOURCE_CONTENT_ITEM_HAS_NO_CLONEABLE_TEXT: ${sourceContentItemId}`);
+           }
+
+           const sourceVisualAssets = Array.isArray(sourceContext.artifacts?.visual_assets)
+             ? sourceContext.artifacts.visual_assets.filter((asset: unknown): asset is string => typeof asset === 'string')
+             : [];
+
+           const clonedRes = await dbCreateContentItemFromBrief(
+             organizationId,
+             sourceBrief,
+             auth.email,
+             sourceContext.campaign_id || null,
+             sourceVisualAssets
+           );
+
+           if (clonedRes.error || !clonedRes.data?.id) {
+             throw new Error(`DUPLICATE_CONTENT_CREATE_FAILED: ${clonedRes.error || 'Unknown Error'}`);
+           }
+
+           const clonedItemId = clonedRes.data.id;
+           const successMsgResult = await dbInsertChatMessage(organizationId, {
+             threadId,
+             sender: "system",
+             body: `Đã nhân bản nội dung từ bài viết \`${sourceContentItemId}\` sang ID mới \`${clonedItemId}\`.`,
+             intentType: "route_department"
+           });
+
+           await dbInsertAuditLog(organizationId, {
+             entityId: threadId,
+             entityType: "chat_thread",
+             action: "content_duplicated",
+             actor: auth.email,
+             details: `source=${sourceContentItemId} clone=${clonedItemId} requestId=${requestId}`
+           });
+
+           return {
+             success: true,
+             message: successMsgResult.data ? JSON.parse(JSON.stringify(successMsgResult.data)) : null,
+             webhook: { ok: true, route: "internal/duplicate", status: 200, message: `Cloned into ${clonedItemId}` }
+           };
+        } else if (command === '/auto_content' || command === '/viral_research') {
            const referenceToken = await issueAutoContentReferenceToken(organizationId);
            
            // 1. Parse out --campaign="name" if present
