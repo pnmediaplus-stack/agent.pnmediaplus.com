@@ -1,30 +1,33 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import useSWR from 'swr';
 import InboxSidebar from './InboxSidebar';
 import ChatArea from './ChatArea';
 import CustomerProfile from './CustomerProfile';
 import { useCrmStore } from '@/lib/stores/crmStore';
 
+const fetcher = (url: string) => fetch(url).then(r => {
+  if (!r.ok) throw new Error('Không tải được dữ liệu');
+  return r.json();
+});
+
 export default function OmnichannelWorkspace() {
   const { setThreads, setThreadsError, activeThreadId } = useCrmStore();
 
+  const { data, error } = useSWR('/api/crm/threads', fetcher, {
+    refreshInterval: 3000, // Near realtime polling every 3s
+    revalidateOnFocus: true
+  });
+
   useEffect(() => {
-    fetch('/api/crm/threads')
-      .then(async (res) => {
-        if (!res.ok) {
-          throw new Error('Không tải được danh sách hội thoại');
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data)) setThreads(data);
-      })
-      .catch(err => {
-        console.error("Failed to fetch threads:", err);
-        setThreadsError(err instanceof Error ? err.message : 'Không tải được danh sách hội thoại');
-      });
-  }, [setThreads, setThreadsError]);
+    if (data && Array.isArray(data)) {
+      setThreads(data);
+    }
+    if (error) {
+      setThreadsError(error.message);
+    }
+  }, [data, error, setThreads, setThreadsError]);
 
   return (
     <div className="flex h-full w-full overflow-hidden border-t border-gray-200">

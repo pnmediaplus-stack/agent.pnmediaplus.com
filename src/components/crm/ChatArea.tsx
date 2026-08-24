@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
+import useSWR from 'swr';
 import { useCrmStore } from '@/lib/stores/crmStore';
+
+const fetcher = (url: string) => fetch(url).then(r => r.json());
 
 export default function ChatArea() {
   const { activeThreadId, messages, setMessages, addMessage, threads, upsertThread } = useCrmStore();
@@ -13,16 +16,18 @@ export default function ChatArea() {
   const activeThread = threads.find(t => t.id === activeThreadId);
   const threadMessages = activeThreadId ? messages[activeThreadId] || [] : [];
 
+  const { data: fetchedMessages } = useSWR(
+    activeThreadId ? `/api/crm/messages?threadId=${activeThreadId}` : null,
+    fetcher,
+    { refreshInterval: 3000, revalidateOnFocus: true }
+  );
+
   useEffect(() => {
-    if (activeThreadId && !messages[activeThreadId]) {
-      fetch(`/api/crm/messages?threadId=${activeThreadId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) setMessages(activeThreadId, data);
-        })
-        .catch(err => console.error("Failed to fetch messages:", err));
+    if (activeThreadId && Array.isArray(fetchedMessages)) {
+      // Basic merge/overwrite strategy. In production, consider merging to preserve local 'failed' bubbles
+      setMessages(activeThreadId, fetchedMessages);
     }
-  }, [activeThreadId, messages, setMessages]);
+  }, [activeThreadId, fetchedMessages, setMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
