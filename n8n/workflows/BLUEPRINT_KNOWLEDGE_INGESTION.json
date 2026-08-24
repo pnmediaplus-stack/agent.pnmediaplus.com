@@ -102,6 +102,58 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.2,
       "position": [ 800, 0 ]
+    },
+    {
+      "parameters": {},
+      "id": "node-ingestion-error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [ 0, 320 ],
+      "notesInFlow": true,
+      "notes": "Nhánh lỗi cho ingestion để document hỏng extraction tự chuyển failed thay vì kẹt processing."
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $('Webhook Trigger').first().json.body || {};\nconst errorMessage = $('Error Trigger').first().json.execution?.error?.message || 'Unknown ingestion error';\n\nreturn {\n  json: {\n    document_id: body.document_id || '',\n    organization_id: body.organization_id || '',\n    error_message: errorMessage,\n    stage: 'text_extraction',\n    metadata: {\n      file_name: body.file_name || '',\n      file_path: body.file_path || '',\n      mime_type: body.mime_type || ''\n    }\n  }\n};"
+      },
+      "id": "node-format-ingestion-error",
+      "name": "Format Ingestion Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 200, 320 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/crm/knowledge/ingestion-failed",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json)}}",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-request-id",
+              "value": "={{$execution.id}}-knowledge-failed"
+            }
+          ]
+        }
+      },
+      "id": "node-mark-document-failed",
+      "name": "Mark Document Failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 400, 320 ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nlRh1UkRewsK7CCR",
+          "name": "ControlPlaneAuth"
+        }
+      }
     }
   ],
   "connections": {
@@ -123,6 +175,12 @@
     },
     "OpenAI Embeddings": {
       "ai_embedding": [ [ { "node": "Insert to Postgres Vector", "type": "ai_embedding", "index": 0 } ] ]
+    },
+    "Error Trigger": {
+      "main": [ [ { "node": "Format Ingestion Error", "type": "main", "index": 0 } ] ]
+    },
+    "Format Ingestion Error": {
+      "main": [ [ { "node": "Mark Document Failed", "type": "main", "index": 0 } ] ]
     }
   }
 }
