@@ -74,6 +74,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'CRM_MESSAGE_INSERT_EMPTY' }, { status: 502 });
     }
 
+    // --- OUTBOUND DISPATCH ---
+    // Trigger n8n outbound worker which has access to vault and BYOK redemption
+    const n8nOutboundUrl = process.env.N8N_CSKH_OUTBOUND_WEBHOOK_URL;
+    if (n8nOutboundUrl) {
+      fetch(n8nOutboundUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "send_human_reply",
+          organization_id: organizationId,
+          thread_id: payload.threadId,
+          message_id: message.id,
+          content: payload.content
+        })
+      }).catch(e => console.error("Error calling n8n outbound webhook:", e));
+    } else {
+      console.warn("N8N_CSKH_OUTBOUND_WEBHOOK_URL is not configured. Message remains queued.");
+    }
+
     const threadUpdateResponse = await fetchSupabaseRest('crm_threads', {
       method: 'PATCH',
       searchParams: {
