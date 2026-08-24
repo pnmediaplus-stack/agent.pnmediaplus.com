@@ -26,7 +26,7 @@ GRANT ALL ON TABLE public.crm_tenant_tags TO service_role;
 CREATE POLICY "Allow members to view tags" ON public.crm_tenant_tags
 FOR SELECT USING (
   organization_id IN (
-    SELECT organization_id FROM portal_auth.memberships WHERE user_id = auth.uid()
+    SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()
   )
 );
 

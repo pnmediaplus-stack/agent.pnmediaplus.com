@@ -120,59 +120,59 @@ ALTER TABLE public.crm_webhook_events ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
 
 -- Example RLS Policy for Authenticated Users (Staff viewing their organization's CRM)
--- Assumes auth.uid() can be joined with portal_auth.memberships to check organization access.
+-- Assumes auth.uid() can be joined with public.portal_organization_memberships to check organization access.
 -- We will implement basic RLS allowing members of the organization to select/insert/update.
 
 CREATE POLICY "Allow members to view channels" ON public.crm_channels
 FOR SELECT USING (
   organization_id IN (
-    SELECT organization_id FROM portal_auth.memberships WHERE user_id = auth.uid()
+    SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()
   )
 );
 
 CREATE POLICY "Allow members to view customers" ON public.crm_customers
 FOR SELECT USING (
   organization_id IN (
-    SELECT organization_id FROM portal_auth.memberships WHERE user_id = auth.uid()
+    SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()
   )
 );
 CREATE POLICY "Allow members to update customers" ON public.crm_customers
 FOR UPDATE USING (
   organization_id IN (
-    SELECT organization_id FROM portal_auth.memberships WHERE user_id = auth.uid()
+    SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()
   )
 );
 
 CREATE POLICY "Allow members to view identities" ON public.crm_channel_identities
 FOR SELECT USING (
   organization_id IN (
-    SELECT organization_id FROM portal_auth.memberships WHERE user_id = auth.uid()
+    SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()
   )
 );
 
 CREATE POLICY "Allow members to view threads" ON public.crm_threads
 FOR SELECT USING (
   organization_id IN (
-    SELECT organization_id FROM portal_auth.memberships WHERE user_id = auth.uid()
+    SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()
   )
 );
 CREATE POLICY "Allow members to update threads" ON public.crm_threads
 FOR UPDATE USING (
   organization_id IN (
-    SELECT organization_id FROM portal_auth.memberships WHERE user_id = auth.uid()
+    SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()
   )
 );
 
 CREATE POLICY "Allow members to view messages" ON public.crm_messages
 FOR SELECT USING (
   organization_id IN (
-    SELECT organization_id FROM portal_auth.memberships WHERE user_id = auth.uid()
+    SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()
   )
 );
 CREATE POLICY "Allow members to insert human messages" ON public.crm_messages
 FOR INSERT WITH CHECK (
   organization_id IN (
-    SELECT organization_id FROM portal_auth.memberships WHERE user_id = auth.uid()
+    SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()
   )
   AND sender_type = 'human'
 );
@@ -180,7 +180,7 @@ FOR INSERT WITH CHECK (
 CREATE POLICY "Allow members to view consultations" ON public.crm_consultations
 FOR SELECT USING (
   organization_id IN (
-    SELECT organization_id FROM portal_auth.memberships WHERE user_id = auth.uid()
+    SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()
   )
 );
 
