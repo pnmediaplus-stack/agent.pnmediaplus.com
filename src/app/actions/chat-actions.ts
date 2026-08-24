@@ -365,26 +365,37 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
            }
 
            const clonedItemId = clonedRes.data.id;
-           const successMsgResult = await dbInsertChatMessage(organizationId, {
-             threadId,
-             sender: "system",
-             body: `Đã nhân bản nội dung từ bài viết \`${sourceContentItemId}\` sang ID mới \`${clonedItemId}\`.`,
-             intentType: "route_department"
-           });
+             const successMsgResult = await dbInsertChatMessage(organizationId, {
+               threadId,
+               sender: "system",
+               body: `Hệ thống đang tiến hành nhân bản bài viết \`${sourceContentItemId}\` sang ID mới \`${clonedItemId}\`...\nQuá trình **viết lại nội dung (Spin Content)** và **giữ nguyên hình ảnh cũ** đang được thực hiện. Xin vui lòng chờ ít phút.`,
+               intentType: "route_department"
+             });
 
-           await dbInsertAuditLog(organizationId, {
-             entityId: threadId,
-             entityType: "chat_thread",
-             action: "content_duplicated",
-             actor: auth.email,
-             details: `source=${sourceContentItemId} clone=${clonedItemId} requestId=${requestId}`
-           });
+             await dbInsertAuditLog(organizationId, {
+               entityId: threadId,
+               entityType: "chat_thread",
+               action: "content_duplicated",
+               actor: auth.email,
+               details: `source=${sourceContentItemId} clone=${clonedItemId} requestId=${requestId}`
+             });
+             
+             // Trigger AI workflow to rewrite caption and use provided images
+             const referenceToken = await issueAutoContentReferenceToken(organizationId);
+             webhookResult = await postN8nWebhook("webhook/generate-content", {
+               command: "auto_content",
+               organization_id: organizationId,
+               threadId,
+               contentItemId: clonedItemId,
+               referenceToken: referenceToken,
+               topic: "--image-action=use_provided " + sourceBrief
+             });
 
-           return {
-             success: true,
-             message: successMsgResult.data ? JSON.parse(JSON.stringify(successMsgResult.data)) : null,
-             webhook: { ok: true, route: "internal/duplicate", status: 200, message: `Cloned into ${clonedItemId}` }
-           };
+             return {
+               success: true,
+               message: successMsgResult.data ? JSON.parse(JSON.stringify(successMsgResult.data)) : null,
+               webhook: { ok: true, route: "webhook/generate-content", status: 200, message: `Cloned into ${clonedItemId} and triggered AI` }
+             };
         } else if (command === '/auto_content' || command === '/viral_research') {
            const referenceToken = await issueAutoContentReferenceToken(organizationId);
            
