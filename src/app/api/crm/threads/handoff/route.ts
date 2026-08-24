@@ -1,39 +1,47 @@
 import { NextResponse } from 'next/server';
-import { verifyUiAuth } from '@/lib/ui-auth-guard';
+import { z } from 'zod';
+import { fetchSupabaseRest, readRestJson, requireCrmRouteContext } from '@/lib/crm-api';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
+
+const handoffSchema = z.object({
+  threadId: z.string().uuid(),
+  status: z.enum(['bot_handling', 'human_handling', 'resolved'])
+});
 
 export async function POST(req: Request) {
   try {
-    const auth = await verifyUiAuth(req);
-    if (!auth.ok) return auth.response;
+    const guard = await requireCrmRouteContext(req, handoffSchema);
+    if (!guard.ok) return guard.response;
 
-    const body = await req.json();
-    const { threadId, status } = body;
-
-    if (!threadId || !status) return new NextResponse('Missing fields', { status: 400 });
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    const res = await fetch(`${supabaseUrl}/rest/v1/crm_threads?id=eq.${threadId}`, {
+    const { organizationId, payload } = guard.context;
+    const response = await fetchSupabaseRest('crm_threads', {
       method: 'PATCH',
-      headers: {
-        'apikey': serviceRoleKey!,
-        'Authorization': `Bearer ${serviceRoleKey}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
+      prefer: 'return=representation',
+      searchParams: {
+        organization_id: `eq.${organizationId}`,
+        id: `eq.${payload.threadId}`
       },
-      body: JSON.stringify({ status })
+      body: JSON.stringify({
+        status: payload.status,
+        unread_count: payload.status === 'human_handling' ? 0 : undefined
+      })
     });
 
-    if (!res.ok) throw new Error(await res.text());
-    
-    const threads = await res.json();
-    return NextResponse.json(threads[0]);
-  } catch (error: any) {
-    console.error('Error toggling handoff:', error);
-    return new NextResponse(error.message, { status: 500 });
+    if (!response.ok) {
+      console.error('CRM_THREAD_HANDOFF_FAILED', await response.text());
+      return NextResponse.json({ error: 'CRM_THREAD_HANDOFF_FAILED' }, { status: 502 });
+    }
+
+    const [thread] = await readRestJson<unknown[]>(response);
+    if (!thread) {
+      return NextResponse.json({ error: 'THREAD_NOT_FOUND' }, { status: 404 });
+    }
+
+    return NextResponse.json(thread);
+  } catch (error) {
+    console.error('Error toggling CRM handoff:', error);
+    return NextResponse.json({ error: 'CRM_THREAD_HANDOFF_FAILED' }, { status: 500 });
   }
 }
 

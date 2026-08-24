@@ -1,42 +1,36 @@
 import { NextResponse } from 'next/server';
-import { verifyUiAuth } from '@/lib/ui-auth-guard';
-import { readPortalAccessToken, loadPortalOrganizationContext } from '@/lib/portal-auth';
+import { z } from 'zod';
+import { fetchSupabaseRest, readRestJson, requireCrmRouteContext } from '@/lib/crm-api';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
+
+const messagesQuerySchema = z.object({
+  threadId: z.string().uuid()
+});
 
 export async function GET(req: Request) {
   try {
-    const auth = await verifyUiAuth(req);
-    if (!auth.ok) return auth.response;
+    const guard = await requireCrmRouteContext(req, messagesQuerySchema);
+    if (!guard.ok) return guard.response;
 
-    const token = readPortalAccessToken(req.headers);
-    const orgContext = await loadPortalOrganizationContext(token || '', auth.user.id);
-    if (orgContext.state !== 'ready') {
-      return NextResponse.json({ error: 'FORBIDDEN', message: 'Org context not ready' }, { status: 403 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const threadId = searchParams.get('threadId');
-    if (!threadId) return new NextResponse('Missing threadId', { status: 400 });
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    const res = await fetch(`${supabaseUrl}/rest/v1/crm_messages?thread_id=eq.${threadId}&order=created_at.asc`, {
-      headers: {
-        'apikey': serviceRoleKey!,
-        'Authorization': `Bearer ${serviceRoleKey}`,
-      },
-      cache: 'no-store'
+    const { organizationId, payload } = guard.context;
+    const response = await fetchSupabaseRest('crm_messages', {
+      searchParams: {
+        organization_id: `eq.${organizationId}`,
+        thread_id: `eq.${payload.threadId}`,
+        order: 'created_at.asc'
+      }
     });
 
-    if (!res.ok) throw new Error(await res.text());
-    
-    const messages = await res.json();
-    return NextResponse.json(messages);
-  } catch (error: any) {
-    console.error('Error fetching messages:', error);
-    return new NextResponse(error.message, { status: 500 });
+    if (!response.ok) {
+      console.error('CRM_MESSAGES_FETCH_FAILED', await response.text());
+      return NextResponse.json({ error: 'CRM_MESSAGES_FETCH_FAILED' }, { status: 502 });
+    }
+
+    return NextResponse.json(await readRestJson<unknown[]>(response));
+  } catch (error) {
+    console.error('Error fetching CRM messages:', error);
+    return NextResponse.json({ error: 'CRM_MESSAGES_FETCH_FAILED' }, { status: 500 });
   }
 }
 

@@ -1,61 +1,99 @@
 import { NextResponse } from 'next/server';
-import { verifyUiAuth } from '@/lib/ui-auth-guard';
+import { z } from 'zod';
+import { fetchSupabaseRest, readRestJson, requireCrmRouteContext } from '@/lib/crm-api';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
+
+const sendMessageSchema = z.object({
+  threadId: z.string().uuid(),
+  content: z.string().trim().min(1).max(4000)
+});
+
+type CrmThreadRow = {
+  id: string;
+  status: 'bot_handling' | 'human_handling' | 'resolved';
+};
+
+type CrmMessageRow = {
+  id: string;
+  thread_id: string;
+  created_at: string;
+};
 
 export async function POST(req: Request) {
   try {
-    const auth = await verifyUiAuth(req);
-    if (!auth.ok) return auth.response;
+    const guard = await requireCrmRouteContext(req, sendMessageSchema);
+    if (!guard.ok) return guard.response;
 
-    const body = await req.json();
-    const { threadId, content, organizationId } = body;
+    const { organizationId, payload } = guard.context;
+    const threadResponse = await fetchSupabaseRest('crm_threads', {
+      searchParams: {
+        organization_id: `eq.${organizationId}`,
+        id: `eq.${payload.threadId}`,
+        select: 'id,status',
+        limit: 1
+      }
+    });
 
-    if (!threadId || !content) return new NextResponse('Missing fields', { status: 400 });
+    if (!threadResponse.ok) {
+      console.error('CRM_THREAD_LOOKUP_FAILED', await threadResponse.text());
+      return NextResponse.json({ error: 'CRM_THREAD_LOOKUP_FAILED' }, { status: 502 });
+    }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const [thread] = await readRestJson<CrmThreadRow[]>(threadResponse);
+    if (!thread) {
+      return NextResponse.json({ error: 'THREAD_NOT_FOUND' }, { status: 404 });
+    }
 
-    // 1. Insert into DB so UI updates via Realtime
-    const res = await fetch(`${supabaseUrl}/rest/v1/crm_messages`, {
+    if (thread.status !== 'human_handling') {
+      return NextResponse.json(
+        { error: 'HUMAN_HANDOFF_REQUIRED', message: 'Thread must be in human_handling before staff can send messages.' },
+        { status: 409 }
+      );
+    }
+
+    const insertResponse = await fetchSupabaseRest('crm_messages', {
       method: 'POST',
-      headers: {
-        'apikey': serviceRoleKey!,
-        'Authorization': `Bearer ${serviceRoleKey}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
+      prefer: 'return=representation',
       body: JSON.stringify({
         organization_id: organizationId,
-        thread_id: threadId,
+        thread_id: payload.threadId,
         sender_type: 'human',
-        content,
+        content: payload.content,
         delivery_status: 'queued'
       })
     });
 
-    if (!res.ok) throw new Error(await res.text());
-    
-    const messages = await res.json();
-    const message = messages[0];
+    if (!insertResponse.ok) {
+      console.error('CRM_MESSAGE_INSERT_FAILED', await insertResponse.text());
+      return NextResponse.json({ error: 'CRM_MESSAGE_INSERT_FAILED' }, { status: 502 });
+    }
 
-    // 2. Mock sending to Facebook API (or triggering n8n outbound webhook)
-    setTimeout(async () => {
-      await fetch(`${supabaseUrl}/rest/v1/crm_messages?id=eq.${message.id}`, {
-        method: 'PATCH',
-        headers: {
-          'apikey': serviceRoleKey!,
-          'Authorization': `Bearer ${serviceRoleKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ delivery_status: 'sent' })
-      });
-    }, 1000);
+    const [message] = await readRestJson<CrmMessageRow[]>(insertResponse);
+    if (!message) {
+      return NextResponse.json({ error: 'CRM_MESSAGE_INSERT_EMPTY' }, { status: 502 });
+    }
+
+    const threadUpdateResponse = await fetchSupabaseRest('crm_threads', {
+      method: 'PATCH',
+      searchParams: {
+        organization_id: `eq.${organizationId}`,
+        id: `eq.${payload.threadId}`
+      },
+      body: JSON.stringify({
+        last_message_at: message.created_at,
+        unread_count: 0
+      })
+    });
+
+    if (!threadUpdateResponse.ok) {
+      console.error('CRM_THREAD_TOUCH_FAILED', await threadUpdateResponse.text());
+    }
 
     return NextResponse.json(message);
-  } catch (error: any) {
-    console.error('Error sending message:', error);
-    return new NextResponse(error.message, { status: 500 });
+  } catch (error) {
+    console.error('Error sending CRM message:', error);
+    return NextResponse.json({ error: 'CRM_MESSAGE_SEND_FAILED' }, { status: 500 });
   }
 }
 

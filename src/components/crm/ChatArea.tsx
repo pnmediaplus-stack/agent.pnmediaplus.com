@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useCrmStore } from '@/lib/stores/crmStore';
 
 export default function ChatArea() {
-  const { activeThreadId, messages, setMessages, addMessage, threads } = useCrmStore();
+  const { activeThreadId, messages, setMessages, addMessage, threads, upsertThread } = useCrmStore();
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -38,8 +38,7 @@ export default function ChatArea() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           threadId: activeThreadId,
-          content: inputText,
-          organizationId: activeThread.channel_id // Need to resolve org id properly, but fine for mock
+          content: inputText
         })
       });
       if (res.ok) {
@@ -58,12 +57,14 @@ export default function ChatArea() {
     if (!activeThreadId || !activeThread) return;
     const newStatus = activeThread.status === 'bot_handling' ? 'human_handling' : 'bot_handling';
     try {
-      await fetch('/api/crm/threads/handoff', {
+      const res = await fetch('/api/crm/threads/handoff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ threadId: activeThreadId, status: newStatus })
       });
-      // Need a fetch refresh here or rely on realtime
+      if (res.ok) {
+        upsertThread(await res.json());
+      }
     } catch (err) {
       console.error(err);
     }
