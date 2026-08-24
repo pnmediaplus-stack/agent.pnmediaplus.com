@@ -641,7 +641,7 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
            webhookResult = await postN8nWebhook("webhook/fb-publish-executor", {
              integration_key: integrationKey,
              content_item_id: contentItemId,
-             
+             artifact_version_id: ctxRes.data?.artifact_version_id,
              organization_id: organizationId,
              reference_token: referenceToken,
              thread_id: threadId
@@ -943,6 +943,7 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
        const webhookResult = await postN8nWebhook("webhook/fb-publish-executor", {
          integration_key: integrationKey,
          content_item_id: contentItemId,
+         artifact_version_id: ctxRes.data?.artifact_version_id,
          organization_id: organizationId,
          reference_token: tokenRes.data.receipt?.lease_token,
          thread_id: threadId

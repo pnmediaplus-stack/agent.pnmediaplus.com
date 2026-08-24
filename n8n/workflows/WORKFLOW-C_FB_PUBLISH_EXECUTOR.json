@@ -19,7 +19,6 @@
           ]
         },
         "sendBody": true,
-        "options": {},
         "bodyParameters": {
           "parameters": [
             {
@@ -31,15 +30,17 @@
               "value": "={{ $json.body.integration_key }}"
             }
           ]
-        }
+        },
+        "options": {}
       },
       "name": "Fetch Facebook Integration",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        300,
-        300
-      ]
+        12736,
+        -1152
+      ],
+      "id": "9d3bbf8b-5faf-4d3c-b9c9-3241ed9f9c51"
     },
     {
       "parameters": {
@@ -81,9 +82,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        700,
-        300
-      ]
+        12944,
+        -1152
+      ],
+      "id": "89567a20-a69b-462f-be9d-db6404e20a10"
     },
     {
       "parameters": {
@@ -102,18 +104,19 @@
             }
           ]
         },
-        "options": {},
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  p_organization_id: $('Webhook Trigger').item.json.body.organization_id || $('Webhook Trigger').item.json.body.tenant_id,\n  p_content_item_id: $('Webhook Trigger').item.json.body.content_item_id,\n  p_artifact_version_id: $('Webhook Trigger').item.json.body.artifact_version_id || null,\n  p_integration_key: $('Webhook Trigger').item.json.body.integration_key || 'facebook_page_' + $('Webhook Trigger').item.json.body.page_id\n}) }}"
+        "jsonBody": "={{ JSON.stringify({\n  p_organization_id: $('Webhook Trigger').item.json.body.organization_id || $('Webhook Trigger').item.json.body.tenant_id,\n  p_content_item_id: $('Webhook Trigger').item.json.body.content_item_id,\n  p_artifact_version_id: $('Webhook Trigger').item.json.body.artifact_version_id || null,\n  p_integration_key: $('Webhook Trigger').item.json.body.integration_key || 'facebook_page_' + $('Webhook Trigger').item.json.body.page_id\n}) }}",
+        "options": {}
       },
       "name": "Fetch Assets",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        900,
-        300
-      ]
+        13184,
+        -1152
+      ],
+      "id": "3f1af7fa-bbff-4adc-956b-9bacc4d3511e"
     },
     {
       "parameters": {
@@ -123,9 +126,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1100,
-        300
-      ]
+        13392,
+        -1152
+      ],
+      "id": "a8fdb8f9-a962-4415-b2ed-51af48130896"
     },
     {
       "parameters": {
@@ -163,9 +167,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1200,
-        450
-      ]
+        13600,
+        -1152
+      ],
+      "id": "78b731e2-1933-40a8-93d0-e80754d49d31"
     },
     {
       "parameters": {
@@ -190,9 +195,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1300,
-        300
-      ]
+        13840,
+        -1152
+      ],
+      "id": "0a521568-2737-45d2-b12b-938fae87dba8"
     },
     {
       "parameters": {
@@ -235,8 +241,7 @@
               "value": "={{ $json.id }}"
             },
             {
-              "name": "externalUrl",
-              "value": ""
+              "name": "externalUrl"
             },
             {
               "name": "threadId",
@@ -250,9 +255,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1700,
-        300
-      ]
+        14240,
+        -1152
+      ],
+      "id": "8ea58cf0-4d80-458b-a5e2-4085dd273dcd"
     },
     {
       "parameters": {
@@ -264,9 +270,11 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        100,
-        300
-      ]
+        12528,
+        -1152
+      ],
+      "id": "f840087e-2404-400b-b1b8-4268aaba6db1",
+      "webhookId": "219540e2-8cb6-4b48-a091-c2a6e75ec327"
     },
     {
       "parameters": {},
@@ -274,9 +282,10 @@
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
       "position": [
-        100,
-        600
-      ]
+        12528,
+        -848
+      ],
+      "id": "4dd85cb9-1807-4196-b316-ff284f56693b"
     },
     {
       "parameters": {
@@ -326,9 +335,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        400,
-        600
-      ]
+        12944,
+        -848
+      ],
+      "id": "e8480f5e-e849-4b44-9295-606bfbcee865"
     },
     {
       "parameters": {
@@ -338,24 +348,26 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        200,
-        600
-      ]
+        12736,
+        -848
+      ],
+      "id": "e763c19d-2ae3-4e3b-bb0f-8bb98b3d664e"
     },
     {
       "parameters": {
         "jsCode": "const fbResponse = $json;\n\nif (fbResponse.error) {\n  throw new Error('Facebook API Error: ' + fbResponse.error.message);\n}\n\nlet externalId = '';\n\n// Facebook batch API returns an array of responses\nif (Array.isArray(fbResponse)) {\n  for (let i = 0; i < fbResponse.length; i++) {\n    const res = fbResponse[i];\n    if (res.code !== 200) {\n      const body = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;\n      const errorMsg = body?.error?.message || 'Unknown batch error';\n      throw new Error(`Facebook Batch Error at step ${i}: ${errorMsg}`);\n    }\n  }\n  \n  // Extract canonical ID from the last operation in the batch\n  const lastOp = fbResponse[fbResponse.length - 1];\n  const lastBody = typeof lastOp.body === 'string' ? JSON.parse(lastOp.body) : lastOp.body;\n  \n  // Graph API /photos returns { id: \"photo_id\", post_id: \"page_id_post_id\" }\n  // Graph API /feed returns { id: \"page_id_post_id\" }\n  externalId = lastBody?.post_id || lastBody?.id || '';\n} else if (fbResponse.id) {\n  externalId = fbResponse.post_id || fbResponse.id;\n} else {\n  throw new Error('Unexpected Facebook API response: ' + JSON.stringify(fbResponse));\n}\n\nreturn { \n  json: { \n    id: externalId, \n    status: 'ok', \n    fbResponse \n  } \n};"
       },
-      "id": "validate-fb-publish-node",
+      "id": "4b347611-8c03-4f1c-b15f-c37ebef2d998",
       "name": "Validate FB Publish",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1500,
-        300
+        14048,
+        -1152
       ]
     }
   ],
+  "pinData": {},
   "connections": {
     "Fetch Facebook Integration": {
       "main": [
@@ -467,5 +479,15 @@
         ]
       ]
     }
-  }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "84133c1a-1319-4e18-a168-546460d6b740",
+  "meta": {
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "id": "OxMf1eLvroBmIJYi",
+  "tags": []
 }
