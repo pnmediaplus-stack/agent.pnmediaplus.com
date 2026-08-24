@@ -67,12 +67,12 @@ FOR SELECT USING (
 
 -- Trigger cập nhật updated_at
 CREATE OR REPLACE FUNCTION public.set_crm_knowledge_updated_at()
-RETURNS TRIGGER AS $body
+RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$body LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_crm_knowledge_documents_updated_at ON public.crm_knowledge_documents;
 CREATE TRIGGER trg_crm_knowledge_documents_updated_at
