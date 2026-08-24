@@ -3,5 +3,4 @@
 -- This ensures the n8n phase2 publish pipeline can strictly rely on batch_id as the SSOT for grouping assets.
 
 CREATE OR REPLACE VIEW public.phase2_assets
-WITH (security_invoker = true)
 AS SELECT * FROM pn_content_phase2.assets;
