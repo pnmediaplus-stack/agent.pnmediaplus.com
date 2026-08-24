@@ -17,12 +17,23 @@ AS $$
 DECLARE
     v_customer_id UUID;
     v_existing_customer_id UUID;
-    v_identity_id UUID;
 BEGIN
-    -- 1. Check if the identity already exists on this channel
+    -- 1. Ensure the channel belongs to the same organization before any merge logic runs
+    IF NOT EXISTS (
+        SELECT 1
+        FROM public.crm_channels
+        WHERE id = p_channel_id
+          AND organization_id = p_organization_id
+    ) THEN
+        RAISE EXCEPTION 'CRM_CHANNEL_NOT_FOUND_OR_TENANT_MISMATCH';
+    END IF;
+
+    -- 2. Check if the identity already exists on this channel in this org
     SELECT customer_id INTO v_customer_id
     FROM public.crm_channel_identities
-    WHERE channel_id = p_channel_id AND external_user_id = p_external_user_id;
+    WHERE organization_id = p_organization_id
+      AND channel_id = p_channel_id
+      AND external_user_id = p_external_user_id;
 
     IF FOUND THEN
         -- If identity exists, check if we need to update phone number
@@ -36,7 +47,7 @@ BEGIN
         RETURN v_customer_id;
     END IF;
 
-    -- 2. Identity does not exist. Check if a customer with this phone number already exists in the org
+    -- 3. Identity does not exist. Check if a customer with this phone number already exists in the org
     IF p_phone_number IS NOT NULL THEN
         SELECT id INTO v_existing_customer_id
         FROM public.crm_customers
@@ -47,10 +58,8 @@ BEGIN
     IF v_existing_customer_id IS NOT NULL THEN
         -- Merge: Link the new identity to the existing customer
         v_customer_id := v_existing_customer_id;
-        
-        -- Update the existing customer's name if needed (optional logic, here we keep existing)
     ELSE
-        -- 3. Create a brand new customer profile
+        -- 4. Create a brand new customer profile
         INSERT INTO public.crm_customers (
             organization_id,
             full_name,
@@ -62,7 +71,7 @@ BEGIN
         ) RETURNING id INTO v_customer_id;
     END IF;
 
-    -- 4. Create the channel identity link
+    -- 5. Create the channel identity link within the same tenant boundary
     INSERT INTO public.crm_channel_identities (
         organization_id,
         customer_id,

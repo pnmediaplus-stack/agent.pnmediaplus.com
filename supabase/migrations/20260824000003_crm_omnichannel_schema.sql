@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS public.crm_channels (
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(id, organization_id),
     UNIQUE(organization_id, channel_type, channel_external_id)
 );
 
@@ -27,7 +28,8 @@ CREATE TABLE IF NOT EXISTS public.crm_customers (
     customer_segment TEXT,
     primary_need TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(id, organization_id)
 );
 CREATE INDEX IF NOT EXISTS idx_crm_customers_phone ON public.crm_customers(organization_id, phone_number);
 
@@ -35,25 +37,32 @@ CREATE INDEX IF NOT EXISTS idx_crm_customers_phone ON public.crm_customers(organ
 CREATE TABLE IF NOT EXISTS public.crm_channel_identities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES portal_auth.organizations(id) ON DELETE CASCADE,
-    customer_id UUID NOT NULL REFERENCES public.crm_customers(id) ON DELETE CASCADE,
-    channel_id UUID NOT NULL REFERENCES public.crm_channels(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL,
+    channel_id UUID NOT NULL,
     external_user_id TEXT NOT NULL, -- PSID for Facebook, UserID for Zalo
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
-    UNIQUE(channel_id, external_user_id)
+    UNIQUE(id, organization_id),
+    FOREIGN KEY (customer_id, organization_id) REFERENCES public.crm_customers(id, organization_id) ON DELETE CASCADE,
+    FOREIGN KEY (channel_id, organization_id) REFERENCES public.crm_channels(id, organization_id) ON DELETE CASCADE,
+    UNIQUE(organization_id, channel_id, external_user_id)
 );
+CREATE INDEX IF NOT EXISTS idx_crm_channel_identities_lookup ON public.crm_channel_identities(organization_id, channel_id, external_user_id);
 
 -- 4. CRM Threads (Chat Sessions)
 CREATE TABLE IF NOT EXISTS public.crm_threads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES portal_auth.organizations(id) ON DELETE CASCADE,
-    channel_id UUID NOT NULL REFERENCES public.crm_channels(id) ON DELETE CASCADE,
-    customer_id UUID NOT NULL REFERENCES public.crm_customers(id) ON DELETE CASCADE,
+    channel_id UUID NOT NULL,
+    customer_id UUID NOT NULL,
     status TEXT NOT NULL DEFAULT 'bot_handling' CHECK (status IN ('bot_handling', 'human_handling', 'resolved')),
     last_message_at TIMESTAMPTZ DEFAULT now(),
     unread_count INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(id, organization_id),
+    FOREIGN KEY (channel_id, organization_id) REFERENCES public.crm_channels(id, organization_id) ON DELETE CASCADE,
+    FOREIGN KEY (customer_id, organization_id) REFERENCES public.crm_customers(id, organization_id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_crm_threads_last_message ON public.crm_threads(organization_id, last_message_at DESC);
 
@@ -61,12 +70,13 @@ CREATE INDEX IF NOT EXISTS idx_crm_threads_last_message ON public.crm_threads(or
 CREATE TABLE IF NOT EXISTS public.crm_messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES portal_auth.organizations(id) ON DELETE CASCADE,
-    thread_id UUID NOT NULL REFERENCES public.crm_threads(id) ON DELETE CASCADE,
+    thread_id UUID NOT NULL,
     sender_type TEXT NOT NULL CHECK (sender_type IN ('customer', 'bot', 'human')),
     content TEXT,
     attachments JSONB DEFAULT '[]'::jsonb,
     delivery_status TEXT DEFAULT 'sent' CHECK (delivery_status IN ('queued', 'sent', 'delivered', 'failed')),
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    FOREIGN KEY (thread_id, organization_id) REFERENCES public.crm_threads(id, organization_id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_crm_messages_thread ON public.crm_messages(thread_id, created_at ASC);
 
@@ -74,23 +84,27 @@ CREATE INDEX IF NOT EXISTS idx_crm_messages_thread ON public.crm_messages(thread
 CREATE TABLE IF NOT EXISTS public.crm_consultations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES portal_auth.organizations(id) ON DELETE CASCADE,
-    customer_id UUID NOT NULL REFERENCES public.crm_customers(id) ON DELETE CASCADE,
-    thread_id UUID REFERENCES public.crm_threads(id) ON DELETE SET NULL,
+    customer_id UUID NOT NULL,
+    thread_id UUID,
     scheduled_at TIMESTAMPTZ NOT NULL,
     notes TEXT,
     status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'cancelled')),
     created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(id, organization_id),
+    FOREIGN KEY (customer_id, organization_id) REFERENCES public.crm_customers(id, organization_id) ON DELETE CASCADE,
+    FOREIGN KEY (thread_id, organization_id) REFERENCES public.crm_threads(id, organization_id) ON DELETE CASCADE
 );
 
 -- 7. CRM Webhook Events (Idempotency & Replay Prevention)
 CREATE TABLE IF NOT EXISTS public.crm_webhook_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES portal_auth.organizations(id) ON DELETE CASCADE,
     provider TEXT NOT NULL, -- e.g., 'facebook', 'zalo'
     external_event_id TEXT NOT NULL,
     payload JSONB NOT NULL,
     processed_at TIMESTAMPTZ DEFAULT now(),
-    UNIQUE(provider, external_event_id)
+    UNIQUE(organization_id, provider, external_event_id)
 );
 
 -- Row Level Security (RLS)
