@@ -617,7 +617,7 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
 
            const ctxRes = await dbLoadContextData(organizationId, 'content', contentItemId);
 
-           if (ctxRes.data?.state !== 'scheduled') {
+           if (ctxRes.data?.state !== 'scheduled' && ctxRes.data?.state !== 'published') {
              const rejectMsgResult = await dbInsertChatMessage(organizationId, {
                threadId,
                sender: "system",
@@ -936,7 +936,7 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
 
        const ctxRes = await dbLoadContextData(organizationId, 'content', contentItemId);
 
-       if (ctxRes.data?.state !== 'scheduled') {
+       if (ctxRes.data?.state !== 'scheduled' && ctxRes.data?.state !== 'published') {
          throw new Error(`Nội dung ${contentItemId} chưa sẵn sàng để xuất bản (Trạng thái: ${ctxRes.data?.state || 'unknown'}). Hệ thống AI QA cần đánh giá đạt yêu cầu (trạng thái scheduled) trước khi xuất bản.`);
        }
 
