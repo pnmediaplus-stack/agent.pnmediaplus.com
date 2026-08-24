@@ -61,10 +61,6 @@ async function parseVisionContentAsync(text: string) {
 
 import { handleQueryDepartments, handleCheckContentStatus, handleListActiveCampaigns } from "./tools/read_handlers";
 
-function isDuplicationRequest(text: string): boolean {
-  return /\b(duplicate|clone|nhân\s*bản)\b/i.test(text);
-}
-
 export async function processHumanMessage(text: string, history: any[] = [], organizationId: string = ""): Promise<IntentResult> {
   const apiKey = process.env.OPENAI_API_KEY;
   
@@ -108,7 +104,7 @@ IMMUTABLE RULES:
 3. All professional execution is handled by specialized AI Agents in the n8n backend.
 4. Whenever the user request involves creating content, publishing, or media generation—regardless of how they phrase it (e.g., 'give me a sample', 'draft this', 'write based on this image')—you MUST call the appropriate tool.
 5. You may ONLY answer directly for purely general conversational questions (e.g., system explanations, greetings).
-6. DUPLICATION RULE: If the user asks to 'duplicate', 'clone', or 'nhân bản' an existing content item, you MUST call create_content but you MUST NOT provide the content_item_id parameter. Leave it empty so a new ID is generated, and just pass the old content's text into the 'topic' parameter.
+
 
 Violating these rules and attempting to do the specialized work yourself will break the entire system architecture.`
     },
@@ -188,6 +184,11 @@ Violating these rules and attempting to do the specialized work yourself will br
             mappedCommand: !duplicationRequest && args.content_item_id 
               ? `/auto_content ${args.content_item_id} ${flag} ${args.topic}`
               : `/auto_content ${flag} ${args.topic}`
+          };
+        } else if (funcName === "duplicate_content") {
+          return {
+            intentType: "duplicate_content" as any, // bypassing type check for now, or we can just map it to unknown and handle directly
+            mappedCommand: `/duplicate ${args.content_item_id}`
           };
         } else if (funcName === "publish_content") {
           return {

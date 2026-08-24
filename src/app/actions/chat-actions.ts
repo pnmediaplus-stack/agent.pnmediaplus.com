@@ -191,6 +191,7 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
     if (trimmedBody.startsWith('/')) {
       const cmd = trimmedBody.split(/\s+/)[0];
       if (cmd === '/auto_content') intentType = 'create_content';
+        else if (cmd === '/duplicate') intentType = 'create_content';
       else if (cmd === '/viral_research') intentType = 'create_content';
       else if (cmd === '/publish') intentType = 'publish_content';
       else if (cmd === '/plan_campaign') intentType = 'plan_campaign';
@@ -267,7 +268,7 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
       const command = parts[0];
       const args = parts.slice(1);
 
-      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status', '/campaign', '/approve_campaign', '/brainstorm'];
+      const whitelist = ['/auto_content', '/viral_research', '/publish', '/plan_campaign', '/status', '/campaign', '/approve_campaign', '/brainstorm', '/duplicate'];
 
       if (whitelist.includes(command)) {
         // Enforce args

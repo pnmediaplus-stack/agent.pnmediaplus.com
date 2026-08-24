@@ -2,12 +2,26 @@ export const AI_ORCHESTRATOR_TOOLS = [
   {
     type: "function",
     function: {
+      name: "duplicate_content",
+      description: "Duplicate or clone an existing content item perfectly (reusing its exact text and images) to get a new ID for publishing to a different page.",
+      parameters: {
+        type: "object",
+        properties: {
+          content_item_id: { type: "string", description: "The ID of the existing content item to duplicate" }
+        },
+        required: ["content_item_id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "create_content",
       description: "Trigger the creation of marketing content or viral research for a campaign or topic. MUST be called whenever the user asks to write (viết), draft, create a post, or asks for a sample article (bài mẫu).",
       parameters: {
         type: "object",
         properties: {
-          content_item_id: { type: "string", description: "Optional ID to UPDATE an existing item. DO NOT provide this if the user asks to DUPLICATE or CLONE an item." },
+          content_item_id: { type: "string", description: "Optional ID to UPDATE an existing item." },
           topic: { type: "string", description: "The brief or topic to write about" },
           image_action: { type: "string", enum: ["use_provided", "generate_new"], description: "If the user uploaded images and wants to post them directly, use 'use_provided'. If they want to draw, redraw, or generate a NEW image based on references, use 'generate_new'." }
         },
