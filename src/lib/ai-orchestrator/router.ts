@@ -61,6 +61,10 @@ async function parseVisionContentAsync(text: string) {
 
 import { handleQueryDepartments, handleCheckContentStatus, handleListActiveCampaigns } from "./tools/read_handlers";
 
+function isDuplicationRequest(text: string): boolean {
+  return /\b(duplicate|clone|nhân\s*bản)\b/i.test(text);
+}
+
 export async function processHumanMessage(text: string, history: any[] = [], organizationId: string = ""): Promise<IntentResult> {
   const apiKey = process.env.OPENAI_API_KEY;
   
@@ -178,9 +182,10 @@ Violating these rules and attempting to do the specialized work yourself will br
              return { intentType: "unknown", agentReply: "Lỗi AI: Thiếu hoặc sai tham số image_action bắt buộc trong lệnh tạo nội dung." };
           }
           const flag = args.image_action === 'use_provided' ? '--image-action=use_provided' : '--image-action=generate_new';
+          const duplicationRequest = isDuplicationRequest(text);
           return {
             intentType: "create_content",
-            mappedCommand: args.content_item_id 
+            mappedCommand: !duplicationRequest && args.content_item_id 
               ? `/auto_content ${args.content_item_id} ${flag} ${args.topic}`
               : `/auto_content ${flag} ${args.topic}`
           };
