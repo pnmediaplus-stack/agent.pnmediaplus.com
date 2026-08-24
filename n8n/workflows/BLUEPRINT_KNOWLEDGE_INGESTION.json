@@ -1,0 +1,120 @@
+{
+  "name": "Knowledge Base Ingestion Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "knowledge-ingestion",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "node-webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 0, 0 ],
+      "notesInFlow": true,
+      "notes": "Nhận payload { document_id, organization_id, file_path }"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/storage/v1/object/crm_knowledge_files/{{ $json.body.file_path }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "node-download-file",
+      "name": "Download Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 200, 0 ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "crm_knowledge_chunks",
+        "columns": "document_id, organization_id, content, metadata, embedding"
+      },
+      "id": "node-postgres-vector",
+      "name": "Insert to Postgres Vector",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePostgres",
+      "typeVersion": 1,
+      "position": [ 600, 0 ]
+    },
+    {
+      "parameters": {},
+      "id": "node-pdf-loader",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [ 600, 200 ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 1000,
+        "chunkOverlap": 100
+      },
+      "id": "node-text-splitter",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [ 600, 350 ]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small"
+      },
+      "id": "node-openai-embeddings",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1,
+      "position": [ 600, 500 ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.crm_knowledge_documents SET status = 'ready' WHERE id = '{{ $('Webhook Trigger').first().json.body.document_id }}'"
+      },
+      "id": "node-update-status",
+      "name": "Update Document Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [ 800, 0 ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [ [ { "node": "Download Document", "type": "main", "index": 0 } ] ]
+    },
+    "Download Document": {
+      "main": [ [ { "node": "Insert to Postgres Vector", "type": "main", "index": 0 } ] ]
+    },
+    "Insert to Postgres Vector": {
+      "main": [ [ { "node": "Update Document Status", "type": "main", "index": 0 } ] ]
+    },
+    "Default Data Loader": {
+      "ai_document": [ [ { "node": "Insert to Postgres Vector", "type": "ai_document", "index": 0 } ] ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [ [ { "node": "Default Data Loader", "type": "ai_textSplitter", "index": 0 } ] ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [ [ { "node": "Insert to Postgres Vector", "type": "ai_embedding", "index": 0 } ] ]
+    }
+  }
+}
