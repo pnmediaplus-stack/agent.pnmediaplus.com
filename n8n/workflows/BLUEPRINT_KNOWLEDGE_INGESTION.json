@@ -161,20 +161,19 @@
       "main": [ [ { "node": "Download Document", "type": "main", "index": 0 } ] ]
     },
     "Download Document": {
-      "main": [ [ { "node": "Default Data Loader", "type": "main", "index": 0 } ] ]
+      "main": [ [ { "node": "Insert to Postgres Vector", "type": "main", "index": 0 } ] ]
     },
     "Default Data Loader": {
-      "main": [ [ { "node": "Insert to Postgres Vector", "type": "main", "index": 0 } ] ],
       "ai_document": [ [ { "node": "Insert to Postgres Vector", "type": "ai_document", "index": 0 } ] ]
-    },
-    "Insert to Postgres Vector": {
-      "main": [ [ { "node": "Update Document Status", "type": "main", "index": 0 } ] ]
     },
     "Recursive Character Text Splitter": {
       "ai_textSplitter": [ [ { "node": "Default Data Loader", "type": "ai_textSplitter", "index": 0 } ] ]
     },
     "OpenAI Embeddings": {
       "ai_embedding": [ [ { "node": "Insert to Postgres Vector", "type": "ai_embedding", "index": 0 } ] ]
+    },
+    "Insert to Postgres Vector": {
+      "main": [ [ { "node": "Update Document Status", "type": "main", "index": 0 } ] ]
     },
     "Error Trigger": {
       "main": [ [ { "node": "Format Ingestion Error", "type": "main", "index": 0 } ] ]
