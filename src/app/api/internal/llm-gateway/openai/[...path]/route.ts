@@ -32,7 +32,7 @@ export async function POST(req: Request, { params }: { params: { path: string[] 
         tenantId: organizationId,
         actorId: '00000000-0000-0000-0000-000000000000', // System service actor
         requestId: requestId,
-        endpointUrl: `https://api.openai.com/v1/${pathJoined}`
+        endpointUrl: `https://api.openai.com/${pathJoined}` // Removed hardcoded v1 to prevent duplicate
       }
     );
 
