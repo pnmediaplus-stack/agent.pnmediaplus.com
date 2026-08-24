@@ -46,6 +46,38 @@
     },
     {
       "parameters": {
+        "method": "POST",
+        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_ingestion_runs?on_conflict=workflow_run_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"workflow_run_id\": \"{{$execution.id}}\",\n  \"document_id\": \"{{$json.body.document_id}}\",\n  \"organization_id\": \"{{$json.body.organization_id}}\",\n  \"file_path\": \"{{$json.body.file_path}}\",\n  \"file_name\": \"{{$json.body.file_name || ''}}\",\n  \"mime_type\": \"{{$json.body.mime_type || ''}}\",\n  \"status\": \"processing\",\n  \"payload\": {\n    \"source\": \"BLUEPRINT_KNOWLEDGE_INGESTION\",\n    \"document_id\": \"{{$json.body.document_id}}\",\n    \"organization_id\": \"{{$json.body.organization_id}}\",\n    \"file_path\": \"{{$json.body.file_path}}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "node-persist-ingestion-context",
+      "name": "Persist Ingestion Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 200, 120 ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
         "mode": "insert",
         "tableName": "crm_knowledge_chunks",
         "columns": "document_id, organization_id, content, metadata, embedding"
@@ -104,6 +136,38 @@
       "position": [ 800, 0 ]
     },
     {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_ingestion_runs?workflow_run_id=eq.{{$execution.id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"ready\",\n  \"last_error\": null\n}",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        }
+      },
+      "id": "node-update-ingestion-context-ready",
+      "name": "Update Ingestion Context Ready",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 1000, 0 ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
+    },
+    {
       "parameters": {},
       "id": "node-ingestion-error-trigger",
       "name": "Error Trigger",
@@ -115,13 +179,35 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $('Webhook Trigger').first().json.body || {};\nconst errorMessage = $('Error Trigger').first().json.execution?.error?.message || 'Unknown ingestion error';\n\nreturn {\n  json: {\n    document_id: body.document_id || '',\n    organization_id: body.organization_id || '',\n    error_message: errorMessage,\n    stage: 'text_extraction',\n    metadata: {\n      file_name: body.file_name || '',\n      file_path: body.file_path || '',\n      mime_type: body.mime_type || ''\n    }\n  }\n};"
+        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_ingestion_runs?workflow_run_id=eq.{{$('Error Trigger').first().json.execution.id}}&select=workflow_run_id,document_id,organization_id,file_path,file_name,mime_type,status,last_error,payload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "alwaysOutputData": true
+        }
+      },
+      "id": "node-load-ingestion-context",
+      "name": "Load Ingestion Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 200, 320 ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctxList = Array.isArray($input.first().json) ? $input.first().json : ($input.first().json ? [$input.first().json] : []);\nconst ctx = ctxList[0] || {};\nconst errorMessage = $('Error Trigger').first().json.execution?.error?.message || 'Unknown ingestion error';\n\nreturn {\n  json: {\n    workflow_run_id: ctx.workflow_run_id || $('Error Trigger').first().json.execution?.id || '',\n    document_id: ctx.document_id || '',\n    organization_id: ctx.organization_id || '',\n    error_message: errorMessage,\n    stage: 'text_extraction',\n    metadata: {\n      file_name: ctx.file_name || '',\n      file_path: ctx.file_path || '',\n      mime_type: ctx.mime_type || '',\n      status: ctx.status || 'processing'\n    }\n  }\n};"
       },
       "id": "node-format-ingestion-error",
       "name": "Format Ingestion Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [ 200, 320 ]
+      "position": [ 400, 320 ],
+      "credentials": {}
     },
     {
       "parameters": {
@@ -147,7 +233,7 @@
       "name": "Mark Document Failed",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [ 400, 320 ],
+      "position": [ 600, 320 ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "nlRh1UkRewsK7CCR",
@@ -158,6 +244,9 @@
   ],
   "connections": {
     "Webhook Trigger": {
+      "main": [ [ { "node": "Persist Ingestion Context", "type": "main", "index": 0 } ] ]
+    },
+    "Persist Ingestion Context": {
       "main": [ [ { "node": "Download Document", "type": "main", "index": 0 } ] ]
     },
     "Download Document": {
@@ -175,7 +264,13 @@
     "Insert to Postgres Vector": {
       "main": [ [ { "node": "Update Document Status", "type": "main", "index": 0 } ] ]
     },
+    "Update Document Status": {
+      "main": [ [ { "node": "Update Ingestion Context Ready", "type": "main", "index": 0 } ] ]
+    },
     "Error Trigger": {
+      "main": [ [ { "node": "Load Ingestion Context", "type": "main", "index": 0 } ] ]
+    },
+    "Load Ingestion Context": {
       "main": [ [ { "node": "Format Ingestion Error", "type": "main", "index": 0 } ] ]
     },
     "Format Ingestion Error": {

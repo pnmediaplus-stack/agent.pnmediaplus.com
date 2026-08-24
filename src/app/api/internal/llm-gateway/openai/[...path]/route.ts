@@ -3,7 +3,7 @@ import { invokeLlm } from '@/lib/llm-client';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request, { params }: { params: { path: string[] } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ path: string[] }> }) {
   try {
     const authHeader = req.headers.get('Authorization') || '';
     const organizationId = authHeader.replace('Bearer ', '').trim();
@@ -13,7 +13,8 @@ export async function POST(req: Request, { params }: { params: { path: string[] 
     }
 
     const payload = await req.json();
-    const pathJoined = params.path.join('/');
+    const resolvedParams = await params;
+    const pathJoined = resolvedParams.path.join('/');
     
     // 1. Strict Endpoint Filtering (Least Privilege)
     if (!pathJoined.includes('chat/completions') && !pathJoined.includes('embeddings')) {

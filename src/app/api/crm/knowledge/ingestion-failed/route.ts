@@ -5,6 +5,7 @@ import { verifyN8nWebhook } from '@/lib/n8n-webhook-guard';
 export const dynamic = 'force-dynamic';
 
 const KnowledgeIngestionFailureSchema = z.object({
+  workflow_run_id: z.string().min(1),
   document_id: z.string().uuid(),
   organization_id: z.string().uuid(),
   error_message: z.string().min(1),
@@ -13,6 +14,7 @@ const KnowledgeIngestionFailureSchema = z.object({
 });
 
 async function patchKnowledgeDocumentFailed(params: {
+  workflowRunId: string;
   documentId: string;
   organizationId: string;
   errorMessage: string;
@@ -50,6 +52,28 @@ async function patchKnowledgeDocumentFailed(params: {
     const text = await patchRes.text().catch(() => '');
     throw new Error(`Failed to mark knowledge document as failed: ${text || patchRes.statusText}`);
   }
+
+  const runPatchRes = await fetch(
+    `${supabaseUrl}/rest/v1/crm_knowledge_ingestion_runs?workflow_run_id=eq.${encodeURIComponent(params.workflowRunId)}`,
+    {
+      method: 'PATCH',
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        status: 'failed',
+        last_error: failureMessage.slice(0, 1000),
+      }),
+    }
+  );
+
+  if (!runPatchRes.ok) {
+    const text = await runPatchRes.text().catch(() => '');
+    throw new Error(`Failed to mark knowledge ingestion run as failed: ${text || runPatchRes.statusText}`);
+  }
 }
 
 export async function POST(req: Request) {
@@ -61,6 +85,7 @@ export async function POST(req: Request) {
 
   try {
     await patchKnowledgeDocumentFailed({
+      workflowRunId: payload.workflow_run_id,
       documentId: payload.document_id,
       organizationId: payload.organization_id,
       errorMessage: payload.error_message,
@@ -69,6 +94,7 @@ export async function POST(req: Request) {
 
     await logCompletion('ACCEPTED', 'Knowledge ingestion failure recorded', {
       document_id: payload.document_id,
+      workflow_run_id: payload.workflow_run_id,
       stage: payload.stage || 'unknown',
     });
 
@@ -76,6 +102,7 @@ export async function POST(req: Request) {
       ok: true,
       received: true,
       document_id: payload.document_id,
+      workflow_run_id: payload.workflow_run_id,
       status: 'failed',
     });
   } catch (error: any) {
