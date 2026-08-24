@@ -74,6 +74,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'CRM_MESSAGE_INSERT_EMPTY' }, { status: 502 });
     }
 
+    // --- UPDATE THREAD METADATA ---
+    // Update thread immediately so inbox jumps to top and unread clears, even if dispatch fails later
+    const threadUpdateResponse = await fetchSupabaseRest('crm_threads', {
+      method: 'PATCH',
+      searchParams: {
+        organization_id: `eq.${organizationId}`,
+        id: `eq.${payload.threadId}`
+      },
+      body: JSON.stringify({
+        last_message_at: message.created_at,
+        unread_count: 0
+      })
+    });
+
+    if (!threadUpdateResponse.ok) {
+      console.error('CRM_THREAD_TOUCH_FAILED', await threadUpdateResponse.text());
+    }
+
     // --- OUTBOUND DISPATCH ---
     // Trigger n8n outbound worker which has access to vault and BYOK redemption
     const n8nOutboundUrl = process.env.N8N_CSKH_OUTBOUND_WEBHOOK_URL;
@@ -130,22 +148,6 @@ export async function POST(req: Request) {
         error: 'N8N_OUTBOUND_DISPATCH_FAILED',
         message: { ...message, delivery_status: 'failed' }
       }, { status: 502 });
-    }
-
-    const threadUpdateResponse = await fetchSupabaseRest('crm_threads', {
-      method: 'PATCH',
-      searchParams: {
-        organization_id: `eq.${organizationId}`,
-        id: `eq.${payload.threadId}`
-      },
-      body: JSON.stringify({
-        last_message_at: message.created_at,
-        unread_count: 0
-      })
-    });
-
-    if (!threadUpdateResponse.ok) {
-      console.error('CRM_THREAD_TOUCH_FAILED', await threadUpdateResponse.text());
     }
 
     return NextResponse.json(message);
