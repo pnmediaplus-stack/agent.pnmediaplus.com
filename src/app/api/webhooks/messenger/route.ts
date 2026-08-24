@@ -1,4 +1,3 @@
-import { crypto } from "crypto";
 import { createServiceRoleClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
@@ -89,9 +88,15 @@ export async function POST(req: Request) {
           .single();
 
         // If insert fails due to unique constraint, it's a replay
-        if (insertError && insertError.code === "23505") { // 23505 is unique_violation
-          console.log(`Duplicate event skipped: ${externalEventId}`);
-          continue;
+        if (insertError) {
+          if (insertError.code === "23505") { // 23505 is unique_violation
+            console.log(`Duplicate event skipped: ${externalEventId}`);
+            continue;
+          } else {
+            console.error("Idempotency record insertion failed:", insertError);
+            // Fail closed on unknown database errors to avoid duplicate processing
+            continue;
+          }
         }
 
         // 3. Upsert Identity (using RPC)
@@ -106,7 +111,7 @@ export async function POST(req: Request) {
           }
         );
 
-        if (rpcError) {
+        if (rpcError || !customerId) {
           console.error("Error upserting identity:", rpcError);
           continue;
         }
@@ -122,16 +127,21 @@ export async function POST(req: Request) {
           .single();
 
         if (!thread) {
-          const { data: newThread } = await supabase
+          const { data: newThread, error: newThreadError } = await supabase
             .from("crm_threads")
             .insert({
               organization_id,
               channel_id,
-              customer_id,
+              customer_id: customerId, // Fixed reference
               status: "bot_handling",
             })
             .select("id, status")
             .single();
+          
+          if (newThreadError || !newThread) {
+            console.error("Error creating thread:", newThreadError);
+            continue;
+          }
           thread = newThread;
         } else {
           // Update last_message_at and unread_count
