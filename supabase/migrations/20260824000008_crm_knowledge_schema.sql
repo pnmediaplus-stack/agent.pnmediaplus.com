@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
 -- 1. Bảng quản lý metadata của tài liệu
 CREATE TABLE IF NOT EXISTS public.crm_knowledge_documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES public.portal_organization_memberships(organization_id) ON DELETE CASCADE,
+    organization_id UUID NOT NULL REFERENCES portal_auth.organizations(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     file_url TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'ready', 'failed')),
@@ -22,7 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_crm_knowledge_docs_org ON public.crm_knowledge_do
 CREATE TABLE IF NOT EXISTS public.crm_knowledge_chunks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id UUID NOT NULL REFERENCES public.crm_knowledge_documents(id) ON DELETE CASCADE,
-    organization_id UUID NOT NULL REFERENCES public.portal_organization_memberships(organization_id) ON DELETE CASCADE,
+    organization_id UUID NOT NULL REFERENCES portal_auth.organizations(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     metadata JSONB,
     embedding vector(1536) NOT NULL,
@@ -41,6 +41,7 @@ CREATE INDEX IF NOT EXISTS idx_crm_knowledge_chunks_doc ON public.crm_knowledge_
 ALTER TABLE public.crm_knowledge_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_knowledge_chunks ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow members to view their knowledge docs" ON public.crm_knowledge_documents;
 CREATE POLICY "Allow members to view their knowledge docs" ON public.crm_knowledge_documents
 FOR SELECT USING (
   organization_id IN (
@@ -48,6 +49,7 @@ FOR SELECT USING (
   )
 );
 
+DROP POLICY IF EXISTS "Allow members to insert knowledge docs" ON public.crm_knowledge_documents;
 CREATE POLICY "Allow members to insert knowledge docs" ON public.crm_knowledge_documents
 FOR INSERT WITH CHECK (
   organization_id IN (
@@ -55,6 +57,7 @@ FOR INSERT WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS "Allow members to view their knowledge chunks" ON public.crm_knowledge_chunks;
 CREATE POLICY "Allow members to view their knowledge chunks" ON public.crm_knowledge_chunks
 FOR SELECT USING (
   organization_id IN (

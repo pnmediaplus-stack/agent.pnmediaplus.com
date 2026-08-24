@@ -16,8 +16,12 @@ export async function GET(req: Request) {
     }
 
     const organizationId = orgContext.active_membership.organization_id;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/$/, '');
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json({ error: 'CONFIG_MISSING', message: 'Supabase config missing' }, { status: 500 });
+    }
 
     const res = await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents?organization_id=eq.${organizationId}&order=created_at.desc`, {
       headers: {

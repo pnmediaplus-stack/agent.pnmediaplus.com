@@ -18,7 +18,7 @@
     },
     {
       "parameters": {
-        "url": "={{ $env.SUPABASE_URL }}/storage/v1/object/crm_knowledge_files/{{ $json.body.file_path }}",
+        "url": "={{ ($env.SUPABASE_URL || '').replace(/\\/$/, '') + '/storage/v1/object/crm_knowledge_files/' + $json.body.file_path }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -26,7 +26,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+              "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}"
             }
           ]
         },
@@ -102,13 +102,14 @@
       "main": [ [ { "node": "Download Document", "type": "main", "index": 0 } ] ]
     },
     "Download Document": {
-      "main": [ [ { "node": "Insert to Postgres Vector", "type": "main", "index": 0 } ] ]
+      "main": [ [ { "node": "Default Data Loader", "type": "main", "index": 0 } ] ]
+    },
+    "Default Data Loader": {
+      "main": [ [ { "node": "Insert to Postgres Vector", "type": "main", "index": 0 } ] ],
+      "ai_document": [ [ { "node": "Insert to Postgres Vector", "type": "ai_document", "index": 0 } ] ]
     },
     "Insert to Postgres Vector": {
       "main": [ [ { "node": "Update Document Status", "type": "main", "index": 0 } ] ]
-    },
-    "Default Data Loader": {
-      "ai_document": [ [ { "node": "Insert to Postgres Vector", "type": "ai_document", "index": 0 } ] ]
     },
     "Recursive Character Text Splitter": {
       "ai_textSplitter": [ [ { "node": "Default Data Loader", "type": "ai_textSplitter", "index": 0 } ] ]
