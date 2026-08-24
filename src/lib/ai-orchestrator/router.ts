@@ -185,9 +185,11 @@ Violating these rules and attempting to do the specialized work yourself will br
           const duplicationRequest = isDuplicationRequest(text);
           return {
             intentType: "create_content",
-            mappedCommand: !duplicationRequest && args.content_item_id 
-              ? `/auto_content ${args.content_item_id} ${flag} ${args.topic}`
-              : `/auto_content ${flag} ${args.topic}`
+            mappedCommand: duplicationRequest && args.content_item_id
+              ? `/duplicate ${args.content_item_id}`
+              : args.content_item_id
+                ? `/auto_content ${args.content_item_id} ${flag} ${args.topic}`
+                : `/auto_content ${flag} ${args.topic}`
           };
         } else if (funcName === "publish_content") {
           return {
