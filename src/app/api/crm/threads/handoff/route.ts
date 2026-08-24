@@ -1,44 +1,39 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { verifyUiAuth } from '@/lib/ui-auth-guard';
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const cookieStore = cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return new NextResponse('Unauthorized', { status: 401 });
+    const auth = await verifyUiAuth(req);
+    if (!auth.ok) return auth.response;
 
     const body = await req.json();
     const { threadId, status } = body;
 
     if (!threadId || !status) return new NextResponse('Missing fields', { status: 400 });
 
-    const { data, error } = await supabase
-      .from('crm_threads')
-      .update({ status })
-      .eq('id', threadId)
-      .select('*')
-      .single();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (error) throw error;
+    const res = await fetch(`${supabaseUrl}/rest/v1/crm_threads?id=eq.${threadId}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': serviceRoleKey!,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({ status })
+    });
 
-    return NextResponse.json(data);
+    if (!res.ok) throw new Error(await res.text());
+    
+    const threads = await res.json();
+    return NextResponse.json(threads[0]);
   } catch (error: any) {
     console.error('Error toggling handoff:', error);
     return new NextResponse(error.message, { status: 500 });
   }
 }
+
