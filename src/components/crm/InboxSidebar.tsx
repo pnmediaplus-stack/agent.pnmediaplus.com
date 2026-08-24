@@ -4,10 +4,30 @@ import React from 'react';
 import { useCrmStore } from '@/lib/stores/crmStore';
 
 export default function InboxSidebar() {
-  const { threads, activeThreadId, setActiveThreadId, isLoadingThreads } = useCrmStore();
+  const { threads, activeThreadId, setActiveThreadId, isLoadingThreads, threadsError } = useCrmStore();
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredThreads = normalizedSearch
+    ? threads.filter((thread) => {
+        const customer = thread.customer;
+        return [
+          customer?.full_name,
+          customer?.phone_number,
+          customer?.email,
+          thread.channel?.channel_name,
+          ...(customer?.tags || [])
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+      })
+    : threads;
 
   if (isLoadingThreads) {
     return <div className="p-4 text-center text-sm text-gray-500">Đang tải hội thoại...</div>;
+  }
+
+  if (threadsError) {
+    return <div className="p-4 text-center text-sm text-red-600">{threadsError}</div>;
   }
 
   return (
@@ -15,15 +35,19 @@ export default function InboxSidebar() {
       <div className="p-3 border-b border-gray-200 bg-white sticky top-0">
         <input 
           type="text" 
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
           placeholder="Tìm tên, số điện thoại..." 
           className="w-full text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:border-blue-500"
         />
       </div>
       <div className="flex flex-col">
-        {threads.length === 0 ? (
-          <div className="p-4 text-center text-sm text-gray-500">Chưa có hội thoại nào</div>
+        {filteredThreads.length === 0 ? (
+          <div className="p-4 text-center text-sm text-gray-500">
+            {threads.length === 0 ? 'Chưa có hội thoại nào' : 'Không tìm thấy hội thoại phù hợp'}
+          </div>
         ) : (
-          threads.map(thread => (
+          filteredThreads.map(thread => (
             <div 
               key={thread.id} 
               onClick={() => setActiveThreadId(thread.id)}
@@ -38,10 +62,9 @@ export default function InboxSidebar() {
                 </span>
               </div>
               <div className="text-xs text-gray-500 truncate mb-1">
-                {thread.status === 'bot_handling' ? '🤖 Bot đang xử lý' : '👤 Nhân sự đang xử lý'}
+                {thread.status === 'bot_handling' ? 'Bot đang xử lý' : 'Nhân sự đang xử lý'}
               </div>
               
-              {/* Tags */}
               {thread.customer?.tags && thread.customer.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {thread.customer.tags.map(tag => (

@@ -37,12 +37,13 @@ export type CrmMessage = {
 
 interface CrmState {
   threads: CrmThread[];
-  messages: Record<string, CrmMessage[]>; // Keyed by thread_id
+  messages: Record<string, CrmMessage[]>;
   activeThreadId: string | null;
   isLoadingThreads: boolean;
+  threadsError: string | null;
   
-  // Actions
   setThreads: (threads: CrmThread[]) => void;
+  setThreadsError: (message: string | null) => void;
   upsertThread: (thread: CrmThread) => void;
   setActiveThreadId: (id: string | null) => void;
   
@@ -58,8 +59,10 @@ export const useCrmStore = create<CrmState>((set) => ({
   messages: {},
   activeThreadId: null,
   isLoadingThreads: true,
+  threadsError: null,
 
-  setThreads: (threads) => set({ threads, isLoadingThreads: false }),
+  setThreads: (threads) => set({ threads, isLoadingThreads: false, threadsError: null }),
+  setThreadsError: (message) => set({ isLoadingThreads: false, threadsError: message }),
   
   upsertThread: (newThread) => set((state) => {
     const exists = state.threads.find(t => t.id === newThread.id);
@@ -68,7 +71,6 @@ export const useCrmStore = create<CrmState>((set) => ({
         threads: state.threads.map(t => t.id === newThread.id ? { ...t, ...newThread } : t)
       };
     }
-    // New thread goes to top
     return { threads: [newThread, ...state.threads] };
   }),
 
@@ -83,7 +85,6 @@ export const useCrmStore = create<CrmState>((set) => ({
 
   addMessage: (message) => set((state) => {
     const threadMessages = state.messages[message.thread_id] || [];
-    // Ignore if already exists (idempotency in UI)
     if (threadMessages.find(m => m.id === message.id)) return state;
     
     return {

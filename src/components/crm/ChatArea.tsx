@@ -7,6 +7,7 @@ export default function ChatArea() {
   const { activeThreadId, messages, setMessages, addMessage, threads, upsertThread } = useCrmStore();
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeThread = threads.find(t => t.id === activeThreadId);
@@ -32,6 +33,7 @@ export default function ChatArea() {
     if (!inputText.trim() || !activeThreadId || !activeThread) return;
     
     setIsSending(true);
+    setErrorMessage(null);
     try {
       const res = await fetch('/api/crm/messages/send', {
         method: 'POST',
@@ -41,13 +43,17 @@ export default function ChatArea() {
           content: inputText
         })
       });
-      if (res.ok) {
-        const newMessage = await res.json();
-        addMessage(newMessage);
-        setInputText('');
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.message || payload?.error || 'Không gửi được tin nhắn');
       }
+
+      const newMessage = await res.json();
+      addMessage(newMessage);
+      setInputText('');
     } catch (err) {
       console.error(err);
+      setErrorMessage(err instanceof Error ? err.message : 'Không gửi được tin nhắn');
     } finally {
       setIsSending(false);
     }
@@ -56,23 +62,27 @@ export default function ChatArea() {
   const toggleHandoff = async () => {
     if (!activeThreadId || !activeThread) return;
     const newStatus = activeThread.status === 'bot_handling' ? 'human_handling' : 'bot_handling';
+    setErrorMessage(null);
     try {
       const res = await fetch('/api/crm/threads/handoff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ threadId: activeThreadId, status: newStatus })
       });
-      if (res.ok) {
-        upsertThread(await res.json());
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.message || payload?.error || 'Không đổi được trạng thái hội thoại');
       }
+
+      upsertThread(await res.json());
     } catch (err) {
       console.error(err);
+      setErrorMessage(err instanceof Error ? err.message : 'Không đổi được trạng thái hội thoại');
     }
   };
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="h-14 border-b border-gray-200 px-4 flex items-center justify-between bg-white shadow-sm z-10">
         <div className="font-semibold">{activeThread?.customer?.full_name || 'Đang tải...'}</div>
         <button 
@@ -83,7 +93,6 @@ export default function ChatArea() {
         </button>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col space-y-4">
         {threadMessages.map(msg => (
           <div key={msg.id} className={`flex ${msg.sender_type === 'customer' ? 'justify-start' : 'justify-end'}`}>
@@ -97,8 +106,8 @@ export default function ChatArea() {
                 {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 {msg.sender_type !== 'customer' && (
                   <span className="ml-1">
-                    ({msg.delivery_status === 'sent' || msg.delivery_status === 'delivered' ? '✓' : 
-                      msg.delivery_status === 'failed' ? '❌' : '...'})
+                    ({msg.delivery_status === 'sent' || msg.delivery_status === 'delivered' ? 'Đã gửi' : 
+                      msg.delivery_status === 'failed' ? 'Lỗi' : 'Đang gửi'})
                   </span>
                 )}
               </div>
@@ -108,8 +117,12 @@ export default function ChatArea() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <div className="p-3 border-t border-gray-200 bg-white">
+        {errorMessage && (
+          <div className="mb-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {errorMessage}
+          </div>
+        )}
         {activeThread?.status === 'bot_handling' ? (
           <div className="w-full text-center p-3 bg-gray-100 text-sm text-gray-500 rounded-md">
             AI đang xử lý hội thoại này. Hãy bấm "Tắt Bot" để giành quyền chat.

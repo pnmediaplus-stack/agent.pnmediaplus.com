@@ -7,28 +7,31 @@ import CustomerProfile from './CustomerProfile';
 import { useCrmStore } from '@/lib/stores/crmStore';
 
 export default function OmnichannelWorkspace() {
-  const { setThreads, activeThreadId } = useCrmStore();
+  const { setThreads, setThreadsError, activeThreadId } = useCrmStore();
 
   useEffect(() => {
-    // Initial Fetch of Inbox
     fetch('/api/crm/threads')
-      .then(res => res.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error('Không tải được danh sách hội thoại');
+        }
+        return res.json();
+      })
       .then(data => {
         if (Array.isArray(data)) setThreads(data);
       })
-      .catch(err => console.error("Failed to fetch threads:", err));
-    
-    // In a full implementation, Supabase Realtime Subscription goes here
-  }, [setThreads]);
+      .catch(err => {
+        console.error("Failed to fetch threads:", err);
+        setThreadsError(err instanceof Error ? err.message : 'Không tải được danh sách hội thoại');
+      });
+  }, [setThreads, setThreadsError]);
 
   return (
     <div className="flex h-full w-full overflow-hidden border-t border-gray-200">
-      {/* Cột 1: Inbox List */}
       <div className="w-1/4 border-r border-gray-200 bg-gray-50 flex flex-col">
         <InboxSidebar />
       </div>
 
-      {/* Cột 2: Chat Area */}
       <div className="flex-1 flex flex-col bg-white">
         {activeThreadId ? (
           <ChatArea />
@@ -39,7 +42,6 @@ export default function OmnichannelWorkspace() {
         )}
       </div>
 
-      {/* Cột 3: Customer Profile */}
       {activeThreadId && (
         <div className="w-1/4 border-l border-gray-200 bg-gray-50 overflow-y-auto">
           <CustomerProfile />
