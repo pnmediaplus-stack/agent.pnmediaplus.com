@@ -104,26 +104,8 @@
         },
         "options": {},
         "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "p_organization_id",
-              "value": "={{ $('Webhook Trigger').item.json.body.organization_id }}"
-            },
-            {
-              "name": "p_content_item_id",
-              "value": "={{ $('Webhook Trigger').item.json.body.content_item_id }}"
-            },
-            {
-              "name": "p_artifact_version_id",
-              "value": "={{ $('Webhook Trigger').item.json.body.artifact_version_id }}"
-            },
-            {
-              "name": "p_integration_key",
-              "value": "={{ $('Webhook Trigger').item.json.body.integration_key }}"
-            }
-          ]
-        }
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  p_organization_id: $('Webhook Trigger').item.json.body.organization_id || $('Webhook Trigger').item.json.body.tenant_id,\n  p_content_item_id: $('Webhook Trigger').item.json.body.content_item_id,\n  p_artifact_version_id: $('Webhook Trigger').item.json.body.artifact_version_id || null,\n  p_integration_key: $('Webhook Trigger').item.json.body.integration_key || 'facebook_page_' + $('Webhook Trigger').item.json.body.page_id\n}) }}"
       },
       "name": "Fetch Assets",
       "type": "n8n-nodes-base.httpRequest",
