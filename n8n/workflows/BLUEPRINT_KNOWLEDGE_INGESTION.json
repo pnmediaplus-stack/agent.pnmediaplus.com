@@ -57,7 +57,14 @@
       "position": [ 600, 0 ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "dataType": "binary",
+        "binaryMode": "specificField",
+        "binaryDataKey": "data",
+        "loader": "auto",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
       "id": "node-pdf-loader",
       "name": "Default Data Loader",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",

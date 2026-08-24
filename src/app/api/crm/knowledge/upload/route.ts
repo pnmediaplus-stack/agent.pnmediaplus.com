@@ -27,6 +27,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing file or title' }, { status: 400 });
     }
 
+    const allowedMimeTypes = new Set([
+      'application/pdf',
+      'text/plain',
+      'text/markdown',
+      'application/markdown',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ]);
+
+    if (!allowedMimeTypes.has(file.type) && !/\.(pdf|txt|md|docx?)$/i.test(file.name)) {
+      return NextResponse.json({ error: 'UNSUPPORTED_FILE_TYPE', message: 'Only PDF, TXT, MD, and DOC/DOCX files are supported' }, { status: 400 });
+    }
+
     // 1. Upload to Supabase Storage
     const fileExt = file.name.split('.').pop();
     const fileName = `${organizationId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -51,8 +64,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'UPLOAD_FAILED' }, { status: 502 });
     }
     
-    const fileUrl = `${supabaseUrl}/storage/v1/object/public/crm_knowledge_files/${fileName}`; // Though bucket is not public, we might need a signed URL. 
-    // Wait, n8n can use service role to download if it's private. Let's just store the path so n8n can fetch it.
     const storagePath = fileName;
 
     // 2. Insert into crm_knowledge_documents
@@ -68,7 +79,7 @@ export async function POST(req: Request) {
         organization_id: organizationId,
         title: title,
         file_url: storagePath,
-        status: 'pending',
+        status: 'processing',
         created_by: auth.user.id
       })
     });
@@ -83,17 +94,50 @@ export async function POST(req: Request) {
     // 3. Trigger n8n Ingestion Webhook
     const n8nUrl = process.env.N8N_KNOWLEDGE_INGESTION_WEBHOOK_URL;
     if (n8nUrl) {
-      fetch(n8nUrl, {
+      const webhookRes = await fetch(n8nUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           document_id: document.id,
           organization_id: organizationId,
-          file_path: storagePath
+          file_path: storagePath,
+          file_name: file.name,
+          mime_type: file.type || 'application/octet-stream'
         })
-      }).catch(e => console.error('Error triggering n8n ingestion:', e));
+      });
+
+      if (!webhookRes.ok) {
+        const webhookError = await webhookRes.text().catch(() => 'N8N_INGESTION_TRIGGER_FAILED');
+        await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents?id=eq.${document.id}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            status: 'failed',
+            error_message: webhookError.slice(0, 500)
+          })
+        });
+        return NextResponse.json({ error: 'N8N_INGESTION_TRIGGER_FAILED', message: webhookError }, { status: 502 });
+      }
     } else {
-      console.warn("N8N_KNOWLEDGE_INGESTION_WEBHOOK_URL not configured. Document remains pending.");
+      await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents?id=eq.${document.id}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          status: 'failed',
+          error_message: 'N8N_KNOWLEDGE_INGESTION_WEBHOOK_URL not configured'
+        })
+      });
+      return NextResponse.json({ error: 'CONFIG_MISSING', message: 'N8N ingestion webhook not configured' }, { status: 500 });
     }
 
     return NextResponse.json(document);

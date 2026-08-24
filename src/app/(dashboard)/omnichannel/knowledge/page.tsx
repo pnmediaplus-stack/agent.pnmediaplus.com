@@ -56,7 +56,7 @@ export default function KnowledgeBasePage() {
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center border-dashed">
           <UploadCloud className="h-10 w-10 text-gray-400 mb-3" />
           <p className="text-sm font-medium text-gray-700">Kéo thả file vào đây hoặc click để chọn file</p>
-          <p className="text-xs text-gray-500 mt-1 mb-4">Hỗ trợ PDF, TXT. Tối đa 10MB.</p>
+          <p className="text-xs text-gray-500 mt-1 mb-4">Hỗ trợ PDF, TXT, MD, DOC, DOCX. Tối đa 10MB.</p>
           
           <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors relative">
             {isUploading ? (
@@ -67,7 +67,7 @@ export default function KnowledgeBasePage() {
             <input 
               type="file" 
               className="hidden" 
-              accept=".pdf,.txt,.md" 
+            accept=".pdf,.txt,.md,.doc,.docx" 
               onChange={handleFileChange}
               disabled={isUploading}
             />
