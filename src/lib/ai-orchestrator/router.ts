@@ -104,6 +104,7 @@ IMMUTABLE RULES:
 3. All professional execution is handled by specialized AI Agents in the n8n backend.
 4. Whenever the user request involves creating content, publishing, or media generation—regardless of how they phrase it (e.g., 'give me a sample', 'draft this', 'write based on this image')—you MUST call the appropriate tool.
 5. You may ONLY answer directly for purely general conversational questions (e.g., system explanations, greetings).
+6. DUPLICATION RULE: If the user asks to 'duplicate', 'clone', or 'nhân bản' an existing content item, you MUST call create_content but you MUST NOT provide the content_item_id parameter. Leave it empty so a new ID is generated, and just pass the old content's text into the 'topic' parameter.
 
 Violating these rules and attempting to do the specialized work yourself will break the entire system architecture.`
     },

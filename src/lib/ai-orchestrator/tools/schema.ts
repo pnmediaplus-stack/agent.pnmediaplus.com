@@ -7,7 +7,7 @@ export const AI_ORCHESTRATOR_TOOLS = [
       parameters: {
         type: "object",
         properties: {
-          content_item_id: { type: "string", description: "Optional ID of an existing content item to base this on" },
+          content_item_id: { type: "string", description: "Optional ID to UPDATE an existing item. DO NOT provide this if the user asks to DUPLICATE or CLONE an item." },
           topic: { type: "string", description: "The brief or topic to write about" },
           image_action: { type: "string", enum: ["use_provided", "generate_new"], description: "If the user uploaded images and wants to post them directly, use 'use_provided'. If they want to draw, redraw, or generate a NEW image based on references, use 'generate_new'." }
         },
