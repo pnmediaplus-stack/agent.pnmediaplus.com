@@ -6,8 +6,8 @@ import { dbInsertChatMessage } from '@/lib/governance-api';
 export const dynamic = 'force-dynamic';
 
 const PublishErrorPayloadSchema = z.object({
-  organizationId: z.string().uuid(),
-  contentItemId: z.string().uuid(),
+  organizationId: z.string(),
+  contentItemId: z.string(),
   errorMessage: z.string(),
   threadId: z.string().optional(),
 });
