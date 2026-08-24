@@ -64,15 +64,15 @@
           "parameters": [
             {
               "name": "reference_token",
-              "value": "={{ $('Webhook Trigger').item.json.body.reference_token }}"
+              "value": "={{ $('Webhook Trigger').first().json.body.reference_token }}"
             },
             {
               "name": "organization_id",
-              "value": "={{ $('Webhook Trigger').item.json.body.organization_id }}"
+              "value": "={{ $('Webhook Trigger').first().json.body.organization_id }}"
             },
             {
               "name": "integration_key",
-              "value": "={{ $('Webhook Trigger').item.json.body.integration_key }}"
+              "value": "={{ $('Webhook Trigger').first().json.body.integration_key }}"
             }
           ]
         },
@@ -89,7 +89,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const contentItemId = $('Webhook Trigger').item.json.body.content_item_id;\nconst supabaseUrl = ($env[\"SUPABASE_URL\"] || '').replace(new RegExp('/$'), '');\nconst headers = {\n  apikey: $env[\"SUPABASE_SERVICE_ROLE_KEY\"],\n  Authorization: 'Bearer ' + $env[\"SUPABASE_SERVICE_ROLE_KEY\"]\n};\n\n// Use n8n's built-in httpRequest helper instead of global fetch\nconst makeRequest = async (url) => {\n  return await this.helpers.httpRequest({\n    method: 'GET',\n    url: url,\n    headers: headers,\n    json: true\n  });\n};\n\n// 1. Fetch and validate item state\nconst itemData = await makeRequest(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${contentItemId}&select=state`);\nif (!itemData || !itemData[0]) {\n  throw new Error('PHASE2_PUBLISH_CONTRACT_MISMATCH: Item not found');\n}\n\n// Helper to decode Base64\nconst extractBase64Data = (uri) => {\n  if (!uri) return '';\n  const match = uri.match(/^data:.*?;base64,(.*)$/);\n  if (match && match[1]) {\n    return Buffer.from(match[1], 'base64').toString('utf-8');\n  }\n  return uri;\n};\n\n// 2. Fetch caption\nconst captionData = await makeRequest(`${supabaseUrl}/rest/v1/phase2_assets?content_item_id=eq.${contentItemId}&asset_type=eq.caption_output&order=created_at.desc&limit=1`);\nconst caption = captionData[0] ? extractBase64Data(captionData[0].asset_uri) : '';\n\n// 3. Fetch latest visual asset batch\nconst latestVisData = await makeRequest(`${supabaseUrl}/rest/v1/phase2_assets?content_item_id=eq.${contentItemId}&asset_type=eq.visual_asset&order=created_at.desc&limit=1`);\nlet visual_assets = [];\n\nif (latestVisData[0]) {\n  const batchId = latestVisData[0].batch_id;\n  if (!batchId) {\n    throw new Error('MISSING_BATCH_ID_CONTRACT: The visual asset does not have a batch_id. Database view must expose batch_id.');\n  }\n\n  // Strictly filter by batch_id\n  const visData = await makeRequest(`${supabaseUrl}/rest/v1/phase2_assets?content_item_id=eq.${contentItemId}&asset_type=eq.visual_asset&batch_id=eq.${batchId}&order=created_at.asc`);\n  visual_assets = visData.map(d => extractBase64Data(d.asset_uri));\n}\n\nif (!caption && visual_assets.length === 0) {\n  throw new Error('PHASE2_PUBLISH_CONTRACT_MISMATCH: No assets found');\n}\n\nreturn { json: { caption, visual_assets } };"
+        "jsCode": "const contentItemId = $('Webhook Trigger').first().json.body.content_item_id;\nconst supabaseUrl = ($env[\"SUPABASE_URL\"] || '').replace(new RegExp('/$'), '');\nconst headers = {\n  apikey: $env[\"SUPABASE_SERVICE_ROLE_KEY\"],\n  Authorization: 'Bearer ' + $env[\"SUPABASE_SERVICE_ROLE_KEY\"]\n};\n\n// Use n8n's built-in httpRequest helper instead of global fetch\nconst makeRequest = async (url) => {\n  return await this.helpers.httpRequest({\n    method: 'GET',\n    url: url,\n    headers: headers,\n    json: true\n  });\n};\n\n// 1. Fetch and validate item state\nconst itemData = await makeRequest(`${supabaseUrl}/rest/v1/phase2_content_items?id=eq.${contentItemId}&select=state`);\nif (!itemData || !itemData[0]) {\n  throw new Error('PHASE2_PUBLISH_CONTRACT_MISMATCH: Item not found');\n}\n\n// Helper to decode Base64\nconst extractBase64Data = (uri) => {\n  if (!uri) return '';\n  const match = uri.match(/^data:.*?;base64,(.*)$/);\n  if (match && match[1]) {\n    return Buffer.from(match[1], 'base64').toString('utf-8');\n  }\n  return uri;\n};\n\n// 2. Fetch caption\nconst captionData = await makeRequest(`${supabaseUrl}/rest/v1/phase2_assets?content_item_id=eq.${contentItemId}&asset_type=eq.caption_output&order=created_at.desc&limit=1`);\nconst caption = captionData[0] ? extractBase64Data(captionData[0].asset_uri) : '';\n\n// 3. Fetch latest visual asset batch\nconst latestVisData = await makeRequest(`${supabaseUrl}/rest/v1/phase2_assets?content_item_id=eq.${contentItemId}&asset_type=eq.visual_asset&order=created_at.desc&limit=1`);\nlet visual_assets = [];\n\nif (latestVisData[0]) {\n  const batchId = latestVisData[0].batch_id;\n  if (!batchId) {\n    throw new Error('MISSING_BATCH_ID_CONTRACT: The visual asset does not have a batch_id. Database view must expose batch_id.');\n  }\n\n  // Strictly filter by batch_id\n  const visData = await makeRequest(`${supabaseUrl}/rest/v1/phase2_assets?content_item_id=eq.${contentItemId}&asset_type=eq.visual_asset&batch_id=eq.${batchId}&order=created_at.asc`);\n  visual_assets = visData.map(d => extractBase64Data(d.asset_uri));\n}\n\nif (!caption && visual_assets.length === 0) {\n  throw new Error('PHASE2_PUBLISH_CONTRACT_MISMATCH: No assets found');\n}\n\nreturn { json: { caption, visual_assets } };"
       },
       "name": "Fetch Assets",
       "type": "n8n-nodes-base.code",
@@ -102,7 +102,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const payload = $('Fetch Assets').item.json;\nconst accessToken = $('Redeem BYOK Token').item.json.data.access_token;\nconst pageId = $('Redeem BYOK Token').item.json.data.page_id;\nconst contentItemId = $('Webhook Trigger').item.json.body.content_item_id;\nconst organizationId = $('Webhook Trigger').item.json.body.organization_id;\nconst threadId = $('Webhook Trigger').item.json.body.thread_id;\n\nconst images = payload.visual_assets || [];\nlet formattedCaption = payload.caption || '';\n// Auto-format spacing for emojis that act as bullets after punctuation\nformattedCaption = formattedCaption.replace(/([.!?])\\s+(\\p{Emoji})/gu, '$1\\n\\n$2');\nlet batch = [];\n\nif (images.length === 1) {\n  const url = images[0].startsWith('http') ? images[0] : (($env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com') + images[0]);\n  batch.push({\n    method: \"POST\",\n    relative_url: `${pageId}/photos`,\n    body: `url=${encodeURIComponent(url)}&message=${encodeURIComponent(formattedCaption)}&published=true`\n  });\n} else if (images.length > 1) {\n  let attachedMedia = [];\n  images.forEach((img, i) => {\n    const url = img.startsWith('http') ? img : (($env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com') + img);\n    batch.push({\n      method: \"POST\",\n      relative_url: `${pageId}/photos`,\n      name: `photo${i}`,\n      omit_response_on_success: false,\n      body: `url=${encodeURIComponent(url)}&published=false`\n    });\n    attachedMedia.push({ \"media_fbid\": `{result=photo${i}:$.id}` });\n  });\n  \n  batch.push({\n    method: \"POST\",\n    relative_url: `${pageId}/feed`,\n    body: `message=${encodeURIComponent(formattedCaption)}&attached_media=${encodeURIComponent(JSON.stringify(attachedMedia))}`\n  });\n}\n\nreturn {\n  caption: formattedCaption,\n  visual_assets: images,\n  batch_payload: JSON.stringify(batch),\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId,\n  organizationId: organizationId,\n  threadId: threadId\n};"
+        "jsCode": "const payload = $('Fetch Assets').first().json;\nconst accessToken = $('Redeem BYOK Token').first().json.data.access_token;\nconst pageId = $('Redeem BYOK Token').first().json.data.page_id;\nconst contentItemId = $('Webhook Trigger').first().json.body.content_item_id;\nconst organizationId = $('Webhook Trigger').first().json.body.organization_id;\nconst threadId = $('Webhook Trigger').first().json.body.thread_id;\n\nconst images = payload.visual_assets || [];\nlet formattedCaption = payload.caption || '';\n// Auto-format spacing for emojis that act as bullets after punctuation\nformattedCaption = formattedCaption.replace(/([.!?])\\s+(\\p{Emoji})/gu, '$1\\n\\n$2');\nlet batch = [];\n\nif (images.length === 1) {\n  const url = images[0].startsWith('http') ? images[0] : (($env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com') + images[0]);\n  batch.push({\n    method: \"POST\",\n    relative_url: `${pageId}/photos`,\n    body: `url=${encodeURIComponent(url)}&message=${encodeURIComponent(formattedCaption)}&published=true`\n  });\n} else if (images.length > 1) {\n  let attachedMedia = [];\n  images.forEach((img, i) => {\n    const url = img.startsWith('http') ? img : (($env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com') + img);\n    batch.push({\n      method: \"POST\",\n      relative_url: `${pageId}/photos`,\n      name: `photo${i}`,\n      omit_response_on_success: false,\n      body: `url=${encodeURIComponent(url)}&published=false`\n    });\n    attachedMedia.push({ \"media_fbid\": `{result=photo${i}:$.id}` });\n  });\n  \n  batch.push({\n    method: \"POST\",\n    relative_url: `${pageId}/feed`,\n    body: `message=${encodeURIComponent(formattedCaption)}&attached_media=${encodeURIComponent(JSON.stringify(attachedMedia))}`\n  });\n}\n\nreturn {\n  caption: formattedCaption,\n  visual_assets: images,\n  batch_payload: JSON.stringify(batch),\n  accessToken: accessToken,\n  pageId: pageId,\n  contentItemId: contentItemId,\n  organizationId: organizationId,\n  threadId: threadId\n};"
       },
       "name": "Extract FB Assets",
       "type": "n8n-nodes-base.code",
@@ -135,11 +135,11 @@
           "parameters": [
             {
               "name": "p_organization_id",
-              "value": "={{ $('Extract FB Assets').item.json.organizationId }}"
+              "value": "={{ $('Extract FB Assets').first().json.organizationId }}"
             },
             {
               "name": "p_content_item_id",
-              "value": "={{ $('Extract FB Assets').item.json.contentItemId }}"
+              "value": "={{ $('Extract FB Assets').first().json.contentItemId }}"
             }
           ]
         },
@@ -163,11 +163,11 @@
           "parameters": [
             {
               "name": "access_token",
-              "value": "={{ $('Extract FB Assets').item.json.accessToken }}"
+              "value": "={{ $('Extract FB Assets').first().json.accessToken }}"
             },
             {
               "name": "batch",
-              "value": "={{ $('Extract FB Assets').item.json.batch_payload }}"
+              "value": "={{ $('Extract FB Assets').first().json.batch_payload }}"
             }
           ]
         },
@@ -195,7 +195,7 @@
             },
             {
               "name": "x-request-id",
-              "value": "={{ 'phase3-fb-' + $('Extract FB Assets').item.json.contentItemId + '-' + $json.id }}"
+              "value": "={{ 'phase3-fb-' + $('Extract FB Assets').first().json.contentItemId + '-' + $json.id }}"
             },
             {
               "name": "Content-Type",
@@ -208,11 +208,11 @@
           "parameters": [
             {
               "name": "organizationId",
-              "value": "={{ $('Extract FB Assets').item.json.organizationId }}"
+              "value": "={{ $('Extract FB Assets').first().json.organizationId }}"
             },
             {
               "name": "contentItemId",
-              "value": "={{ $('Extract FB Assets').item.json.contentItemId }}"
+              "value": "={{ $('Extract FB Assets').first().json.contentItemId }}"
             },
             {
               "name": "channel",
@@ -227,7 +227,7 @@
             },
             {
               "name": "threadId",
-              "value": "={{ $('Extract FB Assets').item.json.threadId }}"
+              "value": "={{ $('Extract FB Assets').first().json.threadId }}"
             }
           ]
         },
