@@ -21,12 +21,12 @@ CREATE INDEX IF NOT EXISTS idx_crm_knowledge_ingestion_runs_doc
   ON public.crm_knowledge_ingestion_runs(document_id);
 
 CREATE OR REPLACE FUNCTION public.set_crm_knowledge_ingestion_runs_updated_at()
-RETURNS TRIGGER AS $body
+RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$body LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_crm_knowledge_ingestion_runs_updated_at ON public.crm_knowledge_ingestion_runs;
 CREATE TRIGGER trg_crm_knowledge_ingestion_runs_updated_at
