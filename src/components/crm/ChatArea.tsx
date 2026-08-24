@@ -43,14 +43,18 @@ export default function ChatArea() {
           content: inputText
         })
       });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => null);
-        throw new Error(payload?.message || payload?.error || 'Không gửi được tin nhắn');
-      }
 
-      const newMessage = await res.json();
-      addMessage(newMessage);
-      setInputText('');
+      const data = await res.json();
+      
+      if (res.ok) {
+        addMessage(data);
+        setInputText('');
+      } else {
+        if (data.message) {
+          addMessage(data.message);
+        }
+        setErrorMessage(data?.error || 'Không gửi được tin nhắn');
+      }
     } catch (err) {
       console.error(err);
       setErrorMessage(err instanceof Error ? err.message : 'Không gửi được tin nhắn');

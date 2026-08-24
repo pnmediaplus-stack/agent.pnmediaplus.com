@@ -77,46 +77,59 @@ export async function POST(req: Request) {
     // --- OUTBOUND DISPATCH ---
     // Trigger n8n outbound worker which has access to vault and BYOK redemption
     const n8nOutboundUrl = process.env.N8N_CSKH_OUTBOUND_WEBHOOK_URL;
-    if (n8nOutboundUrl) {
-      try {
-        const dispatchRes = await fetch(n8nOutboundUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "send_human_reply",
-            organization_id: organizationId,
-            thread_id: payload.threadId,
-            message_id: message.id,
-            content: payload.content
-          })
-        });
+    if (!n8nOutboundUrl) {
+      console.error("N8N_CSKH_OUTBOUND_WEBHOOK_URL is not configured.");
+      await fetchSupabaseRest('crm_messages', {
+        method: 'PATCH',
+        searchParams: { id: `eq.${message.id}` },
+        body: JSON.stringify({ delivery_status: 'failed' })
+      });
+      return NextResponse.json({ 
+        error: 'MISSING_OUTBOUND_CONFIG', 
+        message: { ...message, delivery_status: 'failed' } 
+      }, { status: 502 });
+    }
 
-        if (!dispatchRes.ok) {
-          console.error("N8N_OUTBOUND_DISPATCH_REJECTED", await dispatchRes.text());
-          
-          // Mark as failed in DB since worker rejected it
-          await fetchSupabaseRest('crm_messages', {
-            method: 'PATCH',
-            searchParams: { id: `eq.${message.id}` },
-            body: JSON.stringify({ delivery_status: 'failed' })
-          });
-          
-          return NextResponse.json({ error: 'N8N_OUTBOUND_DISPATCH_REJECTED' }, { status: 502 });
-        }
-      } catch (e) {
-        console.error("Error calling n8n outbound webhook:", e);
-        // Mark as failed in DB since worker is unreachable
+    try {
+      const dispatchRes = await fetch(n8nOutboundUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "send_human_reply",
+          organization_id: organizationId,
+          thread_id: payload.threadId,
+          message_id: message.id,
+          content: payload.content
+        })
+      });
+
+      if (!dispatchRes.ok) {
+        console.error("N8N_OUTBOUND_DISPATCH_REJECTED", await dispatchRes.text());
+        
+        // Mark as failed in DB since worker rejected it
         await fetchSupabaseRest('crm_messages', {
           method: 'PATCH',
           searchParams: { id: `eq.${message.id}` },
           body: JSON.stringify({ delivery_status: 'failed' })
         });
-        return NextResponse.json({ error: 'N8N_OUTBOUND_DISPATCH_FAILED' }, { status: 502 });
+        
+        return NextResponse.json({ 
+          error: 'N8N_OUTBOUND_DISPATCH_REJECTED',
+          message: { ...message, delivery_status: 'failed' }
+        }, { status: 502 });
       }
-    } else {
-      console.warn("N8N_CSKH_OUTBOUND_WEBHOOK_URL is not configured. Message remains queued.");
-      // In production, missing config for a critical dispatch should probably fail the send
-      // but we'll let it queue with a warning for now so dev environments don't break
+    } catch (e) {
+      console.error("Error calling n8n outbound webhook:", e);
+      // Mark as failed in DB since worker is unreachable
+      await fetchSupabaseRest('crm_messages', {
+        method: 'PATCH',
+        searchParams: { id: `eq.${message.id}` },
+        body: JSON.stringify({ delivery_status: 'failed' })
+      });
+      return NextResponse.json({ 
+        error: 'N8N_OUTBOUND_DISPATCH_FAILED',
+        message: { ...message, delivery_status: 'failed' }
+      }, { status: 502 });
     }
 
     const threadUpdateResponse = await fetchSupabaseRest('crm_threads', {
