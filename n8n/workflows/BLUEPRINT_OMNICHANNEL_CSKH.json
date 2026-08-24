@@ -46,7 +46,7 @@
     },
     {
       "parameters": {
-        "text": "={{ $json.body.message }}",
+        "text": "={{ $('Webhook Trigger (From Next.js)').first().json.body.message }}",
         "options": {
           "systemMessage": "={{ $node['Fetch Dynamic System Prompt'].json.bot_system_prompt }}"
         }
@@ -75,7 +75,7 @@
     {
       "parameters": {
         "tableName": "crm_messages",
-        "sessionId": "={{ $('Webhook Trigger').first().json.body.thread_id }}"
+        "sessionId": "={{ $('Webhook Trigger (From Next.js)').first().json.body.thread_id }}"
       },
       "id": "node-chat-memory",
       "name": "Postgres Chat Memory",
@@ -128,7 +128,7 @@
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "recipient", "value": "={{ { id: $('Webhook Trigger').first().json.body.sender_id } }}" },
+            { "name": "recipient", "value": "={{ { id: $('Webhook Trigger (From Next.js)').first().json.body.sender_id } }}" },
             { "name": "message", "value": "={{ { text: $json.output } }}" }
           ]
         }
@@ -141,17 +141,19 @@
     },
     {
       "parameters": {
-        "operation": "update",
+        "operation": "insert",
         "tableName": "crm_messages",
-        "updateKey": "id",
-        "columns": "delivery_status",
+        "columns": "organization_id,thread_id,sender_type,content,delivery_status",
         "values": {
-          "id": "={{ $json.message_id }}",
-          "delivery_status": "sent"
+          "organization_id": "={{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}",
+          "thread_id": "={{ $('Webhook Trigger (From Next.js)').first().json.body.thread_id }}",
+          "sender_type": "bot",
+          "content": "={{ $('AI Agent (CSKH)').first().json.output }}",
+          "delivery_status": "={{ $json.message_id ? 'sent' : 'failed' }}"
         }
       },
-      "id": "node-update-delivery",
-      "name": "Update Delivery Status",
+      "id": "node-insert-outbound",
+      "name": "Insert Outbound Message",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.2,
       "position": [ 1100, 0 ]
@@ -186,7 +188,7 @@
       "ai_tool": [ [ { "node": "AI Agent (CSKH)", "type": "ai_tool", "index": 0 } ] ]
     },
     "Send Reply to Facebook": {
-      "main": [ [ { "node": "Update Delivery Status", "type": "main", "index": 0 } ] ]
+      "main": [ [ { "node": "Insert Outbound Message", "type": "main", "index": 0 } ] ]
     }
   },
   "settings": {
