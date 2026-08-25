@@ -208,7 +208,6 @@
     },
     {
       "parameters": {
-        "mode": "retrieve-retrieve",
         "tableName": "crm_knowledge_chunks",
         "queryName": "match_documents",
         "options": {
