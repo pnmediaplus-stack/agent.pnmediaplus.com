@@ -124,14 +124,14 @@ export default function KnowledgeBasePage() {
                         <span className="text-sm font-medium text-gray-900">{doc.title}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center whitespace-nowrap">
                         {doc.status === 'ready' && <><CheckCircle2 className="h-4 w-4 text-green-500 mr-1.5" /><span className="text-sm text-green-700">Sẵn sàng</span></>}
                         {doc.status === 'processing' && <><Loader2 className="animate-spin h-4 w-4 text-blue-500 mr-1.5" /><span className="text-sm text-blue-700">Đang xử lý (Chunking)</span></>}
                         {doc.status === 'pending' && <span className="text-sm text-gray-500 px-2 py-1 bg-gray-100 rounded-full">Chờ xử lý</span>}
                         {doc.status === 'failed' && <><XCircle className="h-4 w-4 text-red-500 mr-1.5" /><span className="text-sm text-red-700">Lỗi xử lý</span></>}
                       </div>
-                      {doc.error_message && <p className="text-xs text-red-500 mt-1">{doc.error_message}</p>}
+                      {doc.error_message && <p className="text-xs text-red-500 mt-2 break-words whitespace-normal max-w-md">{doc.error_message}</p>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(doc.created_at).toLocaleString('vi-VN')}

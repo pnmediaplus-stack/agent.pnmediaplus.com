@@ -8,40 +8,62 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "node-webhook-trigger",
+      "id": "67c02928-155c-4bcc-82c4-005f86428855",
       "name": "Webhook Trigger (From Next.js)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [ 0, 0 ],
+      "position": [
+        832,
+        -112
+      ],
       "notesInFlow": true,
+      "webhookId": "e43cb6ea-c076-40d8-b398-29ce59c47d1f",
       "notes": "Nhận payload { organization_id, channel_id, customer_id, thread_id, message, sender_id }"
     },
     {
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT bot_system_prompt, channel_external_id FROM public.crm_channels WHERE id = $1",
-        "values": "={{ $('Webhook Trigger (From Next.js)').first().json.body.channel_id }}"
+        "options": {}
       },
-      "id": "node-fetch-prompt",
+      "id": "da9ca4f3-7878-41bb-ac8c-32b42ccc6940",
       "name": "Fetch Dynamic System Prompt",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.2,
-      "position": [ 200, 0 ],
+      "position": [
+        1040,
+        -112
+      ],
       "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "EhOYcO8YGhLwldqf",
+          "name": "Postgres account"
+        }
+      },
       "notes": "Lấy cấu hình Persona của Fanpage/OA"
     },
     {
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT tag_name FROM public.crm_tenant_tags WHERE organization_id = $1",
-        "values": "={{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}"
+        "options": {}
       },
-      "id": "node-fetch-tags",
+      "id": "7e3d1aa1-ffc5-418c-9de5-3a74a3211900",
       "name": "Fetch Allowed Tags",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.2,
-      "position": [ 400, 0 ],
+      "position": [
+        1232,
+        -112
+      ],
       "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "EhOYcO8YGhLwldqf",
+          "name": "Postgres account"
+        }
+      },
       "notes": "Kéo danh sách thẻ để truyền vào Tool Update Tags"
     },
     {
@@ -76,11 +98,14 @@
         },
         "options": {}
       },
-      "id": "node-fetch-facebook-integration",
+      "id": "12db528b-185f-4895-87cf-9eb948d8cb14",
       "name": "Fetch Facebook Integration",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [ 520, 0 ],
+      "position": [
+        1440,
+        -112
+      ],
       "notesInFlow": true,
       "notes": "Lấy vault_credential_ref của Facebook Page từ tenant integration"
     },
@@ -120,11 +145,14 @@
         },
         "options": {}
       },
-      "id": "node-redeem-facebook-token",
+      "id": "c581d280-1db2-47d7-a396-c47e31987a10",
       "name": "Redeem BYOK Token",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [ 640, 0 ],
+      "position": [
+        1648,
+        -112
+      ],
       "notesInFlow": true,
       "notes": "Đổi vault token ra access token thật để gửi Facebook"
     },
@@ -135,182 +163,318 @@
           "systemMessage": "={{ $node['Fetch Dynamic System Prompt'].json.bot_system_prompt }}"
         }
       },
-      "id": "node-ai-agent",
+      "id": "bd209b52-5e08-4d4e-b26b-e260c816c3e3",
       "name": "AI Agent (CSKH)",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.1,
-      "position": [ 600, 0 ],
+      "position": [
+        1856,
+        -112
+      ],
       "notesInFlow": true,
       "notes": "Bộ não cốt lõi. Sẽ suy nghĩ và quyết định gọi Tools hay trả lời thẳng"
     },
     {
       "parameters": {
-        "model": "gpt-4o-mini",
         "options": {
-          "temperature": 0.4,
-          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai"
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai",
+          "temperature": 0.4
         }
       },
-      "id": "node-openai-model",
+      "id": "b699b2a8-9797-477b-a190-8d23bc38a151",
       "name": "OpenAI Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1,
-      "position": [ 600, 200 ]
+      "position": [
+        1552,
+        128
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "MesMbE0xnztwgTiM",
+          "name": "OpenAi account 2"
+        }
+      }
     },
     {
       "parameters": {
-        "tableName": "crm_messages",
-        "sessionId": "={{ $('Webhook Trigger (From Next.js)').first().json.body.thread_id }}"
+        "tableName": "crm_messages"
       },
-      "id": "node-chat-memory",
+      "id": "2ed6d692-87b8-4393-a1db-760cc3e179ed",
       "name": "Postgres Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1,
-      "position": [ 750, 250 ],
+      "position": [
+        1664,
+        128
+      ],
       "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "EhOYcO8YGhLwldqf",
+          "name": "Postgres account"
+        }
+      },
       "notes": "Kéo lịch sử chat từ bảng crm_messages để Bot nhớ văn cảnh"
     },
     {
       "parameters": {},
-      "id": "node-vector-rag",
+      "id": "989c15b3-52ca-4282-ad8f-b25ec840d5fa",
       "name": "Vector Store (RAG)",
       "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
       "typeVersion": 1,
-      "position": [ 900, 200 ],
+      "position": [
+        1776,
+        112
+      ],
       "notesInFlow": true,
       "notes": "Tra cứu tài liệu nội bộ dựa trên organization_id trước khi trả lời"
     },
     {
       "parameters": {
-        "name": "update_customer_needs",
-        "description": "={{ 'Dùng để gán các thẻ phân loại sau: ' + JSON.stringify($node['Fetch Allowed Tags'].json.tags) }}",
         "method": "POST",
         "url": "https://agent.pnmediaplus.com/api/internal/customer/tags",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Authorization",
-              "value": "={{ 'Bearer ' + $env[\"CONTROL_PLANE_SECRET\"] }}"
-            }
+        "parametersHeaders": {
+          "values": [
+            {}
           ]
         }
       },
-      "id": "node-tool-tags",
+      "id": "5036b60e-214c-4546-ac2a-2e71a9145ed1",
       "name": "Tool: Update Tags",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
-      "position": [ 1050, 250 ]
+      "position": [
+        2032,
+        112
+      ]
     },
     {
       "parameters": {
-        "name": "request_human_handoff",
-        "description": "Gọi tool này khi khách yêu cầu gặp người thật hoặc khi bạn không có dữ liệu để trả lời.",
         "method": "POST",
         "url": "https://agent.pnmediaplus.com/api/internal/thread/handoff",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Authorization",
-              "value": "={{ 'Bearer ' + $env[\"CONTROL_PLANE_SECRET\"] }}"
-            }
+        "parametersHeaders": {
+          "values": [
+            {}
           ]
         }
       },
-      "id": "node-tool-handoff",
+      "id": "7ee679c7-909d-4fc7-9c88-0e3a4a50bd65",
       "name": "Tool: Handoff to Human",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
-      "position": [ 1200, 250 ]
+      "position": [
+        2176,
+        112
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://graph.facebook.com/v19.0/me/messages",
-        "onError": "continueRegularOutput",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "access_token", "value": "={{ $('Redeem BYOK Token').first().json.data.access_token }}" },
-            { "name": "recipient", "value": "={{ { id: $('Webhook Trigger (From Next.js)').first().json.body.sender_id } }}" },
-            { "name": "message", "value": "={{ { text: $json.output } }}" }
+            {
+              "name": "access_token",
+              "value": "={{ $('Redeem BYOK Token').first().json.data.access_token }}"
+            },
+            {
+              "name": "recipient",
+              "value": "={{ { id: $('Webhook Trigger (From Next.js)').first().json.body.sender_id } }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ { text: $json.output } }}"
+            }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "node-send-fb",
+      "id": "a52122dc-56a4-4418-98f1-097994128c21",
       "name": "Send Reply to Facebook",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [ 900, 0 ]
+      "position": [
+        2192,
+        -112
+      ]
     },
     {
       "parameters": {
-        "operation": "insert",
-        "tableName": "crm_messages",
-        "columns": "organization_id,thread_id,sender_type,content,delivery_status",
-        "values": {
-          "organization_id": "={{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}",
-          "thread_id": "={{ $('Webhook Trigger (From Next.js)').first().json.body.thread_id }}",
-          "sender_type": "bot",
-          "content": "={{ $('AI Agent (CSKH)').first().json.output }}",
-          "delivery_status": "={{ $json.error || ($json.statusCode && $json.statusCode >= 400) ? 'failed' : 'sent' }}"
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
         }
       },
-      "id": "node-insert-outbound",
+      "id": "00d2c808-c14c-4a1a-848e-91cdef962394",
       "name": "Insert Outbound Message",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.2,
-      "position": [ 1100, 0 ]
+      "position": [
+        2400,
+        -112
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "EhOYcO8YGhLwldqf",
+          "name": "Postgres account"
+        }
+      }
     }
   ],
+  "pinData": {},
   "connections": {
     "Webhook Trigger (From Next.js)": {
-      "main": [ [ { "node": "Fetch Dynamic System Prompt", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Fetch Dynamic System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Fetch Dynamic System Prompt": {
-      "main": [ [ { "node": "Fetch Allowed Tags", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Fetch Allowed Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Fetch Allowed Tags": {
-      "main": [ [ { "node": "Fetch Facebook Integration", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Fetch Facebook Integration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Fetch Facebook Integration": {
-      "main": [ [ { "node": "Redeem BYOK Token", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Redeem BYOK Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Redeem BYOK Token": {
-      "main": [ [ { "node": "AI Agent (CSKH)", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "AI Agent (CSKH)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "AI Agent (CSKH)": {
-      "main": [ [ { "node": "Send Reply to Facebook", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Send Reply to Facebook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "OpenAI Chat Model": {
-      "ai_languageModel": [ [ { "node": "AI Agent (CSKH)", "type": "ai_languageModel", "index": 0 } ] ]
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent (CSKH)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Postgres Chat Memory": {
-      "ai_memory": [ [ { "node": "AI Agent (CSKH)", "type": "ai_memory", "index": 0 } ] ]
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent (CSKH)",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Vector Store (RAG)": {
-      "ai_tool": [ [ { "node": "AI Agent (CSKH)", "type": "ai_tool", "index": 0 } ] ]
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent (CSKH)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Tool: Update Tags": {
-      "ai_tool": [ [ { "node": "AI Agent (CSKH)", "type": "ai_tool", "index": 0 } ] ]
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent (CSKH)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Tool: Handoff to Human": {
-      "ai_tool": [ [ { "node": "AI Agent (CSKH)", "type": "ai_tool", "index": 0 } ] ]
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent (CSKH)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Send Reply to Facebook": {
-      "main": [ [ { "node": "Insert Outbound Message", "type": "main", "index": 0 } ] ]
+      "main": [
+        [
+          {
+            "node": "Insert Outbound Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
+  "active": false,
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "versionId": "c5c49c2c-42b3-4cf1-bde5-d05bdec32cd4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "id": "4nFdPwDdA5HPsOoT",
+  "tags": []
 }
