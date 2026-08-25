@@ -8,8 +8,8 @@ export async function POST(req: Request) {
   try {
     // 1. Verify Authentication to prevent unauthorized injection
     const auth = await verifyUiAuth(req);
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!auth.ok) {
+      return auth.response;
     }
 
     // 2. Prevent usage in production if needed, but since it's auth-guarded it's safer.
