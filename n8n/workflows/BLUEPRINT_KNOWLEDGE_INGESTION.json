@@ -1,56 +1,28 @@
 {
-  "name": "Knowledge Base Ingestion Pipeline",
+  "name": "Omnichannel CSKH AI Agent",
   "nodes": [
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "knowledge-ingestion",
+        "path": "omnichannel-cskh",
+        "responseMode": "lastNode",
         "options": {}
       },
-      "id": "0dbbe005-ee85-48b4-bccd-535588c34133",
-      "name": "Webhook Trigger",
+      "id": "a411b7ab-f9e8-4550-889b-1d6f8baebb22",
+      "name": "Webhook Trigger (From Next.js)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        2768,
-        -80
+        13216,
+        -1136
       ],
       "notesInFlow": true,
-      "webhookId": "af741a80-fcc6-4c3f-9d14-9205324296fa",
-      "notes": "Nhận payload { document_id, organization_id, file_path }"
+      "webhookId": "e43cb6ea-c076-40d8-b398-29ce59c47d1f",
+      "notes": "Nhận payload { organization_id, channel_id, customer_id, thread_id, message, sender_id }"
     },
     {
       "parameters": {
-        "url": "={{($env.SUPABASE_URL || 'http://supabase:8000').replace(/\\/$/, '') + '/storage/v1/object/crm_knowledge_files/' + $json.file_path}}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file"
-            }
-          }
-        }
-      },
-      "id": "d384ec4e-a59b-49c3-b7c5-e81a2fe5f688",
-      "name": "Download Document",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        3152,
-        -80
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_ingestion_runs?on_conflict=workflow_run_id",
+        "url": "={{($env[\"SUPABASE_URL\"] || \"https://jrgkpbjsqefvnhbiiutz.supabase.co\")}}/rest/v1/crm_channels?id=eq.{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.channel_id }}&select=bot_system_prompt",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -58,107 +30,96 @@
           "parameters": [
             {
               "name": "Prefer",
-              "value": "resolution=merge-duplicates,return=representation"
+              "value": "return=representation"
             }
           ]
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"workflow_run_id\": \"{{$execution.id}}\",\n  \"document_id\": \"{{$json.body.document_id}}\",\n  \"organization_id\": \"{{$json.body.organization_id}}\",\n  \"file_path\": \"{{$json.body.file_path}}\",\n  \"file_name\": \"{{$json.body.file_name || ''}}\",\n  \"mime_type\": \"{{$json.body.mime_type || ''}}\",\n  \"status\": \"processing\",\n  \"payload\": {\n    \"source\": \"BLUEPRINT_KNOWLEDGE_INGESTION\",\n    \"document_id\": \"{{$json.body.document_id}}\",\n    \"organization_id\": \"{{$json.body.organization_id}}\",\n    \"file_path\": \"{{$json.body.file_path}}\"\n  }\n}",
         "options": {}
       },
-      "id": "cd03209b-f6fd-40d9-9ed5-db649f61aab9",
-      "name": "Persist Ingestion Context",
+      "id": "2aa9214b-da53-4b55-beec-9b4fee7bc666",
+      "name": "Fetch Dynamic System Prompt",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        2960,
-        -80
+        13440,
+        -1136
       ],
+      "notesInFlow": true,
+      "alwaysOutputData": true,
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
           "name": "SupabaseAuth"
         }
-      }
+      },
+      "notes": "Lấy cấu hình Persona của Fanpage/OA"
     },
     {
       "parameters": {
-        "mode": "insert",
-        "tableName": "crm_knowledge_chunks",
+        "url": "={{($env[\"SUPABASE_URL\"] || \"https://jrgkpbjsqefvnhbiiutz.supabase.co\")}}/rest/v1/crm_tenant_tags?organization_id=eq.{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.organization_id }}&select=tag_name",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
         "options": {}
       },
-      "id": "71bf8abd-f737-43af-8324-4907993ff02c",
-      "name": "Insert to Postgres Vector",
-      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
-      "typeVersion": 1,
+      "id": "5f83d804-8831-4583-8706-e4c5b24e4d53",
+      "name": "Fetch Allowed Tags",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
       "position": [
-        3344,
-        -80
+        13664,
+        -1136
       ],
+      "notesInFlow": true,
+      "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "I2whnvNKGQtwUcks",
-          "name": "Saas App PNM"
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
         }
-      }
+      },
+      "notes": "Kéo danh sách thẻ để truyền vào Tool Update Tags"
     },
     {
       "parameters": {
-        "dataType": "binary",
-        "binaryMode": "specificField",
+        "text": "={{ $json.body.message }}",
         "options": {
-          "metadata": {
-            "metadataValues": [
-              {
-                "name": "document_id",
-                "value": "={{ $('Webhook Trigger').first().json.body.document_id }}"
-              },
-              {
-                "name": "organization_id",
-                "value": "={{ $('Webhook Trigger').first().json.body.organization_id }}"
-              }
-            ]
-          }
+          "systemMessage": "={{ $json.systemPrompt }}\n\nBạn CÓ THỂ cập nhật thẻ cho khách hàng thông qua Tool. CÁC THẺ HỢP LỆ BẠN CÓ THỂ DÙNG LÀ: {{ $json.tags && $json.tags.length > 0 ? $json.tags.join(', ') : 'none' }}"
         }
       },
-      "id": "8bf30e6c-f957-48f1-8a8e-9be63e9e313f",
-      "name": "Default Data Loader",
-      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
-      "typeVersion": 1,
+      "id": "44952aa2-427d-4432-a56f-60e2e4f72088",
+      "name": "AI Agent (CSKH)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.1,
       "position": [
-        3360,
-        80
-      ]
+        14144,
+        -1136
+      ],
+      "notesInFlow": true,
+      "notes": "Bộ não cốt lõi. Sẽ suy nghĩ và quyết định gọi Tools hay trả lời thẳng"
     },
     {
       "parameters": {
-        "chunkOverlap": 100,
-        "options": {}
-      },
-      "id": "e9353c8b-099d-4f68-abe9-51803c45b839",
-      "name": "Recursive Character Text Splitter",
-      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
-      "typeVersion": 1,
-      "position": [
-        3360,
-        192
-      ]
-    },
-    {
-      "parameters": {
-        "model": "text-embedding-3-small",
         "options": {
-          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $('Webhook Trigger').first().json.body.organization_id }}/v1"
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $json.body.organization_id }}/v1",
+          "temperature": 0.4
         }
       },
-      "id": "d814486b-2fc5-4d7d-8beb-b5584c686f49",
-      "name": "OpenAI Embeddings",
-      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "id": "f8d5df6f-a4cb-43fc-b7dc-6b110cda245d",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1,
       "position": [
-        3184,
-        192
+        13936,
+        -896
       ],
       "credentials": {
         "openAiApi": {
@@ -169,140 +130,158 @@
     },
     {
       "parameters": {
-        "method": "PATCH",
-        "url": "={{$env[\"SUPABASE_URL\"]}}/rest/v1/crm_knowledge_documents?id=eq.{{ $(\"Webhook Trigger\").first().json.body.document_id }}",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\"status\": \"ready\"}",
-        "options": {},
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth"
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.thread_id }}",
+        "tableName": "n8n_chat_memory"
       },
-      "id": "95351331-5bc1-4994-a7d5-e1dd23248b0e",
-      "name": "Update Document Status",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        3664,
-        -80
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "method": "PATCH",
-        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_ingestion_runs?workflow_run_id=eq.{{$execution.id}}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Prefer",
-              "value": "return=minimal"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"status\": \"ready\",\n  \"last_error\": null\n}",
-        "options": {}
-      },
-      "id": "fa4537a7-4139-4e18-a1fc-cce6f9de98c8",
-      "name": "Update Ingestion Context Ready",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        3856,
-        -80
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
-        }
-      }
-    },
-    {
-      "parameters": {},
-      "id": "1bc3e296-2e44-4938-98be-f237bcaf515b",
-      "name": "Error Trigger",
-      "type": "n8n-nodes-base.errorTrigger",
+      "id": "dc9467ff-bb83-444d-963f-6fbf11704901",
+      "name": "Postgres Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1,
       "position": [
-        2752,
-        368
+        14048,
+        -896
       ],
       "notesInFlow": true,
-      "notes": "Nhánh lỗi cho ingestion để document hỏng extraction tự chuyển failed thay vì kẹt processing."
-    },
-    {
-      "parameters": {
-        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_ingestion_runs?workflow_run_id=eq.{{$('Error Trigger').first().json.execution.id}}&select=workflow_run_id,document_id,organization_id,file_path,file_name,mime_type,status,last_error,payload",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {}
-      },
-      "id": "180ce815-673f-4d2d-ba94-71c433978b80",
-      "name": "Load Ingestion Context",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        2960,
-        368
-      ],
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
+        "postgres": {
+          "id": "EhOYcO8YGhLwldqf",
+          "name": "Postgres account"
         }
-      }
+      },
+      "notes": "Kéo lịch sử chat từ bảng n8n_chat_memory để Bot nhớ văn cảnh"
     },
     {
       "parameters": {
-        "jsCode": "const ctxList = Array.isArray($input.first().json) ? $input.first().json : ($input.first().json ? [$input.first().json] : []);\nconst ctx = ctxList[0] || {};\nconst errorMessage = $('Error Trigger').first().json.execution?.error?.message || 'Unknown ingestion error';\n\nreturn {\n  json: {\n    workflow_run_id: ctx.workflow_run_id || $('Error Trigger').first().json.execution?.id || '',\n    document_id: ctx.document_id || '',\n    organization_id: ctx.organization_id || '',\n    error_message: errorMessage,\n    stage: 'text_extraction',\n    metadata: {\n      file_name: ctx.file_name || '',\n      file_path: ctx.file_path || '',\n      mime_type: ctx.mime_type || '',\n      status: ctx.status || 'processing'\n    }\n  }\n};"
+        "name": "knowledge_base",
+        "description": "Công cụ tìm kiếm tài liệu của công ty. Dùng công cụ này MỌI LÚC khi cần trả lời câu hỏi của khách hàng về sản phẩm, chính sách, hoặc thông tin công ty."
       },
-      "id": "7a565b85-6239-4feb-b171-ce7db1fa7e66",
-      "name": "Format Ingestion Error",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "59d19042-81c9-4755-bf31-ae7343e9372e",
+      "name": "Vector Store (RAG)",
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
       "position": [
-        3152,
-        368
-      ]
+        14160,
+        -912
+      ],
+      "notesInFlow": true,
+      "notes": "Tra cứu tài liệu nội bộ dựa trên organization_id trước khi trả lời"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/crm/knowledge/ingestion-failed",
+        "url": "https://agent.pnmediaplus.com/api/internal/customer/tags",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-request-id",
-              "value": "={{$execution.id}}-knowledge-failed"
-            }
+        "parametersHeaders": {
+          "values": [
+            {}
           ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{JSON.stringify($json)}}",
+        }
+      },
+      "id": "657490ab-7ea6-41c4-9f7d-14306514438a",
+      "name": "tool_update_tags",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1,
+      "position": [
+        14416,
+        -912
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent.pnmediaplus.com/api/internal/thread/handoff",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {}
+          ]
+        }
+      },
+      "id": "fc50ab4d-d450-4e7f-8cfd-fe043e27c308",
+      "name": "tool_handoff_to_human",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1,
+      "position": [
+        14560,
+        -912
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableName": "crm_knowledge_chunks",
         "options": {}
       },
-      "id": "3b298bd3-1d22-40b4-880c-c72fa975798d",
-      "name": "Mark Document Failed",
+      "id": "eadb5455-b972-43c9-b455-a761ce18faa9",
+      "name": "Supabase Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        13984,
+        -688
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "I2whnvNKGQtwUcks",
+          "name": "Saas App PNM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $json.body.organization_id }}/v1"
+        }
+      },
+      "id": "7672cd5b-c370-4f03-82c2-08c2bf43425a",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        13904,
+        -544
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "MesMbE0xnztwgTiM",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/crm/messages/dispatch",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"organization_id\": \"{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.organization_id }}\",\n  \"thread_id\": \"{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.thread_id }}\",\n  \"content\": \"{{ $json.output }}\",\n  \"sender_type\": \"bot\"\n}",
+        "options": {}
+      },
+      "id": "d45d1af3-ee31-46d0-8e24-d3ff19f87cd7",
+      "name": "Dispatch Reply via Universal API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        3408,
-        368
+        14544,
+        -1136
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -310,60 +289,128 @@
           "name": "ControlPlaneAuth"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "const tags = $input.all().map(item => item.json.tag_name).filter(Boolean);\nconst webhookData = $('Webhook Trigger (From Next.js)').first().json.body;\nconst promptNode = $('Fetch Dynamic System Prompt').first();\nconst systemPrompt = promptNode && promptNode.json && promptNode.json.bot_system_prompt ? promptNode.json.bot_system_prompt : 'Bạn là trợ lý ảo hỗ trợ khách hàng.';\nreturn [{ json: { body: webhookData, tags: tags, systemPrompt: systemPrompt } }];"
+      },
+      "id": "81097502-de45-4d19-bed4-add28e506404",
+      "name": "Aggregate Tags",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13904,
+        -1136
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $json.body.organization_id }}/v1",
+          "temperature": 0.4
+        }
+      },
+      "id": "5a76bf84-7925-4ec4-8256-7081b566f2cb",
+      "name": "OpenAI Chat Model (RAG)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        14272,
+        -752
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "MesMbE0xnztwgTiM",
+          "name": "OpenAi account 2"
+        }
+      }
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook Trigger": {
+    "Webhook Trigger (From Next.js)": {
       "main": [
         [
           {
-            "node": "Persist Ingestion Context",
+            "node": "Fetch Dynamic System Prompt",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Persist Ingestion Context": {
+    "Fetch Dynamic System Prompt": {
       "main": [
         [
           {
-            "node": "Download Document",
+            "node": "Fetch Allowed Tags",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Download Document": {
+    "Fetch Allowed Tags": {
       "main": [
         [
           {
-            "node": "Insert to Postgres Vector",
+            "node": "Aggregate Tags",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Default Data Loader": {
-      "ai_document": [
+    "AI Agent (CSKH)": {
+      "main": [
         [
           {
-            "node": "Insert to Postgres Vector",
-            "type": "ai_document",
+            "node": "Dispatch Reply via Universal API",
+            "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Recursive Character Text Splitter": {
-      "ai_textSplitter": [
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
         [
           {
-            "node": "Default Data Loader",
-            "type": "ai_textSplitter",
+            "node": "AI Agent (CSKH)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent (CSKH)",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store (RAG)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent (CSKH)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store (RAG)",
+            "type": "ai_vectorStore",
             "index": 0
           }
         ]
@@ -373,78 +420,67 @@
       "ai_embedding": [
         [
           {
-            "node": "Insert to Postgres Vector",
+            "node": "Supabase Vector Store",
             "type": "ai_embedding",
             "index": 0
           }
         ]
       ]
     },
-    "Insert to Postgres Vector": {
+    "Aggregate Tags": {
       "main": [
         [
           {
-            "node": "Update Document Status",
+            "node": "AI Agent (CSKH)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Update Document Status": {
-      "main": [
+    "OpenAI Chat Model (RAG)": {
+      "ai_languageModel": [
         [
           {
-            "node": "Update Ingestion Context Ready",
-            "type": "main",
+            "node": "Vector Store (RAG)",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]
       ]
     },
-    "Error Trigger": {
-      "main": [
+    "tool_update_tags": {
+      "ai_tool": [
         [
           {
-            "node": "Load Ingestion Context",
-            "type": "main",
+            "node": "AI Agent (CSKH)",
+            "type": "ai_tool",
             "index": 0
           }
         ]
       ]
     },
-    "Load Ingestion Context": {
-      "main": [
+    "tool_handoff_to_human": {
+      "ai_tool": [
         [
           {
-            "node": "Format Ingestion Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Ingestion Error": {
-      "main": [
-        [
-          {
-            "node": "Mark Document Failed",
-            "type": "main",
+            "node": "AI Agent (CSKH)",
+            "type": "ai_tool",
             "index": 0
           }
         ]
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "0a92da5f-a966-4e59-8060-359361eb5750",
+  "versionId": "ff49a0eb-2ce2-4741-bf4a-a0ae0689a690",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
   },
-  "id": "1G4tqcDW9Gc55QA0",
+  "id": "4nFdPwDdA5HPsOoT",
   "tags": []
 }

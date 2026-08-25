@@ -42,7 +42,26 @@ export async function POST(req: Request) {
     const customer_id = '22222222-2222-4222-8222-222222222222';
     const sender_id = 'test_cust_01';
 
-    // 4. Insert customer message into DB so it shows up in UI immediately
+    // 4. Auto-provision dummy records so the Dispatch API doesn't return 404
+    await fetchSupabaseRest('crm_channels', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates',
+      body: JSON.stringify({ id: channel_id, organization_id, channel_type: 'livechat', channel_name: 'Simulator' })
+    });
+    
+    await fetchSupabaseRest('crm_customers', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates',
+      body: JSON.stringify({ id: customer_id, organization_id, full_name: 'Simulator Customer' })
+    });
+    
+    await fetchSupabaseRest('crm_threads', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates',
+      body: JSON.stringify({ id: thread_id, organization_id, channel_id, customer_id, status: 'open' })
+    });
+
+    // 5. Insert customer message into DB so it shows up in UI immediately
     await fetchSupabaseRest('crm_messages', {
       method: 'POST',
       body: JSON.stringify({
@@ -54,7 +73,7 @@ export async function POST(req: Request) {
       })
     });
 
-    // 5. Trigger n8n webhook
+    // 6. Trigger n8n webhook
     try {
       const n8nRes = await fetch(parsedUrl.toString(), {
         method: 'POST',

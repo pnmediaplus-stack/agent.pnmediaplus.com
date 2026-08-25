@@ -50,13 +50,13 @@ export async function POST(req: Request) {
       searchParams: {
         organization_id: `eq.${organization_id}`,
         id: `eq.${thread_id}`,
-        select: 'channel_id,customer_id,customer:crm_customers(platform_customer_id),channel:crm_channels(channel_type,channel_external_id)',
+        select: 'channel_id,customer_id,channel:crm_channels(channel_type,channel_external_id)',
         limit: 1
       }
     });
 
     if (!threadResponse.ok) {
-      return NextResponse.json({ error: 'CRM_THREAD_LOOKUP_FAILED' }, { status: 502 });
+      return NextResponse.json({ error: 'CRM_THREAD_LOOKUP_FAILED' }, { status: 422 });
     }
 
     const [thread] = await readRestJson<any[]>(threadResponse);
@@ -66,7 +66,21 @@ export async function POST(req: Request) {
 
     const channelType = thread.channel?.channel_type as string | undefined;
     const channelExternalId = thread.channel?.channel_external_id as string | undefined;
-    const recipientId = thread.customer?.platform_customer_id as string | undefined;
+    
+    let recipientId: string | undefined;
+    if (channelType === 'facebook') {
+      const identityRes = await fetchSupabaseRest('crm_channel_identities', {
+        searchParams: {
+           organization_id: `eq.${organization_id}`,
+           customer_id: `eq.${thread.customer_id}`,
+           channel_id: `eq.${thread.channel_id}`,
+           select: 'external_user_id',
+           limit: 1
+        }
+      });
+      const [identity] = await readRestJson<any[]>(identityRes);
+      recipientId = identity?.external_user_id;
+    }
 
     const initialDeliveryStatus = channelType === 'livechat' ? 'sent' : 'queued';
 
@@ -83,13 +97,13 @@ export async function POST(req: Request) {
     });
 
     if (!insertResponse.ok) {
-      return NextResponse.json({ error: 'CRM_MESSAGE_INSERT_FAILED' }, { status: 502 });
+      return NextResponse.json({ error: 'CRM_MESSAGE_INSERT_FAILED' }, { status: 422 });
     }
 
     const insertedMessages = await readRestJson<any[]>(insertResponse);
     const messageRow = insertedMessages[0];
     if (!messageRow) {
-      return NextResponse.json({ error: 'CRM_MESSAGE_INSERT_EMPTY' }, { status: 502 });
+      return NextResponse.json({ error: 'CRM_MESSAGE_INSERT_EMPTY' }, { status: 422 });
     }
 
     await fetchSupabaseRest('crm_threads', {
@@ -128,7 +142,7 @@ export async function POST(req: Request) {
       });
       return NextResponse.json(
         { error: 'MISSING_CHANNEL_RECIPIENT', message: { ...messageRow, delivery_status: 'failed' } },
-        { status: 502 }
+        { status: 422 }
       );
     }
 
@@ -142,7 +156,7 @@ export async function POST(req: Request) {
       });
       return NextResponse.json(
         { error: 'MISSING_CONTROL_PLANE_URL', message: { ...messageRow, delivery_status: 'failed' } },
-        { status: 502 }
+        { status: 422 }
       );
     }
 
@@ -166,7 +180,7 @@ export async function POST(req: Request) {
       });
       return NextResponse.json(
         { error: 'BYOK_REDEEM_FAILED', message: { ...messageRow, delivery_status: 'failed' } },
-        { status: 502 }
+        { status: 422 }
       );
     }
 
@@ -180,7 +194,7 @@ export async function POST(req: Request) {
       });
       return NextResponse.json(
         { error: 'BYOK_REDEEM_EMPTY', message: { ...messageRow, delivery_status: 'failed' } },
-        { status: 502 }
+        { status: 422 }
       );
     }
 
@@ -203,7 +217,7 @@ export async function POST(req: Request) {
       });
       return NextResponse.json(
         { error: 'FB_SEND_FAILED', details: fbError, message: { ...messageRow, delivery_status: 'failed' } },
-        { status: 502 }
+        { status: 422 }
       );
     }
 
