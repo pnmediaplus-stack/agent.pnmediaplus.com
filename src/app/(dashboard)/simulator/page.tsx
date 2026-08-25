@@ -12,7 +12,7 @@ const fetcher = async (url: string) => {
 
 export default function SimulatorPage() {
   const [message, setMessage] = useState('');
-  const [webhookUrl, setWebhookUrl] = useState('http://localhost:5678/webhook-test/e43cb6ea-c076-40d8-b398-29ce59c47d1f');
+  const [webhookUrl, setWebhookUrl] = useState('https://n8n.pnmediaplus.com/webhook-test/omnichannel-cskh');
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showConfig, setShowConfig] = useState(false);
