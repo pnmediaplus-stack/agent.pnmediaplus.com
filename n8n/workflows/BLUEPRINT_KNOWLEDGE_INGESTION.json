@@ -107,7 +107,20 @@
       "parameters": {
         "dataType": "binary",
         "binaryMode": "specificField",
-        "options": {}
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "document_id",
+                "value": "={{ $json.document_id }}"
+              },
+              {
+                "name": "organization_id",
+                "value": "={{ $json.organization_id }}"
+              }
+            ]
+          }
+        }
       },
       "id": "8bf30e6c-f957-48f1-8a8e-9be63e9e313f",
       "name": "Default Data Loader",
