@@ -1,0 +1,10 @@
+const fs = require('fs');
+const file = 'n8n/workflows/BLUEPRINT_OMNICHANNEL_CSKH.json';
+let data = JSON.parse(fs.readFileSync(file, 'utf8'));
+const node = data.nodes.find(n => n.name === 'tool_handoff_to_human');
+node.parameters.sendBody = true;
+node.parameters.specifyBody = 'json';
+node.parameters.jsonBody = '{\n  "organization_id": "{{ $(\'Webhook Trigger (From Next.js)\').first().json.body.organization_id }}",\n  "thread_id": "{{ $(\'Webhook Trigger (From Next.js)\').first().json.body.thread_id }}"\n}';
+node.parameters.description = 'Gọi công cụ này khi bạn không thể trả lời câu hỏi của khách hàng, hoặc khách hàng chủ động yêu cầu gặp nhân viên thật. Công cụ này sẽ chuyển cuộc gọi (handoff) sang cho con người xử lý. Bạn không cần truyền thêm tham số nào vì hệ thống sẽ tự lấy thông tin từ Webhook.';
+fs.writeFileSync(file, JSON.stringify(data, null, 2));
+console.log('Handoff tool fixed');
