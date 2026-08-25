@@ -1,11 +1,28 @@
 import { NextResponse } from 'next/server';
 import { fetchSupabaseRest } from '@/lib/crm-api';
+import { verifyUiAuth } from '@/lib/ui-auth-guard';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
+    // 1. Verify Authentication to prevent unauthorized injection
+    const auth = await verifyUiAuth(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 2. Prevent usage in production if needed, but since it's auth-guarded it's safer.
+    // We will still restrict URL to prevent SSRF.
     const { message, n8nWebhookUrl } = await req.json();
+
+    // 3. SSRF Protection: Validate webhook URL
+    const allowedBaseUrl = process.env.N8N_WEBHOOK_BASE_URL || 'https://n8n.pnmediaplus.com';
+    const targetUrl = n8nWebhookUrl || 'http://localhost:5678/webhook-test/e43cb6ea-c076-40d8-b398-29ce59c47d1f';
+    
+    if (!targetUrl.startsWith(allowedBaseUrl) && !targetUrl.startsWith('http://localhost:5678')) {
+      return NextResponse.json({ error: 'SSRF Protection: Invalid target URL' }, { status: 403 });
+    }
     
     // Hardcoded dummy thread IDs
     const organization_id = '8289488a-b255-4cb6-9bff-c9d2e71af160';
@@ -14,7 +31,7 @@ export async function POST(req: Request) {
     const customer_id = '22222222-2222-2222-2222-222222222222';
     const sender_id = 'test_cust_01';
 
-    // 1. Insert customer message into DB so it shows up in UI immediately
+    // 4. Insert customer message into DB so it shows up in UI immediately
     await fetchSupabaseRest('crm_messages', {
       method: 'POST',
       body: JSON.stringify({
@@ -26,10 +43,7 @@ export async function POST(req: Request) {
       })
     });
 
-    // 2. Trigger n8n webhook
-    // Default to localhost if not provided, allowing user to paste test URL in UI
-    const targetUrl = n8nWebhookUrl || 'http://localhost:5678/webhook-test/e43cb6ea-c076-40d8-b398-29ce59c47d1f';
-    
+    // 5. Trigger n8n webhook
     try {
       const n8nRes = await fetch(targetUrl, {
         method: 'POST',
