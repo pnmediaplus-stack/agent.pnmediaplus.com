@@ -274,12 +274,12 @@
     },
     {
       "parameters": {
-        "operation": "aggregateItems"
+        "jsCode": "const tags = $input.all().map(item => item.json.tag_name).filter(Boolean);\nreturn [{ json: { tag_name: tags } }];"
       },
       "id": "cfc3eba3-c78d-40f8-93c0-87a02365d0e0",
       "name": "Aggregate Tags",
-      "type": "n8n-nodes-base.itemLists",
-      "typeVersion": 3,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         5904,
         -640
