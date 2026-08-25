@@ -92,7 +92,7 @@
       "parameters": {
         "text": "={{ $('Webhook Trigger (From Next.js)').first().json.body.message }}",
         "options": {
-          "systemMessage": "={{ $node['Fetch Dynamic System Prompt'].json[0].bot_system_prompt }}"
+          "systemMessage": "={{ $node['Fetch Dynamic System Prompt'].json[0].bot_system_prompt }}\n\nBạn CÓ THỂ cập nhật thẻ cho khách hàng thông qua Tool. CÁC THẺ HỢP LỆ BẠN CÓ THỂ DÙNG LÀ: {{ $json.tag_name ? $json.tag_name.join(', ') : 'none' }}"
         }
       },
       "id": "bd209b52-5e08-4d4e-b26b-e260c816c3e3",
@@ -277,6 +277,28 @@
           "name": "Header Auth"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "aggregateItems",
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "tag_name",
+              "renameField": "tag_name"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "aggregate-tags-1234",
+      "name": "Aggregate Tags",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3,
+      "position": [
+        1450,
+        -112
+      ]
     }
   ],
   "pinData": {},
@@ -307,7 +329,7 @@
       "main": [
         [
           {
-            "node": "AI Agent (CSKH)",
+            "node": "Aggregate Tags",
             "type": "main",
             "index": 0
           }
@@ -397,6 +419,17 @@
           {
             "node": "Supabase Vector Store",
             "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Tags": {
+      "main": [
+        [
+          {
+            "node": "AI Agent (CSKH)",
+            "type": "main",
             "index": 0
           }
         ]
