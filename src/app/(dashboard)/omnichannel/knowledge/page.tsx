@@ -49,7 +49,9 @@ export default function KnowledgeBasePage() {
     setIsUploading(true);
     setUploadError(null);
 
-    let hasError = false;
+    const failedFiles: File[] = [];
+    let errorMessage = "";
+
     for (const file of selectedFiles) {
       const formData = new FormData();
       formData.append("file", file);
@@ -66,18 +68,16 @@ export default function KnowledgeBasePage() {
           throw new Error(errData?.error || `Tải lên ${file.name} thất bại`);
         }
       } catch (err: any) {
-        setUploadError(prev => (prev ? prev + "\n" : "") + err.message);
-        hasError = true;
+        errorMessage += (errorMessage ? "\n" : "") + err.message;
+        failedFiles.push(file);
       }
     }
 
-    if (!hasError) {
-      setSelectedFiles([]);
-    } else {
-      // Clear on success, keep error message, and maybe clear files anyway to avoid re-upload
-      setSelectedFiles([]); 
+    if (errorMessage) {
+      setUploadError(errorMessage);
     }
     
+    setSelectedFiles(failedFiles);
     mutate();
     setIsUploading(false);
   };
