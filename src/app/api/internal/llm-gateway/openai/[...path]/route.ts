@@ -15,9 +15,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
     }
 
     const pathJoined = pathSegments.join('/');
-    const url = new URL(req.url);
-    const queryOrgId = url.searchParams.get('org_id');
-    const headerOrgId = req.headers.get('x-organization-id');
 
     const authHeader = req.headers.get('Authorization') || '';
     const bearerToken = authHeader.replace('Bearer ', '').trim();
@@ -28,9 +25,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
       return NextResponse.json({ error: 'Unauthorized: Invalid internal service token in Authorization header' }, { status: 401 });
     }
 
-    const organizationId = pathOrgId || queryOrgId || headerOrgId;
+    const organizationId = pathOrgId;
     if (!organizationId || organizationId.length < 10) {
-      return NextResponse.json({ error: 'Bad Request: Missing organization ID in URL path (/org/[id]/...), query param, or header' }, { status: 400 });
+      return NextResponse.json({ error: 'Bad Request: Missing organization ID in URL path (/org/[id]/...)' }, { status: 400 });
     }
     
     // 1. Strict Endpoint Filtering (Least Privilege)
@@ -56,11 +53,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
       }
     );
 
-    require('fs').appendFileSync('llm-gateway-debug.log', new Date().toISOString() + ' SUCCESS: ' + JSON.stringify(result).substring(0, 100) + '\n');
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('LLM Gateway Error:', error);
-    require('fs').appendFileSync('llm-gateway-debug.log', new Date().toISOString() + ' ERROR: ' + error.message + '\n');
     return NextResponse.json(
       { error: { message: error.message, type: 'gateway_error' } }, 
       { status: error.message.includes('LLM_QUOTA_EXCEEDED') ? 402 : 502 }
