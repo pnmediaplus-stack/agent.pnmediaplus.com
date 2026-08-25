@@ -91,67 +91,128 @@ export default function ChatArea() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="h-14 border-b border-gray-200 px-4 flex items-center justify-between bg-white shadow-sm z-10">
-        <div className="font-semibold">{activeThread?.customer?.full_name || 'Đang tải...'}</div>
+    <div className="flex flex-col h-full bg-[#F9FAFB]">
+      <div className="h-16 border-b border-gray-200 px-6 flex items-center justify-between bg-white shadow-sm z-10">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+            {activeThread?.customer?.full_name?.charAt(0) || '?'}
+          </div>
+          <div>
+            <div className="font-semibold text-gray-900 leading-tight">{activeThread?.customer?.full_name || 'Đang tải...'}</div>
+            <div className="text-[11px] text-gray-500">{activeThread?.channel?.channel_name || 'Livechat Simulator'}</div>
+          </div>
+        </div>
         <button 
           onClick={toggleHandoff}
-          className={`px-3 py-1.5 text-xs font-medium rounded-md border ${activeThread?.status === 'bot_handling' ? 'border-red-300 text-red-600 bg-red-50 hover:bg-red-100' : 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100'}`}
+          className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-full border transition-all shadow-sm ${
+            activeThread?.status === 'bot_handling' 
+              ? 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50' 
+              : 'border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100'
+          }`}
         >
-          {activeThread?.status === 'bot_handling' ? 'Tắt Bot (Takeover)' : 'Bật lại Bot'}
+          {activeThread?.status === 'bot_handling' ? (
+             <>
+               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+               </svg>
+               Giành quyền Chat
+             </>
+          ) : (
+            <>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Bật lại AI Bot
+            </>
+          )}
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col space-y-4">
-        {threadMessages.map(msg => (
-          <div key={msg.id} className={`flex ${msg.sender_type === 'customer' ? 'justify-start' : 'justify-end'}`}>
-            <div className={`max-w-[70%] rounded-xl px-4 py-2 text-sm ${
-              msg.sender_type === 'customer' ? 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm' :
-              msg.sender_type === 'bot' ? 'bg-blue-100 text-blue-900 border border-blue-200 rounded-tr-sm' :
-              'bg-blue-600 text-white rounded-tr-sm'
-            }`}>
-              <div className="mb-1">{msg.content}</div>
-              <div className={`text-[10px] text-right mt-1 ${msg.sender_type === 'human' ? 'text-blue-100' : 'text-gray-400'}`}>
-                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                {msg.sender_type !== 'customer' && (
-                  <span className="ml-1">
-                    ({msg.delivery_status === 'sent' || msg.delivery_status === 'delivered' ? 'Đã gửi' : 
-                      msg.delivery_status === 'failed' ? 'Lỗi' : 'Đang gửi'})
-                  </span>
-                )}
+      <div className="flex-1 overflow-y-auto p-6 flex flex-col space-y-6">
+        {threadMessages.map(msg => {
+          const isCustomer = msg.sender_type === 'customer';
+          const isBot = msg.sender_type === 'bot';
+          return (
+            <div key={msg.id} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
+              <div className="max-w-[75%] flex flex-col group">
+                <div className={`px-5 py-3 text-[14px] leading-relaxed shadow-sm ${
+                  isCustomer ? 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm' :
+                  isBot ? 'bg-indigo-50 border border-indigo-100 text-indigo-900 rounded-2xl rounded-tr-sm' :
+                  'bg-blue-600 text-white rounded-2xl rounded-tr-sm'
+                }`}>
+                  {msg.content.split('\n').map((line, i) => (
+                    <React.Fragment key={i}>
+                      {line}
+                      {i < msg.content.split('\n').length - 1 && <br />}
+                    </React.Fragment>
+                  ))}
+                </div>
+                <div className={`text-[11px] mt-1.5 px-1 font-medium ${isCustomer ? 'text-gray-400 text-left' : 'text-gray-400 text-right'}`}>
+                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {!isCustomer && (
+                    <span className="ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      • {msg.delivery_status === 'sent' || msg.delivery_status === 'delivered' ? 'Đã gửi' : 
+                          msg.delivery_status === 'failed' ? 'Lỗi gửi' : 'Đang gửi'}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-3 border-t border-gray-200 bg-white">
+      <div className="p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] z-10">
         {errorMessage && (
-          <div className="mb-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             {errorMessage}
           </div>
         )}
+        
         {activeThread?.status === 'bot_handling' ? (
-          <div className="w-full text-center p-3 bg-gray-100 text-sm text-gray-500 rounded-md">
-            AI đang xử lý hội thoại này. Hãy bấm "Tắt Bot" để giành quyền chat.
+          <div className="w-full text-center py-4 bg-gray-50 border border-gray-200 border-dashed rounded-xl flex flex-col items-center justify-center">
+             <svg className="w-6 h-6 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+             </svg>
+             <p className="text-sm text-gray-500 font-medium">AI đang tự động chăm sóc hội thoại này.</p>
+             <p className="text-xs text-gray-400 mt-1">Bấm "Giành quyền Chat" nếu bạn muốn xen vào.</p>
           </div>
         ) : (
-          <form onSubmit={handleSend} className="flex gap-2">
-            <input 
-              type="text" 
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="Nhập tin nhắn..." 
-              className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
-              disabled={isSending}
-            />
+          <form onSubmit={handleSend} className="flex gap-3 items-end">
+            <div className="flex-1 relative">
+              <textarea 
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend(e);
+                  }
+                }}
+                placeholder="Gõ tin nhắn trả lời (Enter để gửi)..." 
+                className="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white text-gray-900 resize-none max-h-32 min-h-[44px]"
+                disabled={isSending}
+                rows={1}
+                style={{ height: inputText.split('\n').length > 1 ? `${Math.min(inputText.split('\n').length * 20 + 24, 128)}px` : '44px' }}
+              />
+            </div>
             <button 
               type="submit" 
               disabled={isSending || !inputText.trim()}
-              className="bg-blue-600 text-white rounded-full px-5 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              className="h-[44px] px-6 bg-blue-600 text-white rounded-2xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors shadow-sm flex items-center justify-center"
             >
-              Gửi
+              {isSending ? (
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                'Gửi'
+              )}
             </button>
           </form>
         )}

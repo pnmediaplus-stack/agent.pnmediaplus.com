@@ -30,8 +30,8 @@ export default function OmnichannelWorkspace() {
   }, [data, error, setThreads, setThreadsError]);
 
   return (
-    <div className="flex h-full w-full overflow-hidden border-t border-gray-200">
-      <div className="w-1/4 border-r border-gray-200 bg-gray-50 flex flex-col">
+    <div className="flex h-full w-full overflow-hidden border-t border-gray-200 bg-white text-gray-900">
+      <div className="w-1/4 border-r border-gray-200 bg-gray-50/50 flex flex-col">
         <InboxSidebar />
       </div>
 
@@ -39,14 +39,17 @@ export default function OmnichannelWorkspace() {
         {activeThreadId ? (
           <ChatArea />
         ) : (
-          <div className="flex flex-1 items-center justify-center text-gray-500">
-            Bạn vui lòng chọn một hội thoại để thao tác.
+          <div className="flex flex-1 flex-col items-center justify-center text-gray-400 bg-gray-50/30">
+            <svg className="w-16 h-16 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            <p className="text-sm font-medium text-gray-500">Chọn một cuộc hội thoại để bắt đầu</p>
           </div>
         )}
       </div>
 
       {activeThreadId && (
-        <div className="w-1/4 border-l border-gray-200 bg-gray-50 overflow-y-auto">
+        <div className="w-1/4 border-l border-gray-200 bg-gray-50/50 overflow-y-auto">
           <CustomerProfile />
         </div>
       )}
