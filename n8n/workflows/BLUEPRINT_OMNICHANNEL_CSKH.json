@@ -92,7 +92,7 @@
       "parameters": {
         "text": "={{ $json.body.message }}",
         "options": {
-          "systemMessage": "={{ $node['Fetch Dynamic System Prompt'].json.bot_system_prompt || 'Bạn là trợ lý ảo hỗ trợ khách hàng.' }}\n\nBạn CÓ THỂ cập nhật thẻ cho khách hàng thông qua Tool. CÁC THẺ HỢP LỆ BẠN CÓ THỂ DÙNG LÀ: {{ $json.tags && $json.tags.length > 0 ? $json.tags.join(', ') : 'none' }}"
+          "systemMessage": "={{ $json.systemPrompt }}\n\nBạn CÓ THỂ cập nhật thẻ cho khách hàng thông qua Tool. CÁC THẺ HỢP LỆ BẠN CÓ THỂ DÙNG LÀ: {{ $json.tags && $json.tags.length > 0 ? $json.tags.join(', ') : 'none' }}"
         }
       },
       "id": "8dcdfc22-8164-4e7d-9524-3b99985f2754",
@@ -109,7 +109,7 @@
     {
       "parameters": {
         "options": {
-          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}/v1",
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $json.body.organization_id }}/v1",
           "temperature": 0.4
         }
       },
@@ -229,7 +229,7 @@
     {
       "parameters": {
         "options": {
-          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.organization_id }}/v1"
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $json.body.organization_id }}/v1"
         }
       },
       "id": "1f9fdf44-f217-4565-84ad-101de6dd1e96",
@@ -275,7 +275,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const tags = $input.all().map(item => item.json.tag_name).filter(Boolean);\nconst firstItem = $input.first().json;\nreturn [{ json: { ...firstItem, tags: tags } }];"
+        "jsCode": "const tags = $input.all().map(item => item.json.tag_name).filter(Boolean);\nconst webhookData = $('Webhook Trigger (From Next.js)').first().json.body;\nconst promptNode = $('Fetch Dynamic System Prompt').first();\nconst systemPrompt = promptNode && promptNode.json && promptNode.json.bot_system_prompt ? promptNode.json.bot_system_prompt : 'Bạn là trợ lý ảo hỗ trợ khách hàng.';\nreturn [{ json: { body: webhookData, tags: tags, systemPrompt: systemPrompt } }];"
       },
       "id": "cfc3eba3-c78d-40f8-93c0-87a02365d0e0",
       "name": "Aggregate Tags",
@@ -289,7 +289,7 @@
     {
       "parameters": {
         "options": {
-          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}/v1",
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $json.body.organization_id }}/v1",
           "temperature": 0.4
         }
       },
