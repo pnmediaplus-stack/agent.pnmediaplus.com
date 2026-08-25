@@ -11,12 +11,28 @@ const dispatchSchema = z.object({
   sender_type: z.enum(['bot', 'human']).default('bot')
 });
 
+async function patchMessageStatus(params: {
+  organizationId: string;
+  messageId: string;
+  deliveryStatus: 'queued' | 'sent' | 'failed';
+}) {
+  await fetchSupabaseRest('crm_messages', {
+    method: 'PATCH',
+    searchParams: {
+      organization_id: `eq.${params.organizationId}`,
+      id: `eq.${params.messageId}`
+    },
+    body: JSON.stringify({
+      delivery_status: params.deliveryStatus
+    })
+  });
+}
+
 export async function POST(req: Request) {
   try {
-    // Basic Internal Auth check
     const authHeader = req.headers.get('Authorization') || '';
     const bearerToken = authHeader.replace('Bearer ', '').trim();
-    const expectedSecret = process.env.N8N_API_KEY || process.env.CONTROL_PLANE_SECRET;
+    const expectedSecret = (process.env.CONTROL_PLANE_SECRET || '').trim();
 
     if (!expectedSecret || bearerToken !== expectedSecret) {
       return NextResponse.json({ error: 'Unauthorized: Invalid internal token' }, { status: 401 });
@@ -25,16 +41,15 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parseResult = dispatchSchema.safeParse(body);
     if (!parseResult.success) {
-      return NextResponse.json({ error: 'INVALID_PAYLOAD', details: parseResult.error }, { status: 400 });
+      return NextResponse.json({ error: 'INVALID_PAYLOAD', details: parseResult.error.flatten() }, { status: 400 });
     }
 
     const { organization_id, thread_id, content, sender_type } = parseResult.data;
 
-    // 1. Get Thread & Channel details
     const threadResponse = await fetchSupabaseRest('crm_threads', {
       searchParams: {
-        organization_id: \q.\\,
-        id: \q.\\,
+        organization_id: `eq.${organization_id}`,
+        id: `eq.${thread_id}`,
         select: 'channel_id,customer_id,customer:crm_customers(platform_customer_id),channel:crm_channels(channel_type,channel_external_id)',
         limit: 1
       }
@@ -49,7 +64,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'THREAD_NOT_FOUND' }, { status: 404 });
     }
 
-    // 2. Insert Message into DB
+    const channelType = thread.channel?.channel_type as string | undefined;
+    const channelExternalId = thread.channel?.channel_external_id as string | undefined;
+    const recipientId = thread.customer?.platform_customer_id as string | undefined;
+
+    const initialDeliveryStatus = channelType === 'livechat' ? 'sent' : 'queued';
+
     const insertResponse = await fetchSupabaseRest('crm_messages', {
       method: 'POST',
       prefer: 'return=representation',
@@ -58,70 +78,142 @@ export async function POST(req: Request) {
         thread_id,
         sender_type,
         content,
-        delivery_status: 'sent'
+        delivery_status: initialDeliveryStatus
       })
     });
 
-    let messageRow = null;
-    if (insertResponse.ok) {
-      const inserted = await readRestJson<any[]>(insertResponse);
-      messageRow = inserted[0];
-      
-      // Update thread last_message_at
-      await fetchSupabaseRest('crm_threads', {
-        method: 'PATCH',
-        searchParams: { organization_id: \q.\\, id: \q.\\ },
-        body: JSON.stringify({ last_message_at: messageRow.created_at, unread_count: 0 })
-      });
+    if (!insertResponse.ok) {
+      return NextResponse.json({ error: 'CRM_MESSAGE_INSERT_FAILED' }, { status: 502 });
     }
 
-    // 3. Dispatch to specific channel API
-    const channelType = thread.channel?.channel_type;
-    const channelExternalId = thread.channel?.channel_external_id;
-    const recipientId = thread.customer?.platform_customer_id;
-
-    if (channelType === 'facebook') {
-      const integrationKey = \acebook_page_\\;
-      const cpUrl = (process.env.NEXTJS_CONTROL_PLANE_BASE_URL || '').replace(/\/$/, '');
-      
-      // Redeem BYOK
-      const redeemRes = await fetch(\\/api/byok/redeem\, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': \Bearer \\
-        },
-        body: JSON.stringify({ organization_id, integration_key: integrationKey })
-      });
-
-      if (redeemRes.ok) {
-        const { data: { access_token } } = await redeemRes.json();
-        
-        // Call Graph API
-        const fbRes = await fetch('https://graph.facebook.com/v19.0/me/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            access_token,
-            recipient: { id: recipientId },
-            message: { text: content }
-          })
-        });
-
-        if (!fbRes.ok) {
-          console.error('FB_SEND_FAILED', await fbRes.text());
-        }
-      } else {
-        console.error('BYOK_REDEEM_FAILED', await redeemRes.text());
-      }
-    } else if (channelType === 'livechat') {
-      // For livechat, saving to DB is enough, Supabase Realtime will sync to frontend widget
-      console.log('Livechat message dispatched via DB');
-    } else {
-      console.warn('Unsupported channel type for dispatch:', channelType);
+    const insertedMessages = await readRestJson<any[]>(insertResponse);
+    const messageRow = insertedMessages[0];
+    if (!messageRow) {
+      return NextResponse.json({ error: 'CRM_MESSAGE_INSERT_EMPTY' }, { status: 502 });
     }
 
-    return NextResponse.json({ success: true, message: messageRow });
+    await fetchSupabaseRest('crm_threads', {
+      method: 'PATCH',
+      searchParams: {
+        organization_id: `eq.${organization_id}`,
+        id: `eq.${thread_id}`
+      },
+      body: JSON.stringify({
+        last_message_at: messageRow.created_at,
+        unread_count: 0
+      })
+    });
+
+    if (channelType === 'livechat') {
+      return NextResponse.json({ success: true, message: { ...messageRow, delivery_status: 'sent' } });
+    }
+
+    if (channelType !== 'facebook') {
+      await patchMessageStatus({
+        organizationId: organization_id,
+        messageId: messageRow.id,
+        deliveryStatus: 'failed'
+      });
+      return NextResponse.json(
+        { error: 'UNSUPPORTED_CHANNEL', message: { ...messageRow, delivery_status: 'failed' } },
+        { status: 422 }
+      );
+    }
+
+    if (!channelExternalId || !recipientId) {
+      await patchMessageStatus({
+        organizationId: organization_id,
+        messageId: messageRow.id,
+        deliveryStatus: 'failed'
+      });
+      return NextResponse.json(
+        { error: 'MISSING_CHANNEL_RECIPIENT', message: { ...messageRow, delivery_status: 'failed' } },
+        { status: 502 }
+      );
+    }
+
+    const integrationKey = `facebook_page_${channelExternalId}`;
+    const cpUrl = (process.env.NEXTJS_CONTROL_PLANE_BASE_URL || '').replace(/\/$/, '');
+    if (!cpUrl) {
+      await patchMessageStatus({
+        organizationId: organization_id,
+        messageId: messageRow.id,
+        deliveryStatus: 'failed'
+      });
+      return NextResponse.json(
+        { error: 'MISSING_CONTROL_PLANE_URL', message: { ...messageRow, delivery_status: 'failed' } },
+        { status: 502 }
+      );
+    }
+
+    const redeemRes = await fetch(`${cpUrl}/api/byok/redeem`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${expectedSecret}`
+      },
+      body: JSON.stringify({
+        organization_id,
+        integration_key: integrationKey
+      })
+    });
+
+    if (!redeemRes.ok) {
+      await patchMessageStatus({
+        organizationId: organization_id,
+        messageId: messageRow.id,
+        deliveryStatus: 'failed'
+      });
+      return NextResponse.json(
+        { error: 'BYOK_REDEEM_FAILED', message: { ...messageRow, delivery_status: 'failed' } },
+        { status: 502 }
+      );
+    }
+
+    const redeemJson = await redeemRes.json().catch(() => null);
+    const accessToken = redeemJson?.data?.access_token;
+    if (!accessToken) {
+      await patchMessageStatus({
+        organizationId: organization_id,
+        messageId: messageRow.id,
+        deliveryStatus: 'failed'
+      });
+      return NextResponse.json(
+        { error: 'BYOK_REDEEM_EMPTY', message: { ...messageRow, delivery_status: 'failed' } },
+        { status: 502 }
+      );
+    }
+
+    const fbRes = await fetch('https://graph.facebook.com/v19.0/me/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        access_token: accessToken,
+        recipient: { id: recipientId },
+        message: { text: content }
+      })
+    });
+
+    if (!fbRes.ok) {
+      const fbError = await fbRes.text().catch(() => 'unknown facebook error');
+      await patchMessageStatus({
+        organizationId: organization_id,
+        messageId: messageRow.id,
+        deliveryStatus: 'failed'
+      });
+      return NextResponse.json(
+        { error: 'FB_SEND_FAILED', details: fbError, message: { ...messageRow, delivery_status: 'failed' } },
+        { status: 502 }
+      );
+    }
+
+    await patchMessageStatus({
+      organizationId: organization_id,
+      messageId: messageRow.id,
+      deliveryStatus: 'sent'
+    });
+
+    return NextResponse.json({ success: true, message: { ...messageRow, delivery_status: 'sent' } });
   } catch (error) {
     console.error('Dispatch error:', error);
     return NextResponse.json({ error: 'INTERNAL_SERVER_ERROR' }, { status: 500 });

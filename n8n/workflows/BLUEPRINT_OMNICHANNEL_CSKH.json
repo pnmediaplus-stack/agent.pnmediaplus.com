@@ -273,8 +273,8 @@
       ],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
+          "id": "ControlPlaneAuth",
+          "name": "Header Auth"
         }
       }
     }
