@@ -12,7 +12,7 @@ export async function GET(req: Request) {
 
     // 2. ONLY allow reading the specific dummy thread for simulator purposes
     // Prevent IDOR and Tenant Boundary violations
-    const DUMMY_THREAD_ID = '33333333-3333-3333-3333-333333333333';
+    const DUMMY_THREAD_ID = '33333333-3333-4333-8333-333333333333';
 
     // 3. Fetch messages for this dummy thread directly
     const response = await fetchSupabaseRest('crm_messages', {

@@ -37,9 +37,9 @@ export async function POST(req: Request) {
     
     // Hardcoded dummy thread IDs
     const organization_id = '8289488a-b255-4cb6-9bff-c9d2e71af160';
-    const thread_id = '33333333-3333-3333-3333-333333333333';
-    const channel_id = '11111111-1111-1111-1111-111111111111';
-    const customer_id = '22222222-2222-2222-2222-222222222222';
+    const thread_id = '33333333-3333-4333-8333-333333333333';
+    const channel_id = '11111111-1111-4111-8111-111111111111';
+    const customer_id = '22222222-2222-4222-8222-222222222222';
     const sender_id = 'test_cust_01';
 
     // 4. Insert customer message into DB so it shows up in UI immediately

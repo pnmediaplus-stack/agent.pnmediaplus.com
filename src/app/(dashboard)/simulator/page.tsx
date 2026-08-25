@@ -18,7 +18,7 @@ export default function SimulatorPage() {
   const [showConfig, setShowConfig] = useState(false);
 
   const { data: messages, error } = useSWR(
-    '/api/internal/simulator/messages?threadId=33333333-3333-3333-3333-333333333333',
+    '/api/internal/simulator/messages?threadId=33333333-3333-4333-8333-333333333333',
     fetcher,
     { refreshInterval: 2000 }
   );
