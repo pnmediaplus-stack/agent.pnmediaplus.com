@@ -112,11 +112,11 @@
             "metadataValues": [
               {
                 "name": "document_id",
-                "value": "={{ $('Persist Ingestion Context').first().json.document_id }}"
+                "value": "={{ $('Webhook Trigger').first().json.body.document_id }}"
               },
               {
                 "name": "organization_id",
-                "value": "={{ $('Persist Ingestion Context').first().json.organization_id }}"
+                "value": "={{ $('Webhook Trigger').first().json.body.organization_id }}"
               }
             ]
           }
@@ -149,7 +149,7 @@
       "parameters": {
         "model": "text-embedding-3-small",
         "options": {
-          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $('Persist Ingestion Context').first().json.organization_id }}/v1"
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $('Webhook Trigger').first().json.body.organization_id }}/v1"
         }
       },
       "id": "d814486b-2fc5-4d7d-8beb-b5584c686f49",
