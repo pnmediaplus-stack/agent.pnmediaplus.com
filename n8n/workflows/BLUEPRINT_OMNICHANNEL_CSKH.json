@@ -109,7 +109,7 @@
     {
       "parameters": {
         "options": {
-          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $json.body.organization_id }}/v1",
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}/v1",
           "temperature": 0.4
         }
       },
@@ -131,7 +131,7 @@
     {
       "parameters": {
         "tableName": "n8n_chat_memory",
-        "sessionKey": "={{ $json.body.thread_id }}"
+        "sessionKey": "={{ $('Webhook Trigger (From Next.js)').first().json.body.thread_id }}"
       },
       "id": "486feefd-8fae-466f-993c-3876dcbb2f15",
       "name": "Postgres Chat Memory",
@@ -243,7 +243,7 @@
     {
       "parameters": {
         "options": {
-          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $json.body.organization_id }}/v1"
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}/v1"
         }
       },
       "id": "1f9fdf44-f217-4565-84ad-101de6dd1e96",
@@ -302,7 +302,7 @@
     {
       "parameters": {
         "options": {
-          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $json.body.organization_id }}/v1",
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}/v1",
           "temperature": 0.4
         }
       },
