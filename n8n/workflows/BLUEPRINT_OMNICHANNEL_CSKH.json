@@ -8,13 +8,13 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "67c02928-155c-4bcc-82c4-005f86428855",
+      "id": "1bd29edd-3a9e-4a49-977d-e504f0121dbc",
       "name": "Webhook Trigger (From Next.js)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        832,
-        -112
+        5216,
+        -640
       ],
       "notesInFlow": true,
       "webhookId": "e43cb6ea-c076-40d8-b398-29ce59c47d1f",
@@ -22,7 +22,6 @@
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "={{($env[\"SUPABASE_URL\"] || \"https://jrgkpbjsqefvnhbiiutz.supabase.co\")}}/rest/v1/crm_channels?id=eq.{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.channel_id }}&select=bot_system_prompt",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
@@ -37,13 +36,13 @@
         },
         "options": {}
       },
-      "id": "da9ca4f3-7878-41bb-ac8c-32b42ccc6940",
+      "id": "7830964a-dec8-4a88-9827-e400cfc31e9d",
       "name": "Fetch Dynamic System Prompt",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1040,
-        -112
+        5440,
+        -640
       ],
       "notesInFlow": true,
       "credentials": {
@@ -56,7 +55,6 @@
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "={{($env[\"SUPABASE_URL\"] || \"https://jrgkpbjsqefvnhbiiutz.supabase.co\")}}/rest/v1/crm_tenant_tags?organization_id=eq.{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.organization_id }}&select=tag_name",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
@@ -71,13 +69,13 @@
         },
         "options": {}
       },
-      "id": "7e3d1aa1-ffc5-418c-9de5-3a74a3211900",
+      "id": "636a5e2c-1195-48ba-9fea-7fd38dd2e63d",
       "name": "Fetch Allowed Tags",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1232,
-        -112
+        5664,
+        -640
       ],
       "notesInFlow": true,
       "credentials": {
@@ -95,13 +93,13 @@
           "systemMessage": "={{ $node['Fetch Dynamic System Prompt'].json[0].bot_system_prompt }}\n\nBạn CÓ THỂ cập nhật thẻ cho khách hàng thông qua Tool. CÁC THẺ HỢP LỆ BẠN CÓ THỂ DÙNG LÀ: {{ $json.tag_name ? $json.tag_name.join(', ') : 'none' }}"
         }
       },
-      "id": "bd209b52-5e08-4d4e-b26b-e260c816c3e3",
+      "id": "8dcdfc22-8164-4e7d-9524-3b99985f2754",
       "name": "AI Agent (CSKH)",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.1,
       "position": [
-        1856,
-        -112
+        6144,
+        -640
       ],
       "notesInFlow": true,
       "notes": "Bộ não cốt lõi. Sẽ suy nghĩ và quyết định gọi Tools hay trả lời thẳng"
@@ -113,13 +111,13 @@
           "temperature": 0.4
         }
       },
-      "id": "b699b2a8-9797-477b-a190-8d23bc38a151",
+      "id": "e12efd75-4b04-4492-ab77-231ee8233d62",
       "name": "OpenAI Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1,
       "position": [
-        1552,
-        128
+        5936,
+        -400
       ],
       "credentials": {
         "openAiApi": {
@@ -132,13 +130,13 @@
       "parameters": {
         "tableName": "crm_messages"
       },
-      "id": "2ed6d692-87b8-4393-a1db-760cc3e179ed",
+      "id": "486feefd-8fae-466f-993c-3876dcbb2f15",
       "name": "Postgres Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1,
       "position": [
-        1664,
-        128
+        6048,
+        -400
       ],
       "notesInFlow": true,
       "credentials": {
@@ -152,16 +150,15 @@
     {
       "parameters": {
         "name": "knowledge_base",
-        "description": "Công cụ tìm kiếm tài liệu của công ty. Dùng công cụ này MỌI LÚC khi cần trả lời câu hỏi của khách hàng về sản phẩm, chính sách, hoặc thông tin công ty.",
-        "limit": 4
+        "description": "Công cụ tìm kiếm tài liệu của công ty. Dùng công cụ này MỌI LÚC khi cần trả lời câu hỏi của khách hàng về sản phẩm, chính sách, hoặc thông tin công ty."
       },
-      "id": "989c15b3-52ca-4282-ad8f-b25ec840d5fa",
+      "id": "449b9327-df94-43ae-a9fe-414a0eb35f1f",
       "name": "Vector Store (RAG)",
       "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
       "typeVersion": 1,
       "position": [
-        1776,
-        112
+        6160,
+        -416
       ],
       "notesInFlow": true,
       "notes": "Tra cứu tài liệu nội bộ dựa trên organization_id trước khi trả lời"
@@ -177,13 +174,13 @@
           ]
         }
       },
-      "id": "5036b60e-214c-4546-ac2a-2e71a9145ed1",
+      "id": "49123893-d18e-4a48-8693-a29724cc9a01",
       "name": "Tool: Update Tags",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
       "position": [
-        2032,
-        112
+        6416,
+        -416
       ]
     },
     {
@@ -197,30 +194,27 @@
           ]
         }
       },
-      "id": "7ee679c7-909d-4fc7-9c88-0e3a4a50bd65",
+      "id": "e841d51e-dcc1-4d6b-a3c1-078180d22a1c",
       "name": "Tool: Handoff to Human",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
       "position": [
-        2176,
-        112
+        6560,
+        -416
       ]
     },
     {
       "parameters": {
         "tableName": "crm_knowledge_chunks",
-        "queryName": "match_documents",
-        "options": {
-          "filter": "={{ { organization_id: $(\"Webhook Trigger (From Next.js)\").first().json.body.organization_id } }}"
-        }
+        "options": {}
       },
-      "id": "e2439121-a4b5-4b08-963a-86105f24f0c7",
+      "id": "09695a94-771c-4956-9da0-ed4979f369dc",
       "name": "Supabase Vector Store",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        1776,
-        448
+        5984,
+        -192
       ],
       "credentials": {
         "supabaseApi": {
@@ -231,18 +225,17 @@
     },
     {
       "parameters": {
-        "model": "text-embedding-3-small",
         "options": {
           "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.organization_id }}/v1"
         }
       },
-      "id": "c1f82c49-d7b1-47cc-9978-5df0f0ab9a61",
+      "id": "1f9fdf44-f217-4565-84ad-101de6dd1e96",
       "name": "OpenAI Embeddings",
       "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
       "typeVersion": 1.1,
       "position": [
-        1776,
-        608
+        5904,
+        -48
       ],
       "credentials": {
         "openAiApi": {
@@ -262,41 +255,32 @@
         "jsonBody": "={\n  \"organization_id\": \"{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.organization_id }}\",\n  \"thread_id\": \"{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.thread_id }}\",\n  \"content\": \"{{ $json.output }}\",\n  \"sender_type\": \"bot\"\n}",
         "options": {}
       },
-      "id": "universal-dispatch-1234",
+      "id": "c837148b-45c0-44b1-bfed-027cb2bd56ad",
       "name": "Dispatch Reply via Universal API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        2192,
-        -112
+        6544,
+        -640
       ],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "ControlPlaneAuth",
-          "name": "Header Auth"
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
         }
       }
     },
     {
       "parameters": {
-        "operation": "aggregateItems",
-        "fieldsToAggregate": {
-          "fieldToAggregate": [
-            {
-              "fieldToAggregate": "tag_name",
-              "renameField": "tag_name"
-            }
-          ]
-        },
-        "options": {}
+        "operation": "aggregateItems"
       },
-      "id": "aggregate-tags-1234",
+      "id": "cfc3eba3-c78d-40f8-93c0-87a02365d0e0",
       "name": "Aggregate Tags",
       "type": "n8n-nodes-base.itemLists",
       "typeVersion": 3,
       "position": [
-        1450,
-        -112
+        5904,
+        -640
       ]
     },
     {
@@ -306,13 +290,13 @@
           "temperature": 0.4
         }
       },
-      "id": "b699b2a8-9797-477b-a190-8d23bc38a152",
+      "id": "642d23fb-f52f-456d-9829-f72a52a31dd0",
       "name": "OpenAI Chat Model (RAG)",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1,
       "position": [
-        1776,
-        288
+        6272,
+        -256
       ],
       "credentials": {
         "openAiApi": {
@@ -472,7 +456,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "c5c49c2c-42b3-4cf1-bde5-d05bdec32cd4",
+  "versionId": "0a08572e-cd90-4c1f-b773-d1e56b1edae7",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
