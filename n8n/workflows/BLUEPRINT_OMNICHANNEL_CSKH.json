@@ -175,7 +175,9 @@
           "values": [
             {}
           ]
-        }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "49123893-d18e-4a48-8693-a29724cc9a01",
       "name": "tool_update_tags",
@@ -184,7 +186,12 @@
       "position": [
         6416,
         -416
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "ControlPlaneAuth"
+        }
+      }
     },
     {
       "parameters": {
@@ -195,7 +202,9 @@
           "values": [
             {}
           ]
-        }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "e841d51e-dcc1-4d6b-a3c1-078180d22a1c",
       "name": "tool_handoff_to_human",
@@ -204,7 +213,12 @@
       "position": [
         6560,
         -416
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "ControlPlaneAuth"
+        }
+      }
     },
     {
       "parameters": {
@@ -268,8 +282,7 @@
       ],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
+          "name": "ControlPlaneAuth"
         }
       }
     },

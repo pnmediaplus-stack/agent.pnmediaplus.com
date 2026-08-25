@@ -1,790 +1,28 @@
 {
-  "name": "Phase 3 - Auto Content Creator",
+  "name": "Omnichannel CSKH AI Agent",
   "nodes": [
     {
       "parameters": {
-        "jsCode": "const item = $('Extract Visual').first().json;\nitem.r2_object_key = $('Get Upload Ticket').item.json.objectKey;\nitem.r2_url = '/api/assets/public/' + item.r2_object_key;\n\nif (!item.artifacts) item.artifacts = {};\nitem.artifacts.visual_assets = [item.r2_url];\n\nreturn { json: item };"
-      },
-      "name": "Map R2 URL",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        45616,
-        3296
-      ],
-      "id": "ff2c62b9-7af6-4e09-869a-791770798b81"
-    },
-    {
-      "parameters": {
-        "method": "PUT",
-        "url": "={{ $('Get Upload Ticket').item.json.uploadUrl }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "={{ $('Get Upload Ticket').item.json.contentType }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "binaryData",
-        "inputDataFieldName": "data",
-        "options": {}
-      },
-      "name": "Upload to R2",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        45408,
-        3296
-      ],
-      "id": "edb44596-e4c2-42c2-9169-1ad9b83e8501"
-    },
-    {
-      "parameters": {
-        "url": "={{ $('Extract Visual').item.json.artifacts?.image }}",
-        "options": {}
-      },
-      "name": "Download Image",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        45216,
-        3296
-      ],
-      "id": "2b4ad919-2207-4b61-add5-18d56d22140e"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/assets/upload-ticket",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"fileExtension\": \"png\",\n  \"prefix\": \"campaign-media\"\n}",
-        "options": {}
-      },
-      "name": "Get Upload Ticket",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        45024,
-        3296
-      ],
-      "id": "d7dbd445-f3ee-46ba-9f7c-e084ea833f95"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/phase2/ai-broker",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-request-id",
-              "value": "={{$execution.id}}-{{$position}}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ (() => {\n  const cfg = $('Fetch Tenant AI Config').item.json;\n  const textBinding = cfg.provider_bindings?.text;\n  if (!textBinding?.provider_code || !textBinding?.model_code) {\n    throw new Error('TEXT_LANE_BINDING_MISSING');\n  }\n  \n  let contentPayload = $json.prompt;\n  const imgRegex = /!\\[.*?\\]\\(([^)\\s]+)\\)/g;\n  const matches = [...$json.prompt.matchAll(imgRegex)];\n  \n  if (matches.length > 0) {\n    const contentArray = [];\n    let lastIndex = 0;\n    for (const match of matches) {\n      const textPart = $json.prompt.substring(lastIndex, match.index);\n      if (textPart.trim()) contentArray.push({ type: \"text\", text: textPart });\n      let url = match[1];\n      if (url.startsWith('/')) url = 'https://agent.pnmediaplus.com' + url;\n      contentArray.push({ type: \"image_url\", image_url: { url: url, detail: \"low\" } });\n      lastIndex = match.index + match[0].length;\n    }\n    const remaining = $json.prompt.substring(lastIndex);\n    if (remaining.trim()) contentArray.push({ type: \"text\", text: remaining });\n    contentPayload = contentArray;\n  }\n\n  return {\n    provider: textBinding.provider_code,\n    model: textBinding.model_code,\n    messages: [{ role: 'user', content: contentPayload }],\n    response_format: { type: 'json_object' },\n    tenant_id: $json.tenant_id,\n    lane_key: 'text',\n    tenant_binding_id: cfg.tenant_binding_id || ''\n  };\n})() }}",
-        "options": {}
-      },
-      "name": "AI Broker (Text)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        44176,
-        3056
-      ],
-      "id": "4824d0e3-e508-49e4-aa88-652045bf6177",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "nlRh1UkRewsK7CCR",
-          "name": "ControlPlaneAuth"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "cf01ee3a-31eb-4750-a9cc-2744ebb04f78",
-              "name": "lease_token",
-              "value": "={{$('Webhook Trigger').item.json.body.lease_token || $('Webhook Trigger').item.json.lease_token || $('Webhook Trigger').item.json.body.reference_token || $('Webhook Trigger').item.json.reference_token}}",
-              "type": "string"
-            },
-            {
-              "id": "cc7ac466-7f2c-4021-be68-b7c6f974a9ef",
-              "name": "organization_id",
-              "value": "={{$('Webhook Trigger').item.json.body.organization_id || $('Webhook Trigger').item.json.organization_id}}",
-              "type": "string"
-            },
-            {
-              "id": "b3f14c7d-7d73-4b8d-9f22-9d4d26f97c10",
-              "name": "reference_token",
-              "value": "={{$('Webhook Trigger').item.json.body.reference_token || $('Webhook Trigger').item.json.reference_token}}",
-              "type": "string"
-            },
-            {
-              "id": "3d106f60-b466-4838-a4fc-8b3c9b71f747",
-              "name": "contentItemId",
-              "value": "={{$('Webhook Trigger').item.json.body.contentItemId || $('Webhook Trigger').item.json.contentItemId}}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        42944,
-        3088
-      ],
-      "id": "d805a7d1-a4fd-4995-bea4-a65dcf5ae61a",
-      "name": "Preserve Reference Token"
-    },
-    {
-      "parameters": {
-        "errorMessage": "=AI Config Blocked: {{$json.reason}}"
-      },
-      "name": "AI Config Blocked Escalate",
-      "type": "n8n-nodes-base.stopAndError",
-      "typeVersion": 1,
-      "position": [
-        43328,
-        3296
-      ],
-      "id": "8d3b06e7-6fa8-4ca5-96a0-d66562c26df8"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "string": [
-            {
-              "value1": "={{$json.state}}",
-              "value2": "ready"
-            }
-          ]
-        }
-      },
-      "name": "Validate AI Config",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [
-        43328,
-        3088
-      ],
-      "id": "1bf0b0ff-f8b7-4c48-9630-c30a66a9248a"
-    },
-    {
-      "parameters": {
-        "url": "={{$env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\"}}/api/tenant-integrations/active-models-n8n",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "organization_id",
-              "value": "={{$json.organization_id}}"
-            },
-            {
-              "name": "reference_token",
-              "value": "={{$json.lease_token || $json.reference_token}}"
-            }
-          ]
-        },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-n8n-api-key",
-              "value": "={{$env.N8N_API_KEY}}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "name": "Fetch Tenant AI Config",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        43136,
-        3088
-      ],
-      "id": "3593035e-cc22-43b3-9ecb-ff08d61002ce"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/rpc/phase3_apply_stage_transition",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{JSON.stringify($json.payload)}}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          }
-        }
-      },
-      "name": "Submit QA Ready",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        45424,
-        3520
-      ],
-      "id": "0d2109de-2a23-425a-b7af-446c4123c15f",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'caption_ready',\n  p_next_state: 'QA_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + $execution.id + '_qa_ready',\n  p_stage_payload: {}\n}}};\n"
-      },
-      "name": "Submit QA Ready payload",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        45232,
-        3520
-      ],
-      "id": "737afaf0-43e6-4258-bd79-8392e865ef24"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/rpc/phase3_apply_stage_transition",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{JSON.stringify($json.payload)}}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          }
-        }
-      },
-      "name": "Submit Caption",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        45008,
-        3520
-      ],
-      "id": "605b64e6-7f38-439c-aa4a-a99f0a30a4fe",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "\nconst textContent = $('Parse Text').item.json.textContent;\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'visual_ready',\n  p_next_state: 'caption_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + $execution.id + '_caption',\n  p_stage_payload: { artifacts: [{ artifact_key: 'cap_' + $execution.id + '_' + item.id.replace(/-/g, '_'), artifact_type: 'caption_output', content: textContent.agent_2_publish_ready_caption }] }\n}}};\n"
-      },
-      "name": "Extract Caption",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        44800,
-        3520
-      ],
-      "id": "b51d5293-2cf7-454f-86e8-e20cd0e076e6"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/rpc/phase3_apply_stage_transition",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ (() => {\n  let assets = [];\n  if ($json.artifacts && $json.artifacts.visual_assets && $json.artifacts.visual_assets.length > 0) {\n    assets = $json.artifacts.visual_assets;\n  } else if ($json.artifacts && $json.artifacts.image) {\n    assets = [$json.artifacts.image];\n  }\n  \n  if (assets.length === 0) {\n    throw new Error(\"MISSING_VISUAL_ASSETS_CONTRACT\");\n  }\n  \n  const orgId = $json.organization_id || $json.tenant_id || $('Parse Text').first().json.organization_id;\n  const contentId = $json.id || $json.content_item_id || $('Parse Text').first().json.item.id;\n  \n  if (!orgId || !contentId) {\n    throw new Error(\"MISSING_DB_RPC_PARAMETERS\");\n  }\n  \n  const payload = { \n    p_organization_id: orgId, \n    p_content_item_id: contentId, \n    p_expected_current_state: \"research_ready\", \n    p_next_state: \"visual_ready\", \n    p_actor_ref: \"agent_content_creator\", \n    p_idempotency_key: \"trans_\" + $execution.id + \"_visual\", \n    p_stage_payload: { \n      artifacts: assets.map((url, i) => ({ \n        artifact_key: \"vis_\" + $execution.id + \"_\" + i + \"_\" + contentId.replace(/-/g, \"_\"), \n        artifact_type: \"visual_asset\", \n        content: url \n      })) \n    } \n  };\n  \n  return JSON.stringify(payload);\n})() }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          }
-        }
-      },
-      "name": "Submit Visual",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        44592,
-        3520
-      ],
-      "id": "fd092890-1c4b-4791-b0ba-fc3a182e9206",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const item = $('Parse Text').first().json.item;\nconst tenantId = $('Parse Text').first().json.tenant_id || item.owner_ref;\n\nlet imageUrl =\n  $input.first().json.data?.[0]?.url ||\n  'https://placehold.co/1024x1024?text=Image+Generation+Failed';\n\nreturn {\n  json: {\n    status: 'OK',\n    message: 'Content generated successfully',\n    artifacts: {\n      research: $('Parse Text').first().json.textContent.agent_1_research_packet,\n      caption: $('Parse Text').first().json.textContent.agent_2_publish_ready_caption,\n      image: imageUrl,\n      visual_assets: [imageUrl],\n    },\n    id: item.id,\n    organization_id: tenantId,\n    tenant_id: tenantId,\n  },\n};"
-      },
-      "name": "Extract Visual",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        44800,
-        3296
-      ],
-      "id": "ee2c3a2e-3b22-416d-8dc4-6d34972bd7bb"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/phase2/ai-broker/status",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"taskId\": \"{{$('AI Broker (Image)').item.json.taskId}}\",\n  \"provider\": \"{{$('AI Broker (Image)').item.json.provider}}\",\n  \"tenant_id\": \"{{$('Parse Text').first().json.tenant_id}}\",\n  \"usage_id\": \"{{$('AI Broker (Image)').item.json.usage_id}}\"\n}",
-        "options": {}
-      },
-      "name": "Poll Image Status",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        43952,
-        3280
-      ],
-      "id": "8572076f-c739-4848-b2f3-759e70f16479"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/rpc/phase3_apply_stage_transition",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{JSON.stringify($json.payload)}}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          }
-        }
-      },
-      "name": "Submit Research",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        44784,
-        3056
-      ],
-      "id": "86ff4470-3366-41c5-950a-f62ff24a4319",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "\nconst textContent = $('Parse Text').item.json.textContent;\nconst item = $('Parse Text').item.json.item;\nconst tenantId = $('Parse Text').item.json.tenant_id || item.owner_ref;\nreturn { json: { payload: {\n  p_organization_id: tenantId,\n  p_content_item_id: item.id,\n  p_expected_current_state: 'idea',\n  p_next_state: 'research_ready',\n  p_actor_ref: 'agent_content_creator',\n  p_idempotency_key: 'trans_' + $execution.id + '_research',\n  p_stage_payload: { artifacts: [{ artifact_key: 'res_' + $execution.id + '_' + item.id.replace(/-/g, '_'), artifact_type: 'viral_research_packet', content: textContent.agent_1_research_packet }] }\n}}};\n"
-      },
-      "name": "Extract Research",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        44576,
-        3056
-      ],
-      "id": "c9cf5fd5-4936-4567-96f2-7cb66ccebee0"
-    },
-    {
-      "parameters": {
-        "errorMessage": "=Governance Registry is blocked: {{$json.reason}}"
-      },
-      "name": "Governance Blocked Escalate",
-      "type": "n8n-nodes-base.stopAndError",
-      "typeVersion": 1,
-      "position": [
-        43744,
-        3296
-      ],
-      "id": "6880e375-f7c5-4cc7-9b63-1c423ab9220f"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "string": [
-            {
-              "value1": "={{$json.state}}",
-              "value2": "ready"
-            }
-          ]
-        }
-      },
-      "name": "Validate Governance State",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [
-        43744,
-        3072
-      ],
-      "id": "7f24bec8-94fc-41dd-b427-f188ee3f9026"
-    },
-    {
-      "parameters": {
-        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/governance/marketing-agents",
-        "options": {}
-      },
-      "name": "Fetch Governance Registry",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        43552,
-        3072
-      ],
-      "id": "88172ec9-5e95-4c60-b966-09304624a028"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com'}}/api/phase2/ai-broker",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-request-id",
-              "value": "={{$execution.id}}-img-{{$position}}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ (() => {\n  const cfg = $('Fetch Tenant AI Config').first().json;\n  const prompt = $('Parse Text').first().json.textContent?.agent_3_image_prompt;\n  const imageBinding = cfg.provider_bindings?.image;\n  if (!imageBinding?.provider_code || !imageBinding?.model_code) {\n    throw new Error('IMAGE_LANE_BINDING_MISSING');\n  }\n  if (!prompt || !String(prompt).trim()) {\n    throw new Error('IMAGE_PROMPT_MISSING');\n  }\n  return {\n    provider: imageBinding.provider_code,\n    model: imageBinding.model_code,\n    async: true,\n    prompt,\n    n: 1,\n    size: '1024x1024',\n    tenant_id: $('Parse Text').first().json.tenant_id,\n    lane_key: 'image',\n    tenant_binding_id: cfg.tenant_binding_id || ''\n  };\n})() }}",
-        "options": {}
-      },
-      "name": "AI Broker (Image)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        45408,
-        3072
-      ],
-      "id": "f10ce294-1e9f-4255-bbff-a5b5fec846bf",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "nlRh1UkRewsK7CCR",
-          "name": "ControlPlaneAuth"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const responseText = $input.first().json.choices?.[0]?.message?.content || '{}';\nconst item = $('Format Prompt').item.json.item;\nconst tenant_id = $('Format Prompt').item.json.tenant_id;\nconst image_action = $('Format Prompt').item.json.image_action || 'generate_new';\nlet parsed = {};\ntry {\n  parsed = JSON.parse(responseText);\n} catch(e) {\n  throw new Error('AI Response was not valid JSON');\n}\n\nconst researchPacket = typeof parsed.agent_1_research_packet === 'string' ? parsed.agent_1_research_packet.trim() : '';\nlet captionPacket = typeof parsed.agent_2_publish_ready_caption === 'string' ? parsed.agent_2_publish_ready_caption.trim() : '';\ncaptionPacket = captionPacket.replace(/(?<!\\n)\\n(?!\\n)/g, '\\n\\n');\nconst imagePrompt = typeof parsed.agent_3_image_prompt === 'string' ? parsed.agent_3_image_prompt.trim() : '';\nif (!researchPacket) throw new Error('RESEARCH_PACKET_MISSING');\nif (!captionPacket) throw new Error('CAPTION_PACKET_MISSING');\nif (!imagePrompt) throw new Error('IMAGE_PROMPT_MISSING');\n\n// DETERMINISTIC GUARD: single source of truth from payload only\nconst actionIntent = image_action === 'use_provided' ? 'use_provided_images' : 'generate_new_image';\n\nreturn { \n  json: { \n    id: item.id, \n    organization_id: item.organization_id,\n    tenant_id: tenant_id,\n    textContent: {\n      agent_1_research_packet: researchPacket,\n      agent_2_publish_ready_caption: captionPacket,\n      agent_3_image_prompt: imagePrompt\n    },\n    action_intent: actionIntent,\n    item: item\n  } \n};"
-      },
-      "name": "Parse Text",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        44384,
-        3056
-      ],
-      "id": "1a091619-1d18-4fba-b792-dff5e5df2c4a"
-    },
-    {
-      "parameters": {
-        "jsCode": "const ideaItem = $('Get Item (Webhook)').item.json[0] || $('Get Item (Webhook)').item.json;\nconst govData = $('Fetch Governance Registry').item.json.data;\nconst webhookBody = $('Webhook Trigger').first().json.body || $('Webhook Trigger').first().json;\nconst qa_retry_count = webhookBody.qa_retry_count || 0;\nconst qa_feedback = webhookBody.qa_feedback || '';\nconst image_action = webhookBody.image_action || 'generate_new';\n\n\nif (!ideaItem) {\n  throw new Error('CONTENT_ITEM_NOT_FOUND');\n}\n\n// Find agents\nconst agent1 = govData.agents.find(a => a.role_id === 'marketing_agent_1_viral_research_angle');\nconst agent2 = govData.agents.find(a => a.role_id === 'marketing_agent_2_social_caption_architect');\nconst agent3 = govData.agents.find(a => a.role_id === 'marketing_agent_3_image_prompt_architect');\n\nif (!agent1 || !agent2 || !agent3) {\n  throw new Error('MARKETING_AGENT_REGISTRY_INCOMPLETE');\n}\n\nif (!agent1.capability_boundary || !agent2.capability_boundary || !agent3.capability_boundary) {\n  throw new Error('MARKETING_AGENT_CAPABILITY_BOUNDARY_MISSING');\n}\n\nlet providedImageUrls = [];\nif (ideaItem.artifacts && ideaItem.artifacts.visual_assets) {\n  providedImageUrls = ideaItem.artifacts.visual_assets;\n} else {\n  const imgRegex = /!\\[.*?\\]\\(([^)\\s]+)\\)/g;\n  const matches = [...(ideaItem.brief || '').matchAll(imgRegex)];\n  providedImageUrls = matches.map(m => m[1]);\n}\nif (providedImageUrls.length > 0) {\n  providedImageUrls = providedImageUrls.map(url => url.startsWith('/') ? 'https://agent.pnmediaplus.com' + url : url);\n}\n\nconst prompt = `You are an orchestration of 3 specialized AI Marketing Agents working in sequence.\nYou MUST respect the capabilities (MUST) and strictly avoid the prohibitions (MUST NOT) of each agent.\nThe governance rules are currently in DRAFT_METADATA_ONLY mode.\n\n[AGENT 1: VIRAL RESEARCH ANGLE]\nMUST: ${agent1.capability_boundary.must.join(', ')}\nMUST NOT: ${agent1.capability_boundary.must_not.join(', ')}\n\n[AGENT 2: SOCIAL CAPTION ARCHITECT]\nMUST: ${agent2.capability_boundary.must.join(', ')}\nMUST NOT: ${agent2.capability_boundary.must_not.join(', ')}\n\n[AGENT 3: IMAGE PROMPT ARCHITECT]\nMUST: ${agent3.capability_boundary.must.join(', ')}\nMUST NOT: ${agent3.capability_boundary.must_not.join(', ')}\n\n---\nIdea Title: ${ideaItem.title}${qa_retry_count > 0 ? '\\n\\n[QA FEEDBACK FROM PREVIOUS RUN - MUST FIX]\\n' + qa_feedback : ''}\nBrief: ${ideaItem.brief || 'No brief provided.'}\\n${providedImageUrls && providedImageUrls.length > 0 ? '\\n[SYSTEM NOTE: The human has provided reference images (' + providedImageUrls.join(', ') + '). Agent 1, Agent 2, AND Agent 3 MUST deeply analyze these images and use them as the primary visual context. Do NOT hallucinate things not in the images.]' : ''}\n\nIMPORTANT LANGUAGE & CONTEXT INSTRUCTION:\n\n- You MUST write \"agent_1_research_packet\" and \"agent_2_publish_ready_caption\" entirely in natural, fluent Vietnamese (Tiếng Việt).\n\nAGENT 1 — RESEARCH & VIRAL ANGLE:\n- \"agent_1_research_packet\" must provide a concise but meaningful analysis of:\n  1. the core topic or event;\n  2. the most interesting audience insight;\n  3. the strongest social-media angle;\n  4. why people may stop, comment, share, or relate to it;\n  5. factual boundaries — what is known versus uncertain;\n  6. the recommended hook direction;\n  7. the recommended visual direction.\n- Prioritize useful insights over generic summaries.\n- Do NOT invent facts, statistics, quotes, trends, names, dates, or claims.\n\nAGENT 2 — PUBLISH-READY SOCIAL CAPTION:\n- For \"agent_2_publish_ready_caption\", act as a top-tier Vietnamese Social Media Copywriter.\n- The caption MUST feel human, contemporary, engaging, and publication-ready.\n- Do NOT write generic, robotic, overly formal, or short/abrupt copy.\n- Start with a strong scroll-stopping hook.\n- Build curiosity, relatability, emotion, humor, tension, or useful insight where appropriate to the topic.\n- Use relevant emojis strategically. Do not spam emojis.\n- Use natural conversational Vietnamese suitable for social media.\n- Encourage meaningful interaction such as comments, tagging, sharing, or discussion where appropriate.\n- End with one clear Call-to-Action.\n- Avoid clickbait that misrepresents the actual content.\n\nFACTUAL INTEGRITY CONSTRAINT:\n- \"agent_2_publish_ready_caption\" MUST be based only on information supported by the provided input and \"agent_1_research_packet\".\n- Never fabricate statistics, facts, quotes, events, names, dates, prices, trends, or claims for the sake of engagement.\n- Creativity is allowed in wording, storytelling, hooks, humor, emotional framing, and CTA — never in factual claims.\n- If a factual detail is uncertain, omit it rather than invent it.\n\nCROSS-AGENT CONSISTENCY:\n- \"agent_2_publish_ready_caption\" MUST use the strongest social angle identified in \"agent_1_research_packet\".\n- \"agent_3_image_prompt\" MUST visually communicate the same core idea, hook, emotional tone, and audience context as the caption.\n- All three outputs must form ONE coherent social-media creative concept.\n\nJSON ESCAPING CONSTRAINT:\n- \"agent_2_publish_ready_caption\" MUST NOT contain unescaped raw line-break characters inside the JSON string.\n- Represent intended paragraph breaks using DOUBLE newlines with the standard JSON escape sequence (\\\\n\\\\n).\n- Properly escape all double quotes and other JSON-sensitive characters.\n- The final response MUST remain parseable as strict JSON.\n\nAGENT 3 — IMAGE PROMPT:\n- \"agent_3_image_prompt\" MUST be written entirely in English.\n- Write it as a detailed, production-quality prompt.\n\nVISUAL DEMOGRAPHICS:\n- IF the topic requires people, explicitly depict authentic Vietnamese subjects appropriate to the specific context of the prompt.\n- Avoid exaggerated cultural stereotypes.\n- Do NOT force the inclusion of people if the topic or reference image is better suited for a landscape, object, graphic, or abstract composition.\n\nPHYSICAL LOGIC & ANATOMY (ONLY IF THE IMAGE INCLUDES A PHONE, LAPTOP, OR MONITOR):\\n- ONLY apply these rules when the scene contains a phone, laptop, or monitor.\\n- Explicitly instruct: \"If a phone, laptop, or monitor appears, it must be held or positioned correctly. The screen must face the user, NOT the camera or the back of the device. Keyboards must face up. Do not invert or mirror the device.\"\\n- Prevent anatomical AI errors (e.g., six fingers, floating limbs) by requesting realistic poses, hands, and lighting.\\n\\nVISUAL AESTHETIC:\n- TEXT CONSTRAINT: Do NOT generate ANY text, words, catchphrases, labels, character names, or watermarks in the image UNLESS the human explicitly requests text in the brief or the prompt. If the user explicitly asks for text, render exactly what they requested. Otherwise, the image must be purely visual without any text overlay.\n- IF the user provided a reference image in the prompt, Agent 3 MUST closely analyze its visual style, aesthetic, vibe, color palette, lighting, mood, and composition. Instruct the image generator to MATCH THAT EXACT STYLE seamlessly.\n- OTHERWISE (if no reference image is provided), freely determine the most impactful, scroll-stopping, and appropriate visual aesthetic based ENTIRELY on the context of the social-media angle and caption. Do NOT default to \"office workers\" unless the topic is specifically about corporate office life. Be creative, highly contextual, and match the emotional tone of the post (e.g., dramatic, comedic, cinematic, cozy, abstract, hyper-realistic, etc.).\n\n- IF the user provided reference images, read their brief carefully. If they want to post those exact images, you will output \"use_provided_images\". If they explicitly ask to redraw, analyze, or generate a NEW image based on them, output \"generate_new_image\". If no images were provided, output \"generate_new_image\".\n\nCRITICAL OUTPUT FORMAT:\n- Respond ONLY with one strict, valid JSON object.\n- Do NOT use Markdown code fences.\n- Do NOT add explanations, comments, labels, or conversational text before or after the JSON.\n- Return exactly these three top-level keys and no additional keys.\n- All values MUST be JSON strings.\n- Ensure all internal quotation marks and special characters are correctly escaped.\n\n{\n  \"agent_1_research_packet\": \"Nội dung phân tích và góc khai thác social...\",\n  \"agent_2_publish_ready_caption\": \"Hook hấp dẫn...\\\\n\\\\nNội dung...\\\\n\\\\nCall to action...\",\n  \"agent_3_image_prompt\": \"A detailed production-quality image-generation prompt in English...\"\n}\n`;\n\nreturn { json: { prompt: prompt, item: ideaItem, visual_assets: providedImageUrls, image_action: image_action, tenant_id: ideaItem.organization_id, organization_id: ideaItem.organization_id } };"
-      },
-      "name": "Format Prompt",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        43968,
-        3056
-      ],
-      "id": "8b35bebb-6396-4e2e-8cd6-687529bac652"
-    },
-    {
-      "parameters": {
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/phase2_content_items?id=eq.{{$json.content_item_id || $('Webhook Trigger').first().json.body.contentItemId}}&organization_id=eq.{{$json.organization_id || $('Webhook Trigger').first().json.body.organization_id}}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {}
-      },
-      "name": "Get Item (Webhook)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        42720,
-        3088
-      ],
-      "id": "38397334-08ab-4c5e-bef7-8cdac715ced7",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
-        }
-      }
-    },
-    {
-      "parameters": {
         "httpMethod": "POST",
-        "path": "generate-content",
+        "path": "omnichannel-cskh",
+        "responseMode": "lastNode",
         "options": {}
       },
-      "name": "Webhook Trigger",
+      "id": "a85e44ea-8b77-492d-ac5a-72456f1c6620",
+      "name": "Webhook Trigger (From Next.js)",
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1.1,
-      "position": [
-        42048,
-        3088
-      ],
-      "webhookId": "generate-content-webhook-id",
-      "id": "70562a58-c7cb-4018-96a6-7e808cf216e4"
-    },
-    {
-      "parameters": {
-        "jsCode": "\nif ($runIndex > 120) {\n  let threadId = 'unknown';\n  try { threadId = $('Webhook Trigger').first().json.body.threadId || $('Webhook Trigger').first().json.threadId; } catch(e) {}\n  throw new Error('POLL_TIMEOUT|' + threadId + '|Image generation took too long');\n}\nreturn $input.all();\n"
-      },
-      "name": "Limit Polling",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        44096,
-        3280
-      ],
-      "id": "539329b5-e6bc-4b97-9855-99a06a10d593"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "string": [
-            {
-              "value1": "={{$json.status}}",
-              "value2": "processing"
-            }
-          ]
-        }
-      },
-      "name": "Check Status",
-      "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        44256,
-        3280
+        11888,
+        -1008
       ],
-      "id": "616c0d86-c4d0-4628-8f35-ef8e092ef8b6"
+      "notesInFlow": true,
+      "webhookId": "e43cb6ea-c076-40d8-b398-29ce59c47d1f",
+      "notes": "Nhận payload { organization_id, channel_id, customer_id, thread_id, message, sender_id }"
     },
     {
       "parameters": {
-        "amount": 5,
-        "unit": "seconds"
-      },
-      "name": "Wait 5s",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1,
-      "position": [
-        44304,
-        3488
-      ],
-      "id": "ae2d8c7c-6554-4c71-9d75-a1c6facd16b1",
-      "webhookId": "0717134c-ad10-41c2-b687-b53ac2f28fb3"
-    },
-    {
-      "parameters": {},
-      "name": "Error Trigger",
-      "type": "n8n-nodes-base.errorTrigger",
-      "typeVersion": 1,
-      "position": [
-        42048,
-        3488
-      ],
-      "id": "ae2914f4-1e1c-428b-92b3-edf9b9d460f3"
-    },
-    {
-      "parameters": {
-        "jsCode": "\nlet threadId = $json.execution?.customData?.thread_id || null;\nlet organizationId = $json.execution?.customData?.organization_id || null;\nlet contentItemId = $json.execution?.customData?.content_item_id || 'unknown';\nlet workflowRunId = $json.execution?.customData?.workflow_run_id || 'unknown';\nlet errorMsg = $('Error Trigger').first().json.execution?.error?.message || 'Unknown Error';\n\ntry {\n  const dbContextList = $('Load Workflow Context').first().json;\n  if (dbContextList && dbContextList.length > 0) {\n    const dbContext = dbContextList[0];\n    if (!threadId && dbContext.thread_id) threadId = dbContext.thread_id;\n    if (!organizationId && dbContext.organization_id) organizationId = dbContext.organization_id;\n    if (contentItemId === 'unknown' && dbContext.content_item_id) contentItemId = dbContext.content_item_id;\n    if (workflowRunId === 'unknown' && dbContext.workflow_run_id) workflowRunId = dbContext.workflow_run_id;\n  }\n} catch (e) {}\n\nreturn {\n  json: {\n    workflow_run_id: workflowRunId,\n    organization_id: organizationId,\n    thread_id: threadId,\n    content_item_id: contentItemId,\n    error_message: errorMsg,\n    metadata: { contentItemId, workflowRunId }\n  }\n};"
-      },
-      "name": "Format Error",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        42480,
-        3488
-      ],
-      "id": "36447fd6-051f-4bd5-ba98-0bc804859978"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\"}}/api/n8n/workflow-error",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{JSON.stringify($json)}}",
-        "options": {},
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-request-id",
-              "value": "={{$execution.id}}-error"
-            }
-          ]
-        }
-      },
-      "name": "Push Error to Chat",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        42672,
-        3488
-      ],
-      "id": "f0df0aa2-4aad-4dce-8c5d-4e6b9c5923a0",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "nlRh1UkRewsK7CCR",
-          "name": "ControlPlaneAuth"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "http://localhost:5678/webhook/qa-gatekeeper",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ (() => {\n  const safeGet = (nodeName, fieldPath = '', isArray = false) => {\n    try {\n      if (isArray) return $(nodeName).all().map(i => {\n        if (!i.json) return null;\n        if (!fieldPath) return i.json;\n        return fieldPath.split('.').reduce((acc, part) => acc && acc[part], i.json);\n      }).filter(Boolean);\n      \n      const first = $(nodeName).first();\n      if (!first || !first.json) return '';\n      if (!fieldPath) return first.json;\n      const val = fieldPath.split('.').reduce((acc, part) => acc && acc[part], first.json);\n      return val === undefined ? '' : val;\n    } catch(e) {\n      return isArray ? [] : '';\n    }\n  };\n  \n  const wtBody = safeGet('Webhook Trigger', 'body') || {};\n  const wtJson = safeGet('Webhook Trigger', '') || {};\n  const ptText = safeGet('Parse Text', 'textContent') || {};\n  const ptItem = safeGet('Parse Text', 'item') || {};\n  \n  // FIX: Format Prompt outputs 'visual_assets', not 'providedImageUrls'\n  const fpUrls = safeGet('Format Prompt', 'visual_assets') || [];\n  \n  return JSON.stringify({\n    content_item_id: ptItem.id || '',\n    organization_id: wtBody.organization_id || wtJson.organization_id || wtJson.tenant_id || '',\n    thread_id: wtBody.threadId || wtJson.threadId || wtJson.thread_id || '',\n    caption: ptText.agent_2_publish_ready_caption || (safeGet('Extract Caption', 'artifacts') || {}).caption || '',\n    \n    // FIX: use fpUrls[0] instead of missing providedImageUrl\n    image_url: (fpUrls && fpUrls.length > 0) ? fpUrls[0] : safeGet('Map R2 URL', 'r2_url') || '',\n    \n    image_urls: (fpUrls && fpUrls.length > 0) ? fpUrls : safeGet('Map R2 URL', 'r2_url', true),\n    \n    reference_token: wtBody.reference_token || wtJson.reference_token || wtBody.lease_token || '',\n    research: ptText.agent_1_research_packet || '',\n    taskId: safeGet('AI Broker (Image)', 'taskId'),\n    providerCode: safeGet('AI Broker (Image)', 'provider'),\n    usageId: safeGet('AI Broker (Image)', 'usage_id'),\n    modelCode: safeGet('AI Broker (Image)', 'model'),\n    outboxId: safeGet('Poll Image Status', 'outbox_id'),\n    image_action: safeGet('Parse Text', 'action_intent'),\n    qa_retry_count: wtBody.qa_retry_count || wtJson.qa_retry_count || 0\n  });\n})() }}",
-        "options": {}
-      },
-      "name": "Trigger QA Gatekeeper",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        46016,
-        3520
-      ],
-      "id": "077c41a9-3bea-4b69-bc7e-7cc1375a3ad6"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose"
-          },
-          "conditions": [
-            {
-              "id": "c1",
-              "leftValue": "={{ !!($('Format Prompt').first().json.visual_assets && $('Format Prompt').first().json.visual_assets.length > 0) }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true"
-              }
-            },
-            {
-              "id": "c2",
-              "leftValue": "={{ $('Parse Text').first().json.action_intent || '' }}",
-              "rightValue": "use_provided_images",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "5054c426-f9f7-4098-b63a-104d011381fd",
-      "name": "Should Use Provided Image?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        44992,
-        3056
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const item = $json;\nitem.r2_urls = $('Format Prompt').first().json.visual_assets || [];\nif (!item.artifacts) item.artifacts = {};\nitem.artifacts.visual_assets = item.r2_urls;\nreturn { json: item };"
-      },
-      "id": "8807627a-4b26-464a-886a-aabdbf199adf",
-      "name": "Set Provided Image",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        45616,
-        3040
-      ]
-    },
-    {
-      "parameters": {
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?workflow_run_id=eq.{{$json.workflow_run_id}}&select=workflow_run_id,organization_id,thread_id,content_item_id,status,last_error,payload",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "alwaysOutputData": true
-        }
-      },
-      "name": "Load Workflow Context",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        42272,
-        3488
-      ],
-      "id": "d9654ad6-e447-4b30-9a28-ba6aa5a31457",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
-        }
-      },
-      "settings": {
-        "alwaysOutputData": true
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst workflow_run_id = body.workflow_run_id;\nconst organization_id = body.organization_id;\nconst thread_id = body.threadId || body.thread_id;\nconst content_item_id = body.contentItemId || body.content_item_id || body.id || 'unknown';\n\nreturn { json: { ...$input.first().json, workflow_run_id, organization_id, thread_id, content_item_id } };"
-      },
-      "name": "Set Workflow Run ID",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        42272,
-        3088
-      ],
-      "id": "55783e84-7d5a-40e5-91b1-3b32f6060c4a"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env[\"SUPABASE_URL\"] || 'http://supabase:8000'}}/rest/v1/workflow_run_context?on_conflict=workflow_run_id",
+        "url": "={{($env[\"SUPABASE_URL\"] || \"https://jrgkpbjsqefvnhbiiutz.supabase.co\")}}/rest/v1/crm_channels?id=eq.{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.channel_id }}&select=bot_system_prompt",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -792,430 +30,426 @@
           "parameters": [
             {
               "name": "Prefer",
-              "value": "resolution=merge-duplicates,return=representation"
+              "value": "return=representation"
             }
           ]
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"workflow_run_id\": \"{{$json.workflow_run_id}}\",\n  \"organization_id\": \"{{$json.organization_id}}\",\n  \"thread_id\": \"{{$json.thread_id}}\",\n  \"content_item_id\": \"{{$json.content_item_id}}\",\n  \"workflow_name\": \"PHASE3_AUTO_CONTENT_CREATOR\",\n  \"payload\": { \"source\": \"PHASE3_AUTO_CONTENT_CREATOR\" }\n}",
         "options": {}
       },
-      "name": "Upsert Workflow Context",
+      "id": "7c72f747-f538-4b3c-8e8e-bcc8887727e7",
+      "name": "Fetch Dynamic System Prompt",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        42496,
-        3088
+        12112,
+        -1008
       ],
-      "id": "f6ff07be-6e98-46ef-8325-a35cb076b99e",
+      "notesInFlow": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      },
+      "notes": "Lấy cấu hình Persona của Fanpage/OA"
+    },
+    {
+      "parameters": {
+        "url": "={{($env[\"SUPABASE_URL\"] || \"https://jrgkpbjsqefvnhbiiutz.supabase.co\")}}/rest/v1/crm_tenant_tags?organization_id=eq.{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.organization_id }}&select=tag_name",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "72a0a705-750a-4983-b58f-bec89a2b209b",
+      "name": "Fetch Allowed Tags",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        12336,
+        -1008
+      ],
+      "notesInFlow": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      },
+      "notes": "Kéo danh sách thẻ để truyền vào Tool Update Tags"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "={{ $json.systemPrompt }}\n\nBạn CÓ THỂ cập nhật thẻ cho khách hàng thông qua Tool. CÁC THẺ HỢP LỆ BẠN CÓ THỂ DÙNG LÀ: {{ $json.tags && $json.tags.length > 0 ? $json.tags.join(', ') : 'none' }}"
+        }
+      },
+      "id": "52442ce5-2b3e-466d-b8d5-2286584b8572",
+      "name": "AI Agent (CSKH)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.1,
+      "position": [
+        12816,
+        -1008
+      ],
+      "notesInFlow": true,
+      "notes": "Bộ não cốt lõi. Sẽ suy nghĩ và quyết định gọi Tools hay trả lời thẳng"
+    },
+    {
+      "parameters": {
+        "options": {
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $json.body.organization_id }}/v1",
+          "temperature": 0.4
+        }
+      },
+      "id": "4425c103-3a3f-4a0d-a257-8a55ff1cfb27",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        12608,
+        -768
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "MesMbE0xnztwgTiM",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.thread_id }}",
+        "tableName": "n8n_chat_memory"
+      },
+      "id": "fbc99333-54c8-45dd-bf0d-9a011c73c7f6",
+      "name": "Postgres Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1,
+      "position": [
+        12720,
+        -768
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "EhOYcO8YGhLwldqf",
+          "name": "Postgres account"
+        }
+      },
+      "notes": "Kéo lịch sử chat từ bảng n8n_chat_memory để Bot nhớ văn cảnh"
+    },
+    {
+      "parameters": {
+        "name": "knowledge_base",
+        "description": "Công cụ tìm kiếm tài liệu của công ty. Dùng công cụ này MỌI LÚC khi cần trả lời câu hỏi của khách hàng về sản phẩm, chính sách, hoặc thông tin công ty."
+      },
+      "id": "f7f50dab-f1cb-4c7f-9775-e9823e3d9746",
+      "name": "Vector Store (RAG)",
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        12832,
+        -784
+      ],
+      "notesInFlow": true,
+      "notes": "Tra cứu tài liệu nội bộ dựa trên organization_id trước khi trả lời"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent.pnmediaplus.com/api/internal/customer/tags",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {}
+          ]
+        }
+      },
+      "id": "cb377c53-e6d8-47a6-bf35-94dfd601e11c",
+      "name": "tool_update_tags",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1,
+      "position": [
+        13088,
+        -784
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent.pnmediaplus.com/api/internal/thread/handoff",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {}
+          ]
+        }
+      },
+      "id": "5daf7e0a-9897-4877-9b20-4ae0a9cad139",
+      "name": "tool_handoff_to_human",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1,
+      "position": [
+        13232,
+        -784
+      ]
+    },
+    {
+      "parameters": {
+        "tableName": "crm_knowledge_chunks",
+        "options": {}
+      },
+      "id": "219299c1-f400-4ba0-9ab7-b802ad774265",
+      "name": "Supabase Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        12656,
+        -560
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "dGoqkVSwyn8Ro0Qu",
+          "name": "Supabase Agent PNM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $json.body.organization_id }}/v1"
+        }
+      },
+      "id": "7d94f9b9-91df-458d-aa9b-b803450b4fd2",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        12576,
+        -416
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "MesMbE0xnztwgTiM",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/crm/messages/dispatch",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"organization_id\": \"{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.organization_id }}\",\n  \"thread_id\": \"{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.thread_id }}\",\n  \"content\": \"{{ $json.output }}\",\n  \"sender_type\": \"bot\"\n}",
+        "options": {}
+      },
+      "id": "35f4bc7c-16a0-47d8-86ac-cd719d34c36f",
+      "name": "Dispatch Reply via Universal API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        13216,
+        -1008
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "eUuuv1meIVSpZzFH",
           "name": "SupabaseAuth"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "const tags = $input.all().map(item => item.json.tag_name).filter(Boolean);\nconst webhookData = $('Webhook Trigger (From Next.js)').first().json.body;\nconst promptNode = $('Fetch Dynamic System Prompt').first();\nconst systemPrompt = promptNode && promptNode.json && promptNode.json.bot_system_prompt ? promptNode.json.bot_system_prompt : 'Bạn là trợ lý ảo hỗ trợ khách hàng.';\nreturn [{ json: { body: webhookData, tags: tags, systemPrompt: systemPrompt } }];"
+      },
+      "id": "c9dd79ed-b9af-488f-8146-a0fba931e904",
+      "name": "Aggregate Tags",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12576,
+        -1008
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $json.body.organization_id }}/v1",
+          "temperature": 0.4
+        }
+      },
+      "id": "ea52341d-5567-4dba-b3d9-81adec568714",
+      "name": "OpenAI Chat Model (RAG)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        12944,
+        -624
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "MesMbE0xnztwgTiM",
+          "name": "OpenAi account 2"
+        }
+      }
     }
   ],
   "pinData": {},
   "connections": {
-    "Upload to R2": {
+    "Webhook Trigger (From Next.js)": {
       "main": [
         [
           {
-            "node": "Map R2 URL",
+            "node": "Fetch Dynamic System Prompt",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Download Image": {
+    "Fetch Dynamic System Prompt": {
       "main": [
         [
           {
-            "node": "Upload to R2",
+            "node": "Fetch Allowed Tags",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get Upload Ticket": {
+    "Fetch Allowed Tags": {
       "main": [
         [
           {
-            "node": "Download Image",
+            "node": "Aggregate Tags",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "AI Broker (Text)": {
+    "AI Agent (CSKH)": {
       "main": [
         [
           {
-            "node": "Parse Text",
+            "node": "Dispatch Reply via Universal API",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Preserve Reference Token": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent (CSKH)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent (CSKH)",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store (RAG)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent (CSKH)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store (RAG)",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Tags": {
       "main": [
         [
           {
-            "node": "Fetch Tenant AI Config",
+            "node": "AI Agent (CSKH)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Validate AI Config": {
-      "main": [
+    "OpenAI Chat Model (RAG)": {
+      "ai_languageModel": [
         [
           {
-            "node": "Fetch Governance Registry",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "AI Config Blocked Escalate",
-            "type": "main",
+            "node": "Vector Store (RAG)",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]
       ]
     },
-    "Fetch Tenant AI Config": {
-      "main": [
+    "tool_update_tags": {
+      "ai_tool": [
         [
           {
-            "node": "Validate AI Config",
-            "type": "main",
+            "node": "AI Agent (CSKH)",
+            "type": "ai_tool",
             "index": 0
           }
         ]
       ]
     },
-    "Map R2 URL": {
-      "main": [
+    "tool_handoff_to_human": {
+      "ai_tool": [
         [
           {
-            "node": "Submit Visual",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Submit QA Ready payload": {
-      "main": [
-        [
-          {
-            "node": "Submit QA Ready",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Submit Caption": {
-      "main": [
-        [
-          {
-            "node": "Submit QA Ready payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Caption": {
-      "main": [
-        [
-          {
-            "node": "Submit Caption",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Submit Visual": {
-      "main": [
-        [
-          {
-            "node": "Extract Caption",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Visual": {
-      "main": [
-        [
-          {
-            "node": "Get Upload Ticket",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Submit Research": {
-      "main": [
-        [
-          {
-            "node": "Should Use Provided Image?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Research": {
-      "main": [
-        [
-          {
-            "node": "Submit Research",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate Governance State": {
-      "main": [
-        [
-          {
-            "node": "Format Prompt",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Governance Blocked Escalate",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fetch Governance Registry": {
-      "main": [
-        [
-          {
-            "node": "Validate Governance State",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Submit QA Ready": {
-      "main": [
-        [
-          {
-            "node": "Trigger QA Gatekeeper",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "AI Broker (Image)": {
-      "main": [
-        [
-          {
-            "node": "Poll Image Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Poll Image Status": {
-      "main": [
-        [
-          {
-            "node": "Limit Polling",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Parse Text": {
-      "main": [
-        [
-          {
-            "node": "Extract Research",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Prompt": {
-      "main": [
-        [
-          {
-            "node": "AI Broker (Text)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Item (Webhook)": {
-      "main": [
-        [
-          {
-            "node": "Preserve Reference Token",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook Trigger": {
-      "main": [
-        [
-          {
-            "node": "Set Workflow Run ID",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Limit Polling": {
-      "main": [
-        [
-          {
-            "node": "Check Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Status": {
-      "main": [
-        [
-          {
-            "node": "Wait 5s",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Extract Visual",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait 5s": {
-      "main": [
-        [
-          {
-            "node": "Poll Image Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Error Trigger": {
-      "main": [
-        [
-          {
-            "node": "Load Workflow Context",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Error": {
-      "main": [
-        [
-          {
-            "node": "Push Error to Chat",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Set Provided Image": {
-      "main": [
-        [
-          {
-            "node": "Submit Visual",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Upsert Workflow Context": {
-      "main": [
-        [
-          {
-            "node": "Get Item (Webhook)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Load Workflow Context": {
-      "main": [
-        [
-          {
-            "node": "Format Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Set Workflow Run ID": {
-      "main": [
-        [
-          {
-            "node": "Upsert Workflow Context",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Should Use Provided Image?": {
-      "main": [
-        [
-          {
-            "node": "Set Provided Image",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "AI Broker (Image)",
-            "type": "main",
+            "node": "AI Agent (CSKH)",
+            "type": "ai_tool",
             "index": 0
           }
         ]
@@ -1226,10 +460,11 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "579315da-b880-433c-919a-77c11fe04e4b",
+  "versionId": "9861745a-3809-4c2d-8067-c7bc6fb4bc3a",
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
   },
-  "id": "i7dzBE21080AH5NC",
+  "id": "4nFdPwDdA5HPsOoT",
   "tags": []
 }
