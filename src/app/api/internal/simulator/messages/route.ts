@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     // 3. Fetch messages for this dummy thread directly
     const response = await fetchSupabaseRest('crm_messages', {
       searchParams: {
-        thread_id: \q.\\,
+        thread_id: `eq.${DUMMY_THREAD_ID}`,
         order: 'created_at.asc'
       }
     });
