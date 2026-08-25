@@ -5,11 +5,19 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request, { params }: { params: Promise<{ path: string[] }> }) {
   try {
+    const url = new URL(req.url);
+    const queryOrgId = url.searchParams.get('org_id');
+
     const authHeader = req.headers.get('Authorization') || '';
-    const organizationId = authHeader.replace('Bearer ', '').trim();
+    let organizationId = authHeader.replace('Bearer ', '').trim();
     
-    if (!organizationId || organizationId.length < 10) {
-      return NextResponse.json({ error: 'Unauthorized: Missing or invalid organization_id in Bearer token' }, { status: 401 });
+    // Fallback to query param if Bearer token is not a UUID (e.g. static n8n credentials like sk-...)
+    if (!organizationId || organizationId.length < 10 || !organizationId.includes('-')) {
+      if (queryOrgId && queryOrgId.includes('-')) {
+        organizationId = queryOrgId;
+      } else {
+        return NextResponse.json({ error: 'Unauthorized: Missing or invalid organization_id in Bearer token or org_id query param' }, { status: 401 });
+      }
     }
 
     const payload = await req.json();
