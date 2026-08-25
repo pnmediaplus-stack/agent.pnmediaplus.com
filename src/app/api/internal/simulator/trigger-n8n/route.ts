@@ -73,9 +73,9 @@ export async function POST(req: Request) {
         console.error('N8N Trigger Failed:', await n8nRes.text());
         return NextResponse.json({ error: 'N8N returned error' }, { status: 502 });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Cannot reach N8N:', err);
-      return NextResponse.json({ error: 'Cannot reach N8N' }, { status: 502 });
+      return NextResponse.json({ error: 'Cannot reach N8N: ' + err.message }, { status: 502 });
     }
 
     return NextResponse.json({ success: true });
