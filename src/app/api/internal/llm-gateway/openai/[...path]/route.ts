@@ -7,17 +7,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
   try {
     const url = new URL(req.url);
     const queryOrgId = url.searchParams.get('org_id');
+    const headerOrgId = req.headers.get('x-organization-id');
 
     const authHeader = req.headers.get('Authorization') || '';
-    let organizationId = authHeader.replace('Bearer ', '').trim();
-    
-    // Fallback to query param if Bearer token is not a UUID (e.g. static n8n credentials like sk-...)
-    if (!organizationId || organizationId.length < 10 || !organizationId.includes('-')) {
-      if (queryOrgId && queryOrgId.includes('-')) {
-        organizationId = queryOrgId;
-      } else {
-        return NextResponse.json({ error: 'Unauthorized: Missing or invalid organization_id in Bearer token or org_id query param' }, { status: 401 });
-      }
+    const bearerToken = authHeader.replace('Bearer ', '').trim();
+    const expectedSecret = process.env.N8N_API_KEY || process.env.CONTROL_PLANE_SECRET;
+
+    // Secure authentication using internal service token
+    if (!expectedSecret || bearerToken !== expectedSecret) {
+      return NextResponse.json({ error: 'Unauthorized: Invalid internal service token in Authorization header' }, { status: 401 });
+    }
+
+    const organizationId = queryOrgId || headerOrgId;
+    if (!organizationId || organizationId.length < 10) {
+      return NextResponse.json({ error: 'Bad Request: Missing org_id query param or x-organization-id header' }, { status: 400 });
     }
 
     const payload = await req.json();
