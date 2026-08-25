@@ -145,9 +145,10 @@
     },
     {
       "parameters": {
-        "model": "gpt-4o",
+        "model": "gpt-4o-mini",
         "options": {
-          "temperature": 0.4
+          "temperature": 0.4,
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai"
         }
       },
       "id": "node-openai-model",
