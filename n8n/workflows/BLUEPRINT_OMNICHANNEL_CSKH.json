@@ -68,96 +68,6 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{ ($env[\"SUPABASE_URL\"] || '').replace(new RegExp('/$'), '') + '/rest/v1/rpc/phase076_find_tenant_integration' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "={{ 'Bearer ' + $env[\"SUPABASE_SERVICE_ROLE_KEY\"] }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "p_organization_id",
-              "value": "={{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}"
-            },
-            {
-              "name": "p_integration_key",
-              "value": "={{ 'facebook_page_' + $('Fetch Dynamic System Prompt').first().json.channel_external_id }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "12db528b-185f-4895-87cf-9eb948d8cb14",
-      "name": "Fetch Facebook Integration",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        1440,
-        -112
-      ],
-      "notesInFlow": true,
-      "notes": "Lấy vault_credential_ref của Facebook Page từ tenant integration"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{ ($env[\"NEXTJS_CONTROL_PLANE_BASE_URL\"] || '').replace(new RegExp('/$'), '') + '/api/byok/redeem' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "x-broker-internal-secret",
-              "value": "={{ $env[\"BROKER_INTERNAL_SECRET\"] }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "reference_token",
-              "value": "={{ $('Fetch Facebook Integration').first().json.vault_credential_ref }}"
-            },
-            {
-              "name": "organization_id",
-              "value": "={{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}"
-            },
-            {
-              "name": "integration_key",
-              "value": "={{ 'facebook_page_' + $('Fetch Dynamic System Prompt').first().json.channel_external_id }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "c581d280-1db2-47d7-a396-c47e31987a10",
-      "name": "Redeem BYOK Token",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        1648,
-        -112
-      ],
-      "notesInFlow": true,
-      "notes": "Đổi vault token ra access token thật để gửi Facebook"
-    },
-    {
-      "parameters": {
         "text": "={{ $('Webhook Trigger (From Next.js)').first().json.body.message }}",
         "options": {
           "systemMessage": "={{ $node['Fetch Dynamic System Prompt'].json.bot_system_prompt }}"
@@ -276,66 +186,6 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://graph.facebook.com/v19.0/me/messages",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "access_token",
-              "value": "={{ $('Redeem BYOK Token').first().json.data.access_token }}"
-            },
-            {
-              "name": "recipient",
-              "value": "={{ { id: $('Webhook Trigger (From Next.js)').first().json.body.sender_id } }}"
-            },
-            {
-              "name": "message",
-              "value": "={{ { text: $json.output } }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "a52122dc-56a4-4418-98f1-097994128c21",
-      "name": "Send Reply to Facebook",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        2192,
-        -112
-      ]
-    },
-    {
-      "parameters": {
-        "schema": {
-          "__rl": true,
-          "mode": "list",
-          "value": "public"
-        },
-        "table": {
-          "__rl": true,
-          "mode": "list",
-          "value": ""
-        }
-      },
-      "id": "00d2c808-c14c-4a1a-848e-91cdef962394",
-      "name": "Insert Outbound Message",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.2,
-      "position": [
-        2400,
-        -112
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "EhOYcO8YGhLwldqf",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "mode": "retrieve-retrieve",
         "tableName": "crm_knowledge_chunks",
         "queryName": "match_documents",
@@ -379,6 +229,32 @@
           "name": "OpenAi account 2"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/crm/messages/dispatch",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"organization_id\": \"{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.organization_id }}\",\n  \"thread_id\": \"{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.thread_id }}\",\n  \"content\": \"{{ $json.output }}\",\n  \"sender_type\": \"bot\"\n}",
+        "options": {}
+      },
+      "id": "universal-dispatch-1234",
+      "name": "Dispatch Reply via Universal API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2192,
+        -112
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -416,33 +292,11 @@
         ]
       ]
     },
-    "Fetch Facebook Integration": {
-      "main": [
-        [
-          {
-            "node": "Redeem BYOK Token",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Redeem BYOK Token": {
-      "main": [
-        [
-          {
-            "node": "AI Agent (CSKH)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "AI Agent (CSKH)": {
       "main": [
         [
           {
-            "node": "Send Reply to Facebook",
+            "node": "Dispatch Reply via Universal API",
             "type": "main",
             "index": 0
           }
@@ -499,17 +353,6 @@
           {
             "node": "AI Agent (CSKH)",
             "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send Reply to Facebook": {
-      "main": [
-        [
-          {
-            "node": "Insert Outbound Message",
-            "type": "main",
             "index": 0
           }
         ]
