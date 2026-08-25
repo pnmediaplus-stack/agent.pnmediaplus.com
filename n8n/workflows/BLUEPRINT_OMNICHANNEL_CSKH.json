@@ -131,6 +131,7 @@
     {
       "parameters": {
         "tableName": "n8n_chat_memory",
+        "sessionIdType": "customKey",
         "sessionKey": "={{ $('Webhook Trigger (From Next.js)').first().json.body.thread_id }}"
       },
       "id": "486feefd-8fae-466f-993c-3876dcbb2f15",
