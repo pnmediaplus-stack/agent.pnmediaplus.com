@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyUiAuth } from '@/lib/ui-auth-guard';
 import { readPortalAccessToken, loadPortalOrganizationContext } from '@/lib/portal-auth';
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await verifyUiAuth(req);
     if (!auth.ok) return auth.response;
@@ -14,7 +14,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     }
 
     const organizationId = orgContext.active_membership.organization_id;
-    const documentId = params.id;
+    const { id: documentId } = await params;
     
     const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/$/, '');
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
