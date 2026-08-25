@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import useSWR from "swr";
-import { UploadCloud, FileText, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { UploadCloud, FileText, Loader2, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -20,6 +20,17 @@ export default function KnowledgeBasePage() {
   const { data: documents, error, mutate } = useSWR('/api/crm/knowledge', fetcher, {
     refreshInterval: 3000,
   });
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa tài liệu này? Các dữ liệu đã phân tích cũng sẽ bị xóa.')) return;
+    try {
+      const res = await fetch(`/api/crm/knowledge/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Xóa thất bại');
+      mutate();
+    } catch (err) {
+      alert('Lỗi: ' + (err as Error).message);
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -101,6 +112,7 @@ export default function KnowledgeBasePage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên tài liệu</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tải lên</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -123,6 +135,15 @@ export default function KnowledgeBasePage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(doc.created_at).toLocaleString('vi-VN')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button 
+                        onClick={() => handleDelete(doc.id)} 
+                        className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-2 rounded-md transition-colors"
+                        title="Xóa tài liệu"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
