@@ -182,38 +182,63 @@ export default function ChatArea() {
              <p className="text-xs text-gray-400 mt-1">Bấm "Giành quyền Chat" nếu bạn muốn xen vào.</p>
           </div>
         ) : (
-          <form onSubmit={handleSend} className="flex gap-3 items-end">
-            <div className="flex-1 relative">
-              <textarea 
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend(e);
-                  }
-                }}
-                placeholder="Gõ tin nhắn trả lời (Enter để gửi)..." 
-                className="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white text-gray-900 resize-none max-h-32 min-h-[44px]"
-                disabled={isSending}
-                rows={1}
-                style={{ height: inputText.split('\n').length > 1 ? `${Math.min(inputText.split('\n').length * 20 + 24, 128)}px` : '44px' }}
-              />
-            </div>
+          <form onSubmit={handleSend} className="relative flex items-end gap-2 bg-white border border-gray-300 rounded-3xl pl-3 pr-2 py-2 focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all shadow-sm">
             <button 
-              type="submit" 
-              disabled={isSending || !inputText.trim()}
-              className="h-[44px] px-6 bg-blue-600 text-white rounded-2xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors shadow-sm flex items-center justify-center"
+              type="button"
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+              title="Đính kèm tệp"
+              onClick={() => alert('Tính năng gửi file đa phương tiện đang được phát triển ở Phase 7!')}
             >
-              {isSending ? (
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                'Gửi'
-              )}
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
             </button>
+            
+            <textarea 
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend(e);
+                }
+              }}
+              placeholder="Nhập tin nhắn..." 
+              className="flex-1 bg-transparent resize-none max-h-32 min-h-[24px] outline-none py-2 text-[14px] text-gray-900 leading-relaxed [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+              disabled={isSending}
+              rows={1}
+              style={{ height: inputText.split('\n').length > 1 ? `${Math.min(inputText.split('\n').length * 24 + 16, 128)}px` : '40px' }}
+            />
+
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button 
+                type="button"
+                className="p-2 text-gray-400 hover:text-amber-500 rounded-full hover:bg-amber-50 transition-colors"
+                title="Chọn Emoji"
+                onClick={() => alert('Tính năng Emoji đang được phát triển ở Phase 7!')}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              
+              <button 
+                type="submit" 
+                disabled={isSending || !inputText.trim()}
+                className="w-10 h-10 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-all flex items-center justify-center shadow-sm"
+              >
+                {isSending ? (
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 translate-x-[-1px] translate-y-[1px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </form>
         )}
       </div>
