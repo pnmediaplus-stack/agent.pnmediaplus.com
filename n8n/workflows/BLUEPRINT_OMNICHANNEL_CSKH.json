@@ -218,7 +218,11 @@
       "notes": "Kéo lịch sử chat từ bảng crm_messages để Bot nhớ văn cảnh"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "name": "knowledge_base",
+        "description": "Công cụ tìm kiếm tài liệu của công ty. Dùng công cụ này MỌI LÚC khi cần trả lời câu hỏi của khách hàng về sản phẩm, chính sách, hoặc thông tin công ty.",
+        "limit": 4
+      },
       "id": "989c15b3-52ca-4282-ad8f-b25ec840d5fa",
       "name": "Vector Store (RAG)",
       "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
@@ -327,6 +331,52 @@
         "postgres": {
           "id": "EhOYcO8YGhLwldqf",
           "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-retrieve",
+        "tableName": "crm_knowledge_chunks",
+        "queryName": "match_documents",
+        "options": {
+          "filter": "={{ { organization_id: $(\"Webhook Trigger (From Next.js)\").first().json.body.organization_id } }}"
+        }
+      },
+      "id": "e2439121-a4b5-4b08-963a-86105f24f0c7",
+      "name": "Supabase Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        1776,
+        288
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "I2whnvNKGQtwUcks",
+          "name": "Saas App PNM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $(\"Webhook Trigger (From Next.js)\").first().json.body.organization_id }}/v1"
+        }
+      },
+      "id": "c1f82c49-d7b1-47cc-9978-5df0f0ab9a61",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        1776,
+        448
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "MesMbE0xnztwgTiM",
+          "name": "OpenAi account 2"
         }
       }
     }
@@ -460,6 +510,28 @@
           {
             "node": "Insert Outbound Message",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store (RAG)",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
             "index": 0
           }
         ]
