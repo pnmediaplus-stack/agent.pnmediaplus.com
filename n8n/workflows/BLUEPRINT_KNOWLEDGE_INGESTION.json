@@ -169,22 +169,25 @@
     },
     {
       "parameters": {
-        "operation": "executeQuery",
-        "query": "UPDATE public.crm_knowledge_documents SET status = 'ready' WHERE id = '{{ $('Webhook Trigger').first().json.body.document_id }}'",
+        "method": "PATCH",
+        "url": "={{$env[\"SUPABASE_URL\"]}}/rest/v1/crm_knowledge_documents?id=eq.{{ $(\"Webhook Trigger\").first().json.body.document_id }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"status\": \"ready\"}",
         "options": {}
       },
       "id": "95351331-5bc1-4994-a7d5-e1dd23248b0e",
       "name": "Update Document Status",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
       "position": [
         3664,
         -80
       ],
       "credentials": {
-        "postgres": {
-          "id": "EhOYcO8YGhLwldqf",
-          "name": "Postgres account"
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
         }
       }
     },

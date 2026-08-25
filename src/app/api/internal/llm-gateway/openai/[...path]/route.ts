@@ -56,9 +56,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
       }
     );
 
+    require('fs').appendFileSync('llm-gateway-debug.log', new Date().toISOString() + ' SUCCESS: ' + JSON.stringify(result).substring(0, 100) + '\n');
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('LLM Gateway Error:', error);
+    require('fs').appendFileSync('llm-gateway-debug.log', new Date().toISOString() + ' ERROR: ' + error.message + '\n');
     return NextResponse.json(
       { error: { message: error.message, type: 'gateway_error' } }, 
       { status: error.message.includes('LLM_QUOTA_EXCEEDED') ? 402 : 502 }
