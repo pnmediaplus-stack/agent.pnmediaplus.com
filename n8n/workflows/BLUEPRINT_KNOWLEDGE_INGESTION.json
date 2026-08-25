@@ -21,18 +21,9 @@
     },
     {
       "parameters": {
-        "url": "={{ ($env.SUPABASE_URL || '').replace(/\\/$/, '') + '/storage/v1/object/crm_knowledge_files/' + $json.body.file_path }}",
+        "url": "={{($env.SUPABASE_URL || 'http://supabase:8000').replace(/\\/$/, '') + '/storage/v1/object/crm_knowledge_files/' + $json.file_path}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}"
-            }
-          ]
-        },
         "options": {
           "response": {
             "response": {
