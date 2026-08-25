@@ -44,9 +44,8 @@ export async function POST(req: Request) {
     }
 
     // 2. Dispatch the message via internal API (reuses Facebook BYOK and Simulator logic)
-    const host = req.headers.get('host');
-    const protocol = host?.includes('localhost') ? 'http' : 'https';
-    const dispatchUrl = `${protocol}://${host}/api/internal/crm/messages/dispatch`;
+    const cpUrl = (process.env.NEXTJS_CONTROL_PLANE_BASE_URL || `http://127.0.0.1:${process.env.PORT || 3000}`).replace(/\/$/, '');
+    const dispatchUrl = `${cpUrl}/api/internal/crm/messages/dispatch`;
     const expectedSecret = (process.env.CONTROL_PLANE_SECRET || '').trim();
 
     const dispatchRes = await fetch(dispatchUrl, {
