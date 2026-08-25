@@ -148,7 +148,7 @@
           "name": "Postgres account"
         }
       },
-      "notes": "Kéo lịch sử chat từ bảng crm_messages để Bot nhớ văn cảnh"
+      "notes": "Kéo lịch sử chat từ bảng n8n_chat_memory để Bot nhớ văn cảnh"
     },
     {
       "parameters": {
