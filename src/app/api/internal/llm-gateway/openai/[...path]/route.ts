@@ -49,7 +49,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
     const result = await invokeLlm(
       payload,
       {
-        tenantId: queryOrgId,
+        tenantId: organizationId,
         actorId: '00000000-0000-0000-0000-000000000000', // System service actor
         requestId: requestId,
         endpointUrl: `https://api.openai.com/${pathJoined}` // Removed hardcoded v1 to prevent duplicate
