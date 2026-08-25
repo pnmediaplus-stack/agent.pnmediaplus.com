@@ -10,14 +10,11 @@ export async function GET(req: Request) {
     const auth = await verifyUiAuth(req);
     if (!auth.ok) return auth.response;
 
-    const url = new URL(req.url);
-    const threadId = url.searchParams.get('threadId');
-    if (!threadId) {
-      return NextResponse.json({ error: 'Missing threadId' }, { status: 400 });
-    }
+    // 2. ONLY allow reading the specific dummy thread for simulator purposes
+    // Prevent IDOR and Tenant Boundary violations
+    const DUMMY_THREAD_ID = '33333333-3333-3333-3333-333333333333';
 
-    // 2. Fetch messages for this thread directly, bypassing strict org context checks 
-    // since this is a global simulator dummy thread.
+    // 3. Fetch messages for this dummy thread directly
     const response = await fetchSupabaseRest('crm_messages', {
       searchParams: {
         thread_id: \q.\\,
