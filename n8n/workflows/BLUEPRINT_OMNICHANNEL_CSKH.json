@@ -90,9 +90,9 @@
     },
     {
       "parameters": {
-        "text": "={{ $('Webhook Trigger (From Next.js)').first().json.body.message }}",
+        "text": "={{ $json.body.message }}",
         "options": {
-          "systemMessage": "={{ $node['Fetch Dynamic System Prompt'].json.bot_system_prompt || 'Bạn là trợ lý ảo hỗ trợ khách hàng.' }}\n\nBạn CÓ THỂ cập nhật thẻ cho khách hàng thông qua Tool. CÁC THẺ HỢP LỆ BẠN CÓ THỂ DÙNG LÀ: {{ $json.tag_name && $json.tag_name.length > 0 ? $json.tag_name.join(', ') : 'none' }}"
+          "systemMessage": "={{ $node['Fetch Dynamic System Prompt'].json.bot_system_prompt || 'Bạn là trợ lý ảo hỗ trợ khách hàng.' }}\n\nBạn CÓ THỂ cập nhật thẻ cho khách hàng thông qua Tool. CÁC THẺ HỢP LỆ BẠN CÓ THỂ DÙNG LÀ: {{ $json.tags && $json.tags.length > 0 ? $json.tags.join(', ') : 'none' }}"
         }
       },
       "id": "8dcdfc22-8164-4e7d-9524-3b99985f2754",
@@ -131,7 +131,7 @@
     {
       "parameters": {
         "tableName": "n8n_chat_memory",
-        "sessionKey": "={{ $('Webhook Trigger (From Next.js)').first().json.body.thread_id }}"
+        "sessionKey": "={{ $json.body.thread_id }}"
       },
       "id": "486feefd-8fae-466f-993c-3876dcbb2f15",
       "name": "Postgres Chat Memory",
@@ -275,7 +275,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const tags = $input.all().map(item => item.json.tag_name).filter(Boolean);\nreturn [{ json: { tag_name: tags } }];"
+        "jsCode": "const tags = $input.all().map(item => item.json.tag_name).filter(Boolean);\nconst firstItem = $input.first().json;\nreturn [{ json: { ...firstItem, tags: tags } }];"
       },
       "id": "cfc3eba3-c78d-40f8-93c0-87a02365d0e0",
       "name": "Aggregate Tags",
