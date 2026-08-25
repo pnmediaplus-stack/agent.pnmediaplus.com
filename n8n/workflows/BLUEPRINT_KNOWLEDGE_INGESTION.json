@@ -174,7 +174,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "{\"status\": \"ready\"}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "95351331-5bc1-4994-a7d5-e1dd23248b0e",
       "name": "Update Document Status",
