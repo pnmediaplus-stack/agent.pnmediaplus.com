@@ -177,7 +177,7 @@
     {
       "parameters": {
         "options": {
-          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai?org_id={{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}",
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}/v1",
           "temperature": 0.4
         }
       },

@@ -149,7 +149,7 @@
       "parameters": {
         "model": "text-embedding-3-small",
         "options": {
-          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/v1?org_id={{ $('Persist Ingestion Context').first().json.organization_id }}"
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $('Persist Ingestion Context').first().json.organization_id }}/v1"
         }
       },
       "id": "d814486b-2fc5-4d7d-8beb-b5584c686f49",

@@ -5,8 +5,19 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request, { params }: { params: Promise<{ path: string[] }> }) {
   try {
+    const resolvedParams = await params;
+    let pathSegments = resolvedParams.path;
+    let pathOrgId = null;
+
+    if (pathSegments.length >= 2 && pathSegments[0] === 'org') {
+      pathOrgId = pathSegments[1];
+      pathSegments = pathSegments.slice(2);
+    }
+
+    const pathJoined = pathSegments.join('/');
     const url = new URL(req.url);
     const queryOrgId = url.searchParams.get('org_id');
+    const headerOrgId = req.headers.get('x-organization-id');
 
     const authHeader = req.headers.get('Authorization') || '';
     const bearerToken = authHeader.replace('Bearer ', '').trim();
@@ -17,18 +28,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
       return NextResponse.json({ error: 'Unauthorized: Invalid internal service token in Authorization header' }, { status: 401 });
     }
 
-    if (!queryOrgId || queryOrgId.length < 10) {
-      return NextResponse.json({ error: 'Bad Request: Missing or invalid org_id query param' }, { status: 400 });
+    const organizationId = pathOrgId || queryOrgId || headerOrgId;
+    if (!organizationId || organizationId.length < 10) {
+      return NextResponse.json({ error: 'Bad Request: Missing organization ID in URL path (/org/[id]/...), query param, or header' }, { status: 400 });
     }
-
-    const payload = await req.json();
-    const resolvedParams = await params;
-    const pathJoined = resolvedParams.path.join('/');
     
     // 1. Strict Endpoint Filtering (Least Privilege)
     if (!pathJoined.includes('chat/completions') && !pathJoined.includes('embeddings')) {
       return NextResponse.json({ error: 'Forbidden: Unsupported endpoint. Only chat/completions and embeddings are allowed.' }, { status: 403 });
     }
+
+    const payload = await req.json();
 
     // Force provider
     payload.provider = 'openai';
