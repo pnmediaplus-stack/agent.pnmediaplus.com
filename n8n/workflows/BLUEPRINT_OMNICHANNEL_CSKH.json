@@ -353,6 +353,11 @@
             "node": "AI Agent (CSKH)",
             "type": "ai_languageModel",
             "index": 0
+          },
+          {
+            "node": "Vector Store (RAG)",
+            "type": "ai_languageModel",
+            "index": 0
           }
         ]
       ]
