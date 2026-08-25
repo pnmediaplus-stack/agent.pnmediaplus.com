@@ -3,6 +3,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import useSWR from 'swr';
 import { useCrmStore } from '@/lib/stores/crmStore';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
@@ -10,8 +12,20 @@ export default function ChatArea() {
   const { activeThreadId, messages, setMessages, addMessage, threads, upsertThread } = useCrmStore();
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const addEmoji = (e: any) => {
+    const sym = e.unified.split("-");
+    const codesArray: any[] = [];
+    sym.forEach((el: any) => codesArray.push("0x" + el));
+    const emoji = String.fromCodePoint(...codesArray);
+    setInputText(prev => prev + emoji);
+    setShowEmojiPicker(false);
+  };
 
   const activeThread = threads.find(t => t.id === activeThreadId);
   const threadMessages = activeThreadId ? messages[activeThreadId] || [] : [];
@@ -35,8 +49,8 @@ export default function ChatArea() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || !activeThreadId || !activeThread) return;
-    
+    if (!inputText.trim() || !activeThreadId || isSending) return;
+
     setIsSending(true);
     setErrorMessage(null);
     try {
@@ -45,26 +59,49 @@ export default function ChatArea() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           threadId: activeThreadId,
-          content: inputText
+          content: inputText.trim()
         })
       });
-
-      const data = await res.json();
       
-      if (res.ok) {
-        addMessage(data);
-        setInputText('');
-      } else {
-        if (data.message) {
-          addMessage(data.message);
-        }
-        setErrorMessage(data?.error || 'Không gửi được tin nhắn');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Lỗi gửi tin nhắn');
       }
-    } catch (err) {
-      console.error(err);
-      setErrorMessage(err instanceof Error ? err.message : 'Không gửi được tin nhắn');
+
+      setInputText('');
+    } catch (err: any) {
+      setErrorMessage(err.message);
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeThreadId) return;
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    setIsUploadingFile(true);
+    setErrorMessage(null);
+    try {
+      const formData = new FormData();
+      formData.append('threadId', activeThreadId);
+      formData.append('file', file);
+
+      const res = await fetch('/api/crm/messages/attachment', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Lỗi đính kèm file');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message);
+    } finally {
+      setIsUploadingFile(false);
     }
   };
 
@@ -140,12 +177,34 @@ export default function ChatArea() {
                   isBot ? 'bg-indigo-50 border border-indigo-100 text-indigo-900 rounded-2xl rounded-tr-sm' :
                   'bg-blue-600 text-white rounded-2xl rounded-tr-sm'
                 }`}>
-                  {msg.content.split('\n').map((line, i) => (
-                    <React.Fragment key={i}>
-                      {line}
-                      {i < msg.content.split('\n').length - 1 && <br />}
-                    </React.Fragment>
-                  ))}
+                  {msg.content.split('\n').map((line, i) => {
+                    if (line.startsWith('[File đính kèm]:')) {
+                      const url = line.replace('[File đính kèm]:', '').trim();
+                      // Simple check for image extension
+                      const isImg = url.match(/\.(jpeg|jpg|gif|png)(\?|$)/i);
+                      return (
+                        <React.Fragment key={i}>
+                          {isImg ? (
+                            <a href={url} target="_blank" rel="noreferrer">
+                              <img src={url} alt="Attachment" className="max-w-full h-auto rounded-lg mt-1 mb-2 max-h-48 object-cover border border-black/10" />
+                            </a>
+                          ) : (
+                            <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-black/5 rounded-lg text-blue-600 hover:underline mt-1 mb-1">
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                              Xem tệp đính kèm
+                            </a>
+                          )}
+                          {i < msg.content.split('\n').length - 1 && <br />}
+                        </React.Fragment>
+                      );
+                    }
+                    return (
+                      <React.Fragment key={i}>
+                        {line}
+                        {i < msg.content.split('\n').length - 1 && <br />}
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
                 <div className={`text-[11px] mt-1.5 px-1 font-medium ${isCustomer ? 'text-gray-400 text-left' : 'text-gray-400 text-right'}`}>
                   {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -183,15 +242,30 @@ export default function ChatArea() {
           </div>
         ) : (
           <form onSubmit={handleSend} className="relative flex items-end gap-2 bg-white border border-gray-300 rounded-3xl pl-3 pr-2 py-2 focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all shadow-sm">
+            <input 
+              type="file" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+              accept="image/*,.pdf,.doc,.docx" 
+            />
             <button 
               type="button"
               className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
               title="Đính kèm tệp"
-              onClick={() => alert('Tính năng gửi file đa phương tiện đang được phát triển ở Phase 7!')}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingFile}
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-              </svg>
+              {isUploadingFile ? (
+                <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+              )}
             </button>
             
             <textarea 
@@ -205,26 +279,32 @@ export default function ChatArea() {
               }}
               placeholder="Nhập tin nhắn..." 
               className="flex-1 bg-transparent resize-none max-h-32 min-h-[24px] outline-none py-2 text-[14px] text-gray-900 leading-relaxed [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
-              disabled={isSending}
+              disabled={isSending || isUploadingFile}
               rows={1}
               style={{ height: inputText.split('\n').length > 1 ? `${Math.min(inputText.split('\n').length * 24 + 16, 128)}px` : '40px' }}
             />
 
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-1 flex-shrink-0 relative">
               <button 
                 type="button"
                 className="p-2 text-gray-400 hover:text-amber-500 rounded-full hover:bg-amber-50 transition-colors"
                 title="Chọn Emoji"
-                onClick={() => alert('Tính năng Emoji đang được phát triển ở Phase 7!')}
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </button>
+
+              {showEmojiPicker && (
+                <div className="absolute bottom-14 right-12 z-50 shadow-2xl rounded-2xl overflow-hidden border border-gray-100">
+                  <Picker data={data} onEmojiSelect={addEmoji} theme="light" locale="vi" />
+                </div>
+              )}
               
               <button 
                 type="submit" 
-                disabled={isSending || !inputText.trim()}
+                disabled={isSending || isUploadingFile || !inputText.trim()}
                 className="w-10 h-10 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-all flex items-center justify-center shadow-sm"
               >
                 {isSending ? (
