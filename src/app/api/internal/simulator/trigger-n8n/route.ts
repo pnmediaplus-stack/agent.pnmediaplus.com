@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     await fetchSupabaseRest('crm_channels', {
       method: 'POST',
       prefer: 'resolution=merge-duplicates',
-      body: JSON.stringify({ id: channel_id, organization_id, channel_type: 'livechat', channel_name: 'Simulator' })
+      body: JSON.stringify({ id: channel_id, organization_id, channel_type: 'livechat', channel_name: 'Simulator', channel_external_id: 'simulator' })
     });
     
     await fetchSupabaseRest('crm_customers', {
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     await fetchSupabaseRest('crm_threads', {
       method: 'POST',
       prefer: 'resolution=merge-duplicates',
-      body: JSON.stringify({ id: thread_id, organization_id, channel_id, customer_id, status: 'open' })
+      body: JSON.stringify({ id: thread_id, organization_id, channel_id, customer_id, status: 'bot_handling' })
     });
 
     // 5. Insert customer message into DB so it shows up in UI immediately
