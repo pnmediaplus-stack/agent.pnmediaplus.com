@@ -7,7 +7,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
   try {
     const url = new URL(req.url);
     const queryOrgId = url.searchParams.get('org_id');
-    const headerOrgId = req.headers.get('x-organization-id');
 
     const authHeader = req.headers.get('Authorization') || '';
     const bearerToken = authHeader.replace('Bearer ', '').trim();
@@ -18,9 +17,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
       return NextResponse.json({ error: 'Unauthorized: Invalid internal service token in Authorization header' }, { status: 401 });
     }
 
-    const organizationId = queryOrgId || headerOrgId;
-    if (!organizationId || organizationId.length < 10) {
-      return NextResponse.json({ error: 'Bad Request: Missing org_id query param or x-organization-id header' }, { status: 400 });
+    if (!queryOrgId || queryOrgId.length < 10) {
+      return NextResponse.json({ error: 'Bad Request: Missing or invalid org_id query param' }, { status: 400 });
     }
 
     const payload = await req.json();
@@ -41,7 +39,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
     const result = await invokeLlm(
       payload,
       {
-        tenantId: organizationId,
+        tenantId: queryOrgId,
         actorId: '00000000-0000-0000-0000-000000000000', // System service actor
         requestId: requestId,
         endpointUrl: `https://api.openai.com/${pathJoined}` // Removed hardcoded v1 to prevent duplicate
