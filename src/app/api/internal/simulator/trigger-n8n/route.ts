@@ -16,12 +16,23 @@ export async function POST(req: Request) {
     // We will still restrict URL to prevent SSRF.
     const { message, n8nWebhookUrl } = await req.json();
 
-    // 3. SSRF Protection: Validate webhook URL
-    const allowedBaseUrl = process.env.N8N_WEBHOOK_BASE_URL || 'https://n8n.pnmediaplus.com';
+    // 3. SSRF Protection: Strict URL Validation
+    const allowedHost = process.env.N8N_WEBHOOK_HOSTNAME || 'n8n.pnmediaplus.com';
     const targetUrl = n8nWebhookUrl || 'http://localhost:5678/webhook-test/e43cb6ea-c076-40d8-b398-29ce59c47d1f';
     
-    if (!targetUrl.startsWith(allowedBaseUrl) && !targetUrl.startsWith('http://localhost:5678')) {
-      return NextResponse.json({ error: 'SSRF Protection: Invalid target URL' }, { status: 403 });
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(targetUrl);
+    } catch (e) {
+      return NextResponse.json({ error: 'SSRF Protection: Invalid URL format' }, { status: 400 });
+    }
+
+    const isLocalhost = parsedUrl.hostname === 'localhost' || parsedUrl.hostname === '127.0.0.1';
+    const isAllowedHost = parsedUrl.hostname === allowedHost;
+    const isAllowedPort = parsedUrl.port === '' || parsedUrl.port === '5678' || parsedUrl.port === '80' || parsedUrl.port === '443';
+
+    if (!(isLocalhost || isAllowedHost) || !isAllowedPort || (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:')) {
+      return NextResponse.json({ error: 'SSRF Protection: Hostname or Protocol not allowed' }, { status: 403 });
     }
     
     // Hardcoded dummy thread IDs
@@ -45,7 +56,7 @@ export async function POST(req: Request) {
 
     // 5. Trigger n8n webhook
     try {
-      const n8nRes = await fetch(targetUrl, {
+      const n8nRes = await fetch(parsedUrl.toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
