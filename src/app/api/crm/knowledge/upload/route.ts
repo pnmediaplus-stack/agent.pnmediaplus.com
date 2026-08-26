@@ -40,14 +40,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'UNSUPPORTED_FILE_TYPE', message: 'Only PDF, TXT, MD, and DOC/DOCX files are supported' }, { status: 400 });
     }
 
-    // 1. Upload to Supabase Storage
+    // 2. Upload File to Supabase Storage (crm_knowledge)
     const fileExt = file.name.split('.').pop();
-    const fileName = `${organizationId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const fileName = `${uuidv4()}.${fileExt}`;
+    const storagePath = `${organizationId}/${fileName}`;
     
     // Convert File to ArrayBuffer for fetch
     const arrayBuffer = await file.arrayBuffer();
     
-    const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/crm_knowledge_files/${fileName}`, {
+    const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/crm_knowledge_files/${storagePath}`, {
       method: 'POST',
       headers: {
         'apikey': serviceRoleKey,
@@ -63,10 +64,8 @@ export async function POST(req: Request) {
       console.error('Storage upload failed:', err);
       return NextResponse.json({ error: 'UPLOAD_FAILED' }, { status: 502 });
     }
-    
-    const storagePath = fileName;
 
-    // 2. Insert into crm_knowledge_documents
+    // 3. Insert into crm_knowledge_documents
     const insertRes = await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents`, {
       method: 'POST',
       headers: {
@@ -77,6 +76,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         organization_id: organizationId,
+        channel_id: channelId,
         title: title,
         file_url: storagePath,
         status: 'processing',
@@ -85,13 +85,15 @@ export async function POST(req: Request) {
     });
 
     if (!insertRes.ok) {
+      const errTxt = await insertRes.text();
+      console.error('DB Insert Error:', errTxt);
       return NextResponse.json({ error: 'DB_INSERT_FAILED' }, { status: 502 });
     }
 
     const docs = await insertRes.json();
     const document = docs[0];
 
-    // 3. Trigger n8n Ingestion Webhook
+    // 4. Trigger n8n Ingestion Webhook
     const n8nUrl = process.env.N8N_KNOWLEDGE_INGESTION_WEBHOOK_URL;
     if (n8nUrl) {
       const webhookRes = await fetch(n8nUrl, {
@@ -100,6 +102,7 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           document_id: document.id,
           organization_id: organizationId,
+          channel_id: channelId,
           file_path: storagePath,
           file_name: file.name,
           mime_type: file.type || 'application/octet-stream'

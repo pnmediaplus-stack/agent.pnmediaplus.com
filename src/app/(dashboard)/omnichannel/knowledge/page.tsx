@@ -60,8 +60,10 @@ function KnowledgeTab() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   
-  const { data: documents, error, mutate } = useSWR("/api/crm/knowledge", fetcher, { refreshInterval: 3000 });
+  const { data: documents, error: docsError, mutate: mutateDocs } = useSWR("/api/crm/knowledge", fetcher, { refreshInterval: 3000 });
+  const { data: channels, error: channelsError } = useSWR("/api/crm/channels/prompt", fetcher);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -86,6 +88,9 @@ function KnowledgeTab() {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("title", file.name);
+      if (selectedChannelId) {
+        formData.append("channel_id", selectedChannelId);
+      }
 
       try {
         const res = await fetch("/api/crm/knowledge/upload", { method: "POST", body: formData });
@@ -101,7 +106,7 @@ function KnowledgeTab() {
 
     if (errorMessage) setUploadError(errorMessage);
     setSelectedFiles(failedFiles);
-    mutate();
+    mutateDocs();
     setIsUploading(false);
   };
 
@@ -110,7 +115,7 @@ function KnowledgeTab() {
     try {
       const res = await fetch(`/api/crm/knowledge/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Xóa thất bại");
-      mutate();
+      mutateDocs();
     } catch (e: any) {
       alert(e.message);
     }
@@ -118,7 +123,23 @@ function KnowledgeTab() {
 
   return (
     <div className="space-y-6">
+      
+      {/* Upload Box */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center border-dashed">
+        <div className="w-full max-w-lg mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Phạm vi tài liệu (Scope)</label>
+          <select 
+            className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
+            value={selectedChannelId || ""}
+            onChange={(e) => setSelectedChannelId(e.target.value || null)}
+          >
+            <option value="">Tài liệu dùng chung (Tất cả Page)</option>
+            {channels && channels.map((c: any) => (
+              <option key={c.id} value={c.id}>Tài liệu riêng: {c.channel_name}</option>
+            ))}
+          </select>
+        </div>
+
         <UploadCloud className="h-10 w-10 text-gray-400 mb-3" />
         <p className="text-sm font-medium text-gray-700">Kéo thả file vào đây hoặc click để chọn file</p>
         <p className="text-xs text-gray-500 mt-1 mb-4">Hỗ trợ PDF, TXT, MD, DOC, DOCX. Tối đa 10MB.</p>
@@ -154,7 +175,7 @@ function KnowledgeTab() {
 
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200"><h2 className="text-lg font-medium text-gray-900">Tài liệu đã tải lên</h2></div>
-        {error && <div className="p-6 text-red-500">Lỗi tải danh sách: {error.message}</div>}
+        {docsError && <div className="p-6 text-red-500">Lỗi tải danh sách: {docsError.message}</div>}
         {!documents ? (
           <div className="p-10 flex justify-center"><Loader2 className="animate-spin text-gray-400 h-6 w-6"/></div>
         ) : !Array.isArray(documents) || documents.length === 0 ? (
