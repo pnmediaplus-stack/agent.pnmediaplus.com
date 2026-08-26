@@ -61,6 +61,8 @@ function KnowledgeTab() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const { data: documents, error: docsError, mutate: mutateDocs } = useSWR("/api/crm/knowledge", fetcher, { refreshInterval: 3000 });
   const { data: channels, error: channelsError } = useSWR("/api/crm/channels/prompt", fetcher);
@@ -116,9 +118,47 @@ function KnowledgeTab() {
       const res = await fetch(`/api/crm/knowledge/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Xóa thất bại");
       mutateDocs();
+      setSelectedDocumentIds(prev => prev.filter(docId => docId !== id));
     } catch (e: any) {
       alert(e.message);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedDocumentIds.length === 0) return;
+    if (!confirm(`Xóa ${selectedDocumentIds.length} tài liệu đã chọn?`)) return;
+    
+    setIsDeleting(true);
+    let errorCount = 0;
+    
+    for (const id of selectedDocumentIds) {
+      try {
+        const res = await fetch(`/api/crm/knowledge/${id}`, { method: "DELETE" });
+        if (!res.ok) errorCount++;
+      } catch (e) {
+        errorCount++;
+      }
+    }
+    
+    if (errorCount > 0) alert(`Có lỗi khi xóa ${errorCount} tài liệu. Vui lòng thử lại.`);
+    setSelectedDocumentIds([]);
+    mutateDocs();
+    setIsDeleting(false);
+  };
+
+  const toggleSelectAll = () => {
+    if (!documents) return;
+    if (selectedDocumentIds.length === documents.length) {
+      setSelectedDocumentIds([]);
+    } else {
+      setSelectedDocumentIds(documents.map((d: any) => d.id));
+    }
+  };
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedDocumentIds(prev => 
+      prev.includes(id) ? prev.filter(docId => docId !== id) : [...prev, id]
+    );
   };
 
   return (
@@ -174,7 +214,19 @@ function KnowledgeTab() {
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200"><h2 className="text-lg font-medium text-gray-900">Tài liệu đã tải lên</h2></div>
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-lg font-medium text-gray-900">Tài liệu đã tải lên</h2>
+          {selectedDocumentIds.length > 0 && (
+            <button 
+              onClick={handleBulkDelete} 
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center transition-colors"
+            >
+              {isDeleting ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Xóa {selectedDocumentIds.length} mục đã chọn
+            </button>
+          )}
+        </div>
         {docsError && <div className="p-6 text-red-500">Lỗi tải danh sách: {docsError.message}</div>}
         {!documents ? (
           <div className="p-10 flex justify-center"><Loader2 className="animate-spin text-gray-400 h-6 w-6"/></div>
@@ -184,8 +236,17 @@ function KnowledgeTab() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left w-12">
+                  <input 
+                    type="checkbox" 
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    checked={documents.length > 0 && selectedDocumentIds.length === documents.length}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên tài liệu</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phạm vi</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tải lên</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
               </tr>
@@ -193,6 +254,14 @@ function KnowledgeTab() {
             <tbody className="bg-white divide-y divide-gray-200">
               {documents.map((doc: any) => (
                 <tr key={doc.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      checked={selectedDocumentIds.includes(doc.id)}
+                      onChange={() => toggleSelectOne(doc.id)}
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap"><div className="flex items-center"><FileText className="h-5 w-5 text-gray-400 mr-3" /><span className="text-sm font-medium text-gray-900">{doc.title}</span></div></td>
                   <td className="px-6 py-4">
                     <div className="flex items-center whitespace-nowrap">
@@ -202,6 +271,17 @@ function KnowledgeTab() {
                       {doc.status === "failed" && <><XCircle className="h-4 w-4 text-red-500 mr-1.5" /><span className="text-sm text-red-700">Lỗi xử lý</span></>}
                     </div>
                     {doc.error_message && <p className="text-xs text-red-500 mt-2 break-words whitespace-normal max-w-md">{doc.error_message}</p>}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {doc.channel_id ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Tài liệu riêng biệt
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        Tài liệu dùng chung
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(doc.created_at).toLocaleString("vi-VN")}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
