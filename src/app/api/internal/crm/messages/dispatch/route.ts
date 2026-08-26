@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     const channelExternalId = thread.channel?.channel_external_id as string | undefined;
     
     let recipientId: string | undefined;
-    if (channelType === 'facebook') {
+    if (channelType === 'facebook_page') {
       const identityRes = await fetchSupabaseRest('crm_channel_identities', {
         searchParams: {
            organization_id: `eq.${organization_id}`,
@@ -97,6 +97,7 @@ export async function POST(req: Request) {
     });
 
     if (!insertResponse.ok) {
+      console.error('CRM_MESSAGE_INSERT_FAILED', await insertResponse.text());
       return NextResponse.json({ error: 'CRM_MESSAGE_INSERT_FAILED' }, { status: 422 });
     }
 
@@ -122,7 +123,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: { ...messageRow, delivery_status: 'sent' } });
     }
 
-    if (channelType !== 'facebook') {
+    if (channelType !== 'facebook_page') {
       await patchMessageStatus({
         organizationId: organization_id,
         messageId: messageRow.id,
