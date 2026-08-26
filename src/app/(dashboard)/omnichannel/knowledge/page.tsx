@@ -239,7 +239,7 @@ function KnowledgeTab() {
                 <th className="px-6 py-3 text-left w-12">
                   <input 
                     type="checkbox" 
-                    className="w-4 h-4 cursor-pointer accent-blue-600"
+                    className="w-4 h-4 cursor-pointer accent-blue-600 appearance-auto"
                     checked={documents.length > 0 && selectedDocumentIds.length === documents.length}
                     onChange={toggleSelectAll}
                   />
@@ -257,7 +257,7 @@ function KnowledgeTab() {
                   <td className="px-6 py-4">
                     <input 
                       type="checkbox" 
-                      className="w-4 h-4 cursor-pointer accent-blue-600"
+                      className="w-4 h-4 cursor-pointer accent-blue-600 appearance-auto"
                       checked={selectedDocumentIds.includes(doc.id)}
                       onChange={() => toggleSelectOne(doc.id)}
                     />
