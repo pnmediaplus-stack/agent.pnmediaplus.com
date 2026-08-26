@@ -242,7 +242,7 @@ function PersonaTab() {
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">Chọn kênh để cấu hình</label>
         <select 
-          className="w-full max-w-md border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full max-w-md border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={selectedChannel?.id || ""}
           onChange={(e) => {
             const ch = channels.find((c: any) => c.id === e.target.value);
@@ -262,7 +262,7 @@ function PersonaTab() {
         <textarea 
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          className="w-full h-96 border border-gray-300 rounded-lg p-4 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+          className="w-full h-96 border border-gray-300 rounded-lg p-4 text-sm text-gray-900 bg-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Nhập prompt tại đây..."
         />
       </div>
