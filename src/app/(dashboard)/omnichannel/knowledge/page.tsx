@@ -233,64 +233,66 @@ function KnowledgeTab() {
         ) : !Array.isArray(documents) || documents.length === 0 ? (
           <div className="p-10 text-center text-gray-500">Chưa có tài liệu nào.</div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left w-12">
-                  <input 
-                    type="checkbox" 
-                    className="w-4 h-4 cursor-pointer accent-blue-600 appearance-auto"
-                    checked={documents.length > 0 && selectedDocumentIds.length === documents.length}
-                    onChange={toggleSelectAll}
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên tài liệu</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phạm vi</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tải lên</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {documents.map((doc: any) => (
-                <tr key={doc.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left w-12">
                     <input 
                       type="checkbox" 
                       className="w-4 h-4 cursor-pointer accent-blue-600 appearance-auto"
-                      checked={selectedDocumentIds.includes(doc.id)}
-                      onChange={() => toggleSelectOne(doc.id)}
+                      checked={documents.length > 0 && selectedDocumentIds.length === documents.length}
+                      onChange={toggleSelectAll}
                     />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap"><div className="flex items-center"><FileText className="h-5 w-5 text-gray-400 mr-3" /><span className="text-sm font-medium text-gray-900">{doc.title}</span></div></td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center whitespace-nowrap">
-                      {doc.status === "ready" || !doc.status ? <><CheckCircle2 className="h-4 w-4 text-green-500 mr-1.5" /><span className="text-sm text-green-700">Đã xử lý xong</span></> : null}
-                      {doc.status === "processing" && <><Loader2 className="animate-spin h-4 w-4 text-blue-500 mr-1.5" /><span className="text-sm text-blue-700">Đang học (Chunking)</span></>}
-                      {doc.status === "pending" && <span className="text-sm text-gray-500 px-2 py-1 bg-gray-100 rounded-full">Chờ xử lý</span>}
-                      {doc.status === "failed" && <><XCircle className="h-4 w-4 text-red-500 mr-1.5" /><span className="text-sm text-red-700">Lỗi xử lý</span></>}
-                    </div>
-                    {doc.error_message && <p className="text-xs text-red-500 mt-2 break-words whitespace-normal max-w-md">{doc.error_message}</p>}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {doc.channel_id ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        Tài liệu riêng biệt
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        Tài liệu dùng chung
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(doc.created_at).toLocaleString("vi-VN")}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button onClick={() => handleDelete(doc.id)} className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-2 rounded-md transition-colors"><Trash2 className="h-4 w-4" /></button>
-                  </td>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên tài liệu</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phạm vi</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tải lên</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {documents.map((doc: any) => (
+                  <tr key={doc.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 cursor-pointer accent-blue-600 appearance-auto"
+                        checked={selectedDocumentIds.includes(doc.id)}
+                        onChange={() => toggleSelectOne(doc.id)}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap"><div className="flex items-center"><FileText className="h-5 w-5 text-gray-400 mr-3" /><span className="text-sm font-medium text-gray-900">{doc.title}</span></div></td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center whitespace-nowrap">
+                        {doc.status === "ready" || !doc.status ? <><CheckCircle2 className="h-4 w-4 text-green-500 mr-1.5" /><span className="text-sm text-green-700">Đã xử lý xong</span></> : null}
+                        {doc.status === "processing" && <><Loader2 className="animate-spin h-4 w-4 text-blue-500 mr-1.5" /><span className="text-sm text-blue-700">Đang học (Chunking)</span></>}
+                        {doc.status === "pending" && <span className="text-sm text-gray-500 px-2 py-1 bg-gray-100 rounded-full">Chờ xử lý</span>}
+                        {doc.status === "failed" && <><XCircle className="h-4 w-4 text-red-500 mr-1.5" /><span className="text-sm text-red-700">Lỗi xử lý</span></>}
+                      </div>
+                      {doc.error_message && <p className="text-xs text-red-500 mt-2 break-words whitespace-normal max-w-md">{doc.error_message}</p>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {doc.channel_id ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Tài liệu riêng biệt
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          Tài liệu dùng chung
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(doc.created_at).toLocaleString("vi-VN")}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button onClick={() => handleDelete(doc.id)} className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-2 rounded-md transition-colors"><Trash2 className="h-4 w-4" /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
