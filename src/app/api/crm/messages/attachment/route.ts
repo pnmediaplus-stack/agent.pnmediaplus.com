@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const guard = await requireCrmRouteContext(req, z.any());
+    const guard = await requireCrmRouteContext(req);
     if (!guard.ok) return guard.response;
     const { organizationId } = guard.context;
 

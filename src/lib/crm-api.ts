@@ -13,9 +13,9 @@ type CrmRouteContextResult<TPayload> =
   | { ok: true; context: CrmRouteContext<TPayload> }
   | { ok: false; response: NextResponse };
 
-export async function requireCrmRouteContext<TPayload>(
+export async function requireCrmRouteContext<TPayload = any>(
   req: Request,
-  schema: z.ZodType<TPayload>
+  schema?: z.ZodType<TPayload>
 ): Promise<CrmRouteContextResult<TPayload>> {
   const auth = await verifyUiAuth(req, schema);
   if (!auth.ok) return auth;
