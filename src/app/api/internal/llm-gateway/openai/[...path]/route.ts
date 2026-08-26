@@ -62,11 +62,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
     
     if (errMsg.includes('LLM_QUOTA_EXCEEDED')) {
       statusCode = 402;
-    } else if (errMsg.includes('LLM Provider API Error (400)')) {
+    } else if (errMsg.includes('API Error from') && errMsg.includes(': 400 -')) {
       statusCode = 400;
-    } else if (errMsg.includes('LLM Provider API Error (401)')) {
+    } else if (errMsg.includes('API Error from') && errMsg.includes(': 401 -')) {
       statusCode = 401;
-    } else if (errMsg.includes('LLM Provider API Error (429)')) {
+    } else if (errMsg.includes('API Error from') && errMsg.includes(': 429 -')) {
       statusCode = 429;
     } else if (errMsg.includes('VAULT_CREDENTIAL_NOT_READY') || errMsg.includes('CONFIG_MISSING') || errMsg.includes('UNABLE_TO_DETERMINE_ENDPOINT')) {
       statusCode = 422; // Unprocessable Entity (Configuration Error)
