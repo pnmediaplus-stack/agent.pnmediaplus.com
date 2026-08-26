@@ -31,10 +31,11 @@ async function patchMessageStatus(params: {
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get('Authorization') || '';
+    const internalSecretHeader = req.headers.get('x-internal-secret') || '';
     const bearerToken = authHeader.replace('Bearer ', '').trim();
     const expectedSecret = (process.env.CONTROL_PLANE_SECRET || '').trim();
 
-    if (!expectedSecret || bearerToken !== expectedSecret) {
+    if (!expectedSecret || (bearerToken !== expectedSecret && internalSecretHeader !== expectedSecret)) {
       return NextResponse.json({ error: 'Unauthorized: Invalid internal token' }, { status: 401 });
     }
 
