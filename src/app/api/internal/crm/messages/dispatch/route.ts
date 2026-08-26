@@ -181,7 +181,8 @@ export async function POST(req: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${expectedSecret}`
+        Authorization: `Bearer ${expectedSecret}`,
+        'x-broker-internal-secret': process.env.BROKER_INTERNAL_SECRET || expectedSecret
       },
       body: JSON.stringify({
         organization_id,
