@@ -221,6 +221,13 @@ export async function createTenantIntegration(
 
     if (facebookMetadata) {
       await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata, "healthy", new Date().toISOString());
+
+      await supabase.from("crm_channels").upsert({
+        organization_id: authContext.organizationId,
+        channel_type: "facebook_page",
+        channel_name: facebookMetadata.page_name,
+        channel_external_id: facebookMetadata.page_id,
+      }, { onConflict: "organization_id,channel_type,channel_external_id" });
     }
 
     return { ok: true, state: "ready", reason: "SUCCESS", data: { receipt: data } };
@@ -300,6 +307,13 @@ export async function rotateTenantIntegration(
 
     if (facebookMetadata) {
       await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata, "healthy", new Date().toISOString());
+
+      await supabase.from("crm_channels").upsert({
+        organization_id: authContext.organizationId,
+        channel_type: "facebook_page",
+        channel_name: facebookMetadata.page_name,
+        channel_external_id: facebookMetadata.page_id,
+      }, { onConflict: "organization_id,channel_type,channel_external_id" });
     }
 
     return { ok: true, state: "ready", reason: "SUCCESS", data: { receipt: data } };
