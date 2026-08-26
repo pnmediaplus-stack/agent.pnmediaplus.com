@@ -222,7 +222,13 @@ export async function createTenantIntegration(
     if (facebookMetadata) {
       await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata, "healthy", new Date().toISOString());
 
-      await (supabase.from("crm_channels").upsert as any)({
+      const { createClient } = require('@supabase/supabase-js');
+      const realSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '',
+        process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+      );
+
+      await realSupabase.from("crm_channels").upsert({
         organization_id: authContext.organizationId,
         channel_type: "facebook_page",
         channel_name: facebookMetadata.page_name,
@@ -308,7 +314,13 @@ export async function rotateTenantIntegration(
     if (facebookMetadata) {
       await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata, "healthy", new Date().toISOString());
 
-      await (supabase.from("crm_channels").upsert as any)({
+      const { createClient } = require('@supabase/supabase-js');
+      const realSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '',
+        process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+      );
+
+      await realSupabase.from("crm_channels").upsert({
         organization_id: authContext.organizationId,
         channel_type: "facebook_page",
         channel_name: facebookMetadata.page_name,
