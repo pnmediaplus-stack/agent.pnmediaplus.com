@@ -45,7 +45,7 @@ export async function PUT(request: Request) {
        throw new Error(`Cập nhật thất bại: ${text}`);
     }
 
-    const updatedRows = await readRestJson(res);
+    const updatedRows = (await readRestJson(res)) as any[];
     if (!updatedRows || updatedRows.length === 0) {
        return NextResponse.json({ error: "Không tìm thấy kênh hoặc không có quyền" }, { status: 404 });
     }
