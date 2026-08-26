@@ -227,7 +227,7 @@
       "parameters": {
         "tableName": "crm_knowledge_chunks",
         "options": {
-          "filter": "={\n  \"organization_id\": \"{{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}\",\n  \"channel_id\": \"{{ $('Webhook Trigger (From Next.js)').first().json.body.channel_id }}\"\n}"
+          "filter": "={{ JSON.stringify({ organization_id: $('Webhook Trigger (From Next.js)').first().json.body.organization_id, channel_id: $('Webhook Trigger (From Next.js)').first().json.body.channel_id ?? null }) }}"
         }
       },
       "id": "eadb5455-b972-43c9-b455-a761ce18faa9",
