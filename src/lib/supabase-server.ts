@@ -3,6 +3,7 @@ type SupabaseRpcParams = {
 };
 
 type SupabaseClient = {
+  storage: any;
   rpc: (functionName: string, params?: SupabaseRpcParams) => Promise<{ data: any; error: any }>;
   from: (tableName: string) => {
     select: (query: string) => any;
