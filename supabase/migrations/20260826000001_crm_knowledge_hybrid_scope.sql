@@ -20,7 +20,7 @@ CREATE OR REPLACE FUNCTION public.match_documents(
   similarity float
 )
 LANGUAGE plpgsql
-AS $ $
+AS $$
 #variable_conflict use_column
 DECLARE
   v_org_id text;
@@ -50,6 +50,6 @@ BEGIN
   ORDER BY crm_knowledge_chunks.embedding <=> query_embedding
   LIMIT match_count;
 END;
-$ $;
+$$;
 
 COMMIT;

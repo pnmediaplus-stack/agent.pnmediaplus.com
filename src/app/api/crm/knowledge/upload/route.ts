@@ -22,6 +22,8 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const title = formData.get('title') as string;
+    const channelIdStr = formData.get('channel_id') as string;
+    const channelId = (channelIdStr && channelIdStr !== 'null' && channelIdStr !== 'undefined' && channelIdStr.trim() !== '') ? channelIdStr : null;
 
     if (!file || !title) {
       return NextResponse.json({ error: 'Missing file or title' }, { status: 400 });
@@ -42,7 +44,7 @@ export async function POST(req: Request) {
 
     // 2. Upload File to Supabase Storage (crm_knowledge)
     const fileExt = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExt}`;
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const storagePath = `${organizationId}/${fileName}`;
     
     // Convert File to ArrayBuffer for fetch
