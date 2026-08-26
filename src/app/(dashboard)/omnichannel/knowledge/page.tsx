@@ -289,7 +289,7 @@ function CampaignsTab() {
         <MessageSquare className="h-8 w-8" />
       </div>
       <h2 className="text-xl font-semibold text-gray-900 mb-2">Chiến Dịch Chăm Sóc Chủ Động (Sắp ra mắt)</h2>
-      <p className="text-gray-500 max-w-md text-sm mb-6">Tính năng tự động lên kịch bản, nhắn tin chèo kéo khách hàng ngừng tương tác (Follow-up) đang được phát triển trong Phase 8.</p>
+      <p className="text-gray-500 max-w-md text-sm mb-6">Tính năng lên lịch tự động chăm sóc và theo sát khách hàng tiềm năng nhằm tối ưu tỷ lệ chuyển đổi đang được phát triển trong Phase 8.</p>
       <button className="bg-gray-100 text-gray-400 cursor-not-allowed px-4 py-2 rounded-lg text-sm font-medium">
         Đang xây dựng...
       </button>
