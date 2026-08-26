@@ -29,6 +29,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing file or title' }, { status: 400 });
     }
 
+    if (channelId) {
+      const channelCheckRes = await fetch(`${supabaseUrl}/rest/v1/crm_channels?id=eq.${channelId}&organization_id=eq.${organizationId}&select=id`, {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`
+        }
+      });
+      if (!channelCheckRes.ok) {
+        return NextResponse.json({ error: 'DB_ERROR', message: 'Failed to verify channel ownership' }, { status: 502 });
+      }
+      const channelData = await channelCheckRes.json();
+      if (!channelData || channelData.length === 0) {
+        return NextResponse.json({ error: 'FORBIDDEN', message: 'Channel does not belong to your organization' }, { status: 403 });
+      }
+    }
+
     const allowedMimeTypes = new Set([
       'application/pdf',
       'text/plain',
