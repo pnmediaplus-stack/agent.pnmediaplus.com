@@ -171,18 +171,22 @@ export async function POST(req: Request) {
         if (thread.status === "bot_handling") {
           const n8nWebhookUrl = process.env.N8N_CSKH_WEBHOOK_URL;
           if (n8nWebhookUrl) {
-            fetch(n8nWebhookUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                organization_id,
-                channel_id,
-                customer_id: customerId,
-                thread_id: thread.id,
-                message: event.message.text,
-                sender_id: senderId
-              })
-            }).catch(e => console.error("Error calling n8n:", e));
+            try {
+              await fetch(n8nWebhookUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  organization_id,
+                  channel_id,
+                  customer_id: customerId,
+                  thread_id: thread.id,
+                  message: event.message.text,
+                  sender_id: senderId
+                })
+              });
+            } catch (e) {
+              console.error("Error calling n8n:", e);
+            }
           }
         }
       }
