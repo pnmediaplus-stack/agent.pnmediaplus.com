@@ -43,7 +43,11 @@ export async function POST(req: Request) {
       return new Response("Not Found", { status: 404 });
     }
 
-    const supabase = createServiceRoleClient();
+    const { createClient } = require('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    );
 
     for (const entry of payload.entry) {
       const pageId = entry.id;
