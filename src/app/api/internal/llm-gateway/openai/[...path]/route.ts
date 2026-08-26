@@ -58,7 +58,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
     console.error('LLM Gateway Error:', error);
     return NextResponse.json(
       { error: { message: error.message, type: 'gateway_error' } }, 
-      { status: error.message.includes('LLM_QUOTA_EXCEEDED') ? 402 : 502 }
+      { status: error.message.includes('LLM_QUOTA_EXCEEDED') ? 402 : 400 }
     );
   }
 }
