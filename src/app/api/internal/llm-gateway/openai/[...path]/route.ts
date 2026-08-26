@@ -56,9 +56,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('LLM Gateway Error:', error);
+    
+    let statusCode = 502; // Default to Bad Gateway for upstream failures
+    const errMsg = error.message || '';
+    
+    if (errMsg.includes('LLM_QUOTA_EXCEEDED')) {
+      statusCode = 402;
+    } else if (errMsg.includes('LLM Provider API Error (400)')) {
+      statusCode = 400;
+    } else if (errMsg.includes('LLM Provider API Error (401)')) {
+      statusCode = 401;
+    } else if (errMsg.includes('LLM Provider API Error (429)')) {
+      statusCode = 429;
+    } else if (errMsg.includes('VAULT_CREDENTIAL_NOT_READY') || errMsg.includes('CONFIG_MISSING') || errMsg.includes('UNABLE_TO_DETERMINE_ENDPOINT')) {
+      statusCode = 422; // Unprocessable Entity (Configuration Error)
+    }
+
     return NextResponse.json(
-      { error: { message: error.message, type: 'gateway_error' } }, 
-      { status: error.message.includes('LLM_QUOTA_EXCEEDED') ? 402 : 400 }
+      { error: { message: errMsg, type: 'gateway_error' } }, 
+      { status: statusCode }
     );
   }
 }
