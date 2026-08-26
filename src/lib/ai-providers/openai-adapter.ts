@@ -39,6 +39,9 @@ export const openaiAdapter: AiProviderAdapter = {
       if (modelConfig.capability === 'image') {
         return `${baseUrl.replace(/\/$/, '')}/images/generations`;
       }
+      if (modelConfig.capability === 'embedding') {
+        return `${baseUrl.replace(/\/$/, '')}/embeddings`;
+      }
     }
 
     // Fail-closed instead of guessing dall-e or gpt-image
