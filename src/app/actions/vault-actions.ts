@@ -222,8 +222,7 @@ export async function createTenantIntegration(
     if (facebookMetadata) {
       await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata, "healthy", new Date().toISOString());
 
-      // @ts-ignore
-      await supabase.from("crm_channels").upsert({
+      await (supabase.from("crm_channels").upsert as any)({
         organization_id: authContext.organizationId,
         channel_type: "facebook_page",
         channel_name: facebookMetadata.page_name,
@@ -309,8 +308,7 @@ export async function rotateTenantIntegration(
     if (facebookMetadata) {
       await resetTenantIntegrationState(authContext.organizationId, integrationKey, facebookMetadata, "healthy", new Date().toISOString());
 
-      // @ts-ignore
-      await supabase.from("crm_channels").upsert({
+      await (supabase.from("crm_channels").upsert as any)({
         organization_id: authContext.organizationId,
         channel_type: "facebook_page",
         channel_name: facebookMetadata.page_name,
