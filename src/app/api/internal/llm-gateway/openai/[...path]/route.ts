@@ -57,7 +57,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ path: s
   } catch (error: any) {
     console.error('LLM Gateway Error:', error);
     
-    let statusCode = 502; // Default to Bad Gateway for upstream failures
+    let statusCode = 418; // Default to 418 (I'm a teapot) to bypass Nginx interception
     const errMsg = error.message || '';
     
     if (errMsg.includes('LLM_QUOTA_EXCEEDED')) {
