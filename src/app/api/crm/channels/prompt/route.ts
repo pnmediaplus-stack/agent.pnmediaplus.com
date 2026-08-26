@@ -34,7 +34,8 @@ export async function PUT(request: Request) {
         organization_id: `eq.${auth.context.organizationId}`
       },
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
       },
       body: JSON.stringify({ bot_system_prompt })
     });
@@ -44,7 +45,12 @@ export async function PUT(request: Request) {
        throw new Error(`Cập nhật thất bại: ${text}`);
     }
 
-    return NextResponse.json({ success: true });
+    const updatedRows = await readRestJson(res);
+    if (!updatedRows || updatedRows.length === 0) {
+       return NextResponse.json({ error: "Không tìm thấy kênh hoặc không có quyền" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, updated: updatedRows.length });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
