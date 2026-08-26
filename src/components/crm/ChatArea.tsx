@@ -77,26 +77,28 @@ export default function ChatArea() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !activeThreadId) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0 || !activeThreadId) return;
 
     if (fileInputRef.current) fileInputRef.current.value = '';
 
     setIsUploadingFile(true);
     setErrorMessage(null);
     try {
-      const formData = new FormData();
-      formData.append('threadId', activeThreadId);
-      formData.append('file', file);
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('threadId', activeThreadId);
+        formData.append('file', file);
 
-      const res = await fetch('/api/crm/messages/attachment', {
-        method: 'POST',
-        body: formData
-      });
+        const res = await fetch('/api/crm/messages/attachment', {
+          method: 'POST',
+          body: formData
+        });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Lỗi đính kèm file');
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || `Lỗi đính kèm file ${file.name}`);
+        }
       }
     } catch (err: any) {
       setErrorMessage(err.message);
@@ -248,6 +250,7 @@ export default function ChatArea() {
               ref={fileInputRef} 
               onChange={handleFileUpload} 
               accept="image/*,.pdf,.doc,.docx" 
+              multiple
             />
             <button 
               type="button"
