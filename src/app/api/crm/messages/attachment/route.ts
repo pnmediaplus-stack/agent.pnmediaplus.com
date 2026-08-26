@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { requireCrmRouteContext } from '@/lib/crm-api';
-import { createServiceRoleClient } from '@/lib/supabase-server';
+import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +18,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'MISSING_FIELDS' }, { status: 400 });
     }
 
-    const supabase = createServiceRoleClient();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    
     const fileExt = file.name.split('.').pop() || 'bin';
     const fileName = `${organizationId}/${threadId}/${Date.now()}.${fileExt}`;
 
