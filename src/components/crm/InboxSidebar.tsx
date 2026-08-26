@@ -66,8 +66,13 @@ export default function InboxSidebar() {
               }`}
             >
               <div className="flex justify-between items-center mb-1.5">
-                <span className={`font-semibold text-sm truncate pr-2 ${activeThreadId === thread.id ? 'text-blue-900' : 'text-gray-800'}`}>
+                <span className={`font-semibold text-sm truncate pr-2 flex items-center gap-2 ${
+                  (thread.unread_count || 0) > 0 ? 'font-bold text-gray-900' : (activeThreadId === thread.id ? 'text-blue-900' : 'text-gray-800')
+                }`}>
                   {thread.customer?.full_name || 'Khách hàng ẩn danh'}
+                  {(thread.unread_count || 0) > 0 && (
+                    <span className="flex h-2 w-2 rounded-full bg-red-500"></span>
+                  )}
                 </span>
                 <span className="text-[11px] font-medium text-gray-400 whitespace-nowrap">
                   {new Date(thread.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
