@@ -149,6 +149,21 @@ export async function POST(req: Request) {
     }
 
     const integrationKey = `facebook_page_${channelExternalId}`;
+
+    const vaultRefRes = await fetchSupabaseRest('rpc/phase075_get_tenant_vault_credential_ref', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        p_organization_id: organization_id,
+        p_integration_key: integrationKey
+      })
+    });
+    
+    let referenceToken = null;
+    if (vaultRefRes.ok) {
+      referenceToken = await vaultRefRes.json().catch(() => null);
+    }
+
     const cpUrl = (process.env.NEXTJS_CONTROL_PLANE_BASE_URL || '').replace(/\/$/, '');
     if (!cpUrl) {
       await patchMessageStatus({
@@ -170,7 +185,8 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         organization_id,
-        integration_key: integrationKey
+        integration_key: integrationKey,
+        reference_token: referenceToken
       })
     });
 
