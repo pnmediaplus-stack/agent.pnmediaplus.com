@@ -169,7 +169,7 @@ function KnowledgeTab() {
         <div className="w-full max-w-lg mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">Phạm vi tài liệu (Scope)</label>
           <select 
-            className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
+            className="w-full bg-white text-gray-900 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
             value={selectedChannelId || ""}
             onChange={(e) => setSelectedChannelId(e.target.value || null)}
           >
@@ -239,7 +239,7 @@ function KnowledgeTab() {
                 <th className="px-6 py-3 text-left w-12">
                   <input 
                     type="checkbox" 
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded bg-white border-gray-300 text-blue-600 focus:ring-blue-500"
                     checked={documents.length > 0 && selectedDocumentIds.length === documents.length}
                     onChange={toggleSelectAll}
                   />
@@ -257,7 +257,7 @@ function KnowledgeTab() {
                   <td className="px-6 py-4">
                     <input 
                       type="checkbox" 
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded bg-white border-gray-300 text-blue-600 focus:ring-blue-500"
                       checked={selectedDocumentIds.includes(doc.id)}
                       onChange={() => toggleSelectOne(doc.id)}
                     />
