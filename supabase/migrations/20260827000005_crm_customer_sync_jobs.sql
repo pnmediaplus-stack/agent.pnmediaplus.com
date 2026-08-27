@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS public.crm_customer_sync_jobs (
 CREATE INDEX IF NOT EXISTS idx_crm_customer_sync_jobs_pending 
 ON public.crm_customer_sync_jobs (organization_id, status, next_retry_at);
 
+ALTER TABLE public.crm_customer_sync_jobs ENABLE ROW LEVEL SECURITY;
+
 -- Add avatar_url to crm_customers if it doesn't exist
 ALTER TABLE public.crm_customers ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 

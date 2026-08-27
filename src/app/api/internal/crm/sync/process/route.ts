@@ -98,14 +98,14 @@ export async function POST(req: Request) {
         const accessToken = redeemJson?.data?.access_token;
         if (!accessToken) throw new Error('No access token in BYOK response');
 
-        const fbRes = await fetchWithRetry(`https://graph.facebook.com/v19.0/${job.external_user_id}?fields=name,profile_pic&access_token=${accessToken}`, {});
+        const fbRes = await fetchWithRetry(`https://graph.facebook.com/v19.0/${job.external_user_id}?fields=name,picture.type(large){url}&access_token=${accessToken}`, {});
         if (!fbRes.ok) throw new Error('Graph API error: ' + await fbRes.text());
         
         const fbData = await fbRes.json();
         
         if (fbData.name) {
           const patchBody: any = { full_name: fbData.name };
-          if (fbData.profile_pic) patchBody.avatar_url = fbData.profile_pic;
+          if (fbData.picture?.data?.url) patchBody.avatar_url = fbData.picture.data.url;
 
           const updateRes = await fetchSupabaseRest('crm_customers', {
             method: 'PATCH',
