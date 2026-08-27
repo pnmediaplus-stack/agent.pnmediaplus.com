@@ -381,21 +381,130 @@ function PersonaTab() {
     </div>
   );
 }
+  const handleDelete = async (id: string) => {
+    if (!confirm('Xóa chiến dịch này?')) return;
+    try {
+      await fetch(`/api/crm/campaigns?id=${id}`, { method: 'DELETE' });
+      setCampaigns(campaigns.filter(c => c.id !== id));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
-// ----------------------------------------------------
-// TAB 3: CAMPAIGNS (PHASE 8 PLACEHOLDER)
-// ----------------------------------------------------
-function CampaignsTab() {
+  const toggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch('/api/crm/campaigns', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, is_active: !currentStatus })
+      });
+      if (res.ok) {
+        setCampaigns(campaigns.map(c => c.id === id ? { ...c, is_active: !currentStatus } : c));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-10 flex flex-col items-center justify-center text-center">
-      <div className="bg-blue-50 text-blue-600 p-4 rounded-full mb-4">
-        <MessageSquare className="h-8 w-8" />
+    <div className="space-y-6">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Quản lý Chiến Dịch Chủ Động</h3>
+        <div className="max-w-xs mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Chọn kênh áp dụng</label>
+          <select 
+            className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            value={selectedChannel}
+            onChange={(e) => {
+              setSelectedChannel(e.target.value);
+              handleCancelEdit();
+            }}
+          >
+            <option value="">-- Chọn kênh --</option>
+            {channels?.map((ch: any) => (
+              <option key={ch.id} value={ch.id}>{ch.channel_name}</option>
+            ))}
+          </select>
+        </div>
+
+        {selectedChannel && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Form */}
+            <div className="lg:col-span-1 bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-4">{editingId ? 'Sửa chiến dịch' : 'Tạo chiến dịch mới'}</h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Tên chiến dịch</label>
+                  <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full text-sm border-gray-300 rounded-md" placeholder="VD: Hỏi thăm sau 24h" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Thời gian chờ (Giờ)</label>
+                  <div className="flex items-center space-x-2">
+                    <input type="range" min="1" max="168" value={hours} onChange={e => setHours(parseInt(e.target.value))} className="w-full accent-blue-600" />
+                    <span className="text-sm font-medium w-12 text-right">{hours}h</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1">Gửi tin nếu khách không chat sau {hours} giờ.</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">System Prompt</label>
+                  <textarea rows={4} value={prompt} onChange={e => setPrompt(e.target.value)} className="w-full text-sm border-gray-300 rounded-md" placeholder="Ép AI nói gì? VD: Bạn hãy tặng khách mã giảm giá 10%..." />
+                </div>
+                <div className="flex items-center">
+                  <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="w-4 h-4 cursor-pointer accent-blue-600 appearance-auto" />
+                  <label className="ml-2 text-sm text-gray-700">Kích hoạt ngay</label>
+                </div>
+                <div className="flex space-x-2 pt-2">
+                  <button onClick={handleSave} disabled={isSaving} className="flex-1 bg-blue-600 text-white py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                    {isSaving ? 'Đang lưu...' : 'Lưu chiến dịch'}
+                  </button>
+                  {editingId && (
+                    <button onClick={handleCancelEdit} className="px-3 bg-gray-200 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-300">
+                      Hủy
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="lg:col-span-2">
+              {isLoading ? (
+                <div className="flex justify-center p-10"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
+              ) : campaigns.length === 0 ? (
+                <div className="text-center p-10 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-gray-500 text-sm">
+                  Chưa có chiến dịch nào cho kênh này.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {campaigns.map(c => (
+                    <div key={c.id} className={`p-4 border rounded-lg flex items-start justify-between ${c.is_active ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'}`}>
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h5 className="font-medium text-gray-900">{c.name}</h5>
+                          {c.is_active ? (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">Đang chạy</span>
+                          ) : (
+                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">Tạm dừng</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-600 mb-2">Chờ: <span className="font-semibold">{c.condition_hours_inactive} giờ</span></p>
+                        <p className="text-xs text-gray-500 line-clamp-2 italic border-l-2 border-gray-300 pl-2">{c.system_prompt_override}</p>
+                      </div>
+                      <div className="flex flex-col space-y-2 ml-4">
+                        <button onClick={() => toggleActive(c.id, c.is_active)} className={`px-3 py-1 rounded text-xs font-medium border ${c.is_active ? 'border-orange-300 text-orange-600 hover:bg-orange-50' : 'border-green-300 text-green-600 hover:bg-green-50'}`}>
+                          {c.is_active ? 'Tạm dừng' : 'Kích hoạt'}
+                        </button>
+                        <button onClick={() => handleEdit(c)} className="px-3 py-1 rounded text-xs font-medium border border-blue-300 text-blue-600 hover:bg-blue-50">Sửa</button>
+                        <button onClick={() => handleDelete(c.id)} className="px-3 py-1 rounded text-xs font-medium border border-red-300 text-red-600 hover:bg-red-50">Xóa</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-      <h2 className="text-xl font-semibold text-gray-900 mb-2">Chiến Dịch Chăm Sóc Chủ Động (Sắp ra mắt)</h2>
-      <p className="text-gray-500 max-w-md text-sm mb-6">Tính năng lên lịch tự động chăm sóc và theo sát khách hàng tiềm năng nhằm tối ưu tỷ lệ chuyển đổi đang được phát triển trong Phase 8.</p>
-      <button className="bg-gray-100 text-gray-400 cursor-not-allowed px-4 py-2 rounded-lg text-sm font-medium">
-        Đang xây dựng...
-      </button>
     </div>
   );
 }
