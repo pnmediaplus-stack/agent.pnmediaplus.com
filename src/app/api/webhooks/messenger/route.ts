@@ -120,6 +120,54 @@ export async function POST(req: Request) {
           continue;
         }
 
+        // --- BACKGROUND TASK: FETCH REAL NAME FROM FACEBOOK GRAPH API ---
+        (async () => {
+          try {
+            // pageId is already available in the upper scope from entry.id
+            const integrationKey = `facebook_page_${pageId}`;
+            const vaultRefRes = await fetchSupabaseRest('rpc/phase075_get_tenant_vault_credential_ref', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ p_organization_id: organization_id, p_integration_key: integrationKey })
+            });
+            let referenceToken = null;
+            if (vaultRefRes.ok) referenceToken = await vaultRefRes.json().catch(() => null);
+            if (!referenceToken) return;
+
+            const cpUrl = (process.env.NEXTJS_CONTROL_PLANE_BASE_URL || '').replace(/\/$/, '');
+            if (!cpUrl) return;
+            const expectedSecret = process.env.CONTROL_PLANE_SECRET || '';
+
+            const redeemRes = await fetch(`${cpUrl}/api/byok/redeem`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${expectedSecret}`,
+                'x-broker-internal-secret': process.env.BROKER_INTERNAL_SECRET || expectedSecret
+              },
+              body: JSON.stringify({ organization_id, integration_key: integrationKey, reference_token: referenceToken })
+            });
+            if (!redeemRes.ok) return;
+            const redeemJson = await redeemRes.json().catch(() => null);
+            const accessToken = redeemJson?.data?.access_token;
+            if (!accessToken) return;
+
+            const fbRes = await fetch(`https://graph.facebook.com/v19.0/${senderId}?fields=name&access_token=${accessToken}`);
+            if (!fbRes.ok) return;
+            const fbData = await fbRes.json();
+            if (fbData.name) {
+              await fetchSupabaseRest('crm_customers', {
+                method: 'PATCH',
+                searchParams: { id: `eq.${customerId}` },
+                body: JSON.stringify({ full_name: fbData.name })
+              });
+            }
+          } catch (e) {
+            console.error("Background FB Name Sync Error:", e);
+          }
+        })();
+        // ----------------------------------------------------------------
+
         // 4. Upsert Thread
         // Let's find existing thread or create a new one
         let { data: thread } = await supabase
