@@ -49,3 +49,5 @@ FOR EACH ROW
 EXECUTE FUNCTION public.set_updated_at();
 
 COMMIT;
+GRANT ALL ON public.crm_campaign_rules TO postgres, anon, authenticated, service_role;
+GRANT ALL ON public.crm_campaign_logs TO postgres, anon, authenticated, service_role;
