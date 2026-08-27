@@ -237,7 +237,7 @@
       "parameters": {
         "tableName": "crm_knowledge_chunks",
         "options": {
-          "filter": "={{ JSON.stringify({ organization_id: $('Webhook Trigger (From Next.js)').first().json.body.organization_id, channel_id: $('Webhook Trigger (From Next.js)').first().json.body.channel_id ?? null }) }}"
+          "filter": "={{ JSON.stringify({ organization_id: Webhook Trigger (From Next.js).first().json.body.organization_id }) }}"
         }
       },
       "id": "1a6ab35f-ffd6-4c4c-ad66-3efc6c7b0975",
