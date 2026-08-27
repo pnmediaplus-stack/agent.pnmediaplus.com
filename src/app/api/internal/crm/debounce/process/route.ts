@@ -116,10 +116,24 @@ export async function POST(req: Request) {
         });
 
         processedCount++;
-      } catch (err) {
+      } catch (err: any) {
         console.error(`Error processing debounce job ${job.id}:`, err);
-        // Do not mark as processed, it will remain locked.
-        // In a full queue system, a reaper or unlocker could reset locked jobs.
+        // Fallback: Unlock job and backoff 60s for retry
+        try {
+          await fetchSupabaseRest('crm_thread_debounce_jobs', {
+            method: 'PATCH',
+            searchParams: { id: `eq.${job.id}` },
+            body: JSON.stringify({
+              status: 'pending',
+              debounce_until: new Date(Date.now() + 60000).toISOString(),
+              locked_at: null,
+              updated_at: new Date().toISOString()
+            })
+          });
+          console.log(`Unlocked and backed off job ${job.id} for 60s`);
+        } catch (unlockErr) {
+          console.error(`Failed to unlock job ${job.id}:`, unlockErr);
+        }
       }
     }
 
