@@ -506,10 +506,10 @@ function CampaignsTab() {
     <div className="space-y-6">
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Quản lý Chiến Dịch Chủ Động</h3>
-        <div className="max-w-xs mb-6">
+        <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">Chọn kênh áp dụng</label>
           <select 
-            className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="w-full bg-white text-gray-900 border border-gray-300 px-3 py-2 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             value={selectedChannel}
             onChange={(e) => {
               setSelectedChannel(e.target.value);
@@ -531,22 +531,22 @@ function CampaignsTab() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Tên chiến dịch</label>
-                  <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full text-sm border-gray-300 rounded-md" placeholder="VD: Hỏi thăm sau 24h" />
+                  <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-white text-gray-900 px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500" placeholder="VD: Hỏi thăm sau 24h" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Thời gian chờ (Giờ)</label>
                   <div className="flex items-center space-x-2">
-                    <input type="range" min="1" max="168" value={hours} onChange={e => setHours(parseInt(e.target.value))} className="w-full accent-blue-600" />
-                    <span className="text-sm font-medium w-12 text-right">{hours}h</span>
+                    <input type="range" min="1" max="168" value={hours} onChange={e => setHours(parseInt(e.target.value))} className="w-full accent-blue-600 bg-white" />
+                    <span className="text-sm font-medium text-gray-900 w-12 text-right">{hours}h</span>
                   </div>
                   <p className="text-[10px] text-gray-500 mt-1">Gửi tin nếu khách không chat sau {hours} giờ.</p>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">System Prompt</label>
-                  <textarea rows={4} value={prompt} onChange={e => setPrompt(e.target.value)} className="w-full text-sm border-gray-300 rounded-md" placeholder="Ép AI nói gì? VD: Bạn hãy tặng khách mã giảm giá 10%..." />
+                  <textarea rows={4} value={prompt} onChange={e => setPrompt(e.target.value)} className="w-full bg-white text-gray-900 px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500" placeholder="Ép AI nói gì? VD: Bạn hãy tặng khách mã giảm giá 10%..." />
                 </div>
                 <div className="flex items-center">
-                  <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="w-4 h-4 cursor-pointer accent-blue-600 appearance-auto" />
+                  <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="w-4 h-4 cursor-pointer accent-blue-600 appearance-auto bg-white border-gray-300 rounded" />
                   <label className="ml-2 text-sm text-gray-700">Kích hoạt ngay</label>
                 </div>
                 <div className="flex space-x-2 pt-2">
