@@ -1,4 +1,5 @@
 import "server-only";
+import { requireAuthContext } from "@/lib/portal-auth";
 
 import type {
   Phase2AgentTask,
@@ -113,10 +114,9 @@ type PerformanceRecordRow = {
   updated_at: string;
 };
 
-function getSupabaseConfig(): SupabaseConfig | null {
+function getSupabaseConfig(organizationId: string): SupabaseConfig | null {
   const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL)?.trim();
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  const organizationId = process.env.ORGANIZATION_ID?.trim();
 
   if (!url || !serviceKey || !organizationId) return null;
   return { url, serviceKey, organizationId };
@@ -132,8 +132,8 @@ function toNumeric(value: unknown) {
   return null;
 }
 
-async function fetchPhase2Table<T>(table: string, select: string, orderBy: string, extraFilters?: Record<string, string>): Promise<SupabaseTableResult<T>> {
-  const config = getSupabaseConfig();
+async function fetchPhase2Table<T>(organizationId: string, table: string, select: string, orderBy: string, extraFilters?: Record<string, string>): Promise<SupabaseTableResult<T>> {
+  const config = getSupabaseConfig(organizationId);
 
   if (!config) {
     return { data: [], error: "SUPABASE_ENV_MISSING" };
@@ -208,9 +208,23 @@ type PublishRecordRow = {
 export async function loadPhase2DashboardData(page = 1, limit = 20): Promise<Phase2DashboardLoadResult> {
   const offset = (page - 1) * limit;
 
+  let authContext;
+  try {
+    authContext = await requireAuthContext();
+  } catch (e: any) {
+    return {
+      state: "blocked",
+      reason: e.message || "UNAUTHORIZED",
+      data: { contentItems: [], agentTasks: [], assets: [], qaReviews: [], performanceRecords: [], lessonsLearned: [], publishRecords: [], hasNextPage: false, page }
+    };
+  }
+
+  const orgId = authContext.organizationId;
+
   // 1. Fetch paginated content items first (fetch limit + 1 to check if there is a next page without a count query)
   const fetchLimit = limit + 1;
   const contentItemsResult = await fetchPhase2Table<ContentItemRow>(
+    orgId,
     "phase2_content_items",
     "id,content_key,owner_ref,title,brief,state,scheduled_at,published_at,created_at,updated_at",
     "created_at.desc",
@@ -242,36 +256,42 @@ export async function loadPhase2DashboardData(page = 1, limit = 20): Promise<Pha
     publishRecordsResult
   ] = await Promise.all([
     contentItemIds.length > 0 ? fetchPhase2Table<AgentTaskRow>(
+        orgId,
       "phase2_agent_tasks",
       "id,content_item_id,task_key,owner_ref,task_kind,state,title,instructions,result_ref,started_at,completed_at,created_at,updated_at",
       "created_at.asc",
       { content_item_id: inFilter }
     ) : Promise.resolve({ data: [], error: undefined }),
     contentItemIds.length > 0 ? fetchPhase2Table<AssetRow>(
+        orgId,
       "phase2_assets",
       "id,content_item_id,agent_task_id,asset_key,owner_ref,asset_type,asset_uri,mime_type,content_hash,evidence_ref,created_at,updated_at",
       "created_at.asc",
       { content_item_id: inFilter }
     ) : Promise.resolve({ data: [], error: undefined }),
     contentItemIds.length > 0 ? fetchPhase2Table<QaReviewRow>(
+        orgId,
       "phase2_qa_reviews",
       "id,content_item_id,agent_task_id,reviewer_ref,verdict,average_score,overclaim_risk,missing_asset,evidence_ref,notes,reviewed_at,created_at,updated_at",
       "reviewed_at.asc",
       { content_item_id: inFilter }
     ) : Promise.resolve({ data: [], error: undefined }),
     contentItemIds.length > 0 ? fetchPhase2Table<PerformanceRecordRow>(
+        orgId,
       "phase2_performance_records",
       "id,content_item_id,asset_id,owner_ref,impressions,reach,views,likes,comments,shares,saves,clicks,CTR,watch_time,retention_rate,completion_rate,follower_growth,performance_score,source_ref,captured_at,notes,created_at,updated_at",
       "captured_at.asc",
       { content_item_id: inFilter }
     ) : Promise.resolve({ data: [], error: undefined }),
     fetchPhase2Table<LessonLearnedRow>(
+        orgId,
       "phase2_lessons_learned",
       "id,contentItemId,lessonText,metricHighlight,createdAt",
       "createdAt.desc",
       { limit: "10" } // Only show top 10 lessons overall on dashboard
     ),
     contentItemIds.length > 0 ? fetchPhase2Table<PublishRecordRow>(
+        orgId,
       "phase2_publish_records",
       "id,content_item_id,asset_id,channel,external_id,external_url,status,published_at,error_message,created_at,updated_at",
       "created_at.asc",
