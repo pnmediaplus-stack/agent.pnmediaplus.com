@@ -3,6 +3,7 @@ import { create } from 'zustand';
 export type CrmCustomer = {
   id: string;
   full_name: string;
+  avatar_url?: string | null;
   phone_number: string | null;
   address: string | null;
   email: string | null;
@@ -122,3 +123,4 @@ export const useCrmStore = create<CrmState>((set) => ({
     };
   })
 }));
+
