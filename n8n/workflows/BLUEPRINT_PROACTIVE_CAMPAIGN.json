@@ -21,7 +21,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=\nSELECT * FROM public.crm_campaign_rules \nWHERE is_active = true \nAND organization_id = '{{ $env.ORGANIZATION_ID }}';"
+        "query": "=\nSELECT * FROM public.crm_campaign_rules \nWHERE is_active = true;"
       },
       "id": "c62f23ea-8b1e-450f-a496-e17f0a911e3b",
       "name": "Get Active Campaigns",
