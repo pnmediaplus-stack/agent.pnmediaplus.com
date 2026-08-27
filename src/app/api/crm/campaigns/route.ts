@@ -5,7 +5,7 @@ import { readPortalAccessToken, loadPortalOrganizationContext } from '@/lib/port
 export async function GET(request: Request) {
   try {
     const auth = await verifyUiAuth(request);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!auth.ok) return auth.response;
 
     const accessToken = await readPortalAccessToken(request);
     const orgCtx = await loadPortalOrganizationContext(accessToken!);
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const auth = await verifyUiAuth(request);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!auth.ok) return auth.response;
 
     const accessToken = await readPortalAccessToken(request);
     const orgCtx = await loadPortalOrganizationContext(accessToken!);
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const auth = await verifyUiAuth(request);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!auth.ok) return auth.response;
 
     const accessToken = await readPortalAccessToken(request);
     const orgCtx = await loadPortalOrganizationContext(accessToken!);
@@ -160,7 +160,7 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
     try {
       const auth = await verifyUiAuth(request);
-      if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      if (!auth.ok) return auth.response;
   
       const accessToken = await readPortalAccessToken(request);
       const orgCtx = await loadPortalOrganizationContext(accessToken!);
