@@ -14,9 +14,13 @@ export default function CustomerProfile() {
     <div className="flex flex-col h-full bg-white border-l border-gray-200">
       {/* Header */}
       <div className="p-4 border-b border-gray-100 flex items-center justify-center flex-col">
-        <div className="w-16 h-16 bg-gradient-to-tr from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-xl font-bold mb-2 shadow-sm">
-          {customer.full_name?.charAt(0) || '?'}
-        </div>
+        {customer.avatar_url ? (
+          <img src={customer.avatar_url} alt={customer.full_name || 'Avatar'} className="w-16 h-16 rounded-full object-cover mb-2 shadow-sm border border-gray-200" />
+        ) : (
+          <div className="w-16 h-16 bg-gradient-to-tr from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-xl font-bold mb-2 shadow-sm">
+            {customer.full_name?.charAt(0) || '?'}
+          </div>
+        )}
         <h3 className="font-semibold text-gray-800">{customer.full_name}</h3>
         <p className="text-xs text-gray-500">{activeThread?.channel?.channel_name || 'Khách vãng lai'}</p>
       </div>
@@ -65,3 +69,4 @@ export default function CustomerProfile() {
     </div>
   );
 }
+

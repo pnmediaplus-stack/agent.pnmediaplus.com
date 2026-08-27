@@ -69,6 +69,13 @@ export default function InboxSidebar() {
                 <span className={`font-semibold text-sm truncate pr-2 flex items-center gap-2 ${
                   (thread.unread_count || 0) > 0 ? 'font-bold text-gray-900' : (activeThreadId === thread.id ? 'text-blue-900' : 'text-gray-800')
                 }`}>
+                  {thread.customer?.avatar_url ? (
+                    <img src={thread.customer.avatar_url} alt="Avatar" className="w-5 h-5 rounded-full object-cover border border-gray-200" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-[10px] font-bold">
+                      {thread.customer?.full_name?.charAt(0) || '?'}
+                    </div>
+                  )}
                   {thread.customer?.full_name || 'Khách hàng ẩn danh'}
                   {(thread.unread_count || 0) > 0 && (
                     <span className="flex h-2 w-2 rounded-full bg-red-500"></span>
@@ -113,3 +120,4 @@ export default function InboxSidebar() {
     </div>
   );
 }
+
