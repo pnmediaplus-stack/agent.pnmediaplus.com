@@ -7,9 +7,10 @@ export async function GET(request: Request) {
     const auth = await verifyUiAuth(request);
     if (!auth.ok) return auth.response;
 
-    const accessToken = await readPortalAccessToken(request);
-    const orgCtx = await loadPortalOrganizationContext(accessToken!);
-    if (!orgCtx) return NextResponse.json({ error: 'Organization context not found' }, { status: 403 });
+    const accessToken = readPortalAccessToken(request.headers);
+    const orgContext = await loadPortalOrganizationContext(accessToken || '', auth.user.id);
+    if (orgContext.state !== 'ready') return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    const orgCtx = { organization_id: orgContext.active_membership.organization_id };
 
     const { searchParams } = new URL(request.url);
     const channelId = searchParams.get('channel_id');
@@ -47,9 +48,10 @@ export async function POST(request: Request) {
     const auth = await verifyUiAuth(request);
     if (!auth.ok) return auth.response;
 
-    const accessToken = await readPortalAccessToken(request);
-    const orgCtx = await loadPortalOrganizationContext(accessToken!);
-    if (!orgCtx) return NextResponse.json({ error: 'Organization context not found' }, { status: 403 });
+    const accessToken = readPortalAccessToken(request.headers);
+    const orgContext = await loadPortalOrganizationContext(accessToken || '', auth.user.id);
+    if (orgContext.state !== 'ready') return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    const orgCtx = { organization_id: orgContext.active_membership.organization_id };
 
     const body = await request.json();
     const { channel_id, name, is_active, condition_hours_inactive, system_prompt_override } = body;
@@ -109,9 +111,10 @@ export async function PUT(request: Request) {
     const auth = await verifyUiAuth(request);
     if (!auth.ok) return auth.response;
 
-    const accessToken = await readPortalAccessToken(request);
-    const orgCtx = await loadPortalOrganizationContext(accessToken!);
-    if (!orgCtx) return NextResponse.json({ error: 'Organization context not found' }, { status: 403 });
+    const accessToken = readPortalAccessToken(request.headers);
+    const orgContext = await loadPortalOrganizationContext(accessToken || '', auth.user.id);
+    if (orgContext.state !== 'ready') return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    const orgCtx = { organization_id: orgContext.active_membership.organization_id };
 
     const body = await request.json();
     const { id, is_active, condition_hours_inactive, name, system_prompt_override } = body;
@@ -162,9 +165,10 @@ export async function DELETE(request: Request) {
       const auth = await verifyUiAuth(request);
       if (!auth.ok) return auth.response;
   
-      const accessToken = await readPortalAccessToken(request);
-      const orgCtx = await loadPortalOrganizationContext(accessToken!);
-      if (!orgCtx) return NextResponse.json({ error: 'Organization context not found' }, { status: 403 });
+      const accessToken = readPortalAccessToken(request.headers);
+      const orgContext = await loadPortalOrganizationContext(accessToken || '', auth.user.id);
+      if (orgContext.state !== 'ready') return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+      const orgCtx = { organization_id: orgContext.active_membership.organization_id };
   
       const { searchParams } = new URL(request.url);
       const id = searchParams.get('id');
