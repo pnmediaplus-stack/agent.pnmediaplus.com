@@ -259,7 +259,8 @@
       "parameters": {
         "options": {
           "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}/v1"
-        }
+        },
+        "model": "text-embedding-3-small"
       },
       "id": "1aa06d2d-15b2-4657-8288-8ce7e3c358d2",
       "name": "OpenAI Embeddings",
