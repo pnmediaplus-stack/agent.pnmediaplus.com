@@ -15,7 +15,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 1. Claim pending jobs
+    await fetchSupabaseRest('rpc/crm_reap_dead_debounce_jobs', { method: 'POST' }).catch(e => console.error('Reaper failed', e));
+
     const claimRes = await fetchSupabaseRest('rpc/crm_claim_debounce_jobs', {
       method: 'POST',
       body: JSON.stringify({ p_limit: 50 })
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
 
     const jobs = await claimRes.json();
     if (!jobs || jobs.length === 0) {
-      return NextResponse.json({ success: true, processed: 0 });
+      return NextResponse.json({ success: true, processed: 0, retried: 0, failed: 0 });
     }
 
     const n8nWebhookUrl = process.env.N8N_CSKH_WEBHOOK_URL;
@@ -38,11 +39,11 @@ export async function POST(req: Request) {
     }
 
     let processedCount = 0;
+    let retriedCount = 0;
+    let failedCount = 0;
 
-    // 2. Process each job
     for (const job of jobs) {
       try {
-        // Fetch the messages that correspond to this job
         const messagesRes = await fetchSupabaseRest('crm_messages', {
           searchParams: {
             thread_id: `eq.${job.thread_id}`,
@@ -58,17 +59,12 @@ export async function POST(req: Request) {
         }
 
         const rawMessages = await messagesRes.json();
-        // Reverse to chronological order (oldest first)
         rawMessages.reverse();
-
         const combinedMessage = rawMessages.map((m: any) => m.content).join('\n');
         const sourceMessageIds = rawMessages.map((m: any) => m.id);
 
         const threadRes = await fetchSupabaseRest('crm_threads', {
-          searchParams: {
-            id: `eq.${job.thread_id}`,
-            select: 'customer_id'
-          }
+          searchParams: { id: `eq.${job.thread_id}`, select: 'customer_id' }
         });
         const threadData = await threadRes.json();
         const customer_id = threadData[0]?.customer_id;
@@ -78,16 +74,18 @@ export async function POST(req: Request) {
           channel_id: job.channel_id,
           customer_id,
           thread_id: job.thread_id,
-          message: combinedMessage, // The grouped messages separated by newline
-          sender_id: 'debounced_customer', // Fallback
+          message: combinedMessage,
+          sender_id: 'debounced_customer',
           source_message_ids: sourceMessageIds,
           is_debounced: true,
           message_count: job.message_count
         };
 
-        // 3. Trigger N8N (with strict 10s timeout to prevent hanging)
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        let n8nStatus = 0;
+        let n8nErrorMsg = '';
 
         try {
           const n8nRes = await fetch(n8nWebhookUrl, {
@@ -97,47 +95,111 @@ export async function POST(req: Request) {
             signal: controller.signal
           });
           
+          n8nStatus = n8nRes.status;
           if (!n8nRes.ok) {
-            throw new Error(`N8N returned ${n8nRes.status}: ${await n8nRes.text()}`);
+            n8nErrorMsg = `N8N returned ${n8nRes.status}: ${await n8nRes.text()}`;
           }
+        } catch (fetchErr: any) {
+          n8nErrorMsg = fetchErr.message || 'Network/Timeout Error';
         } finally {
           clearTimeout(timeoutId);
         }
 
-        // 4. Mark job as processed ONLY IF fetch succeeds
-        await fetchSupabaseRest('crm_thread_debounce_jobs', {
-          method: 'PATCH',
-          searchParams: { id: `eq.${job.id}` },
-          body: JSON.stringify({
-            status: 'processed',
-            processed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-        });
+        const currentAttempt = job.attempt_count || 0;
 
-        processedCount++;
-      } catch (err: any) {
-        console.error(`Error processing debounce job ${job.id}:`, err);
-        // Fallback: Unlock job and backoff 60s for retry
-        try {
+        if (n8nStatus >= 200 && n8nStatus < 300) {
+          // Success
           await fetchSupabaseRest('crm_thread_debounce_jobs', {
             method: 'PATCH',
-            searchParams: { id: `eq.${job.id}` },
+            searchParams: { id: `eq.${job.id}`, lock_token: `eq.${job.lock_token}` },
             body: JSON.stringify({
-              status: 'pending',
-              debounce_until: new Date(Date.now() + 60000).toISOString(),
+              status: 'processed',
+              processed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              last_error: null,
               locked_at: null,
-              updated_at: new Date().toISOString()
+              lock_expires_at: null,
+              lock_token: null
             })
           });
-          console.log(`Unlocked and backed off job ${job.id} for 60s`);
-        } catch (unlockErr) {
-          console.error(`Failed to unlock job ${job.id}:`, unlockErr);
+          processedCount++;
+        } else if ((n8nStatus >= 400 && n8nStatus < 500)) {
+          // 4xx Error -> Fail immediately
+          await fetchSupabaseRest('rpc/crm_fail_debounce_job', {
+            method: 'POST',
+            body: JSON.stringify({
+               p_job_id: job.id,
+               p_lock_token: job.lock_token,
+               p_error: n8nErrorMsg,
+               p_next_retry_at: new Date().toISOString(),
+               p_is_final_fail: true
+            })
+          });
+          failedCount++;
+        } else {
+          // 5xx or Network/Timeout Error -> Retry
+          const maxAttempts = 3;
+          if (currentAttempt >= maxAttempts) {
+            await fetchSupabaseRest('rpc/crm_fail_debounce_job', {
+              method: 'POST',
+              body: JSON.stringify({
+                 p_job_id: job.id,
+                 p_lock_token: job.lock_token,
+                 p_error: `Max attempts reached. Last error: ${n8nErrorMsg}`,
+                 p_next_retry_at: new Date().toISOString(),
+                 p_is_final_fail: true
+              })
+            });
+            failedCount++;
+          } else {
+            const backoffMinutes = currentAttempt === 0 ? 0.5 : (currentAttempt === 1 ? 2 : 10);
+            const nextRetry = new Date(Date.now() + backoffMinutes * 60000);
+            
+            await fetchSupabaseRest('rpc/crm_fail_debounce_job', {
+              method: 'POST',
+              body: JSON.stringify({
+                 p_job_id: job.id,
+                 p_lock_token: job.lock_token,
+                 p_error: n8nErrorMsg,
+                 p_next_retry_at: nextRetry.toISOString(),
+                 p_is_final_fail: false
+              })
+            });
+            retriedCount++;
+          }
+        }
+      } catch (err: any) {
+        console.error(`Error processing debounce job ${job.id}:`, err);
+        const currentAttempt = job.attempt_count || 0;
+        if (currentAttempt < 3) {
+            await fetchSupabaseRest('rpc/crm_fail_debounce_job', {
+              method: 'POST',
+              body: JSON.stringify({
+                 p_job_id: job.id,
+                 p_lock_token: job.lock_token,
+                 p_error: `Worker exception: ${err.message}`,
+                 p_next_retry_at: new Date(Date.now() + 60000).toISOString(),
+                 p_is_final_fail: false
+              })
+            }).catch(e => console.error("Failed to unlock after exception", e));
+            retriedCount++;
+        } else {
+            await fetchSupabaseRest('rpc/crm_fail_debounce_job', {
+              method: 'POST',
+              body: JSON.stringify({
+                 p_job_id: job.id,
+                 p_lock_token: job.lock_token,
+                 p_error: `Worker exception (max retries): ${err.message}`,
+                 p_next_retry_at: new Date().toISOString(),
+                 p_is_final_fail: true
+              })
+            }).catch(e => console.error("Failed to fail after exception", e));
+            failedCount++;
         }
       }
     }
 
-    return NextResponse.json({ success: true, processed: processedCount });
+    return NextResponse.json({ success: true, processed: processedCount, retried: retriedCount, failed: failedCount });
   } catch (err: any) {
     console.error('Debounce process error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
