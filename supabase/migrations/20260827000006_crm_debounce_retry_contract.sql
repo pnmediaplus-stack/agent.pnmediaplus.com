@@ -27,6 +27,7 @@ CREATE INDEX idx_crm_thread_debounce_jobs_poll
 ON public.crm_thread_debounce_jobs (status, next_retry_at);
 
 -- 4. Update crm_upsert_debounce_job RPC
+DROP FUNCTION IF EXISTS public.crm_upsert_debounce_job(UUID, UUID, UUID, UUID, INT);
 CREATE OR REPLACE FUNCTION public.crm_upsert_debounce_job(
     p_organization_id UUID,
     p_channel_id UUID,
