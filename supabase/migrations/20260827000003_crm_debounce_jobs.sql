@@ -26,7 +26,7 @@ ON public.crm_thread_debounce_jobs (status, debounce_until);
 -- Partial unique index to guarantee only one active job per thread
 CREATE UNIQUE INDEX IF NOT EXISTS idx_crm_thread_debounce_jobs_active_unique
 ON public.crm_thread_debounce_jobs (organization_id, thread_id)
-WHERE status IN ('pending', 'locked');
+WHERE status = 'pending';
 
 -- RLS
 ALTER TABLE public.crm_thread_debounce_jobs ENABLE ROW LEVEL SECURITY;
@@ -34,7 +34,7 @@ ALTER TABLE public.crm_thread_debounce_jobs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable read for tenant users" ON public.crm_thread_debounce_jobs
     FOR SELECT USING (
         organization_id IN (
-            SELECT tenant_id FROM public.organization_members WHERE user_id = auth.uid()
+            SELECT organization_id FROM public.portal_organization_memberships WHERE user_id = auth.uid()
         )
     );
 
