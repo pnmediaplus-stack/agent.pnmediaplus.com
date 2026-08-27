@@ -157,7 +157,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=\nINSERT INTO public.crm_campaign_logs (organization_id, campaign_id, thread_id, status)\nVALUES ('{{ $('Format Campaign').item.json.org_id }}', '{{ $('Format Campaign').item.json.campaign_id }}', '{{ $('Loop Through Threads').item.json.thread_id }}', 'sent');"
+        "query": "=\nINSERT INTO public.crm_campaign_logs (organization_id, campaign_id, thread_id, status)\nVALUES ('{{ $('Format Campaign').item.json.org_id }}', '{{ $('Format Campaign').item.json.campaign_id }}', '{{ $('Loop Through Threads').item.json.thread_id }}', 'sent')\nON CONFLICT (campaign_id, thread_id) DO NOTHING;"
       },
       "id": "594b841a-8b1e-450f-a496-e17f0a911e3b",
       "name": "Log Campaign Sent",
