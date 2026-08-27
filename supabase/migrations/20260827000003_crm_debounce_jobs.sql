@@ -5,7 +5,7 @@ ADD COLUMN IF NOT EXISTS message_debounce_seconds INT NOT NULL DEFAULT 4;
 -- 2. Create debounce jobs table
 CREATE TABLE IF NOT EXISTS public.crm_thread_debounce_jobs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    organization_id UUID NOT NULL REFERENCES portal_auth.organizations(id) ON DELETE CASCADE,
     channel_id UUID NOT NULL REFERENCES public.crm_channels(id) ON DELETE CASCADE,
     thread_id UUID NOT NULL REFERENCES public.crm_threads(id) ON DELETE CASCADE,
     latest_message_id UUID NOT NULL REFERENCES public.crm_messages(id) ON DELETE CASCADE,
