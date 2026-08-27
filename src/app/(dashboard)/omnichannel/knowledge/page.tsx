@@ -463,18 +463,25 @@ function CampaignsTab() {
         body: JSON.stringify(payload)
       });
       if (res.ok) {
-        // Refresh
-        const newData = await fetch(`/api/crm/campaigns?channel_id=${selectedChannel}`).then(r => r.json());
+        const saved = await res.json();
+        let newData = [...campaigns];
+        if (editingId) {
+          newData = newData.map(c => c.id === editingId ? saved : c);
+        } else {
+          newData = [saved, ...newData];
+        }
         setCampaigns(newData);
         handleCancelEdit();
       } else {
-        alert('Lỗi lưu chiến dịch');
+        const errData = await res.json().catch(() => null);
+        alert(`Lỗi lưu chiến dịch: ${errData?.error || res.statusText} - ${errData?.details || ''}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('Lỗi mạng');
+      alert(`Lỗi: ${error.message}`);
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const handleDelete = async (id: string) => {

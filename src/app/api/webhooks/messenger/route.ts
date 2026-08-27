@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       // Find channel and organization
       const { data: channelData } = await supabase
         .from("crm_channels")
-        .select("id, organization_id")
+        .select("id, organization_id, message_debounce_seconds")
         .eq("channel_external_id", pageId)
         .eq("channel_type", "facebook_page")
         .single();
@@ -159,34 +159,38 @@ export async function POST(req: Request) {
         if (!thread) continue;
 
         // 5. Insert Message
-        await supabase.from("crm_messages").insert({
-          organization_id,
-          thread_id: thread.id,
-          sender_type: "customer",
-          content: event.message.text || "",
-          delivery_status: "delivered", // incoming message is always delivered
-        });
+        const { data: messageRow, error: messageError } = await supabase
+          .from("crm_messages")
+          .insert({
+            organization_id,
+            thread_id: thread.id,
+            sender_type: "customer",
+            content: event.message.text || "",
+            delivery_status: "delivered", // incoming message is always delivered
+          })
+          .select("id")
+          .single();
 
-        // 6. Trigger n8n Bot if handling
+        if (messageError || !messageRow) {
+          console.error("Error inserting message:", messageError);
+          continue;
+        }
+
+        // 6. Trigger Debounce Job if handling
         if (thread.status === "bot_handling") {
-          const n8nWebhookUrl = process.env.N8N_CSKH_WEBHOOK_URL;
-          if (n8nWebhookUrl) {
-            try {
-              await fetch(n8nWebhookUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  organization_id,
-                  channel_id,
-                  customer_id: customerId,
-                  thread_id: thread.id,
-                  message: event.message.text,
-                  sender_id: senderId
-                })
-              });
-            } catch (e) {
-              console.error("Error calling n8n:", e);
+          const debounceSeconds = channelData.message_debounce_seconds || 4;
+          const { error: debounceError } = await supabase.rpc(
+            "crm_upsert_debounce_job",
+            {
+              p_organization_id: organization_id,
+              p_channel_id: channel_id,
+              p_thread_id: thread.id,
+              p_message_id: messageRow.id,
+              p_debounce_seconds: debounceSeconds
             }
+          );
+          if (debounceError) {
+            console.error("Error upserting debounce job:", debounceError);
           }
         }
       }

@@ -1,0 +1,68 @@
+{
+  "name": "Debounce Worker (1:1 Chat)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 2
+            }
+          ]
+        }
+      },
+      "id": "e6f491c3-63c3-4c9f-b989-bb0d4b998ec4",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_BASE_URL || 'https://agent.pnmediaplus.com' }}/api/internal/crm/debounce/process",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-internal-secret",
+              "value": "={{$env.CONTROL_PLANE_SECRET}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0d20d43a-7a5d-4f12-a8c6-7fec2c1bb82f",
+      "name": "Process Debounce Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1020, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "x9KKPJQks3nNwOUP",
+          "name": "CONTROL_PLANE_SECRET"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Process Debounce Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

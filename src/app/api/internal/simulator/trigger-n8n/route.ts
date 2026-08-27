@@ -62,8 +62,9 @@ export async function POST(req: Request) {
     });
 
     // 5. Insert customer message into DB so it shows up in UI immediately
-    await fetchSupabaseRest('crm_messages', {
+    const insertMsgRes = await fetchSupabaseRest('crm_messages', {
       method: 'POST',
+      prefer: 'return=representation',
       body: JSON.stringify({
         organization_id,
         thread_id,
@@ -72,32 +73,28 @@ export async function POST(req: Request) {
         delivery_status: 'delivered'
       })
     });
+    
+    if (!insertMsgRes.ok) {
+      return NextResponse.json({ error: 'Failed to insert message' }, { status: 500 });
+    }
+    const insertedMessages = await insertMsgRes.json();
+    const messageId = insertedMessages[0]?.id;
 
-    // 6. Trigger n8n webhook
-    try {
-      const n8nRes = await fetch(parsedUrl.toString(), {
+    // 6. Upsert Debounce Job (using REST RPC)
+    if (messageId) {
+      await fetchSupabaseRest('rpc/crm_upsert_debounce_job', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          organization_id,
-          channel_id,
-          customer_id,
-          thread_id,
-          message,
-          sender_id
+          p_organization_id: organization_id,
+          p_channel_id: channel_id,
+          p_thread_id: thread_id,
+          p_message_id: messageId,
+          p_debounce_seconds: 4
         })
       });
-      
-      if (!n8nRes.ok) {
-        console.error('N8N Trigger Failed:', await n8nRes.text());
-        return NextResponse.json({ error: 'N8N returned error' }, { status: 502 });
-      }
-    } catch (err: any) {
-      console.error('Cannot reach N8N:', err);
-      return NextResponse.json({ error: 'Cannot reach N8N: ' + err.message }, { status: 502 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: 'Message queued for debouncing' });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
