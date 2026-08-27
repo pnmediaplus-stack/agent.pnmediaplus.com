@@ -404,9 +404,16 @@ function CampaignsTab() {
     if (selectedChannel) {
       setIsLoading(true);
       fetch(`/api/crm/campaigns?channel_id=${selectedChannel}`)
-        .then(res => res.json())
+        .then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) {
+            console.error('Fetch campaigns error:', data);
+            return [];
+          }
+          return data;
+        })
         .then(data => {
-          setCampaigns(data || []);
+          setCampaigns(Array.isArray(data) ? data : []);
           setIsLoading(false);
         })
         .catch(err => {
