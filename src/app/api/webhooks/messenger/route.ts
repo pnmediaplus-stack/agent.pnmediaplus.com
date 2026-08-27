@@ -178,7 +178,7 @@ export async function POST(req: Request) {
 
         // 6. Trigger Debounce Job if handling
         if (thread.status === "bot_handling") {
-          const debounceSeconds = channelData.message_debounce_seconds || 4;
+          const debounceSeconds = channelData.message_debounce_seconds || 7;
           const { error: debounceError } = await supabase.rpc(
             "crm_upsert_debounce_job",
             {

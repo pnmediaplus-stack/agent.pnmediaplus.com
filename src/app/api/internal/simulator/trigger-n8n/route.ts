@@ -89,7 +89,7 @@ export async function POST(req: Request) {
           p_channel_id: channel_id,
           p_thread_id: thread_id,
           p_message_id: messageId,
-          p_debounce_seconds: 4
+          p_debounce_seconds: 7
         })
       });
     }
