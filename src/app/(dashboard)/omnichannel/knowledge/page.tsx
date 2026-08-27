@@ -381,6 +381,95 @@ function PersonaTab() {
     </div>
   );
 }
+
+// ----------------------------------------------------
+// TAB 3: CAMPAIGNS
+// ----------------------------------------------------
+function CampaignsTab() {
+  const { data: channels, error: channelsError } = useSWR('/api/crm/channels', fetcher);
+  const [selectedChannel, setSelectedChannel] = useState<string>('');
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form State
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [isActive, setIsActive] = useState(false);
+  const [hours, setHours] = useState(24);
+  const [prompt, setPrompt] = useState('');
+
+  // Lấy danh sách chiến dịch khi chọn kênh
+  useEffect(() => {
+    if (selectedChannel) {
+      setIsLoading(true);
+      fetch(`/api/crm/campaigns?channel_id=${selectedChannel}`)
+        .then(res => res.json())
+        .then(data => {
+          setCampaigns(data || []);
+          setIsLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setIsLoading(false);
+        });
+    } else {
+      setCampaigns([]);
+    }
+  }, [selectedChannel]);
+
+  const handleEdit = (c: any) => {
+    setEditingId(c.id);
+    setName(c.name);
+    setIsActive(c.is_active);
+    setHours(c.condition_hours_inactive);
+    setPrompt(c.system_prompt_override);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setName('');
+    setIsActive(false);
+    setHours(24);
+    setPrompt('');
+  };
+
+  const handleSave = async () => {
+    if (!selectedChannel || !name || !prompt) return alert('Vui lòng nhập đầy đủ Tên và Prompt');
+    setIsSaving(true);
+
+    const payload = {
+      id: editingId,
+      channel_id: selectedChannel,
+      name,
+      is_active: isActive,
+      condition_hours_inactive: hours,
+      system_prompt_override: prompt
+    };
+
+    const method = editingId ? 'PUT' : 'POST';
+    
+    try {
+      const res = await fetch('/api/crm/campaigns', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        // Refresh
+        const newData = await fetch(`/api/crm/campaigns?channel_id=${selectedChannel}`).then(r => r.json());
+        setCampaigns(newData);
+        handleCancelEdit();
+      } else {
+        alert('Lỗi lưu chiến dịch');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Lỗi mạng');
+    }
+    setIsSaving(false);
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Xóa chiến dịch này?')) return;
     try {
