@@ -122,7 +122,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.API_BASE_URL || 'https://agent.pnmediaplus.com' }}/api/crm/chat/dispatch",
+        "url": "={{ $env.API_BASE_URL || 'https://agent.pnmediaplus.com' }}/api/internal/crm/messages/dispatch",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -138,7 +138,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"organization_id\": \"{{ $('Format Campaign').item.json.org_id }}\",\n  \"channel_id\": \"{{ $('Format Campaign').item.json.channel_id }}\",\n  \"thread_id\": \"{{ $('Loop Through Threads').item.json.thread_id }}\",\n  \"message\": {{ JSON.stringify($json.choices[0].message.content) }},\n  \"sender_type\": \"bot\"\n}"
+        "jsonBody": "={\n  \"organization_id\": \"{{ $('Format Campaign').item.json.org_id }}\",\n  \"thread_id\": \"{{ $('Loop Through Threads').item.json.thread_id }}\",\n  \"content\": {{ JSON.stringify($json.choices[0].message.content) }},\n  \"sender_type\": \"bot\"\n}"
       },
       "id": "494b841a-8b1e-450f-a496-e17f0a911e3b",
       "name": "Dispatch Message",
