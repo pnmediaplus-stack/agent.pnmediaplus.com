@@ -128,7 +128,11 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{$env.N8N_API_KEY}}"
+              "value": "Bearer {{$env.CONTROL_PLANE_SECRET}}"
+            },
+            {
+              "name": "x-internal-secret",
+              "value": "{{$env.CONTROL_PLANE_SECRET}}"
             },
             {
               "name": "Content-Type",
