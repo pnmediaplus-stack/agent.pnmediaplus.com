@@ -5,7 +5,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "omnichannel-cskh",
-        "options": {}
+        "options": { "responseMode": "onReceived" }
       },
       "id": "ae9fd923-6b42-4535-b3b3-13096a33b1d9",
       "name": "Webhook Trigger (From Next.js)",
@@ -33,7 +33,7 @@
             }
           ]
         },
-        "options": {}
+        "options": { "responseMode": "onReceived" }
       },
       "id": "ab74599b-0e14-4f52-a7cb-b1367958d2ee",
       "name": "Fetch Dynamic System Prompt",
@@ -67,7 +67,7 @@
             }
           ]
         },
-        "options": {}
+        "options": { "responseMode": "onReceived" }
       },
       "id": "8853e499-0d3d-4b56-b2ed-20bc9827bfdb",
       "name": "Fetch Allowed Tags",
@@ -292,7 +292,7 @@
             }
           ]
         },
-        "options": {}
+        "options": { "responseMode": "onReceived" }
       },
       "id": "75b957e7-a264-4f0e-a5eb-3ca153a8f97f",
       "name": "Dispatch Reply via Universal API",

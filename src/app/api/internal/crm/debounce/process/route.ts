@@ -45,8 +45,8 @@ export async function POST(req: Request) {
         // Fetch the messages that correspond to this job
         const messagesRes = await fetchSupabaseRest('crm_messages', {
           searchParams: {
-            thread_id: `eq.${job.thread_id}`,
-            sender_type: `eq.customer`,
+            thread_id: \q.\\,
+            sender_type: \q.customer\,
             select: 'id, content, created_at',
             order: 'created_at.desc',
             limit: job.message_count.toString()
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 
         const threadRes = await fetchSupabaseRest('crm_threads', {
           searchParams: {
-            id: `eq.${job.thread_id}`,
+            id: \q.\\,
             select: 'customer_id'
           }
         });
@@ -85,21 +85,44 @@ export async function POST(req: Request) {
           message_count: job.message_count
         };
 
-        // 3. Trigger N8N
-        const n8nRes = await fetch(n8nWebhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(finalPayload)
-        });
+        // 3. Trigger N8N (with 3s timeout to handle misconfigured N8N Response Mode)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-        if (!n8nRes.ok) {
-          throw new Error(`N8N returned ${n8nRes.status}: ${await n8nRes.text()}`);
+        let n8nSuccess = false;
+        let n8nErrorMsg = '';
+        try {
+          const n8nRes = await fetch(n8nWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(finalPayload),
+            signal: controller.signal
+          });
+          if (n8nRes.ok) {
+            n8nSuccess = true;
+          } else {
+            n8nErrorMsg = \N8N returned \: \\;
+          }
+        } catch (fetchErr: any) {
+          if (fetchErr.name === 'AbortError' || (fetchErr.message && fetchErr.message.includes('abort'))) {
+            // N8N is likely holding the connection open (Respond: When Last Node Finishes)
+            // We assume it received the payload successfully since 3 seconds passed.
+            n8nSuccess = true;
+          } else {
+            n8nErrorMsg = fetchErr.message;
+          }
+        } finally {
+          clearTimeout(timeoutId);
+        }
+
+        if (!n8nSuccess) {
+          throw new Error(n8nErrorMsg || "Failed to trigger N8N");
         }
 
         // 4. Mark job as processed
         await fetchSupabaseRest('crm_thread_debounce_jobs', {
           method: 'PATCH',
-          searchParams: { id: `eq.${job.id}` },
+          searchParams: { id: \q.\\ },
           body: JSON.stringify({
             status: 'processed',
             processed_at: new Date().toISOString(),
@@ -109,7 +132,7 @@ export async function POST(req: Request) {
 
         processedCount++;
       } catch (err) {
-        console.error(`Error processing debounce job ${job.id}:`, err);
+        console.error(\Error processing debounce job \:\, err);
       }
     }
 
