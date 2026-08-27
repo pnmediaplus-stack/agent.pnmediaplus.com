@@ -386,7 +386,7 @@ function PersonaTab() {
 // TAB 3: CAMPAIGNS
 // ----------------------------------------------------
 function CampaignsTab() {
-  const { data: channels, error: channelsError } = useSWR('/api/crm/channels', fetcher);
+  const { data: channels, error: channelsError } = useSWR('/api/crm/channels/prompt', fetcher);
   const [selectedChannel, setSelectedChannel] = useState<string>('');
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
