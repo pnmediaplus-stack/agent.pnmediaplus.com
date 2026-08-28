@@ -92,7 +92,7 @@ export async function POST(req: Request) {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
-              'x-internal-secret': expectedSecret
+              'Authorization': `Bearer ${expectedSecret}`
             },
             body: JSON.stringify(finalPayload),
             signal: controller.signal
