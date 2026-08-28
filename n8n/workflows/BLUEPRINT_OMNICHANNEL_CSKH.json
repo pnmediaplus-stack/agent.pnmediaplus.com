@@ -178,12 +178,6 @@
         "url": "https://agent.pnmediaplus.com/api/internal/customer/tags",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {}
-          ]
-        },
         "name": "UpdateCustomerTags",
         "description": "CÔNG CỤ QUAN TRỌNG: Gọi công cụ này BẤT CỨ KHI NÀO bạn phát hiện ra khách hàng thuộc một phân loại nhất định (ví dụ VIP, Spam, Sỉ...) để cập nhật thẻ (tags) cho khách hàng. Mảng tags là các thẻ cần gắn.",
         "sendBody": true,
@@ -210,13 +204,7 @@
         "method": "POST",
         "url": "https://agent.pnmediaplus.com/api/internal/thread/handoff",
         "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {}
-          ]
-        }
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "05c9bd51-bf72-4d0f-ba09-e0290635af5e",
       "name": "tool_handoff_to_human",
