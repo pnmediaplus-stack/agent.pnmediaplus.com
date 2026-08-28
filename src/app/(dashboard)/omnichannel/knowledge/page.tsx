@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
-import { UploadCloud, FileText, Loader2, CheckCircle2, XCircle, Trash2, Settings, MessageSquare, Bot } from "lucide-react";
+import { UploadCloud, FileText, Loader2, CheckCircle2, XCircle, Trash2, Settings, MessageSquare, Bot , Tag, Plus, X} from "lucide-react";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -41,7 +41,15 @@ export default function AIControlCenterPage() {
           >
             <div className="flex items-center"><MessageSquare className="w-4 h-4 mr-2"/> Chiến Dịch Chủ Động</div>
           </button>
-        </nav>
+        
+          <button 
+            onClick={() => setActiveTab("tags")}
+            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'tags' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          >
+            <div className="flex items-center"><Tag className="w-4 h-4 mr-2"/> Quản Lý Thẻ (Tags)</div>
+          </button>
+
+          </nav>
       </div>
 
       <div className="flex-1 p-6 overflow-auto">
@@ -607,6 +615,94 @@ function CampaignsTab() {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+
+
+// ----------------------------------------------------
+// TAB 4: TAGS
+// ----------------------------------------------------
+function TagsTab() {
+  const { data: tags, error, mutate } = useSWR('/api/crm/tags', fetcher);
+  const [tagName, setTagName] = useState('');
+  const [tagColor, setTagColor] = useState('#3B82F6');
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tagName.trim()) return;
+    setIsAdding(true);
+    try {
+      const res = await fetch('/api/crm/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tag_name: tagName, color: tagColor })
+      });
+      if (res.ok) {
+        setTagName('');
+        mutate();
+      } else {
+        const err = await res.json();
+        alert('Lỗi: ' + err.error);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Xóa thẻ này? AI sẽ không thể dùng thẻ này nữa.')) return;
+    try {
+      await fetch(`/api/crm/tags?id=${id}`, { method: 'DELETE' });
+      mutate();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  if (error) return <div className="text-red-500">Lỗi tải danh sách thẻ</div>;
+  if (!tags) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-gray-400" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Danh Sách Thẻ Của AI</h3>
+        <p className="text-sm text-gray-500 mb-6">Đây là các thẻ (Tags) hợp lệ mà Trợ lý AI có thể tự động gán cho khách hàng trong quá trình trò chuyện (VD: VIP, Spam, Khách sỉ...).</p>
+        
+        <form onSubmit={handleAdd} className="flex gap-4 items-end mb-8 bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Tên Thẻ (Tag Name)</label>
+            <input type="text" value={tagName} onChange={e => setTagName(e.target.value)} placeholder="VD: Khách sỉ" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 bg-white" required />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Màu sắc</label>
+            <input type="color" value={tagColor} onChange={e => setTagColor(e.target.value)} className="h-9 w-14 cursor-pointer bg-white border border-gray-300 rounded-lg p-1" />
+          </div>
+          <button type="submit" disabled={isAdding || !tagName.trim()} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center h-9">
+            {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> Thêm Thẻ</>}
+          </button>
+        </form>
+
+        <div className="flex flex-wrap gap-3">
+          {tags.length === 0 ? (
+            <div className="text-gray-500 text-sm italic w-full text-center py-6">Chưa có thẻ nào được tạo.</div>
+          ) : (
+            tags.map((tag: any) => (
+              <div key={tag.id} className="group flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium shadow-sm transition-all bg-white hover:bg-gray-50" style={{ borderColor: tag.color + '40', color: tag.color }}>
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
+                {tag.tag_name}
+                <button onClick={() => handleDelete(tag.id)} className="ml-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
