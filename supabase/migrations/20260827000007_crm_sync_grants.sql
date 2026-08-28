@@ -1,0 +1,1 @@
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_customer_sync_jobs TO service_role, postgres; UPDATE public.crm_customer_sync_jobs SET status = 'pending', next_retry_at = now() WHERE status = 'locked'; NOTIFY pgrst, 'reload schema';
