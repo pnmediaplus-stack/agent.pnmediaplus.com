@@ -56,6 +56,7 @@ export default function AIControlCenterPage() {
         {activeTab === "knowledge" && <KnowledgeTab />}
         {activeTab === "persona" && <PersonaTab />}
         {activeTab === "campaigns" && <CampaignsTab />}
+        {activeTab === "tags" && <TagsTab />}
       </div>
     </div>
   );
