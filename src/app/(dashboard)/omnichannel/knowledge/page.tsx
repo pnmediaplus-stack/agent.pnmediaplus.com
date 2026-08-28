@@ -678,7 +678,7 @@ function TagsTab() {
         <form onSubmit={handleAdd} className="flex gap-4 items-end mb-8 bg-gray-50 p-4 rounded-lg border border-gray-200">
           <div className="flex-1">
             <label className="block text-xs font-medium text-gray-700 mb-1">Tên Thẻ (Tag Name)</label>
-            <input type="text" value={tagName} onChange={e => setTagName(e.target.value)} placeholder="VD: Khách sỉ" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 bg-white" required />
+            <input type="text" value={tagName} onChange={e => setTagName(e.target.value)} placeholder="VD: Khách sỉ" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 bg-white" required />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Màu sắc</label>
