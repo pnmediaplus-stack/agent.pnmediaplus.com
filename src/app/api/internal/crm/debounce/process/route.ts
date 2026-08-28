@@ -90,7 +90,10 @@ export async function POST(req: Request) {
         try {
           const n8nRes = await fetch(n8nWebhookUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'x-internal-secret': expectedSecret
+            },
             body: JSON.stringify(finalPayload),
             signal: controller.signal
           });

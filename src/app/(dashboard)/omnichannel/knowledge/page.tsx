@@ -170,6 +170,24 @@ function KnowledgeTab() {
     );
   };
 
+  const handleDownload = async (docId: string, title: string) => {
+    try {
+      const res = await fetch(`/api/crm/knowledge/${docId}/download`);
+      if (!res.ok) throw new Error("Không thể tải xuống");
+      const data = await res.json();
+      if (data.url) {
+        const link = document.createElement('a');
+        link.href = data.url;
+        link.download = title;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (e: any) {
+      alert("Lỗi: " + e.message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -272,7 +290,16 @@ function KnowledgeTab() {
                         onChange={() => toggleSelectOne(doc.id)}
                       />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap"><div className="flex items-center"><FileText className="h-5 w-5 text-gray-400 mr-3" /><span className="text-sm font-medium text-gray-900">{doc.title}</span></div></td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div 
+                        className="flex items-center cursor-pointer hover:text-blue-600 transition-colors" 
+                        onClick={() => handleDownload(doc.id, doc.title)}
+                        title="Tải xuống tài liệu"
+                      >
+                        <FileText className="h-5 w-5 text-gray-400 hover:text-blue-500 mr-3" />
+                        <span className="text-sm font-medium text-gray-900 hover:text-blue-600">{doc.title}</span>
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center whitespace-nowrap">
                         {doc.status === "ready" || !doc.status ? <><CheckCircle2 className="h-4 w-4 text-green-500 mr-1.5" /><span className="text-sm text-green-700">Đã xử lý xong</span></> : null}
