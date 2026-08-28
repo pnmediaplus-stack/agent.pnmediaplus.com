@@ -209,7 +209,7 @@
         "description": "Gọi công cụ này NGAY LẬP TỨC nếu khách hàng yêu cầu gặp nhân viên thực (con người, tư vấn viên), hoặc khi bạn không có đủ thông tin để trả lời câu hỏi và cần chuyển tiếp cho bộ phận CSKH thật.",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  organization_id: $('Webhook Trigger (From Next.js)').first().json.body.organization_id,\n  thread_id: $('Webhook Trigger (From Next.js)').first().json.body.thread_id\n} }}"
+        "jsonBody": "={{ {\n  organization_id: $('Webhook Trigger (From Next.js)').first().json.body.organization_id,\n  thread_id: $('Webhook Trigger (From Next.js)').first().json.body.thread_id,\n  reason: $fromAI('reason', 'Lý do chuyển cho nhân viên thật (VD: Khách yêu cầu, không tìm thấy thông tin)')\n} }}"
       },
       "id": "05c9bd51-bf72-4d0f-ba09-e0290635af5e",
       "name": "tool_handoff_to_human",
