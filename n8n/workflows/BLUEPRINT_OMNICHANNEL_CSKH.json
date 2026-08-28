@@ -181,7 +181,7 @@
         "name": "UpdateCustomerTags",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  organization_id: $('Webhook Trigger (From Next.js)').first().json.body.organization_id,\n  customer_id: $('Webhook Trigger (From Next.js)').first().json.body.customer_id,\n  thread_id: $('Webhook Trigger (From Next.js)').first().json.body.thread_id,\n  tags: $fromAI('tags', 'Mảng các chuỗi (string) đại diện cho các thẻ phân loại khách hàng')\n} }}",
+        "jsonBody": "{\n  \"organization_id\": \"{{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}\",\n  \"customer_id\": \"{{ $('Webhook Trigger (From Next.js)').first().json.body.customer_id }}\",\n  \"thread_id\": \"{{ $('Webhook Trigger (From Next.js)').first().json.body.thread_id }}\",\n  \"tags\": {{ $fromAI('tags', 'Mảng các chuỗi (string) đại diện cho các thẻ phân loại khách hàng') }}\n}",
         "description": "CÔNG CỤ QUAN TRỌNG: Gọi công cụ này BẤT CỨ KHI NÀO bạn phát hiện ra khách hàng thuộc một phân loại nhất định (ví dụ VIP, Spam, Sỉ...) để cập nhật thẻ (tags) cho khách hàng. Mảng tags là các thẻ cần gắn."
       },
       "id": "c7306146-88ed-4224-a3fc-367135844f86",
@@ -208,7 +208,7 @@
         "name": "HandoffToHuman",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  organization_id: $('Webhook Trigger (From Next.js)').first().json.body.organization_id,\n  thread_id: $('Webhook Trigger (From Next.js)').first().json.body.thread_id,\n  reason: $fromAI('reason', 'Lý do chuyển cho nhân viên thật (VD: Khách yêu cầu, không tìm thấy thông tin)')\n} }}",
+        "jsonBody": "{\n  \"organization_id\": \"{{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}\",\n  \"thread_id\": \"{{ $('Webhook Trigger (From Next.js)').first().json.body.thread_id }}\",\n  \"reason\": \"{{ $fromAI('reason', 'Lý do chuyển cho nhân viên thật (VD: Khách yêu cầu, không tìm thấy thông tin)') }}\"\n}",
         "description": "Gọi công cụ này NGAY LẬP TỨC nếu khách hàng yêu cầu gặp nhân viên thực (con người, tư vấn viên), hoặc khi bạn không có đủ thông tin để trả lời câu hỏi và cần chuyển tiếp cho bộ phận CSKH thật."
       },
       "id": "05c9bd51-bf72-4d0f-ba09-e0290635af5e",
