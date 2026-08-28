@@ -98,7 +98,8 @@
         "text": "={{ $json.body.message }}",
         "options": {
           "systemMessage": "={{ $json.systemPrompt }}\n\nBạn CÓ THỂ cập nhật thẻ cho khách hàng thông qua Tool. CÁC THẺ HỢP LỆ BẠN CÓ THỂ DÙNG LÀ: {{ $json.tags && $json.tags.length > 0 ? $json.tags.join(', ') : 'none' }}\n\nLUÔN LUÔN giao tiếp và trả lời khách hàng bằng ngôn ngữ mà khách hàng sử dụng. Nếu khách chat tiếng Việt thì BẮT BUỘC phải trả lời bằng tiếng Việt.\nKHI KHÁCH HÀNG HỎI VỀ SẢN PHẨM, DỊCH VỤ HOẶC THÔNG TIN CÔNG TY, BẠN BẮT BUỘC PHẢI SỬ DỤNG CÔNG CỤ (TOOL) TÌM KIẾM TRONG KHO TRI THỨC ĐỂ ĐỌC TÀI LIỆU TRƯỚC KHI TRẢ LỜI. Tuyệt đối không được nói là không có thông tin nếu bạn chưa dùng Tool để tra cứu."
-        }
+        },
+        "agent": "toolsAgent"
       },
       "id": "c7032ba4-88cb-4228-a499-ef28b09d3122",
       "name": "AI Agent (CSKH)",
