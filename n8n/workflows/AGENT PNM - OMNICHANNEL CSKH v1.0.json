@@ -169,7 +169,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  organization_id: $('Webhook Trigger (From Next.js)').first().json.body.organization_id,\n  customer_id: $('Webhook Trigger (From Next.js)').first().json.body.customer_id,\n  thread_id: $('Webhook Trigger (From Next.js)').first().json.body.thread_id,\n  tags: $fromAI('tags', 'Danh sach tag phan loai'),\n  phone_number: $fromAI('phone_number', 'So dien thoai cua khach hang'),\n  full_name: $fromAI('full_name', 'Ten cua khach hang'),\n  primary_need: $fromAI('primary_need', 'Nhu cau cua khach hang'),\n  email: $fromAI('email', 'Email cua khach hang')\n}) }}"
+        "jsonBody": "={\n  \"organization_id\": \"{{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}\",\n  \"customer_id\": \"{{ $('Webhook Trigger (From Next.js)').first().json.body.customer_id }}\",\n  \"thread_id\": \"{{ $('Webhook Trigger (From Next.js)').first().json.body.thread_id }}\",\n  \"query\": {{ JSON.stringify($json.query || \"\") }}\n}"
       },
       "id": "1e2059af-9ad6-4e9d-811c-38acb6b192eb",
       "name": "tool_update_customer_profile",
@@ -182,7 +182,7 @@
       "credentials": {
         "httpHeaderAuth": {
           "id": "x9KKPJQks3nNwOUP",
-          "name": "CONTROL_PLANE_SECRET"
+          "name": "ControlPlaneAuth"
         }
       },
       "onError": "continueErrorOutput"
@@ -209,7 +209,7 @@
       "credentials": {
         "httpHeaderAuth": {
           "id": "x9KKPJQks3nNwOUP",
-          "name": "CONTROL_PLANE_SECRET"
+          "name": "ControlPlaneAuth"
         }
       },
       "onError": "continueErrorOutput"
@@ -313,7 +313,7 @@
       "credentials": {
         "httpHeaderAuth": {
           "id": "x9KKPJQks3nNwOUP",
-          "name": "CONTROL_PLANE_SECRET"
+          "name": "ControlPlaneAuth"
         }
       },
       "onError": "continueErrorOutput"
@@ -404,7 +404,7 @@
       "credentials": {
         "httpHeaderAuth": {
           "id": "x9KKPJQks3nNwOUP",
-          "name": "CONTROL_PLANE_SECRET"
+          "name": "ControlPlaneAuth"
         }
       },
       "notes": "Error path: nếu AI Agent lỗi runtime, chuyển Human thay vì silent fail."
@@ -435,7 +435,7 @@
       "credentials": {
         "httpHeaderAuth": {
           "id": "x9KKPJQks3nNwOUP",
-          "name": "CONTROL_PLANE_SECRET"
+          "name": "ControlPlaneAuth"
         }
       },
       "notes": "Error path: dispatch thất bại thì handoff thread cho Human."
