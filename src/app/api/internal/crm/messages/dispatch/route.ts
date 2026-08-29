@@ -150,103 +150,39 @@ export async function POST(req: Request) {
 
     const integrationKey = `facebook_page_${channelExternalId}`;
 
-    const vaultRefRes = await fetchSupabaseRest('rpc/phase075_get_tenant_vault_credential_ref', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        p_organization_id: organization_id,
-        p_integration_key: integrationKey
-      })
-    });
     
-    let referenceToken = null;
-    if (vaultRefRes.ok) {
-      referenceToken = await vaultRefRes.json().catch(() => null);
-    }
+    const queuePayload = {
+      channel_external_id: channelExternalId,
+      recipient_id: recipientId,
+      content: content,
+      message_id: messageRow.id
+    };
 
-    const cpUrl = (process.env.NEXTJS_CONTROL_PLANE_BASE_URL || '').replace(/\/$/, '');
-    if (!cpUrl) {
-      await patchMessageStatus({
-        organizationId: organization_id,
-        messageId: messageRow.id,
-        deliveryStatus: 'failed'
-      });
-      return NextResponse.json(
-        { error: 'MISSING_CONTROL_PLANE_URL', message: { ...messageRow, delivery_status: 'failed' } },
-        { status: 422 }
-      );
-    }
-
-    const redeemRes = await fetch(`${cpUrl}/api/byok/redeem`, {
+    const queueInsertResponse = await fetchSupabaseRest('crm_outbound_queue', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${expectedSecret}`,
-        'x-broker-internal-secret': process.env.BROKER_INTERNAL_SECRET || expectedSecret
-      },
+      prefer: 'return=representation',
       body: JSON.stringify({
         organization_id,
-        integration_key: integrationKey,
-        reference_token: referenceToken
+        thread_id,
+        page_id: channelExternalId,
+        payload: queuePayload,
+        status: 'pending'
       })
     });
 
-    if (!redeemRes.ok) {
+    if (!queueInsertResponse.ok) {
       await patchMessageStatus({
         organizationId: organization_id,
         messageId: messageRow.id,
         deliveryStatus: 'failed'
       });
       return NextResponse.json(
-        { error: 'BYOK_REDEEM_FAILED', message: { ...messageRow, delivery_status: 'failed' } },
+        { error: 'QUEUE_INSERT_FAILED', message: { ...messageRow, delivery_status: 'failed' } },
         { status: 422 }
       );
     }
 
-    const redeemJson = await redeemRes.json().catch(() => null);
-    const accessToken = redeemJson?.data?.access_token;
-    if (!accessToken) {
-      await patchMessageStatus({
-        organizationId: organization_id,
-        messageId: messageRow.id,
-        deliveryStatus: 'failed'
-      });
-      return NextResponse.json(
-        { error: 'BYOK_REDEEM_EMPTY', message: { ...messageRow, delivery_status: 'failed' } },
-        { status: 422 }
-      );
-    }
-
-    const fbRes = await fetch('https://graph.facebook.com/v19.0/me/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        access_token: accessToken,
-        recipient: { id: recipientId },
-        message: { text: content }
-      })
-    });
-
-    if (!fbRes.ok) {
-      const fbError = await fbRes.text().catch(() => 'unknown facebook error');
-      await patchMessageStatus({
-        organizationId: organization_id,
-        messageId: messageRow.id,
-        deliveryStatus: 'failed'
-      });
-      return NextResponse.json(
-        { error: 'FB_SEND_FAILED', details: fbError, message: { ...messageRow, delivery_status: 'failed' } },
-        { status: 422 }
-      );
-    }
-
-    await patchMessageStatus({
-      organizationId: organization_id,
-      messageId: messageRow.id,
-      deliveryStatus: 'sent'
-    });
-
-    return NextResponse.json({ success: true, message: { ...messageRow, delivery_status: 'sent' } });
+    return NextResponse.json({ success: true, message: { ...messageRow, delivery_status: 'queued' } });
   } catch (error) {
     console.error('Dispatch error:', error);
     return NextResponse.json({ error: 'INTERNAL_SERVER_ERROR' }, { status: 500 });

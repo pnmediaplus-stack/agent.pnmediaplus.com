@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   agent_pnmedia:
     build:
@@ -11,6 +9,18 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    env_file:
+      - .env
+    labels:
+      - "com.pnmediaplus.project=agent.pnmediaplus.com"
+
+  queue_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agent_pnmedia_worker
+    restart: unless-stopped
+    command: ["node", "worker.js"]
     env_file:
       - .env
     labels:
