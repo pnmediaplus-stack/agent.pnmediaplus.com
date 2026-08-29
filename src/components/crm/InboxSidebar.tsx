@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreHorizontal, Edit2, Trash2, Mail, MailOpen } from 'lucide-react';
+import { MoreHorizontal, Edit2, Trash2, Mail, MailOpen, Tag } from 'lucide-react';
 import { useCrmStore } from '@/lib/stores/crmStore';
 
 export default function InboxSidebar() {
@@ -24,7 +24,19 @@ export default function InboxSidebar() {
   const handleAction = async (action: string, thread: any, e: React.MouseEvent) => {
     e.stopPropagation();
     setOpenDropdownId(null);
-    if (action === 'rename') {
+    if (action === 'tag') {
+      const currentTags = thread.customer?.tags?.join(", ") || "";
+      const newTagsStr = window.prompt("Nhập thẻ Tags (cách nhau bằng dấu phẩy):", currentTags);
+      if (newTagsStr !== null) {
+        const newTags = newTagsStr.split(",").map(t => t.trim()).filter(Boolean);
+        await fetch("/api/crm/customers", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: thread.customer_id, tags: newTags })
+        });
+        updateCustomerProfile(thread.id, { tags: newTags });
+      }
+    } else if (action === 'rename') {
       const newName = window.prompt("Nhập tên hiển thị mới:", thread.customer?.full_name || "");
       if (newName !== null && newName.trim() !== "") {
         await fetch("/api/crm/customers", {
@@ -149,6 +161,9 @@ export default function InboxSidebar() {
                       <div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-50">
                         <button onClick={(e) => handleAction('rename', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
                           <Edit2 className="w-3.5 h-3.5 mr-2 text-gray-400" /> Đổi tên
+                        </button>
+                        <button onClick={(e) => handleAction('tag', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                          <Tag className="w-3.5 h-3.5 mr-2 text-gray-400" /> Gắn thẻ
                         </button>
                         {(thread.unread_count || 0) > 0 ? (
                           <button onClick={(e) => handleAction('read', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
