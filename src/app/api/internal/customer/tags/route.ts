@@ -100,7 +100,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const { data, error } = await supabase
+    console.log("MY UPDATES:", updates); const { data, error } = await supabase
       .from("crm_customers")
       .update(updates)
       .eq("organization_id", organizationId)
@@ -141,3 +141,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "INTERNAL_ERROR", message }, { status: 500 });
   }
 }
+

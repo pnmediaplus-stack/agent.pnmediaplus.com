@@ -12,6 +12,7 @@ const supabase = createClient(supabaseUrl, serviceKey);
 
 // Guardrails P1: 2 messages per second per page. We'll poll every 1 second.
 const MAX_MESSAGES_PER_PAGE_PER_SECOND = 2;
+let pollInFlight = false;
 
 async function fetchByokToken(organization_id, channel_external_id) {
   const integrationKey = `facebook_page_${channel_external_id}`;
@@ -115,18 +116,30 @@ async function processMessage(job) {
 }
 
 async function pollQueue() {
-  // P0 - Atomic Claiming via RPC (handles both rate-limit grouping and stale locks)
-  const { data: jobsToProcess, error } = await supabase.rpc('phase077_claim_crm_outbound_queue');
-
-  if (error) {
-    console.error("Queue poll error:", error);
+  if (pollInFlight) {
     return;
   }
-  if (!jobsToProcess || jobsToProcess.length === 0) return;
+  pollInFlight = true;
+  // P0 - Atomic Claiming via RPC (handles both rate-limit grouping and stale locks)
+  try {
+    const { data: jobsToProcess, error } = await supabase.rpc('phase077_claim_crm_outbound_queue');
 
-  // Process concurrently. The RPC already ensured max 2 jobs per page_id.
-  await Promise.all(jobsToProcess.map(job => processMessage(job)));
+    if (error) {
+      console.error("Queue poll error:", error);
+      return;
+    }
+    if (!jobsToProcess || jobsToProcess.length === 0) return;
+
+    // Process concurrently. The RPC already ensured max 2 jobs per page_id.
+    await Promise.all(jobsToProcess.map(job => processMessage(job)));
+  } finally {
+    pollInFlight = false;
+  }
 }
 
 console.log("Worker started...");
-setInterval(pollQueue, 1000);
+setInterval(() => {
+  pollQueue().catch((error) => {
+    console.error("Unhandled poll error:", error);
+  });
+}, 1000);
