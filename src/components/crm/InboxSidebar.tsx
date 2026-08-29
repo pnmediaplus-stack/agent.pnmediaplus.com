@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreHorizontal, Edit2, Trash2, UserCheck, Mail, MailOpen } from 'lucide-react';
+import { MoreHorizontal, Edit2, Trash2, Mail, MailOpen } from 'lucide-react';
 import { useCrmStore } from '@/lib/stores/crmStore';
 
 export default function InboxSidebar() {
