@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreHorizontal, Edit2, Trash2, UserCheck } from 'lucide-react';
+import { MoreHorizontal, Edit2, Trash2, UserCheck, Mail, MailOpen } from 'lucide-react';
 import { useCrmStore } from '@/lib/stores/crmStore';
 
 export default function InboxSidebar() {
@@ -47,6 +47,14 @@ export default function InboxSidebar() {
         setThreads(threads.filter(t => t.id !== thread.id));
         if (activeThreadId === thread.id) setActiveThreadId(null);
       }
+    } else if (action === 'unread' || action === 'read') {
+      const newUnreadCount = action === 'unread' ? 1 : 0;
+      await fetch(`/api/crm/threads/${thread.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ unread_count: newUnreadCount })
+      });
+      setThreads(threads.map(t => t.id === thread.id ? { ...t, unread_count: newUnreadCount } : t));
     }
   };
 
@@ -126,9 +134,15 @@ export default function InboxSidebar() {
                         <button onClick={(e) => handleAction('rename', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
                           <Edit2 className="w-3.5 h-3.5 mr-2 text-gray-400" /> Đổi tên
                         </button>
-                        <button onClick={(e) => handleAction('handoff', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
-                          <UserCheck className="w-3.5 h-3.5 mr-2 text-gray-400" /> Giành quyền
-                        </button>
+                        {(thread.unread_count || 0) > 0 ? (
+                          <button onClick={(e) => handleAction('read', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                            <MailOpen className="w-3.5 h-3.5 mr-2 text-gray-400" /> Đánh dấu đã đọc
+                          </button>
+                        ) : (
+                          <button onClick={(e) => handleAction('unread', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                            <Mail className="w-3.5 h-3.5 mr-2 text-gray-400" /> Đánh dấu chưa đọc
+                          </button>
+                        )}
                         <button onClick={(e) => handleAction('delete', thread, e)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center">
                           <Trash2 className="w-3.5 h-3.5 mr-2 text-red-400" /> Xóa
                         </button>
