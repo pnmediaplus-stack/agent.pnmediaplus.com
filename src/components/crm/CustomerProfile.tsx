@@ -34,6 +34,8 @@ export default function CustomerProfile() {
       {/* Details */}
       <div className="p-4 space-y-4 text-sm flex-1 overflow-y-auto">
         <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Họ tên</label>
+          <input type="text" readOnly value={customer.full_name || ''} placeholder="Chưa có" className="w-full border border-gray-200 rounded px-2 py-1.5 bg-gray-50 text-gray-700 font-medium mb-4" />
           <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
           <input type="text" readOnly value={customer.email || ''} placeholder="Chưa có" className="w-full border border-gray-200 rounded px-2 py-1.5 bg-gray-50 text-gray-700" />
         </div>
