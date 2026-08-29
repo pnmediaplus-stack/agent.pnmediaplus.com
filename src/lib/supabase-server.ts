@@ -148,10 +148,14 @@ export function createServiceRoleClient(): SupabaseClient {
           if (queryBuilder._single) {
             headers['Accept'] = 'application/vnd.pgrst.object+json';
           }
+          if (queryBuilder._operation && queryBuilder._select) {
+            headers['Prefer'] = 'return=representation';
+          }
 
           const response = await fetch(url.toString(), {
-            method: 'GET',
-            headers
+            method: queryBuilder._operation ? (queryBuilder._operation === 'insert' ? 'POST' : queryBuilder._operation === 'delete' ? 'DELETE' : 'PATCH') : 'GET',
+            headers,
+            body: queryBuilder._values ? JSON.stringify(queryBuilder._values) : undefined
           });
 
           if (!response.ok) {
@@ -192,8 +196,9 @@ export function createServiceRoleClient(): SupabaseClient {
             }
             
             const response = await fetch(url.toString(), {
-              method: 'GET',
-              headers
+              method: queryBuilder._operation ? (queryBuilder._operation === 'insert' ? 'POST' : queryBuilder._operation === 'delete' ? 'DELETE' : 'PATCH') : 'GET',
+            headers,
+            body: queryBuilder._values ? JSON.stringify(queryBuilder._values) : undefined
             });
 
             if (!response.ok) {
