@@ -12,6 +12,22 @@ export default function CustomerProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/crm/tags')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setAvailableTags(data);
+      })
+      .catch(console.error);
+  }, []);
+
+  const getTagColor = (tagName: string) => {
+    const tag = availableTags.find(t => t.tag_name === tagName);
+    return tag?.color || '#3b82f6';
+  };
+
 
   useEffect(() => {
     if (customer) {
@@ -122,7 +138,7 @@ export default function CustomerProfile() {
           <div className="flex flex-wrap gap-2">
             {customer.tags && customer.tags.length > 0 ? (
               customer.tags.map(tag => (
-                <span key={tag} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md border border-blue-200">
+                <span key={tag} style={{ backgroundColor: `${getTagColor(tag)}15`, color: getTagColor(tag), borderColor: `${getTagColor(tag)}30` }} className="px-2 py-1 text-xs rounded-md border font-medium">
                   {tag}
                 </span>
               ))

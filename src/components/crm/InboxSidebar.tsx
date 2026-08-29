@@ -13,6 +13,12 @@ export default function InboxSidebar() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSavingTags, setIsSavingTags] = useState(false);
 
+  const getTagColor = (tagName: string) => {
+    const tag = availableTags.find(t => t.tag_name === tagName);
+    return tag?.color || '#3b82f6';
+  };
+
+
   useEffect(() => {
     fetch('/api/crm/tags')
       .then(res => res.json())
@@ -228,7 +234,7 @@ export default function InboxSidebar() {
               {thread.customer?.tags && thread.customer.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {thread.customer.tags.slice(0, 3).map(tag => (
-                    <span key={tag} className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 text-gray-600 text-[10px] rounded-md font-medium">
+                    <span key={tag} style={{ backgroundColor: `${getTagColor(tag)}15`, color: getTagColor(tag), borderColor: `${getTagColor(tag)}30` }} className="px-1.5 py-0.5 border text-[10px] rounded-md font-medium">
                       {tag}
                     </span>
                   ))}
@@ -273,7 +279,10 @@ export default function InboxSidebar() {
                           }
                         }}
                       />
-                      <span className="ml-3 text-sm font-medium text-gray-700">{tag.tag_name}</span>
+                      <div className="ml-3 flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: tag.color || '#3b82f6' }}></span>
+                        <span className="text-sm font-medium text-gray-700">{tag.tag_name}</span>
+                      </div>
                     </label>
                   ))}
                 </div>
