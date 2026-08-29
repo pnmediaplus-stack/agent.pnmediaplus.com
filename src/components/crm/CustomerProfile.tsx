@@ -27,6 +27,16 @@ export default function CustomerProfile() {
     const tag = availableTags.find(t => t.tag_name === tagName);
     return tag?.color || '#3b82f6';
   };
+  const getContrastColor = (hexcolor: string) => {
+    hexcolor = hexcolor.replace("#", "");
+    if (hexcolor.length === 3) hexcolor = hexcolor.split("").map(c => c + c).join("");
+    const r = parseInt(hexcolor.substr(0,2),16) || 0;
+    const g = parseInt(hexcolor.substr(2,2),16) || 0;
+    const b = parseInt(hexcolor.substr(4,2),16) || 0;
+    const yiq = ((r*299)+(g*587)+(b*114))/1000;
+    return (yiq >= 128) ? '#1f2937' : '#ffffff'; // gray-800 or white
+  };
+
 
 
   useEffect(() => {
@@ -138,7 +148,7 @@ export default function CustomerProfile() {
           <div className="flex flex-wrap gap-2">
             {customer.tags && customer.tags.length > 0 ? (
               customer.tags.map(tag => (
-                <span key={tag} style={{ backgroundColor: `${getTagColor(tag)}15`, color: getTagColor(tag), borderColor: `${getTagColor(tag)}30` }} className="px-2 py-1 text-xs rounded-md border font-medium">
+                <span key={tag} style={{ backgroundColor: getTagColor(tag), color: getContrastColor(getTagColor(tag)), border: 'none' }} className="px-2 py-1 text-xs rounded-md border font-medium">
                   {tag}
                 </span>
               ))

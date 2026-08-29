@@ -17,6 +17,16 @@ export default function InboxSidebar() {
     const tag = availableTags.find(t => t.tag_name === tagName);
     return tag?.color || '#3b82f6';
   };
+  const getContrastColor = (hexcolor: string) => {
+    hexcolor = hexcolor.replace("#", "");
+    if (hexcolor.length === 3) hexcolor = hexcolor.split("").map(c => c + c).join("");
+    const r = parseInt(hexcolor.substr(0,2),16) || 0;
+    const g = parseInt(hexcolor.substr(2,2),16) || 0;
+    const b = parseInt(hexcolor.substr(4,2),16) || 0;
+    const yiq = ((r*299)+(g*587)+(b*114))/1000;
+    return (yiq >= 128) ? '#1f2937' : '#ffffff'; // gray-800 or white
+  };
+
 
 
   useEffect(() => {
@@ -234,7 +244,7 @@ export default function InboxSidebar() {
               {thread.customer?.tags && thread.customer.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {thread.customer.tags.slice(0, 3).map(tag => (
-                    <span key={tag} style={{ backgroundColor: `${getTagColor(tag)}15`, color: getTagColor(tag), borderColor: `${getTagColor(tag)}30` }} className="px-1.5 py-0.5 border text-[10px] rounded-md font-medium">
+                    <span key={tag} style={{ backgroundColor: getTagColor(tag), color: getContrastColor(getTagColor(tag)), border: 'none' }} className="px-1.5 py-0.5 border text-[10px] rounded-md font-medium">
                       {tag}
                     </span>
                   ))}
