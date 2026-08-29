@@ -110,7 +110,17 @@ export default function InboxSidebar() {
           filteredThreads.map(thread => (
             <div 
               key={thread.id} 
-              onClick={() => setActiveThreadId(thread.id)}
+              onClick={() => {
+                setActiveThreadId(thread.id);
+                if ((thread.unread_count || 0) > 0) {
+                  setThreads(threads.map(t => t.id === thread.id ? { ...t, unread_count: 0 } : t));
+                  fetch(`/api/crm/threads/${thread.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ unread_count: 0 })
+                  }).catch(console.error);
+                }
+              }}
               className={`group relative p-4 border-b border-gray-50 cursor-pointer transition-all duration-200 ${
                 activeThreadId === thread.id 
                   ? 'bg-blue-50/60 border-l-4 border-l-blue-600' 
