@@ -19,6 +19,28 @@ export async function POST(request: Request) {
     const customerId = String(payload.customer_id || "").trim();
     const threadId = String(payload.thread_id || "").trim();
 
+    // Fallback for Langchain/n8n single-string tool bug
+    let aiData: any = { ...payload };
+    if (payload.query && typeof payload.query === "string") {
+      try {
+        // Try parsing query as JSON
+        const parsed = JSON.parse(payload.query);
+        aiData = { ...aiData, ...parsed };
+      } catch (e) {
+        // If not JSON, it's a raw string like "Tên: Bình, SĐT: 09..."
+        // We will just let the payloadMap handle it if any keys magically match, or use regex
+        const phoneMatch = payload.query.match(/(?:0|\+84)[0-9]{9,10}/);
+        const emailMatch = payload.query.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        
+        if (phoneMatch) aiData.phone_number = phoneMatch[0];
+        if (emailMatch) aiData.email = emailMatch[0];
+        
+        // Extract a simple name (very rough fallback)
+        const nameMatch = payload.query.match(/Tên:\s*([^,.\n]+)/i);
+        if (nameMatch) aiData.full_name = nameMatch[1].trim();
+      }
+    }
+
     if (!organizationId) {
       return NextResponse.json({ error: "MISSING_ORGANIZATION_ID" }, { status: 400 });
     }
@@ -45,10 +67,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "MISSING_CUSTOMER_ID" }, { status: 400 });
     }
 
-    const tags = Array.isArray(payload.tags)
-      ? payload.tags
-      : typeof payload.tags === "string" && payload.tags.trim()
-        ? [payload.tags]
+    const tags = Array.isArray(aiData.tags)
+      ? aiData.tags
+      : typeof aiData.tags === "string" && aiData.tags.trim()
+        ? [aiData.tags]
         : [];
 
     const normalizedTags = tags
@@ -63,13 +85,13 @@ export async function POST(request: Request) {
 
     // Map common LLM hallucinations to correct schema fields
     const payloadMap: Record<string, string> = {
-      address: String(payload.address || "").trim(),
-      email: String(payload.email || payload.mail || "").trim(),
-      notes: String(payload.notes || payload.note || "").trim(),
-      full_name: String(payload.full_name || payload.name || payload.ten || "").trim(),
-      phone_number: String(payload.phone_number || payload.phone || payload.sdt || "").trim(),
-      primary_need: String(payload.primary_need || payload.demand || payload.nhu_cau || "").trim(),
-      customer_segment: String(payload.customer_segment || payload.segment || "").trim()
+      address: String(aiData.address || "").trim(),
+      email: String(aiData.email || aiData.mail || "").trim(),
+      notes: String(aiData.notes || aiData.note || "").trim(),
+      full_name: String(aiData.full_name || aiData.name || aiData.ten || "").trim(),
+      phone_number: String(aiData.phone_number || aiData.phone || aiData.sdt || "").trim(),
+      primary_need: String(aiData.primary_need || aiData.demand || aiData.nhu_cau || "").trim(),
+      customer_segment: String(aiData.customer_segment || aiData.segment || "").trim()
     };
 
     for (const key of ["address", "email", "notes", "full_name", "phone_number", "primary_need", "customer_segment"] as const) {
