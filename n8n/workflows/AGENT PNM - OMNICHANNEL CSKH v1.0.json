@@ -168,8 +168,27 @@
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ (function() {\n  let aiData = {};\n  try {\n    aiData = typeof $json.query === 'string' ? JSON.parse($json.query) : ($json.query || $json);\n  } catch(e) {\n    aiData.full_name = ($json.query.match(/Tên:\\s*([^,.\\n]+)/i) || [])[1];\n    aiData.phone_number = ($json.query.match(/(?:0|\\+84)[0-9]{9,10}/) || [])[0];\n    aiData.email = ($json.query.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/) || [])[0];\n  }\n  return JSON.stringify({\n    organization_id: $('Webhook Trigger (From Next.js)').first().json.body.organization_id,\n    customer_id: $('Webhook Trigger (From Next.js)').first().json.body.customer_id,\n    thread_id: $('Webhook Trigger (From Next.js)').first().json.body.thread_id,\n    full_name: aiData.full_name || aiData.name || \"\",\n    phone_number: aiData.phone_number || aiData.phone || \"\",\n    email: aiData.email || \"\",\n    primary_need: aiData.primary_need || aiData.demand || \"\"\n  });\n})() }}"
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "organization_id",
+              "value": "={{ $('Webhook Trigger (From Next.js)').first().json.body.organization_id }}"
+            },
+            {
+              "name": "customer_id",
+              "value": "={{ $('Webhook Trigger (From Next.js)').first().json.body.customer_id }}"
+            },
+            {
+              "name": "thread_id",
+              "value": "={{ $('Webhook Trigger (From Next.js)').first().json.body.thread_id }}"
+            },
+            {
+              "name": "query",
+              "value": "={{ typeof $json.query === 'string' ? $json.query : JSON.stringify($json.query || $json) }}"
+            }
+          ]
+        }
       },
       "id": "1e2059af-9ad6-4e9d-811c-38acb6b192eb",
       "name": "tool_update_customer_profile",
