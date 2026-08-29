@@ -1,0 +1,598 @@
+{
+  "name": "AGENT PNM - KNOWLEDGE INGESTION v1.0",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/crm/knowledge/ingestion-failed",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-request-id",
+              "value": "={{$execution.id}}-knowledge-failed"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json)}}",
+        "options": {}
+      },
+      "id": "b4ae56c8-24ab-47ff-a0da-634cbdc1d35a",
+      "name": "Mark Document Failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        12672,
+        768
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nlRh1UkRewsK7CCR",
+          "name": "ControlPlaneAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $('Webhook Trigger').first().json.body || {};\nconst e = $input.first().json || {};\nconst errorMessage =\n  e.error?.message ||\n  e.message ||\n  e.description ||\n  e.error ||\n  'Unknown ingestion error';\n\nconst failedNode =\n  e.error?.node?.name ||\n  e.node?.name ||\n  e.node ||\n  'ingestion_pipeline';\n\nreturn [{\n  json: {\n    workflow_run_id: $execution.id,\n    document_id: body.document_id || '',\n    organization_id: body.organization_id || '',\n    error_message: String(errorMessage),\n    stage: String(failedNode),\n    metadata: {\n      requested_file_path: body.file_path || '',\n      source: 'PN_PRODUCTION_KNOWLEDGE_INGESTION_v1.0'\n    }\n  }\n}];"
+      },
+      "id": "9be8b3f7-65e9-4c53-9837-89a851c8a7e5",
+      "name": "Format Ingestion Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12480,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_ingestion_runs?workflow_run_id=eq.{{$execution.id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"ready\",\n  \"last_error\": null\n}",
+        "options": {}
+      },
+      "id": "1001163e-780e-4465-9722-852e9e6f48f8",
+      "name": "Update Ingestion Context Ready",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        12272,
+        768
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_documents?id=eq.{{ $('Validate Active Canonical Document').first().json.document_id }}&organization_id=eq.{{ $('Validate Active Canonical Document').first().json.organization_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"status\": \"ready\"}",
+        "options": {}
+      },
+      "id": "62bc6392-15c3-4bb0-b945-61c6114acc1c",
+      "name": "Update Document Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        13808,
+        464
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {
+          "baseURL": "={{($env[\"API_BASE_URL\"] || \"https://agent.pnmediaplus.com\")}}/api/internal/llm-gateway/openai/org/{{ $('Validate Active Canonical Document').first().json.organization_id }}/v1"
+        }
+      },
+      "id": "c980e624-f9c5-41e7-b785-6688f4c042a6",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1,
+      "position": [
+        13152,
+        768
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "MesMbE0xnztwgTiM",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "id": "d1a7e677-e6b7-426a-87a5-8699956d8ea1",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        13328,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "binaryMode": "specificField",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "document_id",
+                "value": "={{ $('Validate Active Canonical Document').first().json.document_id }}"
+              },
+              {
+                "name": "organization_id",
+                "value": "={{ $('Validate Active Canonical Document').first().json.organization_id }}"
+              },
+              {
+                "name": "file_name",
+                "value": "={{ $('Validate Active Canonical Document').first().json.file_name }}"
+              },
+              {
+                "name": "canonical_manifest",
+                "value": "PN_TELESALES_FINAL_KNOWLEDGE_PACKAGE_v1.0"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e3378ec4-2457-40d4-881f-82c4bc5c8b07",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        13392,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "crm_knowledge_chunks",
+        "options": {}
+      },
+      "id": "2d9d43a1-a5e0-41ea-90a5-6e625ecc06eb",
+      "name": "Insert to Postgres Vector",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        13424,
+        432
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "ofJrjcqGKuPkdwfN",
+          "name": "Agent PNM"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_ingestion_runs?on_conflict=workflow_run_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"workflow_run_id\": \"{{$execution.id}}\",\n  \"document_id\": \"{{ $('Validate Active Canonical Document').first().json.document_id }}\",\n  \"organization_id\": \"{{ $('Validate Active Canonical Document').first().json.organization_id }}\",\n  \"file_path\": \"{{ $('Validate Active Canonical Document').first().json.file_path }}\",\n  \"file_name\": \"{{ $('Validate Active Canonical Document').first().json.file_name }}\",\n  \"mime_type\": \"{{ $('Validate Active Canonical Document').first().json.mime_type }}\",\n  \"status\": \"processing\",\n  \"payload\": {\n    \"source\": \"PN_PRODUCTION_KNOWLEDGE_INGESTION_v1.0\",\n    \"canonical_manifest\": \"PN_TELESALES_FINAL_KNOWLEDGE_PACKAGE_v1.0\",\n    \"document_id\": \"{{ $('Validate Active Canonical Document').first().json.document_id }}\",\n    \"organization_id\": \"{{ $('Validate Active Canonical Document').first().json.organization_id }}\",\n    \"file_path\": \"{{ $('Validate Active Canonical Document').first().json.file_path }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "8004fff3-662d-4160-bbc9-eab2dc8c4c4c",
+      "name": "Persist Ingestion Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        12848,
+        432
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{($env.SUPABASE_URL || 'http://supabase:8000').replace(/\\/$/, '') + '/storage/v1/object/crm_knowledge_files/' + $('Validate Active Canonical Document').first().json.file_path}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "072cacaa-e37d-4588-a6b4-3c0f16c78180",
+      "name": "Download Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        13232,
+        432
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "knowledge-ingestion",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "de8760d7-6b59-45e9-9922-d59028f15bc6",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        12272,
+        432
+      ],
+      "notesInFlow": true,
+      "webhookId": "af741a80-fcc6-4c3f-9d14-9205324296fa",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nlRh1UkRewsK7CCR",
+          "name": "ControlPlaneAuth"
+        }
+      },
+      "notes": "PRODUCTION: Header Auth bắt buộc. Nhận {document_id, organization_id, file_path?}. file_path từ caller KHÔNG được dùng làm authority; workflow resolve lại từ DB."
+    },
+    {
+      "parameters": {
+        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_documents?id=eq.{{ $('Webhook Trigger').first().json.body.document_id }}&organization_id=eq.{{ $('Webhook Trigger').first().json.body.organization_id }}&select=id,organization_id,file_path,file_name,mime_type,status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7bc8fe2e-6159-4e09-a538-836a5881df44",
+      "name": "Load Document Record",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        12464,
+        432
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "Resolve document bằng BOTH document_id + organization_id trước khi ingest."
+    },
+    {
+      "parameters": {
+        "jsCode": "const incoming = $('Webhook Trigger').first().json.body || {};\nconst raw = $input.first().json;\n\nlet doc = raw;\nif (Array.isArray(raw)) doc = raw[0] || null;\nif (raw && Array.isArray(raw.data)) doc = raw.data[0] || null;\n\nif (!doc || !doc.id) {\n  throw new Error('KNOWLEDGE_DOCUMENT_NOT_FOUND_OR_TENANT_MISMATCH');\n}\n\nif (String(doc.organization_id || '') !== String(incoming.organization_id || '')) {\n  throw new Error('KNOWLEDGE_TENANT_MISMATCH');\n}\n\nif (!doc.file_path) {\n  throw new Error('KNOWLEDGE_FILE_PATH_MISSING_IN_DB');\n}\n\nif (incoming.file_path && String(incoming.file_path) !== String(doc.file_path)) {\n  throw new Error('KNOWLEDGE_FILE_PATH_MISMATCH');\n}\n\nconst allowedFiles = new Set([\"02_FEATURE_CATALOG.md\", \"03_BUSINESS_WORKFLOW_GUIDE.md\", \"08_PRODUCT_SCOPE_AND_SERVICE_BOUNDARY.md\", \"12_MASTER_PRODUCT_DOCUMENTATION.md\", \"03_USER_OPERATION_GUIDE.md\", \"04_ROLE_AND_ACCESS_FAQ.md\", \"05_KNOWN_LIMITATIONS.md\", \"06_SUPPORT_AND_ESCALATION_RULES.md\", \"08_CHANGE_REQUEST_AND_CUSTOM_FEATURE_POLICY.md\", \"07_SUBSCRIPTION_AND_SERVICE_FAQ_v1.1.md\", \"PN_AGENCY_CRM_PRICE_MATRIX_v1.0.md\", \"01_SOCIAL_CHANNEL_BUILDING_SERVICE_v1.1.md\", \"02_FANPAGE_SOCIAL_CARE_SERVICE_v1.1.md\", \"03_PAID_ADS_SERVICE_v1.1.md\", \"04_WEBSITE_SERVICE_v1.1.md\", \"05_N8N_AUTOMATION_SERVICE_v1.0.md\", \"06_AI_CHATBOT_SERVICE_v1.0.md\", \"07_MEDIA_PRODUCTION_SERVICE_v1.0.md\", \"01_PN_MASTER_COMMERCIAL_PRODUCT_MATRIX_v1.0.md\", \"02_PN_SERVICE_DIFFERENTIATION_AND_BUYING_GUIDE_v1.0.md\", \"04_PN_SOLUTION_COMBO_MATRIX_v1.0.md\"]);\nconst fileName = String(doc.file_name || String(doc.file_path).split('/').pop() || '').trim();\n\nif (!allowedFiles.has(fileName)) {\n  throw new Error('KNOWLEDGE_FILE_NOT_IN_ACTIVE_CANONICAL_MANIFEST: ' + fileName);\n}\n\nreturn [{\n  json: {\n    document_id: doc.id,\n    organization_id: doc.organization_id,\n    file_path: doc.file_path,\n    file_name: fileName,\n    mime_type: doc.mime_type || '',\n    document_status_before_ingestion: doc.status || '',\n    canonical_manifest: 'PN_TELESALES_FINAL_KNOWLEDGE_PACKAGE_v1.0',\n    canonical_allowed: true\n  }\n}];"
+      },
+      "id": "83788f48-dc8b-48fb-90e6-3735bce42b3c",
+      "name": "Validate Active Canonical Document",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12656,
+        432
+      ],
+      "notesInFlow": true,
+      "onError": "continueErrorOutput",
+      "notes": "Fail-closed: chỉ 21 file ACTIVE_KNOWLEDGE đã khóa mới được ingest."
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_chunks?metadata->>document_id=eq.{{ $('Validate Active Canonical Document').first().json.document_id }}&metadata->>organization_id=eq.{{ $('Validate Active Canonical Document').first().json.organization_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b9ec2f98-399f-4980-afcf-5c056843d99d",
+      "name": "Delete Existing Document Chunks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        13040,
+        432
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eUuuv1meIVSpZzFH",
+          "name": "SupabaseAuth"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "Idempotency: xóa chunk cũ cùng document_id + organization_id trước re-ingestion."
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Load Document Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Document Record": {
+      "main": [
+        [
+          {
+            "node": "Validate Active Canonical Document",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Ingestion Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Active Canonical Document": {
+      "main": [
+        [
+          {
+            "node": "Persist Ingestion Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Ingestion Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Ingestion Context": {
+      "main": [
+        [
+          {
+            "node": "Delete Existing Document Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Ingestion Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Existing Document Chunks": {
+      "main": [
+        [
+          {
+            "node": "Download Document",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Ingestion Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Document": {
+      "main": [
+        [
+          {
+            "node": "Insert to Postgres Vector",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Ingestion Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert to Postgres Vector": {
+      "main": [
+        [
+          {
+            "node": "Update Document Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Ingestion Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Document Status": {
+      "main": [
+        [
+          {
+            "node": "Update Ingestion Context Ready",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Ingestion Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Ingestion Context Ready": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Format Ingestion Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Ingestion Error": {
+      "main": [
+        [
+          {
+            "node": "Mark Document Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert to Postgres Vector",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Insert to Postgres Vector",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "d8486a03-0a39-472e-83f5-77d24a207dee",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "id": "1G4tqcDW9Gc55QA0",
+  "tags": []
+}
