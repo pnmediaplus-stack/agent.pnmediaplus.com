@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 import { useCrmStore } from '@/lib/stores/crmStore';
 
 export default function InboxSidebar() {
@@ -59,13 +60,20 @@ export default function InboxSidebar() {
             <div 
               key={thread.id} 
               onClick={() => setActiveThreadId(thread.id)}
-              className={`p-4 border-b border-gray-50 cursor-pointer transition-all duration-200 ${
+              className={`group relative p-4 border-b border-gray-50 cursor-pointer transition-all duration-200 ${
                 activeThreadId === thread.id 
                   ? 'bg-blue-50/60 border-l-4 border-l-blue-600' 
                   : 'bg-white border-l-4 border-l-transparent hover:bg-gray-50'
               }`}
             >
               <div className="flex justify-between items-center mb-1.5">
+                <div className="absolute right-2 top-2 hidden group-hover:block">
+                  <div className="relative">
+                    <button onClick={(e) => { e.stopPropagation(); alert('Tính năng Đổi tên & Xóa đang được thiết kế. Cần sếp chốt tính năng bổ sung!'); }} className="p-1 hover:bg-gray-200 rounded text-gray-500">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
                 <span className={`font-semibold text-sm truncate pr-2 flex items-center gap-2 ${
                   (thread.unread_count || 0) > 0 ? 'font-bold text-gray-900' : (activeThreadId === thread.id ? 'text-blue-900' : 'text-gray-800')
                 }`}>
