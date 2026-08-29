@@ -61,9 +61,20 @@ export async function POST(request: Request) {
       updates.tags = normalizedTags;
     }
 
+    // Map common LLM hallucinations to correct schema fields
+    const payloadMap: Record<string, string> = {
+      address: String(payload.address || "").trim(),
+      email: String(payload.email || payload.mail || "").trim(),
+      notes: String(payload.notes || payload.note || "").trim(),
+      full_name: String(payload.full_name || payload.name || payload.ten || "").trim(),
+      phone_number: String(payload.phone_number || payload.phone || payload.sdt || "").trim(),
+      primary_need: String(payload.primary_need || payload.demand || payload.nhu_cau || "").trim(),
+      customer_segment: String(payload.customer_segment || payload.segment || "").trim()
+    };
+
     for (const key of ["address", "email", "notes", "full_name", "phone_number", "primary_need", "customer_segment"] as const) {
-      if (typeof payload[key] === "string" && String(payload[key]).trim()) {
-        updates[key] = String(payload[key]).trim();
+      if (payloadMap[key]) {
+        updates[key] = payloadMap[key];
       }
     }
 
