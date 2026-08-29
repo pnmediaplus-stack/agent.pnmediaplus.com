@@ -181,8 +181,8 @@
       ],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
+          "id": "x9KKPJQks3nNwOUP",
+          "name": "CONTROL_PLANE_SECRET"
         }
       },
       "onError": "continueErrorOutput"
@@ -208,8 +208,8 @@
       ],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
+          "id": "x9KKPJQks3nNwOUP",
+          "name": "CONTROL_PLANE_SECRET"
         }
       },
       "onError": "continueErrorOutput"
@@ -312,8 +312,8 @@
       "waitBetweenTries": 1000,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "nlRh1UkRewsK7CCR",
-          "name": "ControlPlaneAuth"
+          "id": "x9KKPJQks3nNwOUP",
+          "name": "CONTROL_PLANE_SECRET"
         }
       },
       "onError": "continueErrorOutput"
@@ -403,8 +403,8 @@
       "notesInFlow": true,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
+          "id": "x9KKPJQks3nNwOUP",
+          "name": "CONTROL_PLANE_SECRET"
         }
       },
       "notes": "Error path: nếu AI Agent lỗi runtime, chuyển Human thay vì silent fail."
@@ -434,8 +434,8 @@
       "notesInFlow": true,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "eUuuv1meIVSpZzFH",
-          "name": "SupabaseAuth"
+          "id": "x9KKPJQks3nNwOUP",
+          "name": "CONTROL_PLANE_SECRET"
         }
       },
       "notes": "Error path: dispatch thất bại thì handoff thread cho Human."
