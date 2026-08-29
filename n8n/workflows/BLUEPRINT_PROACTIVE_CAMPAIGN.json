@@ -128,7 +128,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": {{ JSON.stringify($('Format Campaign').item.json.prompt) }}\n    },\n    {\n      \"role\": \"user\",\n      \"content\": {{ JSON.stringify(JSON.stringify($json.history)) }}\n    }\n  ],\n  \"temperature\": 0.7\n}",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": {{ JSON.stringify(\"Bạn là trợ lý AI chăm sóc khách hàng. Nhiệm vụ của bạn là soạn 1 tin nhắn chủ động nhắn lại cho khách hàng sau một khoảng thời gian họ im lặng.\n\nDựa vào lịch sử trò chuyện bên dưới, hãy viết lại thông điệp sau sao cho tự nhiên, phù hợp ngữ cảnh, có đại từ xưng hô đúng mực. Tuyệt đối KHÔNG nhắc lại câu trả lời cũ của bạn.\n\nTHÔNG ĐIỆP CẦN TRUYỀN TẢI: \" + $('Format Campaign').item.json.prompt) }}\n    },\n    {\n      \"role\": \"user\",\n      \"content\": {{ JSON.stringify(\"LỊCH SỬ CHAT (Mới nhất ở cuối):\n\" + JSON.stringify($json.history)) }}\n    }\n  ],\n  \"temperature\": 0.7\n}",
         "options": {}
       },
       "id": "1cc4cb01-d018-43c9-93ba-4fac6c3f6d80",
