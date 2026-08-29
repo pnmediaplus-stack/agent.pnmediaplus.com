@@ -1,12 +1,55 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { MoreHorizontal, Edit2, Trash2, UserCheck } from 'lucide-react';
 import { MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 import { useCrmStore } from '@/lib/stores/crmStore';
 
 export default function InboxSidebar() {
   const { threads, activeThreadId, setActiveThreadId, isLoadingThreads, threadsError } = useCrmStore();
   const [searchTerm, setSearchTerm] = React.useState('');
+
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdownId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleAction = async (action: string, thread: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (action === 'rename') {
+      const newName = window.prompt("Nhập tên hiển thị mới:", thread.customer?.full_name || "");
+      if (newName !== null && newName.trim() !== "") {
+        await fetch("/api/crm/customers", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: thread.customer_id, full_name: newName })
+        });
+        window.location.reload();
+      }
+    } else if (action === 'handoff') {
+      await fetch("/api/crm/threads/handoff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ threadId: thread.id, status: 'human_handling' })
+      });
+      window.location.reload();
+    } else if (action === 'delete') {
+      if (window.confirm("Bạn có chắc chắn muốn xóa cuộc hội thoại này?")) {
+        await fetch(`/api/crm/threads/${thread.id}`, { method: "DELETE" });
+        window.location.reload();
+      }
+    }
+  };
+
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredThreads = normalizedSearch
     ? threads.filter((thread) => {
@@ -67,11 +110,30 @@ export default function InboxSidebar() {
               }`}
             >
               <div className="flex justify-between items-center mb-1.5">
-                <div className="absolute right-2 top-2 hidden group-hover:block">
+                <div className="absolute right-2 top-2 z-20" ref={openDropdownId === thread.id ? dropdownRef : null}>
                   <div className="relative">
-                    <button onClick={(e) => { e.stopPropagation(); alert('Tính năng Đổi tên & Xóa đang được thiết kế. Cần sếp chốt tính năng bổ sung!'); }} className="p-1 hover:bg-gray-200 rounded text-gray-500">
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setOpenDropdownId(openDropdownId === thread.id ? null : thread.id); 
+                      }} 
+                      className={`p-1 rounded text-gray-500 ${openDropdownId === thread.id ? 'bg-gray-200 block' : 'hover:bg-gray-200 hidden group-hover:block'}`}
+                    >
                       <MoreHorizontal className="w-4 h-4" />
                     </button>
+                    {openDropdownId === thread.id && (
+                      <div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-50">
+                        <button onClick={(e) => handleAction('rename', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                          <Edit2 className="w-3.5 h-3.5 mr-2 text-gray-400" /> Đổi tên
+                        </button>
+                        <button onClick={(e) => handleAction('handoff', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                          <UserCheck className="w-3.5 h-3.5 mr-2 text-gray-400" /> Giành quyền
+                        </button>
+                        <button onClick={(e) => handleAction('delete', thread, e)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center">
+                          <Trash2 className="w-3.5 h-3.5 mr-2 text-red-400" /> Xóa
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <span className={`font-semibold text-sm truncate pr-2 flex items-center gap-2 ${
