@@ -53,9 +53,23 @@ export default function CustomerProfile() {
       {/* Header */}
       <div className="p-4 border-b border-gray-100 flex items-center justify-center flex-col relative">
         {isEditing && (
-          <button onClick={handleSave} disabled={isSaving} className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50">
-            {isSaving ? "Đang lưu..." : "Lưu lại"}
-          </button>
+          <div className="absolute top-4 right-4 flex gap-2">
+            <button onClick={() => {
+              setIsEditing(false);
+              setFormData({
+                full_name: customer.full_name || '',
+                email: customer.email || '',
+                phone_number: customer.phone_number || '',
+                address: customer.address || '',
+                notes: customer.notes || ''
+              });
+            }} disabled={isSaving} className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-medium hover:bg-gray-300 disabled:opacity-50">
+              Hủy
+            </button>
+            <button onClick={handleSave} disabled={isSaving} className="bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50">
+              {isSaving ? "Đang lưu..." : "Lưu lại"}
+            </button>
+          </div>
         )}
         {!isEditing && (
           <button onClick={() => setIsEditing(true)} className="absolute top-4 right-4 text-gray-500 hover:text-blue-600 px-3 py-1 rounded text-xs font-medium">
