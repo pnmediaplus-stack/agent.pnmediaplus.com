@@ -1,12 +1,27 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreHorizontal, Edit2, Trash2, Mail, MailOpen, Tag } from 'lucide-react';
+import { MoreHorizontal, Edit2, Trash2, Mail, MailOpen, Tag, X } from 'lucide-react';
 import { useCrmStore } from '@/lib/stores/crmStore';
 
 export default function InboxSidebar() {
   const { threads, activeThreadId, setActiveThreadId, isLoadingThreads, threadsError, setThreads, updateCustomerProfile } = useCrmStore();
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [tagModalThread, setTagModalThread] = useState<any>(null);
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isSavingTags, setIsSavingTags] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/crm/tags')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setAvailableTags(data);
+      })
+      .catch(console.error);
+  }, []);
+
 
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -25,17 +40,9 @@ export default function InboxSidebar() {
     e.stopPropagation();
     setOpenDropdownId(null);
     if (action === 'tag') {
-      const currentTags = thread.customer?.tags?.join(", ") || "";
-      const newTagsStr = window.prompt("Nhập thẻ Tags (cách nhau bằng dấu phẩy):", currentTags);
-      if (newTagsStr !== null) {
-        const newTags = newTagsStr.split(",").map(t => t.trim()).filter(Boolean);
-        await fetch("/api/crm/customers", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: thread.customer_id, tags: newTags })
-        });
-        updateCustomerProfile(thread.id, { tags: newTags });
-      }
+      setTagModalThread(thread);
+      setSelectedTags(thread.customer?.tags || []);
+      setIsTagModalOpen(true);
     } else if (action === 'rename') {
       const newName = window.prompt("Nhập tên hiển thị mới:", thread.customer?.full_name || "");
       if (newName !== null && newName.trim() !== "") {
@@ -232,6 +239,73 @@ export default function InboxSidebar() {
           ))
         )}
       </div>
+
+      {/* Tag Modal */}
+      {isTagModalOpen && tagModalThread && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="flex justify-between items-center p-4 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-800">Gắn thẻ khách hàng</h3>
+              <button onClick={() => setIsTagModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              {availableTags.length === 0 ? (
+                <div className="text-sm text-gray-500 text-center py-4">Chưa có thẻ nào được cấu hình trên Dashboard.</div>
+              ) : (
+                <div className="space-y-2">
+                  {availableTags.map(tag => (
+                    <label key={tag.id || tag.tag_name} className="flex items-center p-3 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                        checked={selectedTags.includes(tag.tag_name)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedTags([...selectedTags, tag.tag_name]);
+                          } else {
+                            setSelectedTags(selectedTags.filter(t => t !== tag.tag_name));
+                          }
+                        }}
+                      />
+                      <span className="ml-3 text-sm font-medium text-gray-700">{tag.tag_name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+              <button onClick={() => setIsTagModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                Hủy
+              </button>
+              <button 
+                disabled={isSavingTags}
+                onClick={async () => {
+                  setIsSavingTags(true);
+                  try {
+                    const res = await fetch("/api/crm/customers", {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ id: tagModalThread.customer_id, tags: selectedTags })
+                    });
+                    if (!res.ok) throw new Error("Save failed");
+                    updateCustomerProfile(tagModalThread.id, { tags: selectedTags });
+                    setIsTagModalOpen(false);
+                  } catch (e) {
+                    alert("Lỗi khi lưu thẻ!");
+                  } finally {
+                    setIsSavingTags(false);
+                  }
+                }} 
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isSavingTags ? "Đang lưu..." : "Lưu lại"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
