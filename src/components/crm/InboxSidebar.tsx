@@ -118,7 +118,13 @@ export default function InboxSidebar() {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ unread_count: 0 })
-                  }).catch(console.error);
+                  }).then(res => {
+                    if (!res.ok) throw new Error("Failed to mark as read");
+                  }).catch(e => {
+                    console.error("Auto-read failed, rolling back", e);
+                    const currentThreads = useCrmStore.getState().threads;
+                    setThreads(currentThreads.map(t => t.id === thread.id ? { ...t, unread_count: thread.unread_count } : t));
+                  });
                 }
               }}
               className={`group relative p-4 border-b border-gray-50 cursor-pointer transition-all duration-200 ${
