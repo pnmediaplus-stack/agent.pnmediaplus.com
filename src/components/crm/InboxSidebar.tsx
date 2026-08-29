@@ -2,11 +2,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { MoreHorizontal, Edit2, Trash2, UserCheck } from 'lucide-react';
-import { MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 import { useCrmStore } from '@/lib/stores/crmStore';
 
 export default function InboxSidebar() {
-  const { threads, activeThreadId, setActiveThreadId, isLoadingThreads, threadsError } = useCrmStore();
+  const { threads, activeThreadId, setActiveThreadId, isLoadingThreads, threadsError, setThreads, updateCustomerProfile } = useCrmStore();
   const [searchTerm, setSearchTerm] = React.useState('');
 
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -33,7 +32,7 @@ export default function InboxSidebar() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: thread.customer_id, full_name: newName })
         });
-        window.location.reload();
+        updateCustomerProfile(thread.id, { full_name: newName });
       }
     } else if (action === 'handoff') {
       await fetch("/api/crm/threads/handoff", {
@@ -41,11 +40,12 @@ export default function InboxSidebar() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ threadId: thread.id, status: 'human_handling' })
       });
-      window.location.reload();
+      setThreads(threads.map(t => t.id === thread.id ? { ...t, status: 'human_handling' } : t));
     } else if (action === 'delete') {
       if (window.confirm("Bạn có chắc chắn muốn xóa cuộc hội thoại này?")) {
         await fetch(`/api/crm/threads/${thread.id}`, { method: "DELETE" });
-        window.location.reload();
+        setThreads(threads.filter(t => t.id !== thread.id));
+        if (activeThreadId === thread.id) setActiveThreadId(null);
       }
     }
   };
