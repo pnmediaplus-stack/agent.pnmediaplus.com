@@ -115,49 +115,16 @@ async function processMessage(job) {
 }
 
 async function pollQueue() {
-  // P0 - Concurrency Locking: lock messages that are pending and ready to retry
-  const now = new Date().toISOString();
-  
-  // PostgreSQL tricky UPDATE ... RETURNING is not easily doable via simple supabase-js without RPC
-  // Workaround for Phase 1: select pending, then update to lock.
-  // We fetch up to 20 jobs that are pending and ready.
-  const { data: jobs, error } = await supabase
-    .from('crm_outbound_queue')
-    .select('*')
-    .eq('status', 'pending')
-    .lte('next_retry_at', now)
-    .or(`locked_until.is.null,locked_until.lt.${now}`)
-    .order('created_at', { ascending: true })
-    .limit(20);
+  // P0 - Atomic Claiming via RPC (handles both rate-limit grouping and stale locks)
+  const { data: jobsToProcess, error } = await supabase.rpc('phase077_claim_crm_outbound_queue');
 
-  if (error || !jobs || jobs.length === 0) return;
-
-  // Group by page_id to enforce rate limits
-  const jobsByPage = {};
-  for (const job of jobs) {
-    if (!jobsByPage[job.page_id]) jobsByPage[job.page_id] = [];
-    jobsByPage[job.page_id].push(job);
+  if (error) {
+    console.error("Queue poll error:", error);
+    return;
   }
+  if (!jobsToProcess || jobsToProcess.length === 0) return;
 
-  const jobsToProcess = [];
-  for (const pageId in jobsByPage) {
-    // Only take max 2 per page to enforce rate limit this tick
-    const pageJobs = jobsByPage[pageId].slice(0, MAX_MESSAGES_PER_PAGE_PER_SECOND);
-    jobsToProcess.push(...pageJobs);
-  }
-
-  if (jobsToProcess.length === 0) return;
-
-  // Lock them
-  const jobIds = jobsToProcess.map(j => j.id);
-  const lockTime = new Date(Date.now() + 60 * 1000).toISOString(); // Lock for 60 seconds
-  
-  await supabase
-    .from('crm_outbound_queue')
-    .update({ status: 'processing', locked_until: lockTime })
-    .in('id', jobIds);
-
-  // Process concurrently but safely (rate limited by the grouping above)
+  // Process concurrently. The RPC already ensured max 2 jobs per page_id.
   await Promise.all(jobsToProcess.map(job => processMessage(job)));
 }
 

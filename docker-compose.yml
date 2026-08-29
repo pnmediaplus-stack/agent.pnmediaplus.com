@@ -1,10 +1,10 @@
+version: '3.8'
+
 services:
   agent_pnmedia:
     build:
       context: .
       dockerfile: Dockerfile
-      labels:
-        - "com.pnmediaplus.project=agent.pnmediaplus.com"
     container_name: agent_pnmedia
     restart: unless-stopped
     ports:
