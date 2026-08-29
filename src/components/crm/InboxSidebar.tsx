@@ -166,12 +166,16 @@ export default function InboxSidebar() {
                     </button>
                     {openDropdownId === thread.id && (
                       <div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-50">
-                        <button onClick={(e) => handleAction('rename', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
-                          <Edit2 className="w-3.5 h-3.5 mr-2 text-gray-400" /> Đổi tên
-                        </button>
-                        <button onClick={(e) => handleAction('tag', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
-                          <Tag className="w-3.5 h-3.5 mr-2 text-gray-400" /> Gắn thẻ
-                        </button>
+                        {thread.customer_id && (
+                          <>
+                            <button onClick={(e) => handleAction('rename', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                              <Edit2 className="w-3.5 h-3.5 mr-2 text-gray-400" /> Đổi tên
+                            </button>
+                            <button onClick={(e) => handleAction('tag', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                              <Tag className="w-3.5 h-3.5 mr-2 text-gray-400" /> Gắn thẻ
+                            </button>
+                          </>
+                        )}
                         {(thread.unread_count || 0) > 0 ? (
                           <button onClick={(e) => handleAction('read', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
                             <MailOpen className="w-3.5 h-3.5 mr-2 text-gray-400" /> Đánh dấu đã đọc

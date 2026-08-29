@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireCrmRouteContext, fetchSupabaseRest } from "@/lib/crm-api";
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   const auth = await requireCrmRouteContext(req);
   if (!auth.ok) return auth.response;
 
@@ -9,7 +10,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     const res = await fetchSupabaseRest("crm_threads", {
       method: "DELETE",
       searchParams: {
-        id: `eq.${params.id}`,
+        id: `eq.${resolvedParams.id}`,
         organization_id: `eq.${auth.context.organizationId}`
       }
     });
@@ -24,7 +25,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 }
 
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   const auth = await requireCrmRouteContext(req);
   if (!auth.ok) return auth.response;
 
@@ -33,7 +35,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const res = await fetchSupabaseRest("crm_threads", {
       method: "PATCH",
       searchParams: {
-        id: `eq.${params.id}`,
+        id: `eq.${resolvedParams.id}`,
         organization_id: `eq.${auth.context.organizationId}`
       },
       headers: { "Content-Type": "application/json" },
