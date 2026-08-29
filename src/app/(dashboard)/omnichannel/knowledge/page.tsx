@@ -657,7 +657,17 @@ function TagsTab() {
   const { data: tags, error, mutate } = useSWR('/api/crm/tags', fetcher);
   const [tagName, setTagName] = useState('');
   const [tagColor, setTagColor] = useState('#3B82F6');
-  const [isAdding, setIsAdding] = useState(false);
+    const [tagBgColor, setTagBgColor] = useState('#ecfdf5'); // light green
+  const [tagTextColor, setTagTextColor] = useState('#059669'); // dark green
+  const [tagBorderColor, setTagBorderColor] = useState('#34d399'); // border green
+  
+  const parseColor = (colorStr: string) => {
+    try {
+      if (colorStr && colorStr.startsWith('{')) return JSON.parse(colorStr);
+    } catch (e) {}
+    return { bg: colorStr || '#3B82F6', text: '#ffffff', border: colorStr || '#3B82F6' };
+  };
+const [isAdding, setIsAdding] = useState(false);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -667,7 +677,7 @@ function TagsTab() {
       const res = await fetch('/api/crm/tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tag_name: tagName, color: tagColor })
+        body: JSON.stringify({ tag_name: tagName, color: JSON.stringify({ bg: tagBgColor, text: tagTextColor, border: tagBorderColor }) })
       });
       if (res.ok) {
         setTagName('');
@@ -708,8 +718,16 @@ function TagsTab() {
             <input type="text" value={tagName} onChange={e => setTagName(e.target.value)} placeholder="VD: Khách sỉ" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 bg-white" required />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Màu sắc</label>
-            <input type="color" value={tagColor} onChange={e => setTagColor(e.target.value)} className="h-9 w-14 cursor-pointer bg-white border border-gray-300 rounded-lg p-1" />
+            <label className="block text-xs font-medium text-gray-700 mb-1">Màu nền</label>
+            <input type="color" value={tagBgColor} onChange={e => setTagBgColor(e.target.value)} className="h-9 w-12 cursor-pointer bg-white border border-gray-300 rounded-lg p-0.5" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Màu chữ</label>
+            <input type="color" value={tagTextColor} onChange={e => setTagTextColor(e.target.value)} className="h-9 w-12 cursor-pointer bg-white border border-gray-300 rounded-lg p-0.5" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Màu viền</label>
+            <input type="color" value={tagBorderColor} onChange={e => setTagBorderColor(e.target.value)} className="h-9 w-12 cursor-pointer bg-white border border-gray-300 rounded-lg p-0.5" />
           </div>
           <button type="submit" disabled={isAdding || !tagName.trim()} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center h-9">
             {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> Thêm Thẻ</>}
@@ -721,8 +739,8 @@ function TagsTab() {
             <div className="text-gray-500 text-sm italic w-full text-center py-6">Chưa có thẻ nào được tạo.</div>
           ) : (
             tags.map((tag: any) => (
-              <div key={tag.id} className="group flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium shadow-sm transition-all bg-white hover:bg-gray-50" style={{ borderColor: tag.color + '40', color: tag.color }}>
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
+              <div key={tag.id} className="group flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium shadow-sm transition-all bg-white hover:bg-gray-50" style={{ backgroundColor: parseColor(tag.color).bg, color: parseColor(tag.color).text, borderColor: parseColor(tag.color).border }}>
+                
                 {tag.tag_name}
                 <button onClick={() => handleDelete(tag.id)} className="ml-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                   <X className="w-3.5 h-3.5" />

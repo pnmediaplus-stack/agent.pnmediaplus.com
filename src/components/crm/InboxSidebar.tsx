@@ -15,7 +15,11 @@ export default function InboxSidebar() {
 
   const getTagColor = (tagName: string) => {
     const tag = availableTags.find(t => t.tag_name === tagName);
-    return tag?.color || '#3b82f6';
+    const colorStr = tag?.color || '#3b82f6';
+    try {
+      if (colorStr.startsWith('{')) return JSON.parse(colorStr);
+    } catch (e) {}
+    return { bg: colorStr, text: '#ffffff', border: colorStr };
   };
   const getContrastColor = (hexcolor: string) => {
     hexcolor = hexcolor.replace("#", "");
@@ -244,7 +248,7 @@ export default function InboxSidebar() {
               {thread.customer?.tags && thread.customer.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {thread.customer.tags.slice(0, 3).map(tag => (
-                    <span key={tag} style={{ backgroundColor: getTagColor(tag), color: getContrastColor(getTagColor(tag)), border: 'none' }} className="px-1.5 py-0.5 border text-[10px] rounded-md font-medium">
+                    <span key={tag} style={{ backgroundColor: getTagColor(tag).bg, color: getTagColor(tag).text, border: `1px solid ${getTagColor(tag).border}` }} className="px-1.5 py-0.5 border text-[10px] rounded-md font-medium">
                       {tag}
                     </span>
                   ))}
@@ -290,7 +294,13 @@ export default function InboxSidebar() {
                         }}
                       />
                       <div className="ml-3 flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: tag.color || '#3b82f6' }}></span>
+                        
+                        {(() => {
+                          let c = { bg: tag.color || '#3b82f6', text: '#fff', border: tag.color || '#3b82f6' };
+                          try { if (tag.color?.startsWith('{')) c = JSON.parse(tag.color); } catch(e){}
+                          return <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.bg, border: `1px solid ${c.border}` }}></span>;
+                        })()}
+
                         <span className="text-sm font-medium text-gray-700">{tag.tag_name}</span>
                       </div>
                     </label>

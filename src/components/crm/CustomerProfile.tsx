@@ -25,7 +25,11 @@ export default function CustomerProfile() {
 
   const getTagColor = (tagName: string) => {
     const tag = availableTags.find(t => t.tag_name === tagName);
-    return tag?.color || '#3b82f6';
+    const colorStr = tag?.color || '#3b82f6';
+    try {
+      if (colorStr.startsWith('{')) return JSON.parse(colorStr);
+    } catch (e) {}
+    return { bg: colorStr, text: '#ffffff', border: colorStr };
   };
   const getContrastColor = (hexcolor: string) => {
     hexcolor = hexcolor.replace("#", "");
@@ -148,7 +152,7 @@ export default function CustomerProfile() {
           <div className="flex flex-wrap gap-2">
             {customer.tags && customer.tags.length > 0 ? (
               customer.tags.map(tag => (
-                <span key={tag} style={{ backgroundColor: getTagColor(tag), color: getContrastColor(getTagColor(tag)), border: 'none' }} className="px-2 py-1 text-xs rounded-md border font-medium">
+                <span key={tag} style={{ backgroundColor: getTagColor(tag).bg, color: getTagColor(tag).text, border: `1px solid ${getTagColor(tag).border}` }} className="px-2 py-1 text-xs rounded-md border font-medium">
                   {tag}
                 </span>
               ))
