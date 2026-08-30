@@ -72,6 +72,12 @@ export async function POST(req: Request) {
       for (const event of entry.messaging) {
         // Only handle message events
         if (!event.message) continue;
+        
+        // Skip bot echoes
+        if (event.message.is_echo) {
+          console.log("Skipping echo message:", event.message.mid);
+          continue;
+        }
 
         const senderId = event.sender.id;
         // The message ID provided by Facebook
@@ -150,6 +156,7 @@ export async function POST(req: Request) {
               channel_id,
               customer_id: customerId, // Fixed reference
               status: "bot_handling",
+              unread_count: 1,
             })
             .select("id, status")
             .single();
