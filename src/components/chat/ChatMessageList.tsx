@@ -102,7 +102,36 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
               </div>
 
               <div className="text-sm leading-relaxed text-slate-200 prose prose-invert prose-sm max-w-none">
-                <ReactMarkdown
+                {displayBody?.includes('[[CAMPAIGN_PROPOSAL]]') ? (
+                    <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-indigo-950/40 to-slate-900/40 rounded-2xl border border-indigo-500/30 shadow-xl my-2 w-[500px] max-w-full">
+                      <div className="flex items-center gap-3 text-indigo-300 font-semibold text-base">
+                        <div className="p-2 bg-indigo-500/20 rounded-lg">
+                          <FileText className="w-5 h-5 text-indigo-400" />
+                        </div>
+                        <div>
+                          <div className="text-xs text-indigo-400/70 uppercase tracking-widest mb-0.5">Campaign Planner</div>
+                          BẢN KẾ HOẠCH CHIẾN DỊCH HOÀN CHỈNH
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-300/80 leading-relaxed">
+                        Hệ thống Agent đã phân tích và thiết lập xong Kế hoạch chiến dịch 10 ngày (Từ A đến T) dựa trên yêu cầu của sếp.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setMarkdownPreview({
+                          url: '',
+                          title: 'Kế hoạch Chiến dịch N8N',
+                          content: displayBody.replace('[[CAMPAIGN_PROPOSAL]]', ''),
+                          loading: false,
+                          error: null
+                        })}
+                        className="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-900/20 hover:shadow-indigo-500/30 flex items-center justify-center gap-2"
+                      >
+                        <Maximize2 className="w-4 h-4" /> Mở xem toàn màn hình
+                      </button>
+                    </div>
+                  ) : (
+                    <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
                     img: ({ node, ...props }) => {
@@ -232,6 +261,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                 >
                   {displayBody?.replace('[[CAMPAIGN_PROPOSAL]]', '')}
                 </ReactMarkdown>
+                  )}
               {message.intent_type === 'publish_prompt' && onCommand && (
                 <PublishSelector contentItemId={message.metadata?.contentItemId || ''} onCommand={onCommand} />
               )}
