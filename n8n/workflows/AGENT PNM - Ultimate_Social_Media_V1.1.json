@@ -925,7 +925,7 @@
       "parameters": {
         "conditions": {
           "options": {
-            "caseSensitive": true,
+            "caseSensitive": false,
             "leftValue": "",
             "typeValidation": "strict",
             "version": 2
@@ -934,7 +934,7 @@
             {
               "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
               "leftValue": "={{$json.platforms}}",
-              "rightValue": "meta_ads",
+              "rightValue": "facebook",
               "operator": {
                 "type": "array",
                 "operation": "contains",
@@ -959,7 +959,7 @@
       "parameters": {
         "conditions": {
           "options": {
-            "caseSensitive": true,
+            "caseSensitive": false,
             "leftValue": "",
             "typeValidation": "strict",
             "version": 2
@@ -993,7 +993,7 @@
       "parameters": {
         "conditions": {
           "options": {
-            "caseSensitive": true,
+            "caseSensitive": false,
             "leftValue": "",
             "typeValidation": "strict",
             "version": 2
@@ -1002,7 +1002,7 @@
             {
               "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
               "leftValue": "={{$json.platforms}}",
-              "rightValue": "youtube_longs",
+              "rightValue": "youtube",
               "operator": {
                 "type": "array",
                 "operation": "contains",
@@ -1027,7 +1027,7 @@
       "parameters": {
         "conditions": {
           "options": {
-            "caseSensitive": true,
+            "caseSensitive": false,
             "leftValue": "",
             "typeValidation": "strict",
             "version": 2
@@ -1036,7 +1036,7 @@
             {
               "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
               "leftValue": "={{$json.platforms}}",
-              "rightValue": "youtube_shorts",
+              "rightValue": "youtube shorts",
               "operator": {
                 "type": "array",
                 "operation": "contains",
@@ -1061,7 +1061,7 @@
       "parameters": {
         "conditions": {
           "options": {
-            "caseSensitive": true,
+            "caseSensitive": false,
             "leftValue": "",
             "typeValidation": "strict",
             "version": 2
@@ -1095,7 +1095,7 @@
       "parameters": {
         "conditions": {
           "options": {
-            "caseSensitive": true,
+            "caseSensitive": false,
             "leftValue": "",
             "typeValidation": "strict",
             "version": 2
@@ -1104,7 +1104,7 @@
             {
               "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
               "leftValue": "={{ $json.platforms }}",
-              "rightValue": "x_twitter",
+              "rightValue": "twitter",
               "operator": {
                 "type": "array",
                 "operation": "contains",
@@ -1129,7 +1129,7 @@
       "parameters": {
         "conditions": {
           "options": {
-            "caseSensitive": true,
+            "caseSensitive": false,
             "leftValue": "",
             "typeValidation": "strict",
             "version": 2
@@ -1401,7 +1401,7 @@
             {
               "id": "100daa47-ef90-4276-af06-44bbc4616541",
               "name": "platforms",
-              "value": "={{ \n  Array.isArray($json[\"Which_platforms\"])\n    ? $json[\"Which_platforms\"]      // nếu upstream đã là array\n    : [$json[\"Which_platforms\"]]    // nếu chỉ là 1 string --> bọc thành array\n}}",
+              "value": "={{ \n  Array.isArray($json[\"Which_platforms\"])\n    ? $json[\"Which_platforms\"].map(s => s.toLowerCase().trim())\n    : ($json[\"Which_platforms\"] || \"\").toLowerCase().split(\",\").map(s => s.trim())\n}}",
               "type": "array"
             },
             {
@@ -2708,7 +2708,7 @@
       "parameters": {
         "conditions": {
           "options": {
-            "caseSensitive": true,
+            "caseSensitive": false,
             "leftValue": "",
             "typeValidation": "strict",
             "version": 2
@@ -2717,7 +2717,7 @@
             {
               "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
               "leftValue": "={{$json.platforms}}",
-              "rightValue": "TikTok",
+              "rightValue": "tiktok",
               "operator": {
                 "type": "array",
                 "operation": "contains",
