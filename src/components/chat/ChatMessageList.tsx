@@ -55,7 +55,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
     <div className="space-y-3">
       {messages.map((message) => {
         const isHuman = message.sender === "human";
-        const isAgent = message.sender === "agent";
+        const isAgent = message.sender === "agent" || message.sender === "n8n";
 
         const displayBody = message.body?.startsWith('/publish ')
           ? message.body.replace(/\/publish integration_key:\S+ ([a-f0-9-]+)(?: --page="([^"]+)")?/, "Lệnh đăng bài **$1...** lên page **'$2'**")
