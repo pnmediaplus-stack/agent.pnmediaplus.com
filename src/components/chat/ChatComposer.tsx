@@ -405,8 +405,8 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
-      const validTypes = ["image/png", "image/jpeg", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"];
-      const validFiles = files.filter(f => validTypes.includes(f.type));
+      const validTypes = ["image/png", "image/jpeg", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain", "text/markdown"];
+      const validFiles = files.filter(f => validTypes.includes(f.type) || f.name.endsWith('.md'));
       if (validFiles.length > 0) {
         setSelectedFiles(prev => [...prev, ...validFiles]);
         setUploadError(null);
@@ -442,8 +442,8 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
     setIsDragging(false);
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      const validTypes = ["image/png", "image/jpeg", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"];
-      const validFiles = files.filter(f => validTypes.includes(f.type));
+      const validTypes = ["image/png", "image/jpeg", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain", "text/markdown"];
+      const validFiles = files.filter(f => validTypes.includes(f.type) || f.name.endsWith('.md'));
       if (validFiles.length > 0) {
         setSelectedFiles(prev => [...prev, ...validFiles]);
         setUploadError(null);
@@ -717,7 +717,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
             ref={fileInputRef}
             onChange={handleFileChange}
             className="hidden"
-            accept="image/png, image/jpeg, application/pdf, .docx, text/plain" multiple
+            accept="image/png, image/jpeg, application/pdf, .docx, text/plain, text/markdown, .md" multiple
           />
           <button
             type="button"

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   
   try {
     // Lấy department thật từ DB theo logic nghiệp vụ (media_pipeline cho AI Worker)
-    const depRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/departments?department_key=eq.media_pipeline&select=id&limit=1`, {
+    const depRes = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/departments?department_key=eq.media_pipeline&select=id,organization_id&limit=1`, {
       headers: {
         'apikey': serviceKey,
         'Authorization': `Bearer ${serviceKey}`,
@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Department media_pipeline not found. Fail-closed.' }, { status: 400 });
     }
     const departmentId = departments[0].id;
+    const organizationId = departments[0].organization_id;
 
     // Theo đúng schema của pn_os_ai_department
     const timestamp = Date.now();
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
       state: 'NOT_STARTED',
       priority: 50,
       department_id: departmentId,
+      organization_id: organizationId,
       requester_actor_type: 'SYSTEM',
       requester_external_ref: 'system_cron',
       metadata: {

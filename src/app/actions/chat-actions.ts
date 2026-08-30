@@ -616,7 +616,7 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
             webhook: { ok: true, route: "handled_internally", status: 200, message: "Campaign approved and activated" }
           };
         } else if (command === '/plan_campaign') {
-          return await routePlanCampaignCommand(organizationId, threadId, requestId, auth, humanMessageId, executionBody);
+          return await routePlanCampaignCommand(organizationId, threadId, requestId, auth, humanMessageId, executionBody, visual_assets);
         } else if (command === '/campaign') {
           if (args[0] === 'set') {
             const explicitCampaign = args.slice(1).join(' ');
@@ -1090,7 +1090,8 @@ async function routePlanCampaignCommand(
   requestId: string,
   auth: any,
   humanMessageId: string | undefined,
-  body: string
+  body: string,
+  visual_assets: string[] = []
 ) {
   const intentType = "plan_campaign";
   if (requiresCampaignScope(body)) {
@@ -1285,7 +1286,8 @@ async function routePlanCampaignCommand(
     departmentName: departmentRecord.department_name,
     department_pack: departmentPack,
     departmentPack: departmentPack,
-    department_pack_key: departmentPackKey
+    department_pack_key: departmentPackKey,
+    visual_assets
   };
 
   let webhookPath = "webhook/human-task-intake";
@@ -1324,3 +1326,5 @@ async function routePlanCampaignCommand(
     webhook: { ok: true, route: "webhook/human-task-intake", status: routed.status, message: routed.message }
   };
 }
+
+
