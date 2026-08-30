@@ -1,0 +1,3240 @@
+{
+  "name": "PN01_Ultimate_Social_Media_V1.1",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "XtaWFhbtfxyzqrFmd",
+          "mode": "list",
+          "cachedResultName": "Facebook Ad Library Scraper (curious_coder/facebook-ads-library-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/XtaWFhbtfxyzqrFmd/input"
+        },
+        "customBody": "={\n    \"limitPerSource\": {{ $('When Executed by Another Workflow').item.json.How_many_items_to_scrape }},\n    \"scrapeAdDetails\": true,\n    \"scrapePageAds.activeStatus\": \"all\",\n    \"scrapePageAds.countryCode\": \"ALL\",\n    \"urls\": [\n        {\n            \"url\": \"https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=ALL&is_targeted_country=false&media_type=all&q={{ $('When Executed by Another Workflow').item.json.Search_for__ }}&search_type=keyword_unordered\"\n        }\n    ]\n}",
+        "memory": 512
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -1072,
+        -400
+      ],
+      "id": "aead729c-6df5-4ee7-b237-356bd7fe1f7f",
+      "name": "Meta Ads",
+      "credentials": {
+        "apifyApi": {
+          "id": "QBIGnM4fRwHILATB",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "GdWCkxBtKWOsKjdch",
+          "mode": "list",
+          "cachedResultName": "TikTok Scraper (clockworks/tiktok-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/GdWCkxBtKWOsKjdch/input"
+        },
+        "customBody": "={\n  \"excludePinnedPosts\": false,\n  \"oldestPostDateUnified\": \"2019-01-01\",\n  \"proxyCountryCode\": \"None\",\n  \"resultsPerPage\": {{ $json[\"limit\"] || 10 }},\n  \"scrapeRelatedVideos\": false,\n  \"searchQueries\": [\n    \"{{ $json[\"keyword\"] || \"\" }}\"\n  ],\n  \"shouldDownloadAvatars\": false,\n  \"shouldDownloadCovers\": false,\n  \"shouldDownloadMusicCovers\": false,\n  \"shouldDownloadSlideshowImages\": false,\n  \"shouldDownloadSubtitles\": true,\n  \"shouldDownloadVideos\": false\n}"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -1072,
+        -240
+      ],
+      "id": "3523d770-47f4-476d-a200-15647ff96e0e",
+      "name": "Tiktok",
+      "credentials": {
+        "apifyApi": {
+          "id": "QBIGnM4fRwHILATB",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "da618029-a240-4f3a-8c23-00ac6715bbfa",
+              "name": "caption",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "6c71760d-cb2b-441a-a745-cfc44b9fbce7",
+              "name": "date_posted",
+              "value": "={{ $json.createTimeISO }}",
+              "type": "string"
+            },
+            {
+              "id": "8c1bf4e7-f7d3-4ec7-840a-ad73d74138be",
+              "name": "username",
+              "value": "={{ $json.authorMeta.name }}",
+              "type": "string"
+            },
+            {
+              "id": "ba957136-4a5b-483b-a448-9025942d8bfa",
+              "name": "userlink",
+              "value": "={{ $json.authorMeta.profileUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "9140feab-2805-42da-8bac-3475d5545ed8",
+              "name": "tiktok_url",
+              "value": "={{ $json.webVideoUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "9592bfcb-d8dc-4433-ab91-a99f6fea462b",
+              "name": "subtitle_url",
+              "value": "={{ $json.videoMeta.subtitleLinks[0].downloadLink }}",
+              "type": "string"
+            },
+            {
+              "id": "14f3b85c-714b-4e78-91c6-e82ea35e4713",
+              "name": "likes",
+              "value": "={{ $json.diggCount }}",
+              "type": "number"
+            },
+            {
+              "id": "5fee100e-3114-4723-901a-102464b482b4",
+              "name": "shares",
+              "value": "={{ $json.shareCount }}",
+              "type": "number"
+            },
+            {
+              "id": "34f91f98-f7f2-41f6-955c-6966934c4c34",
+              "name": "views",
+              "value": "={{ $json.playCount }}",
+              "type": "number"
+            },
+            {
+              "id": "4ccc1b6c-09a3-4794-b558-280c917ed616",
+              "name": "bookmarks",
+              "value": "={{ $json.collectCount }}",
+              "type": "number"
+            },
+            {
+              "id": "d17f01d3-d75a-427a-860d-26267843cba1",
+              "name": "comments",
+              "value": "={{ $json.commentCount }}",
+              "type": "number"
+            },
+            {
+              "id": "cd846f7e-2fd0-4016-a740-2a63a43210b3",
+              "name": "keyword",
+              "value": "={{ $('Init Meta').item.json.keyword }}",
+              "type": "string"
+            },
+            {
+              "id": "dc752618-8d60-4f11-876e-6b739f43d0a3",
+              "name": "extract_time",
+              "value": "={{ $('Init Meta').item.json.extract_time }}",
+              "type": "string"
+            },
+            {
+              "id": "ff9890a6-ddc2-427c-87a3-eb33863ac5d0",
+              "name": "campaign_name",
+              "value": "={{ $('Init Meta').item.json.campaign_name }}",
+              "type": "string"
+            },
+            {
+              "id": "59e3acda-ac5a-4c85-99c1-3ad0626270fa",
+              "name": "source",
+              "value": "={{ $('Init Meta').item.json.source }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -896,
+        -240
+      ],
+      "id": "461fecb7-1040-42b5-b916-673a2f5a66b4",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "reGe1ST3OBgYZSsZJ",
+          "mode": "list",
+          "cachedResultName": "Instagram Hashtag Scraper (apify/instagram-hashtag-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/reGe1ST3OBgYZSsZJ/input"
+        },
+        "customBody": "={\n    \"hashtags\": [\n         \"{{ $('When Executed by Another Workflow').item.json.Search_for__.replace(/\\s+/g, '_') }}\"\n    ],\n    \"keywordSearch\": true,\n    \"resultsLimit\": {{ $('When Executed by Another Workflow').item.json.How_many_items_to_scrape }}\n}",
+        "timeout": {}
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -1072,
+        -80
+      ],
+      "id": "838554ac-ad77-4535-9645-4b3b7f418c02",
+      "name": "Instagram",
+      "credentials": {
+        "apifyApi": {
+          "id": "QBIGnM4fRwHILATB",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "h7sDV53CddomktSi5",
+          "mode": "list",
+          "cachedResultName": "YouTube Scraper (streamers/youtube-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/h7sDV53CddomktSi5/input"
+        },
+        "customBody": "={\n    \"downloadSubtitles\": true,\n    \"hasCC\": false,\n    \"hasLocation\": false,\n    \"hasSubtitles\": false,\n    \"is360\": false,\n    \"is3D\": false,\n    \"is4K\": false,\n    \"isBought\": false,\n    \"isHD\": false,\n    \"isHDR\": false,\n    \"isLive\": false,\n    \"isVR180\": false,\n    \"maxResultStreams\": 0,\n    \"maxResults\": {{ $('When Executed by Another Workflow').item.json.How_many_items_to_scrape }},\n    \"maxResultsShorts\": 1,\n    \"preferAutoGeneratedSubtitles\": false,\n    \"saveSubsToKVS\": false,\n    \"searchQueries\": [\n        \"{{ $('When Executed by Another Workflow').item.json.Search_for__ }}\"\n    ]\n}",
+        "timeout": {}
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -1072,
+        80
+      ],
+      "id": "79f67760-bc52-4fa7-b1b4-4892748ad04b",
+      "name": "YouTube",
+      "credentials": {
+        "apifyApi": {
+          "id": "QBIGnM4fRwHILATB",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "h7sDV53CddomktSi5",
+          "mode": "list",
+          "cachedResultName": "YouTube Scraper (streamers/youtube-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/h7sDV53CddomktSi5/input"
+        },
+        "customBody": "={\n    \"downloadSubtitles\": true,\n    \"hasCC\": false,\n    \"hasLocation\": false,\n    \"hasSubtitles\": false,\n    \"is360\": false,\n    \"is3D\": false,\n    \"is4K\": false,\n    \"isBought\": false,\n    \"isHD\": false,\n    \"isHDR\": false,\n    \"isLive\": false,\n    \"isVR180\": false,\n    \"maxResultStreams\": 0,\n    \"maxResults\": 0,\n    \"maxResultsShorts\": {{ $('When Executed by Another Workflow').item.json.How_many_items_to_scrape }} ,\n    \"preferAutoGeneratedSubtitles\": false,\n    \"saveSubsToKVS\": false,\n    \"searchQueries\": [\n\"{{ $('When Executed by Another Workflow').item.json.Search_for__ }}\"\n    ]\n}",
+        "timeout": {}
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -1072,
+        240
+      ],
+      "id": "054e81eb-216d-42da-9e19-7185108a4ba6",
+      "name": "YouTube Shorts",
+      "credentials": {
+        "apifyApi": {
+          "id": "QBIGnM4fRwHILATB",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "da618029-a240-4f3a-8c23-00ac6715bbfa",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "6c71760d-cb2b-441a-a745-cfc44b9fbce7",
+              "name": "date_posted",
+              "value": "={{ $json.date }}",
+              "type": "string"
+            },
+            {
+              "id": "8c1bf4e7-f7d3-4ec7-840a-ad73d74138be",
+              "name": "username",
+              "value": "={{ $json.channelName }}",
+              "type": "string"
+            },
+            {
+              "id": "ba957136-4a5b-483b-a448-9025942d8bfa",
+              "name": "userlink",
+              "value": "={{ $json.channelUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "9140feab-2805-42da-8bac-3475d5545ed8",
+              "name": "youtube_url",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "14f3b85c-714b-4e78-91c6-e82ea35e4713",
+              "name": "likes",
+              "value": "={{ $json.likes }}",
+              "type": "number"
+            },
+            {
+              "id": "34f91f98-f7f2-41f6-955c-6966934c4c34",
+              "name": "views",
+              "value": "={{ $json.viewCount }}",
+              "type": "number"
+            },
+            {
+              "id": "d17f01d3-d75a-427a-860d-26267843cba1",
+              "name": "comments",
+              "value": "={{ $json.commentsCount }}",
+              "type": "number"
+            },
+            {
+              "id": "7eac7b34-b5cb-43fe-868d-f1102dc48142",
+              "name": "keyword",
+              "value": "={{ $('Init Meta').item.json.keyword }}",
+              "type": "string"
+            },
+            {
+              "id": "278926b6-1995-4634-bc7a-372b3e83e321",
+              "name": "extract_time",
+              "value": "={{ $('Init Meta').item.json.extract_time }}",
+              "type": "string"
+            },
+            {
+              "id": "b33ace64-c6b5-4501-93f2-13a73c29a15c",
+              "name": "campaign_name",
+              "value": "={{ $('Init Meta').item.json.extract_time }}",
+              "type": "string"
+            },
+            {
+              "id": "0680c8d7-fe6e-4d50-a755-188307fb3e15",
+              "name": "source",
+              "value": "={{ $('Init Meta').item.json.source }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -896,
+        80
+      ],
+      "id": "cd5bd5bc-1bdd-432b-9060-4ebd7e2ad58c",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "da618029-a240-4f3a-8c23-00ac6715bbfa",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "6c71760d-cb2b-441a-a745-cfc44b9fbce7",
+              "name": "date_posted",
+              "value": "={{ $json.date }}",
+              "type": "string"
+            },
+            {
+              "id": "8c1bf4e7-f7d3-4ec7-840a-ad73d74138be",
+              "name": "username",
+              "value": "={{ $json.channelName }}",
+              "type": "string"
+            },
+            {
+              "id": "ba957136-4a5b-483b-a448-9025942d8bfa",
+              "name": "userlink",
+              "value": "={{ $json.channelUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "9140feab-2805-42da-8bac-3475d5545ed8",
+              "name": "youtube_url",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "14f3b85c-714b-4e78-91c6-e82ea35e4713",
+              "name": "likes",
+              "value": "={{ $json.likes }}",
+              "type": "number"
+            },
+            {
+              "id": "34f91f98-f7f2-41f6-955c-6966934c4c34",
+              "name": "views",
+              "value": "={{ $json.viewCount }}",
+              "type": "number"
+            },
+            {
+              "id": "d17f01d3-d75a-427a-860d-26267843cba1",
+              "name": "comments",
+              "value": "={{ $json.commentsCount }}",
+              "type": "number"
+            },
+            {
+              "id": "40984cf2-5abd-4493-b12f-53d9e102f1ef",
+              "name": "extract_time",
+              "value": "={{ $('Init Meta').item.json.extract_time }}",
+              "type": "string"
+            },
+            {
+              "id": "8986f637-8c38-4022-87e1-5e7bfd8bf774",
+              "name": "keyword",
+              "value": "={{ $('Init Meta').item.json.keyword }}",
+              "type": "string"
+            },
+            {
+              "id": "fcdf4743-edbb-4a32-b982-465cfe1ba479",
+              "name": "campaign_name",
+              "value": "={{ $('Init Meta').item.json.campaign_name }}",
+              "type": "string"
+            },
+            {
+              "id": "1abe4443-a838-4312-8337-289619a9deef",
+              "name": "source",
+              "value": "={{ $('Init Meta').item.json.source }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -896,
+        240
+      ],
+      "id": "a3aab067-133b-4921-a1f3-475f683fb6a6",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "5QnEH5N71IK2mFLrP",
+          "mode": "list",
+          "cachedResultName": "Linkedin Posts Search Scraper | No Cookies (apimaestro/linkedin-posts-search-scraper-no-cookies)",
+          "cachedResultUrl": "https://console.apify.com/actors/5QnEH5N71IK2mFLrP/input"
+        },
+        "customBody": "={\n    \"keyword\": \"{{ $('When Executed by Another Workflow').item.json.Search_for__ }}\",\n    \"limit\": {{ $('When Executed by Another Workflow').item.json.How_many_items_to_scrape }}\n}",
+        "timeout": {}
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -1072,
+        400
+      ],
+      "id": "7612a283-1461-45b5-9c93-1e446c4b6915",
+      "name": "LinkedIn",
+      "credentials": {
+        "apifyApi": {
+          "id": "QBIGnM4fRwHILATB",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "nfp1fpt5gUlBwPcor",
+          "mode": "list",
+          "cachedResultName": "Twitter (X.com) Scraper Unlimited: No Limits (apidojo/twitter-scraper-lite)",
+          "cachedResultUrl": "https://console.apify.com/actors/nfp1fpt5gUlBwPcor/input"
+        },
+        "customBody": "={\n    \"maxItems\":{{ $('When Executed by Another Workflow').item.json.How_many_items_to_scrape }} ,\n    \"searchTerms\": [\n        \"{{ $('When Executed by Another Workflow').item.json.Search_for__ }}\"\n    ]\n}",
+        "timeout": {}
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -1072,
+        560
+      ],
+      "id": "55623eee-c6fa-415d-abf1-190b2fe053a1",
+      "name": "Twitter",
+      "credentials": {
+        "apifyApi": {
+          "id": "QBIGnM4fRwHILATB",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "da618029-a240-4f3a-8c23-00ac6715bbfa",
+              "name": "caption",
+              "value": "={{ $json.caption }}",
+              "type": "string"
+            },
+            {
+              "id": "6c71760d-cb2b-441a-a745-cfc44b9fbce7",
+              "name": "date_posted",
+              "value": "={{ $json.timestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "8c1bf4e7-f7d3-4ec7-840a-ad73d74138be",
+              "name": "username",
+              "value": "={{ $json.ownerUsername }}",
+              "type": "string"
+            },
+            {
+              "id": "9140feab-2805-42da-8bac-3475d5545ed8",
+              "name": "instagram_url",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "14f3b85c-714b-4e78-91c6-e82ea35e4713",
+              "name": "likes",
+              "value": "={{ $json.likesCount }}",
+              "type": "number"
+            },
+            {
+              "id": "5fee100e-3114-4723-901a-102464b482b4",
+              "name": "shares",
+              "value": "={{ $json.reshareCount }}",
+              "type": "number"
+            },
+            {
+              "id": "d17f01d3-d75a-427a-860d-26267843cba1",
+              "name": "comments",
+              "value": "={{ $json.commentsCount }}",
+              "type": "number"
+            },
+            {
+              "id": "b55d9e59-dafb-47fd-9753-662ae59a765a",
+              "name": "views",
+              "value": "={{ $json.videoViewCount }}",
+              "type": "string"
+            },
+            {
+              "id": "ecaf92f0-1a45-4ed2-8e89-ec6e41fec3cb",
+              "name": "keyword",
+              "value": "={{ $('Init Meta').item.json.keyword }}",
+              "type": "string"
+            },
+            {
+              "id": "b3059685-d9c0-49d8-a99e-e76010a0baf5",
+              "name": "extract_time",
+              "value": "={{ $('Init Meta').item.json.extract_time }}",
+              "type": "string"
+            },
+            {
+              "id": "c431314d-adb9-4d80-889e-5dc7e63f4abf",
+              "name": "campaign_name",
+              "value": "={{ $('Init Meta').item.json.campaign_name }}",
+              "type": "string"
+            },
+            {
+              "id": "f777d4a2-a7c6-4b33-8040-bab2d13a6f04",
+              "name": "source",
+              "value": "={{ $('Init Meta').item.json.source }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -896,
+        -80
+      ],
+      "id": "16b3159f-9352-47c3-ba9e-c94ec93b3fea",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "da618029-a240-4f3a-8c23-00ac6715bbfa",
+              "name": "caption",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "6c71760d-cb2b-441a-a745-cfc44b9fbce7",
+              "name": "date_posted",
+              "value": "={{ $json.posted_at.date }}",
+              "type": "string"
+            },
+            {
+              "id": "8c1bf4e7-f7d3-4ec7-840a-ad73d74138be",
+              "name": "username",
+              "value": "={{ $json.author.name }}",
+              "type": "string"
+            },
+            {
+              "id": "ba957136-4a5b-483b-a448-9025942d8bfa",
+              "name": "userlink",
+              "value": "={{ $json.author.profile_url }}",
+              "type": "string"
+            },
+            {
+              "id": "9140feab-2805-42da-8bac-3475d5545ed8",
+              "name": "linkedin_url",
+              "value": "={{ $json.post_url }}",
+              "type": "string"
+            },
+            {
+              "id": "14f3b85c-714b-4e78-91c6-e82ea35e4713",
+              "name": "likes",
+              "value": "={{ $json.stats.total_reactions }}",
+              "type": "number"
+            },
+            {
+              "id": "5fee100e-3114-4723-901a-102464b482b4",
+              "name": "shares",
+              "value": "={{ $json.stats.shares }}",
+              "type": "number"
+            },
+            {
+              "id": "d17f01d3-d75a-427a-860d-26267843cba1",
+              "name": "comments",
+              "value": "={{ $json.stats.comments }}",
+              "type": "number"
+            },
+            {
+              "id": "ecaf92f0-1a45-4ed2-8e89-ec6e41fec3cb",
+              "name": "keyword",
+              "value": "={{ $('Init Meta').item.json.keyword }}",
+              "type": "string"
+            },
+            {
+              "id": "b3059685-d9c0-49d8-a99e-e76010a0baf5",
+              "name": "extract_time",
+              "value": "={{ $('Init Meta').item.json.extract_time }}",
+              "type": "string"
+            },
+            {
+              "id": "f22b575e-0a31-40bc-b1a1-2b150086085e",
+              "name": "campaign_name",
+              "value": "={{ $('Init Meta').item.json.campaign_name }}",
+              "type": "string"
+            },
+            {
+              "id": "e1592d82-b324-465c-8614-32d7e9a64ba3",
+              "name": "source",
+              "value": "={{ $('Init Meta').item.json.source }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -896,
+        400
+      ],
+      "id": "3b9a4d66-8bc7-49bc-bfec-f2a5ea5617d5",
+      "name": "Edit Fields5"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "da618029-a240-4f3a-8c23-00ac6715bbfa",
+              "name": "caption",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "6c71760d-cb2b-441a-a745-cfc44b9fbce7",
+              "name": "date_posted",
+              "value": "={{ $json.createdAt }}",
+              "type": "string"
+            },
+            {
+              "id": "8c1bf4e7-f7d3-4ec7-840a-ad73d74138be",
+              "name": "username",
+              "value": "={{ $json.author.userName }}",
+              "type": "string"
+            },
+            {
+              "id": "ba957136-4a5b-483b-a448-9025942d8bfa",
+              "name": "userlink",
+              "value": "={{ $json.author.twitterUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "9140feab-2805-42da-8bac-3475d5545ed8",
+              "name": "x_url",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "14f3b85c-714b-4e78-91c6-e82ea35e4713",
+              "name": "likes",
+              "value": "={{ $json.likeCount }}",
+              "type": "number"
+            },
+            {
+              "id": "5fee100e-3114-4723-901a-102464b482b4",
+              "name": "shares",
+              "value": "={{ $json.retweetCount }}",
+              "type": "number"
+            },
+            {
+              "id": "d17f01d3-d75a-427a-860d-26267843cba1",
+              "name": "comments",
+              "value": "={{ $json.replyCount }}",
+              "type": "number"
+            },
+            {
+              "id": "ecaf92f0-1a45-4ed2-8e89-ec6e41fec3cb",
+              "name": "keyword",
+              "value": "={{ $('Init Meta').item.json.keyword }}",
+              "type": "string"
+            },
+            {
+              "id": "b3059685-d9c0-49d8-a99e-e76010a0baf5",
+              "name": "extract_time",
+              "value": "={{ $('Init Meta').item.json.extract_time }}",
+              "type": "string"
+            },
+            {
+              "id": "1ebf15b3-94d4-4da0-b520-77d017d86054",
+              "name": "views",
+              "value": "={{ $json.viewCount }}",
+              "type": "string"
+            },
+            {
+              "id": "872f39f3-223c-47f2-9ca4-d5a145b14173",
+              "name": "bookmark",
+              "value": "={{ $json.bookmarkCount }}",
+              "type": "string"
+            },
+            {
+              "id": "24d06b7e-a577-4346-9ec4-90f7d5b7dbff",
+              "name": "campaign_name",
+              "value": "={{ $('Init Meta').item.json.campaign_name }}",
+              "type": "string"
+            },
+            {
+              "id": "d317558a-50a6-4c55-a1ee-726868093e76",
+              "name": "source",
+              "value": "={{ $('Init Meta').item.json.source }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -896,
+        560
+      ],
+      "id": "35e9a0f8-d98f-42d8-baa9-780d1a7bd8b9",
+      "name": "Edit Fields6"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "da618029-a240-4f3a-8c23-00ac6715bbfa",
+              "name": "caption",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "6c71760d-cb2b-441a-a745-cfc44b9fbce7",
+              "name": "date_posted",
+              "value": "={{ $json.createdAt }}",
+              "type": "string"
+            },
+            {
+              "id": "8c1bf4e7-f7d3-4ec7-840a-ad73d74138be",
+              "name": "subreddit",
+              "value": "={{ $json.communityName }}",
+              "type": "string"
+            },
+            {
+              "id": "9140feab-2805-42da-8bac-3475d5545ed8",
+              "name": "reddit_url",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "14f3b85c-714b-4e78-91c6-e82ea35e4713",
+              "name": "upvotes",
+              "value": "={{ $json.upVotes }}",
+              "type": "number"
+            },
+            {
+              "id": "d17f01d3-d75a-427a-860d-26267843cba1",
+              "name": "comments",
+              "value": "={{ $json.numberOfComments }}",
+              "type": "number"
+            },
+            {
+              "id": "ecaf92f0-1a45-4ed2-8e89-ec6e41fec3cb",
+              "name": "keyword",
+              "value": "={{ $('Init Meta').item.json.keyword }}",
+              "type": "string"
+            },
+            {
+              "id": "b3059685-d9c0-49d8-a99e-e76010a0baf5",
+              "name": "extract_time",
+              "value": "={{ $('Init Meta').item.json.extract_time }}",
+              "type": "string"
+            },
+            {
+              "id": "05ee4f70-7173-4074-a661-0f6507c33888",
+              "name": "campaign_name",
+              "value": "={{ $('Init Meta').item.json.campaign_name }}",
+              "type": "string"
+            },
+            {
+              "id": "f855fba0-a166-4bcb-84e3-0db3db6a4587",
+              "name": "source",
+              "value": "={{ $('Init Meta').item.json.source }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -896,
+        736
+      ],
+      "id": "2c03459a-3eb7-488a-83f2-7a15c33b4bd4",
+      "name": "Edit Fields7"
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "oAuCIx3ItNrs2okjQ",
+          "mode": "list",
+          "cachedResultName": "Reddit Scraper Lite (trudax/reddit-scraper-lite)",
+          "cachedResultUrl": "https://console.apify.com/actors/oAuCIx3ItNrs2okjQ/input"
+        },
+        "customBody": "={\n    \"debugMode\": false,\n    \"ignoreStartUrls\": false,\n    \"includeNSFW\": true,\n    \"maxItems\": {{ $('When Executed by Another Workflow').item.json.How_many_items_to_scrape }},\n    \"proxy\": {\n        \"useApifyProxy\": true,\n        \"apifyProxyGroups\": [\n            \"RESIDENTIAL\"\n        ]\n    },\n    \"scrollTimeout\": 40,\n    \"searchComments\": false,\n    \"searchCommunities\": false,\n    \"searchPosts\": true,\n    \"searchUsers\": false,\n    \"searches\": [\n        \"{{ $('When Executed by Another Workflow').item.json.Search_for__ }}\"\n    ],\n    \"skipComments\": false,\n    \"skipCommunity\": false,\n    \"skipUserPosts\": false,\n    \"sort\": \"relevance\"\n}",
+        "timeout": {}
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -1072,
+        736
+      ],
+      "id": "380d4ddd-386d-4f3d-870b-024bd5f2f002",
+      "name": "Reddit",
+      "credentials": {
+        "apifyApi": {
+          "id": "QBIGnM4fRwHILATB",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# 🔵 Meta Ads",
+        "height": 144,
+        "width": 448,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        -416
+      ],
+      "id": "69803f0b-c510-44e1-a2d7-8a03aa52c440",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# 🎵 TikTok",
+        "height": 144,
+        "width": 448,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        -256
+      ],
+      "id": "54338fe6-a7df-4ee5-b1b0-91c487a9bc7b",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# Ultimate Extract by BDSG\n## Author: Binh Digital | R46",
+        "height": 320,
+        "width": 528,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2160,
+        80
+      ],
+      "id": "4a0b3396-c38c-4bcd-828d-1f97b43d0714",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
+              "leftValue": "={{$json.platforms}}",
+              "rightValue": "meta_ads",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        -400
+      ],
+      "id": "99e7bf18-3b47-4981-bd5e-5cfb72525baf",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
+              "leftValue": "={{ $json.platforms}}",
+              "rightValue": "instagram",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        -80
+      ],
+      "id": "0ff47d9c-5848-40b6-9e0a-001296e9cc13",
+      "name": "Filter2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
+              "leftValue": "={{$json.platforms}}",
+              "rightValue": "youtube_longs",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        80
+      ],
+      "id": "4c4d59bf-c39d-423c-a951-3466a3dfd6d5",
+      "name": "Filter3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
+              "leftValue": "={{$json.platforms}}",
+              "rightValue": "youtube_shorts",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        240
+      ],
+      "id": "b106d642-f67a-4981-8e9e-2db1a02c4759",
+      "name": "Filter4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
+              "leftValue": "={{ $json.platforms }}",
+              "rightValue": "linkedin",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        400
+      ],
+      "id": "ece606e4-5848-46fe-8f7f-c1e6a26ec454",
+      "name": "Filter5"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
+              "leftValue": "={{ $json.platforms }}",
+              "rightValue": "x_twitter",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        560
+      ],
+      "id": "1e034594-7936-48cd-8270-20cf420d60c3",
+      "name": "Filter6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
+              "leftValue": "={{$json.platforms}}",
+              "rightValue": "reddit",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        736
+      ],
+      "id": "49b672d8-27c2-4bff-a3aa-6257cd9550bc",
+      "name": "Filter7"
+    },
+    {
+      "parameters": {
+        "content": "# 📸 Instagram",
+        "height": 144,
+        "width": 448,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        -96
+      ],
+      "id": "831b60fe-1d39-4add-bdb9-cff20904a3bf",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "# 🔺 YouTube Longs",
+        "height": 144,
+        "width": 448,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        64
+      ],
+      "id": "fabb4675-02f0-40d2-91e1-43e392a1ff53",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "# 🔻 YouTube Shorts",
+        "height": 144,
+        "width": 448,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        224
+      ],
+      "id": "a82e3cd5-8d7f-430f-901e-ca78f2e04535",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "# 💼 LinkedIn",
+        "height": 144,
+        "width": 448,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        384
+      ],
+      "id": "02f8aca3-1437-47b2-b7de-46f3ea85c099",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "# ✖️ X/Twitter",
+        "height": 144,
+        "width": 448,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        544
+      ],
+      "id": "1c42ed6e-65d3-4838-a258-e27fd519cc5a",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "# 🔴 Reddit",
+        "height": 144,
+        "width": 448,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        704
+      ],
+      "id": "62e7f4d9-919e-4295-80f0-10482bf4e058",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b89dfa90-7bee-4c63-bc2b-a32ad1b9e20e",
+              "name": "ad_library_url",
+              "value": "={{ $json.ad_library_url }}",
+              "type": "string"
+            },
+            {
+              "id": "424d8603-be78-45da-af97-bc5d0b3bcf75",
+              "name": "start_date",
+              "value": "={{ $json.start_date_formatted }}",
+              "type": "string"
+            },
+            {
+              "id": "cbabcaff-3e38-4d98-95d6-8ba20be71dab",
+              "name": "end_date",
+              "value": "={{ $json.end_date_formatted }}",
+              "type": "string"
+            },
+            {
+              "id": "fe1f13f6-a7ee-4cec-a76b-2ae6052ce0f2",
+              "name": "total_active_time",
+              "value": "={{ $json.total_active_time }}",
+              "type": "number"
+            },
+            {
+              "id": "3c024f40-b22c-43a9-b4a1-e44a62810e0c",
+              "name": "collation_count",
+              "value": "={{ $json.collation_count }}",
+              "type": "number"
+            },
+            {
+              "id": "7d39cbb0-d0a5-4800-8786-d2cf6c812bec",
+              "name": "page_name",
+              "value": "={{ $json.page_name }}",
+              "type": "string"
+            },
+            {
+              "id": "ba89de7d-d6a1-4de5-a4a7-a938c54a8610",
+              "name": "IG Followers",
+              "value": "={{ $json.advertiser.ad_library_page_info.page_info.ig_followers }}",
+              "type": "number"
+            },
+            {
+              "id": "7cb176fe-3f8d-4876-b111-023eb79a5141",
+              "name": "FB Page Likes",
+              "value": "={{ $json.advertiser.ad_library_page_info.page_info.likes }}",
+              "type": "number"
+            },
+            {
+              "id": "9ec5b1a5-bcec-400f-9c8f-08c258b4653e",
+              "name": "Ad is still active",
+              "value": "={{ $json.is_active }}",
+              "type": "boolean"
+            },
+            {
+              "id": "66a35626-56bd-4900-8b5a-1d43dd5412ca",
+              "name": "title",
+              "value": "={{ $json.snapshot.title }}",
+              "type": "string"
+            },
+            {
+              "id": "a06a3a9a-993c-4333-ae3a-8996bc7d3f36",
+              "name": "keyword",
+              "value": "={{ $('Init Meta').item.json.keyword }}",
+              "type": "string"
+            },
+            {
+              "id": "b8addd34-c42d-44a7-8edc-9311ae5be668",
+              "name": "extract_time",
+              "value": "={{ $('Init Meta').item.json.extract_time }}",
+              "type": "string"
+            },
+            {
+              "id": "4f26ba98-25c3-4234-9e4c-17e1199c382e",
+              "name": "campaign_name",
+              "value": "={{ $('Init Meta').item.json.campaign_name }}",
+              "type": "string"
+            },
+            {
+              "id": "7bb34b33-10a7-450c-aa9c-f3e7b00f4b45",
+              "name": "source",
+              "value": "={{ $('Init Meta').item.json.source }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -896,
+        -400
+      ],
+      "id": "a9a9d7eb-13ba-4405-bedd-3279af1d79a8",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "How_many_items_to_scrape",
+              "type": "number"
+            },
+            {
+              "name": "Search_for__"
+            },
+            {
+              "name": "Which_platforms"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1920,
+        176
+      ],
+      "id": "ab192513-de8e-4ef5-be78-657a5cb1e188",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1aa1ff7-f3ff-4acf-bbbc-9f2c32340c8e",
+              "name": "keyword",
+              "value": "={{ $json[\"Search_for__\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "196ec581-99fa-4425-ba78-1daac0e92f06",
+              "name": "limit",
+              "value": "={{ $json[\"How_many_items_to_scrape\"] }}",
+              "type": "number"
+            },
+            {
+              "id": "100daa47-ef90-4276-af06-44bbc4616541",
+              "name": "platforms",
+              "value": "={{ \n  Array.isArray($json[\"Which_platforms\"])\n    ? $json[\"Which_platforms\"]      // nếu upstream đã là array\n    : [$json[\"Which_platforms\"]]    // nếu chỉ là 1 string --> bọc thành array\n}}",
+              "type": "array"
+            },
+            {
+              "id": "05eaa110-29a0-4cc9-a0f8-80da3d726201",
+              "name": "batch_id",
+              "value": "={{ \"pn01_\" + $now }}",
+              "type": "string"
+            },
+            {
+              "id": "81b1368f-a108-4ddb-9eb1-571b09a249ff",
+              "name": "extract_time",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "524c52de-ca02-44c7-b8f0-b8b14fbbafe1",
+              "name": "campaign_name",
+              "value": "={{ $json.campaign_name || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "403a99ff-1669-4530-a179-2e753487c136",
+              "name": "source",
+              "value": "\"PN01_SocialMedia\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1744,
+        176
+      ],
+      "id": "8b6988f1-5b43-4dde-a4c0-c830b50a8513",
+      "name": "Init Meta"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy input gốc từ Init Meta\nconst meta = $items('Init Meta')[0].json;\n\n// Helper đếm số item từ mỗi nhánh Append\nfunction countItems(nodeName) {\n  try {\n    return $items(nodeName).length || 0;\n  } catch (e) {\n    return 0;\n  }\n}\n\nreturn [{\n  keyword: meta.keyword,\n  limit: meta.limit,\n  platforms: meta.platforms,\n  batch_id: meta.batch_id,\n  extract_time: meta.extract_time,\n  campaign_name: meta.campaign_name,\n  source: meta.source,\n  sheet_document: 'Ultimate Extract | by RoboNuggets (R46)',\n  summary: {\n    meta_ads:      countItems('Append row Meta Ads'), // sửa tên node theo thực tế\n    tiktok:        countItems('Append row TikTok'),\n    instagram:     countItems('Append row Instagram'),\n    youtube_longs: countItems('Append row YouTube Longs'),\n    youtube_shorts:countItems('Append row YouTube Shorts'), // nếu khác thì đổi lại\n    linkedin:      countItems('Append row LinkedIn'),\n    x_twitter:     countItems('Append row Twitter'),\n    reddit:        countItems('Append row Reddit'),\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        160
+      ],
+      "id": "b58abe3e-a3ce-4179-8da9-67bb749ce8ea",
+      "name": "Summary"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk",
+          "mode": "list",
+          "cachedResultName": "Ultimate Extract | by RoboNuggets (R46)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1167859235,
+          "mode": "list",
+          "cachedResultName": "Meta Ads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit#gid=1167859235"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extract_time",
+              "displayName": "extract_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ad_library_url",
+              "displayName": "ad_library_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "start_date",
+              "displayName": "start_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "end_date",
+              "displayName": "end_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total_active_time",
+              "displayName": "total_active_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "collation_count",
+              "displayName": "collation_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_name",
+              "displayName": "page_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "IG Followers",
+              "displayName": "IG Followers",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "FB Page Likes",
+              "displayName": "FB Page Likes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Ad is still active",
+              "displayName": "Ad is still active",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "days on air",
+              "displayName": "days on air",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "hours on air",
+              "displayName": "hours on air",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -704,
+        -400
+      ],
+      "id": "10619565-30cb-4790-97e9-edb96601baa4",
+      "name": "Append row Meta Ads",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "EV6BkcAkl7spzzEo",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1_SYxL5tML38k9kBDsWlm5AjSHP_S4r3VVi3rdhfkUhI",
+          "mode": "list",
+          "cachedResultName": "Ultimate Extract _ FlashMedia",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_SYxL5tML38k9kBDsWlm5AjSHP_S4r3VVi3rdhfkUhI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 141817131,
+          "mode": "list",
+          "cachedResultName": "Tiktok",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_SYxL5tML38k9kBDsWlm5AjSHP_S4r3VVi3rdhfkUhI/edit#gid=141817131"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extract_time",
+              "displayName": "extract_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_posted",
+              "displayName": "date_posted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "userlink",
+              "displayName": "userlink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tiktok_url",
+              "displayName": "tiktok_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subtitle_url",
+              "displayName": "subtitle_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "likes",
+              "displayName": "likes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "shares",
+              "displayName": "shares",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "views",
+              "displayName": "views",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "bookmarks",
+              "displayName": "bookmarks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comments",
+              "displayName": "comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "campaign_name ",
+              "displayName": "campaign_name ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "views/day",
+              "displayName": "views/day",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "campaign_name",
+              "displayName": "campaign_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -704,
+        -240
+      ],
+      "id": "972d009a-4d48-45d5-a3a8-bfbb09256d3a",
+      "name": "Append row TikTok",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "EV6BkcAkl7spzzEo",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk",
+          "mode": "list",
+          "cachedResultName": "Ultimate Extract | by RoboNuggets (R46)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1981675018,
+          "mode": "list",
+          "cachedResultName": "Instagram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit#gid=1981675018"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extract_time",
+              "displayName": "extract_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_posted",
+              "displayName": "date_posted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "instagram_url",
+              "displayName": "instagram_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "likes",
+              "displayName": "likes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "shares",
+              "displayName": "shares",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comments",
+              "displayName": "comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "views",
+              "displayName": "views",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "engagement/day",
+              "displayName": "engagement/day",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "handlingExtraData": "insertInNewColumn"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -704,
+        -80
+      ],
+      "id": "2d1c1f00-4ef5-401d-8fd3-c65800bc9891",
+      "name": "Append row Instagram",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "EV6BkcAkl7spzzEo",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk",
+          "mode": "list",
+          "cachedResultName": "Ultimate Extract | by RoboNuggets (R46)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1202910689,
+          "mode": "list",
+          "cachedResultName": "YouTube Longs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit#gid=1202910689"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extract_time",
+              "displayName": "extract_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_posted",
+              "displayName": "date_posted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "userlink",
+              "displayName": "userlink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "youtube_url",
+              "displayName": "youtube_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "likes",
+              "displayName": "likes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "views",
+              "displayName": "views",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comments",
+              "displayName": "comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "views/day",
+              "displayName": "views/day",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "handlingExtraData": "insertInNewColumn"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -704,
+        80
+      ],
+      "id": "fbc251e7-081a-451e-827b-67eae9b45272",
+      "name": "Append row YouTube Longs",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "EV6BkcAkl7spzzEo",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk",
+          "mode": "list",
+          "cachedResultName": "Ultimate Extract | by RoboNuggets (R46)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1673471507,
+          "mode": "list",
+          "cachedResultName": "YouTube Shorts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit#gid=1673471507"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extract_time",
+              "displayName": "extract_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_posted",
+              "displayName": "date_posted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "userlink",
+              "displayName": "userlink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "youtube_url",
+              "displayName": "youtube_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "likes",
+              "displayName": "likes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "views",
+              "displayName": "views",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comments",
+              "displayName": "comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "views/day",
+              "displayName": "views/day",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "handlingExtraData": "insertInNewColumn"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -704,
+        240
+      ],
+      "id": "9c4028a6-6a89-47ce-beb1-ab9548c1b5eb",
+      "name": "Append row YouTube Shorts",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "EV6BkcAkl7spzzEo",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk",
+          "mode": "list",
+          "cachedResultName": "Ultimate Extract | by RoboNuggets (R46)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 860696253,
+          "mode": "list",
+          "cachedResultName": "LinkedIn",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit#gid=860696253"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extract_time",
+              "displayName": "extract_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_posted",
+              "displayName": "date_posted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "userlink",
+              "displayName": "userlink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "likes",
+              "displayName": "likes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "shares",
+              "displayName": "shares",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comments",
+              "displayName": "comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "engagement/day",
+              "displayName": "engagement/day",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "handlingExtraData": "insertInNewColumn"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -704,
+        400
+      ],
+      "id": "7385dc1d-c7a1-487d-b16e-53335d08646c",
+      "name": "Append row LinkedIn",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "EV6BkcAkl7spzzEo",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk",
+          "mode": "list",
+          "cachedResultName": "Ultimate Extract | by RoboNuggets (R46)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 697236374,
+          "mode": "list",
+          "cachedResultName": "X / Twitter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit#gid=697236374"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extract_time",
+              "displayName": "extract_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_posted",
+              "displayName": "date_posted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "userlink",
+              "displayName": "userlink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "x_url",
+              "displayName": "x_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "likes",
+              "displayName": "likes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "shares",
+              "displayName": "shares",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comments",
+              "displayName": "comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "views",
+              "displayName": "views",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "bookmark",
+              "displayName": "bookmark",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "views/day",
+              "displayName": "views/day",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "handlingExtraData": "insertInNewColumn"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -704,
+        560
+      ],
+      "id": "1c640fed-5922-4953-aab2-31670726238e",
+      "name": "Append row Twitter",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "EV6BkcAkl7spzzEo",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk",
+          "mode": "list",
+          "cachedResultName": "Ultimate Extract | by RoboNuggets (R46)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 810078254,
+          "mode": "list",
+          "cachedResultName": "Reddit",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit#gid=810078254"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extract_time",
+              "displayName": "extract_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_posted",
+              "displayName": "date_posted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subreddit",
+              "displayName": "subreddit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reddit_url",
+              "displayName": "reddit_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "upvotes",
+              "displayName": "upvotes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comments",
+              "displayName": "comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "engagement/day",
+              "displayName": "engagement/day",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "handlingExtraData": "insertInNewColumn"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -704,
+        736
+      ],
+      "id": "7a7df617-34de-47e8-b2c6-8827bd7f80ae",
+      "name": "Append row Reddit",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "EV6BkcAkl7spzzEo",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy dữ liệu từ node trước (Process Items for User Response)\nconst meta = $json;\n\n// Lấy danh sách video\nconst items = meta.items || [];\nconst count = meta.count || 0;\n\n// Optional: tên sheet — để backward compatible\nconst sheetName = meta.sheet_name || \"Ultimate Extract Sheet\";\nconst sheetUrl = meta.sheet_url || \"https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit?usp=sharing\";\n\n// 🔥 Trả tất cả dữ liệu về cho AI Tool (Social Agent)\nreturn [\n  {\n    // 🔴 BẮT BUỘC PHẢI CÓ\n    response: `Đã hoàn thành PN01 scraping (${count} video). Bạn có thể xem danh sách video ngay trong phản hồi này.`,\n\n    // 🔥 Dữ liệu mới thêm để Social Agent render ra chatbot\n    keyword: meta.keyword || \"\",\n    limit: meta.limit || null,\n    count: count,\n    items: items,  // <-- danh sách video đầy đủ (caption, url, likes...)\n\n    // 🔥 Dữ liệu cũ giữ nguyên để không phá flow\n    status: \"done\",\n    message: \"PN01 scraping completed\",\n    batch_id: meta.batch_id || null,\n    sheet_name: sheetName,\n    sheet_url: sheetUrl,\n\n    completed_at: new Date().toISOString(),\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        160
+      ],
+      "id": "83caa80b-8b69-4bd5-89cb-c08a9c450cbd",
+      "name": "Return Data to AI Tool"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "79b77a50-714e-4319-b2b5-f26fed3dc9ab",
+              "leftValue": "={{$json.platforms}}",
+              "rightValue": "TikTok",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        -240
+      ],
+      "id": "d793a859-0429-44dd-b864-f6d603ea8186",
+      "name": "Filter1"
+    },
+    {
+      "parameters": {
+        "numberInputs": 8
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -80,
+        64
+      ],
+      "id": "7787bd51-184e-4265-ad20-9a04ec681e97",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy meta\nconst meta = $items('Init Meta')[0].json;\n\n// Lấy danh sách từ từng sheet appender\nfunction collect(nodeName) {\n  try {\n    return $items(nodeName).map((item, idx) => ({\n      index: idx + 1,\n      platform: nodeName.replace(\"Append row \", \"\").toLowerCase(),\n      caption: item.json.caption || item.json.title || \"\",\n      date_posted: item.json.date_posted || \"\",\n      username: item.json.username || \"\",\n      url: item.json.tiktok_url \n            || item.json.instagram_url\n            || item.json.youtube_url\n            || item.json.linkedin_url\n            || item.json.x_url\n            || item.json.reddit_url\n            || \"\",\n      likes: item.json.likes || item.json.upvotes || 0,\n      shares: item.json.shares || 0,\n      views: item.json.views || \"\",\n      comments: item.json.comments || 0,\n      bookmarks: item.json.bookmarks || 0\n    }));\n  } catch (e) {\n    return [];\n  }\n}\n\nconst list = [\n  ...collect(\"Append row TikTok\"),\n  ...collect(\"Append row Instagram\"),\n  ...collect(\"Append row YouTube Longs\"),\n  ...collect(\"Append row YouTube Shorts\"),\n  ...collect(\"Append row LinkedIn\"),\n  ...collect(\"Append row Twitter\"),\n  ...collect(\"Append row Reddit\"),\n];\n\n// Trả về toàn bộ dữ liệu\nreturn [{\n  json: {\n    keyword: meta.keyword,\n    limit: meta.limit,\n    items: list,\n    count: list.length\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        160
+      ],
+      "id": "7b4422c6-8e7b-484b-8c6c-f9c00d823a4b",
+      "name": "Process Items for User Response"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "How_many_items_to_scrape": 3,
+          "Search_for__": "nhà đẹp deco",
+          "Which_platforms": "tiktok"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Meta Ads": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tiktok": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Append row TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Append row YouTube Longs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Shorts": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Append row YouTube Shorts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Append row Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields5": {
+      "main": [
+        [
+          {
+            "node": "Append row LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields6": {
+      "main": [
+        [
+          {
+            "node": "Append row Twitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Twitter": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reddit": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields7": {
+      "main": [
+        [
+          {
+            "node": "Append row Reddit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Meta Ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter2": {
+      "main": [
+        [
+          {
+            "node": "Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter3": {
+      "main": [
+        [
+          {
+            "node": "YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter4": {
+      "main": [
+        [
+          {
+            "node": "YouTube Shorts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter5": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter6": {
+      "main": [
+        [
+          {
+            "node": "Twitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter7": {
+      "main": [
+        [
+          {
+            "node": "Reddit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Append row Meta Ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Init Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Meta": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter4",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter5",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter6",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row Meta Ads": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row TikTok": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Append row Instagram": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Append row YouTube Longs": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Append row YouTube Shorts": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Append row LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Append row Twitter": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    },
+    "Append row Reddit": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 7
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Process Items for User Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter1": {
+      "main": [
+        [
+          {
+            "node": "Tiktok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Items for User Response": {
+      "main": [
+        [
+          {
+            "node": "Return Data to AI Tool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "2ea52413-e0d9-4a6c-a3a0-20fa79395e83",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "id": "pJ53nGMnQM1iIyCg",
+  "tags": [
+    {
+      "updatedAt": "2025-12-17T03:20:02.316Z",
+      "createdAt": "2025-12-17T03:20:02.316Z",
+      "id": "2Sk4klplnvUsVjt1",
+      "name": "AUTO_TVC_PNMEDIAPLUS"
+    }
+  ]
+}
