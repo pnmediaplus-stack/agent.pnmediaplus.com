@@ -7,6 +7,9 @@ import { useCrmStore } from '@/lib/stores/crmStore';
 export default function InboxSidebar() {
   const { threads, activeThreadId, setActiveThreadId, isLoadingThreads, threadsError, setThreads, updateCustomerProfile } = useCrmStore();
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [filterTag, setFilterTag] = React.useState('');
+  const [filterChannel, setFilterChannel] = React.useState('');
+  const [filterUnread, setFilterUnread] = React.useState(false);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [tagModalThread, setTagModalThread] = useState<any>(null);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
