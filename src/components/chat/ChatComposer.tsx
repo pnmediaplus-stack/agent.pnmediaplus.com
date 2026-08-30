@@ -1,3 +1,4 @@
+import type { VisualAsset } from "@/types/artifact";
 "use client";
 
 import { useState, useRef, useMemo, useEffect } from "react";
@@ -6,7 +7,7 @@ import { Paperclip, X, Loader2, Bot, FileText, AlertTriangle, Hash, Slash, Users
 
 type ChatComposerProps = {
   initialValue?: string;
-  onSubmit: (value: string, visual_assets?: any[]) => void;
+  onSubmit: (value: string, visual_assets?: VisualAsset[]) => void;
   onRequestCreateTask?: (currentValue: string) => void;
 };
 
@@ -464,7 +465,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       setUploadError(null);
 
         let appendedMarkdown = "";
-        let visual_assets: any[] = [];
+        let visual_assets: VisualAsset[] = [];
         let remainingFiles: File[] = [];
         let errors: string[] = [];
 

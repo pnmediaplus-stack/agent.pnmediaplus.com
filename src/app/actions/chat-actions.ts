@@ -1,3 +1,4 @@
+import type { VisualAsset } from "@/types/artifact";
 "use server";
 
 
@@ -166,7 +167,7 @@ async function issueAutoContentReferenceToken(organizationId: string) {
   return leaseToken;
 }
 
-export async function sendChatMessage(threadId: string, body: string, visual_assets: any[] = []) {
+export async function sendChatMessage(threadId: string, body: string, visual_assets: VisualAsset[] = []) {
   let intentType: import('@/types/state').ChatIntentType = "unknown";
   
   const trimmedBody = body.trim();
@@ -1095,7 +1096,7 @@ async function routePlanCampaignCommand(
   auth: any,
   humanMessageId: string | undefined,
   body: string,
-  visual_assets: any[] = []
+  visual_assets: VisualAsset[] = []
 ) {
   let finalBody = body;
   for (const asset of visual_assets) {
@@ -1112,7 +1113,7 @@ async function routePlanCampaignCommand(
         const res = await fetch(fetchUrl);
         if (res.ok) {
           const text = await res.text();
-          finalBody += "\n\n--- [Attachment: " + asset.split("/").pop() + "] ---\n" + text + "\n--- End of Attachment ---\n";
+          finalBody += "\n\n--- [Attachment: " + assetUrl.split("/").pop() + "] ---\n" + text + "\n--- End of Attachment ---\n";
         }
       } catch (e) {
         console.error("Failed to fetch attached text file", e);

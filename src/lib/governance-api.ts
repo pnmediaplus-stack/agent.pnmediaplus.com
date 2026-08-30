@@ -1,3 +1,4 @@
+import type { VisualAsset } from "@/types/artifact";
 import "server-only";
 import type { ChatMessage } from "@/types/chat";
 import type { AuditLog } from "@/types/audit";
@@ -133,7 +134,7 @@ export async function dbLoadContextData(organizationId: string, referenceType: '
   return { data: data[0] || null };
 }
 
-export async function dbCreateContentItemFromBrief(organizationId: string, brief: string, ownerRef: string, campaignId?: string | null, visual_assets: any[] = []) {
+export async function dbCreateContentItemFromBrief(organizationId: string, brief: string, ownerRef: string, campaignId?: string | null, visual_assets: VisualAsset[] = []) {
   const trimmedBrief = brief.trim();
   let title = trimmedBrief.substring(0, 50).trim();
   if (!title) {

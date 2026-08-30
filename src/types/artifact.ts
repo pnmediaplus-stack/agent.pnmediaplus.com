@@ -23,3 +23,10 @@ export type Artifact = {
   created_at: string;
   updated_at: string;
 };
+
+export type VisualAsset = {
+  url: string;
+  type: 'user_upload' | 'ai_generated' | 'reference' | string;
+  source: string;
+  batch_id: string;
+};

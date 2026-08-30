@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { ChatComposer } from "@/components/chat/ChatComposer";
+import type { VisualAsset } from "@/types/artifact";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { DraftContentModal } from "@/components/chat/DraftContentModal";
 import { useI18n } from "@/lib/i18n/useI18n";
@@ -71,7 +72,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     return latest?.body ?? (tChat("chat.summary.latestFallback") ?? "Latest message will appear here.");
   }, [messages, tChat]);
 
-  async function handleSubmit(text: string, visual_assets: any[] = []) {
+  async function handleSubmit(text: string, visual_assets: VisualAsset[] = []) {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
 
