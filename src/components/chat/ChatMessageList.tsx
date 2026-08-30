@@ -3,7 +3,7 @@
 import { useState, memo } from "react";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { ChatMessage } from "@/types/chat";
-import { User, Bot, LayoutTemplate, Activity, ExternalLink, CheckCircle, XCircle, RefreshCw, Maximize2, Download, X } from "lucide-react";
+import { User, Bot, LayoutTemplate, Activity, ExternalLink, CheckCircle, XCircle, RefreshCw, Maximize2, Download, X, FileText } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PublishSelector } from "./PublishSelector";
@@ -11,6 +11,44 @@ import { PublishSelector } from "./PublishSelector";
 export const ChatMessageList = memo(function ChatMessageList({ messages, isTyping, onCommand }: { messages: ChatMessage[], isTyping?: boolean, onCommand?: (cmd: string) => void }) {
   const { t } = useI18n("chat");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [markdownPreview, setMarkdownPreview] = useState<{
+    title: string;
+    url: string;
+    content: string;
+    loading: boolean;
+    error: string | null;
+  } | null>(null);
+
+  const openMarkdownPreview = async (url: string, title: string) => {
+    setMarkdownPreview({
+      title,
+      url,
+      content: "",
+      loading: true,
+      error: null
+    });
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Failed to fetch markdown (${res.status})`);
+      const content = await res.text();
+      setMarkdownPreview({
+        title,
+        url,
+        content,
+        loading: false,
+        error: null
+      });
+    } catch (error: any) {
+      setMarkdownPreview({
+        title,
+        url,
+        content: "",
+        loading: false,
+        error: error?.message || "Không thể tải nội dung file."
+      });
+    }
+  };
   
         return (
     
@@ -144,8 +182,38 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         ? typeof props.children[0] === 'string' && props.children[0].includes('📎')
                         : typeof props.children === 'string' && props.children.includes('📎');
 
+                      const isMarkdownAttachment =
+                        href.toLowerCase().endsWith('.md') ||
+                        href.toLowerCase().endsWith('.markdown') ||
+                        (Array.isArray(props.children)
+                          ? props.children.some((child) => typeof child === 'string' && child.toLowerCase().includes('.md'))
+                          : typeof props.children === 'string' && props.children.toLowerCase().includes('.md'));
+
                       // File attachments link
                       if (isAttachment) {
+                        if (isMarkdownAttachment) {
+                          const markdownTitle = Array.isArray(props.children)
+                            ? props.children
+                                .filter((child): child is string => typeof child === 'string')
+                                .join(' ')
+                                .replace(/^📎\s*/, '')
+                            : String(props.children || '').replace(/^📎\s*/, '');
+
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => openMarkdownPreview(href, markdownTitle || 'Markdown attachment')}
+                              className="inline-flex items-center gap-2 rounded-xl border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-left text-xs font-semibold text-violet-200 no-underline hover:bg-violet-500/20"
+                            >
+                              <FileText className="h-4 w-4 text-violet-300" />
+                              <span className="flex flex-col leading-tight">
+                                <span className="uppercase tracking-wider text-[10px] text-violet-300/80">Markdown</span>
+                                <span className="max-w-[260px] truncate">{props.children}</span>
+                              </span>
+                            </button>
+                          );
+                        }
+
                         return (
                           <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded bg-cyan-500/10 border border-cyan-500/20 px-2 py-1 text-xs font-semibold text-cyan-300 no-underline hover:bg-cyan-500/20">
                             {props.children}
@@ -254,6 +322,79 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
             className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl" 
             onClick={(e) => e.stopPropagation()} 
           />
+        </div>
+      )}
+
+      {markdownPreview && (
+        <div
+          className="fixed inset-0 z-[101] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setMarkdownPreview(null)}
+        >
+          <div
+            className="relative flex max-h-[90vh] w-[min(92vw,960px)] flex-col overflow-hidden rounded-2xl border border-violet-500/20 bg-slate-950 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-4 border-b border-white/10 px-4 py-3">
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-[0.24em] text-violet-300/70">Markdown Preview</div>
+                <div className="truncate text-sm font-semibold text-white">{markdownPreview.title || 'Attachment'}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(markdownPreview.url);
+                      if (!res.ok) throw new Error("Network error");
+                      const blob = await res.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.style.display = 'none';
+                      a.href = url;
+                      a.download = markdownPreview.title || markdownPreview.url.split('/').pop() || 'attachment.md';
+                      document.body.appendChild(a);
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                      document.body.removeChild(a);
+                    } catch (err) {
+                      console.error("Failed to download markdown", err);
+                      window.open(markdownPreview.url, '_blank');
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/20"
+                >
+                  <Download className="h-4 w-4" />
+                  Tải xuống
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMarkdownPreview(null)}
+                  className="rounded-full border border-white/10 bg-white/5 p-2 text-white/80 hover:bg-white/10"
+                  title="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
+              {markdownPreview.loading ? (
+                <div className="flex h-48 items-center justify-center text-sm text-slate-400">
+                  Đang tải nội dung...
+                </div>
+              ) : markdownPreview.error ? (
+                <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-200">
+                  {markdownPreview.error}
+                </div>
+              ) : (
+                <div className="prose prose-invert prose-sm max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {markdownPreview.content}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

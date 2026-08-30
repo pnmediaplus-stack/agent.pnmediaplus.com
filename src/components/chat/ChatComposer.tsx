@@ -463,10 +463,10 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       setIsUploading(true);
       setUploadError(null);
 
-      let appendedMarkdown = "";
-      let visual_assets: string[] = [];
-      let remainingFiles: File[] = [];
-      let errors: string[] = [];
+        let appendedMarkdown = "";
+        let visual_assets: string[] = [];
+        let remainingFiles: File[] = [];
+        let errors: string[] = [];
 
       for (const file of selectedFiles) {
         try {
@@ -484,14 +484,14 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
             headers: { "Content-Type": file.type },
             body: file
           });
-          if (!uploadRes.ok) throw new Error("Lỗi tải lên file: " + file.name);
-          
-          const isImage = file.type.startsWith("image/");
-          if (isImage) {
+            if (!uploadRes.ok) throw new Error("Lỗi tải lên file: " + file.name);
+            
             visual_assets.push(presignData.publicUrl);
-            appendedMarkdown += `\n\n![${file.name}](${presignData.publicUrl})`;
-          } else {
-            appendedMarkdown += `\n\n[📎 ${file.name}](${presignData.publicUrl})`;
+            const isImage = file.type.startsWith("image/");
+            if (isImage) {
+              appendedMarkdown += `\n\n![${file.name}](${presignData.publicUrl})`;
+            } else {
+              appendedMarkdown += `\n\n[📎 ${file.name}](${presignData.publicUrl})`;
           }
         } catch (err: any) {
           errors.push(`${file.name}: ${err.message}`);
