@@ -69,8 +69,18 @@ async function processMessage(job) {
       })
     });
     
-    // Random delay between 2-4 seconds
-    const delay = Math.floor(Math.random() * 2000) + 2000;
+    // Calculate realistic human typing delay based on message length
+    // Average reading/typing speed simulation: Base 2s + ~30ms per character
+    const charCount = content ? content.length : 0;
+    let delay = 2000 + (charCount * 30);
+    
+    // Add some random human variance (+/- 15%)
+    const variance = delay * 0.15;
+    delay = delay + (Math.random() * variance * 2 - variance);
+    
+    // Min 2.5s, Max 12s (so customer doesn't wait too long)
+    delay = Math.max(2500, Math.min(delay, 12000));
+    
     await sleep(delay);
 
     // Send actual message
