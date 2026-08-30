@@ -71,7 +71,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     return latest?.body ?? (tChat("chat.summary.latestFallback") ?? "Latest message will appear here.");
   }, [messages, tChat]);
 
-  async function handleSubmit(text: string, visual_assets: string[] = []) {
+  async function handleSubmit(text: string, visual_assets: any[] = []) {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
 

@@ -166,7 +166,7 @@ async function issueAutoContentReferenceToken(organizationId: string) {
   return leaseToken;
 }
 
-export async function sendChatMessage(threadId: string, body: string, visual_assets: string[] = []) {
+export async function sendChatMessage(threadId: string, body: string, visual_assets: any[] = []) {
   let intentType: import('@/types/state').ChatIntentType = "unknown";
   
   const trimmedBody = body.trim();
@@ -348,9 +348,7 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
              throw new Error(`SOURCE_CONTENT_ITEM_HAS_NO_CLONEABLE_TEXT: ${sourceContentItemId}`);
            }
 
-           const sourceVisualAssets = Array.isArray(sourceContext.artifacts?.visual_assets)
-             ? sourceContext.artifacts.visual_assets.filter((asset: unknown): asset is string => typeof asset === 'string')
-             : [];
+           const sourceVisualAssets = Array.isArray(sourceContext.artifacts?.visual_assets) ? sourceContext.artifacts.visual_assets : [];
 
            const clonedRes = await dbCreateContentItemFromBrief(
              organizationId,
@@ -1097,18 +1095,19 @@ async function routePlanCampaignCommand(
   auth: any,
   humanMessageId: string | undefined,
   body: string,
-  visual_assets: string[] = []
+  visual_assets: any[] = []
 ) {
   let finalBody = body;
   for (const asset of visual_assets) {
-    if (asset.endsWith(".txt") || asset.endsWith(".md")) {
+      const assetUrl = typeof asset === "string" ? asset : asset.url;
+      if (assetUrl.endsWith(".txt") || assetUrl.endsWith(".md")) {
       try {
-        let fetchUrl = asset;
-        if (asset.startsWith("/api/assets/public/")) {
+        let fetchUrl = assetUrl;
+        if (assetUrl.startsWith("/api/assets/public/")) {
           const { generateR2PresignedDownloadUrl } = await import('@/lib/r2-client');
-          fetchUrl = await generateR2PresignedDownloadUrl(asset.replace('/api/assets/public/', ''), 3600);
-        } else if (asset.startsWith("/")) {
-          fetchUrl = "http://127.0.0.1:3000" + asset;
+          fetchUrl = await generateR2PresignedDownloadUrl(assetUrl.replace('/api/assets/public/', ''), 3600);
+        } else if (assetUrl.startsWith("/")) {
+          fetchUrl = "http://127.0.0.1:3000" + assetUrl;
         }
         const res = await fetch(fetchUrl);
         if (res.ok) {

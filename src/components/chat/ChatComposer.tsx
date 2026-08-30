@@ -6,7 +6,7 @@ import { Paperclip, X, Loader2, Bot, FileText, AlertTriangle, Hash, Slash, Users
 
 type ChatComposerProps = {
   initialValue?: string;
-  onSubmit: (value: string, visual_assets?: string[]) => void;
+  onSubmit: (value: string, visual_assets?: any[]) => void;
   onRequestCreateTask?: (currentValue: string) => void;
 };
 
@@ -464,7 +464,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       setUploadError(null);
 
         let appendedMarkdown = "";
-        let visual_assets: string[] = [];
+        let visual_assets: any[] = [];
         let remainingFiles: File[] = [];
         let errors: string[] = [];
 
@@ -486,7 +486,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
           });
             if (!uploadRes.ok) throw new Error("Lỗi tải lên file: " + file.name);
             
-            visual_assets.push(presignData.publicUrl);
+            visual_assets.push({ url: presignData.publicUrl, type: 'user_upload', source: 'chat_ui', batch_id: Date.now().toString() });
             const isImage = file.type.startsWith("image/");
             if (isImage) {
               appendedMarkdown += `\n\n![${file.name}](${presignData.publicUrl})`;
