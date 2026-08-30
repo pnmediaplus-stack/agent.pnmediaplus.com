@@ -18,6 +18,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: builder
     container_name: agent_pnmedia_worker
     restart: unless-stopped
     command: ["node", "worker.js"]
