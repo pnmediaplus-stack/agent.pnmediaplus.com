@@ -1093,8 +1093,24 @@ async function routePlanCampaignCommand(
   body: string,
   visual_assets: string[] = []
 ) {
+  let finalBody = body;
+  for (const asset of visual_assets) {
+    if (asset.endsWith(".txt") || asset.endsWith(".md")) {
+      try {
+        const fetchUrl = asset.startsWith("/") ? "http://127.0.0.1:3000" + asset : asset;
+        const res = await fetch(fetchUrl);
+        if (res.ok) {
+          const text = await res.text();
+          finalBody += "\n\n--- [Attachment: " + asset.split("/").pop() + "] ---\n" + text + "\n--- End of Attachment ---\n";
+        }
+      } catch (e) {
+        console.error("Failed to fetch attached text file", e);
+      }
+    }
+  }
+
   const intentType = "plan_campaign";
-  if (requiresCampaignScope(body)) {
+  if (requiresCampaignScope(finalBody)) {
     const clarifyReply = buildMissingScopeReply(intentType);
     const clarifyMsgResult = await dbInsertChatMessage(organizationId, {
       threadId,
