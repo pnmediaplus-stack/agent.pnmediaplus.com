@@ -154,7 +154,7 @@ export default function InboxSidebar() {
               className="w-full text-sm border-none bg-gray-100 rounded-full pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-800 placeholder-gray-500"
             />
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1 pb-1 mt-1">
             <button 
               onClick={() => setFilterUnread(!filterUnread)}
               className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${filterUnread ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
