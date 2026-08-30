@@ -485,7 +485,8 @@
             "textOptions": {
               "type": "json_object"
             }
-          }
+          },
+          "timeout": 300000
         }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
