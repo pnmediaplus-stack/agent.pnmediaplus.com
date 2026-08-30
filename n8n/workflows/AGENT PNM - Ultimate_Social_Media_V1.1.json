@@ -176,7 +176,7 @@
           "cachedResultName": "Instagram Hashtag Scraper (apify/instagram-hashtag-scraper)",
           "cachedResultUrl": "https://console.apify.com/actors/reGe1ST3OBgYZSsZJ/input"
         },
-        "customBody": "={\n    \"hashtags\": [\n         \"{{ $('When Executed by Another Workflow').item.json.Search_for__.replace(/\\s+/g, '_') }}\"\n    ],\n    \"keywordSearch\": true,\n    \"resultsLimit\": {{ $('When Executed by Another Workflow').item.json.How_many_items_to_scrape }}\n}",
+        "customBody": "={\n    \"hashtags\": [\n         \"{{ $('When Executed by Another Workflow').item.json.Search_for__.replace(/[!?.,:\\/\\\\+=&*%$#@|~^()\\[\\]{}]/g, '').replace(/\\s+/g, '_') }}\"\n    ],\n    \"keywordSearch\": true,\n    \"resultsLimit\": {{ $('When Executed by Another Workflow').item.json.How_many_items_to_scrape }}\n}",
         "timeout": {}
       },
       "type": "@apify/n8n-nodes-apify.apify",
