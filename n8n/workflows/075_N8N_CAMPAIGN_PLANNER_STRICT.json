@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Phase 075 Campaign Planner Contract\n\n**1. Trigger + Enrich**\n- Ph\u1ea3i c\u00f3 b\u01b0\u1edbc enrich t\u1ed1i thi\u1ec3u \u0111\u1ec3 l\u1ea5y \u0111\u1ee7: thread_id, organization_id, brief/body.\n- N\u1ebfu thi\u1ebfu organization_id ho\u1eb7c kh\u00f4ng resolve \u0111\u01b0\u1ee3c thread context, workflow ph\u1ea3i fail-closed.\n\n**2. Scope Resolve Before LLM**\n- Tr\u01b0\u1edbc khi g\u1ecdi LLM, workflow ph\u1ea3i resolve ch\u00ednh x\u00e1c department scope.\n- Ch\u1ec9 ch\u1ea5p nh\u1eadn: department_id, department_name.\n- N\u1ebfu thi\u1ebfu scope, ph\u1ea3i tr\u1ea3 v\u1ec1 chat_append \u0111\u1ec3 h\u1ecfi l\u1ea1i ng\u01b0\u1eddi d\u00f9ng.\n\n**3. Callback Output Must Preserve Markdown**\n- K\u1ebft qu\u1ea3 t\u1eeb LLM ph\u1ea3i \u0111\u01b0\u1ee3c gi\u1eef nguy\u00ean d\u1ea1ng raw Markdown string.\n- Kh\u00f4ng d\u00f9ng JSON.stringify cho body callback.",
+        "content": "## Phase 075 Campaign Planner Contract\n\n**1. Trigger + Enrich**\n- Phải có bước enrich tối thiểu để lấy đủ: thread_id, organization_id, brief/body.\n- Nếu thiếu organization_id hoặc không resolve được thread context, workflow phải fail-closed.\n\n**2. Scope Resolve Before LLM**\n- Trước khi gọi LLM, workflow phải resolve chính xác department scope.\n- Chỉ chấp nhận: department_id, department_name.\n- Nếu thiếu scope, phải trả về chat_append để hỏi lại người dùng.\n\n**3. Callback Output Must Preserve Markdown**\n- Kết quả từ LLM phải được giữ nguyên dạng raw Markdown string.\n- Không dùng JSON.stringify cho body callback.",
         "height": 450,
         "width": 450
       },
@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        14544,
-        560
+        18128,
+        384
       ],
-      "id": "dcc19232-d929-4f5a-9106-b8f3c3880a94"
+      "id": "f9400721-9b44-4b07-a4c6-82927a9b7050"
     },
     {
       "parameters": {
@@ -26,11 +26,11 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        14544,
-        1024
+        18128,
+        848
       ],
       "webhookId": "plan-campaign-intake-webhook-id",
-      "id": "1540afbc-ab15-468f-bfce-e933e8b02292"
+      "id": "03367ee7-61fb-4483-8d0c-6f4854eb60e8"
     },
     {
       "parameters": {
@@ -54,23 +54,23 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        14752,
-        1024
+        18336,
+        848
       ],
-      "id": "d45a2547-1c9f-4371-8943-d0c5af36d6f0"
+      "id": "d8a44a76-8a85-4cbe-9221-da0e8f2f32cd"
     },
     {
       "parameters": {
-        "jsCode": "const body = $('Webhook Trigger').item.json.body || {};\nconst registryData = $input.item.json || {};\nconst registry = registryData.departments || [];\nconst packs = registryData.packs || {};\n\nconst campaignContract = body.campaign_contract && typeof body.campaign_contract === 'object' ? body.campaign_contract : null;\n\nif (!campaignContract || typeof campaignContract.campaign_brief !== 'string' || !campaignContract.campaign_brief.trim() || campaignContract.campaign_duration_days === undefined || campaignContract.paid_media_allowed === undefined || !Array.isArray(campaignContract.required_terms)) {\n  return { json: { valid: false, reason: 'Thi\u1ebfu campaign_contract ho\u1eb7c contract thi\u1ebfu field b\u1eaft bu\u1ed9c (campaign_duration_days, paid_media_allowed, required_terms).' } };\n}\n\nconst campaignBrief = campaignContract.campaign_brief;\nconst campaignGoal = campaignContract.campaign_goal || '';\nconst campaignDurationDays = campaignContract.campaign_duration_days;\nconst paidMediaAllowed = campaignContract.paid_media_allowed;\nconst requiredTerms = campaignContract.required_terms;\nconst targetTerms = Array.isArray(campaignContract.target_terms) ? campaignContract.target_terms : requiredTerms;\nconst validationHints = Array.isArray(campaignContract.validation_hints) ? campaignContract.validation_hints : [];\n\nconst envelopeBrief = typeof body.campaign_brief === 'string' ? body.campaign_brief : (typeof body.body === 'string' ? body.body : '');\nconst envelopeGoal = typeof body.campaign_goal === 'string' ? body.campaign_goal : '';\nconst envelopeDurationDays = Number.isInteger(body.campaign_duration_days) ? body.campaign_duration_days : null;\nconst envelopePaidMediaAllowed = body.paid_media_allowed === true ? true : body.paid_media_allowed === false ? false : null;\n\nconst contractMismatch = (\n  (envelopeBrief !== '' && envelopeBrief !== campaignBrief) ||\n  (envelopeGoal !== '' && envelopeGoal !== campaignGoal) ||\n  (envelopeDurationDays !== null && envelopeDurationDays !== campaignDurationDays) ||\n  (envelopePaidMediaAllowed !== null && envelopePaidMediaAllowed !== paidMediaAllowed)\n);\n\nif (contractMismatch) {\n  return { json: { valid: false, reason: 'Campaign contract mismatch between control plane envelope and resolved contract' } };\n}\n\nif (!body.organization_id || !body.thread_id) {\n  return { json: { valid: false, reason: 'Thi\u1ebfu th\u00f4ng tin thread_id ho\u1eb7c organization_id' } };\n}\n\nlet matchedDept = null;\nif (body.department_id) {\n  matchedDept = registry.find(d => d.department_id === body.department_id);\n} else if (body.department_name) {\n  matchedDept = registry.find(d => d.department_name === body.department_name);\n}\n\nif (!matchedDept) {\n  return { json: { valid: false, reason: 'Department not found in registry (Ph\u00f2ng ban ch\u01b0a \u0111\u01b0\u1ee3c c\u1ea5p ph\u00e9p)' } };\n}\n\nconst packKey = matchedDept.department_pack_key;\nif (!packKey) {\n  return { json: { valid: false, reason: 'Backend API did not resolve department_pack_key for this department' } };\n}\n\nconst departmentPack = packs[packKey] || {};\nif (Object.keys(departmentPack).length === 0) {\n  return { json: { valid: false, reason: 'Department Pack payload is missing or empty' } };\n}\n\nreturn { \n  json: { \n    valid: true, \n    thread_id: body.thread_id,\n    organization_id: body.organization_id,\n    body: campaignBrief,\n    campaign_brief: campaignBrief,\n    campaign_goal: campaignGoal || campaignBrief,\n    campaign_duration_days: campaignDurationDays,\n    paid_media_allowed: paidMediaAllowed,\n    target_terms: targetTerms,\n    required_terms: requiredTerms,\n    validation_hints: validationHints,\n    campaign_contract: campaignContract,\n    department_id: matchedDept.department_id, \n    department_name: matchedDept.department_name,\n    department_pack: departmentPack,\n    department_pack_key: packKey,\n    department_pack_label: matchedDept.department_pack || ''\n  } \n};"
+        "jsCode": "const body = $('Webhook Trigger').item.json.body || {};\nconst registryData = $input.item.json || {};\nconst registry = registryData.departments || [];\nconst packs = registryData.packs || {};\n\nconst campaignContract = body.campaign_contract && typeof body.campaign_contract === 'object' ? body.campaign_contract : null;\n\nif (!campaignContract || typeof campaignContract.campaign_brief !== 'string' || !campaignContract.campaign_brief.trim() || campaignContract.campaign_duration_days === undefined || campaignContract.paid_media_allowed === undefined || !Array.isArray(campaignContract.required_terms)) {\n  return { json: { valid: false, reason: 'Thiếu campaign_contract hoặc contract thiếu field bắt buộc (campaign_duration_days, paid_media_allowed, required_terms).' } };\n}\n\nconst campaignBrief = campaignContract.campaign_brief;\nconst campaignGoal = campaignContract.campaign_goal || '';\nconst campaignDurationDays = campaignContract.campaign_duration_days;\nconst paidMediaAllowed = campaignContract.paid_media_allowed;\nconst requiredTerms = campaignContract.required_terms;\nconst targetTerms = Array.isArray(campaignContract.target_terms) ? campaignContract.target_terms : requiredTerms;\nconst validationHints = Array.isArray(campaignContract.validation_hints) ? campaignContract.validation_hints : [];\n\nconst envelopeBrief = typeof body.campaign_brief === 'string' ? body.campaign_brief : (typeof body.body === 'string' ? body.body : '');\nconst envelopeGoal = typeof body.campaign_goal === 'string' ? body.campaign_goal : '';\nconst envelopeDurationDays = Number.isInteger(body.campaign_duration_days) ? body.campaign_duration_days : null;\nconst envelopePaidMediaAllowed = body.paid_media_allowed === true ? true : body.paid_media_allowed === false ? false : null;\n\nconst contractMismatch = (\n  (envelopeBrief !== '' && envelopeBrief !== campaignBrief) ||\n  (envelopeGoal !== '' && envelopeGoal !== campaignGoal) ||\n  (envelopeDurationDays !== null && envelopeDurationDays !== campaignDurationDays) ||\n  (envelopePaidMediaAllowed !== null && envelopePaidMediaAllowed !== paidMediaAllowed)\n);\n\nif (contractMismatch) {\n  return { json: { valid: false, reason: 'Campaign contract mismatch between control plane envelope and resolved contract' } };\n}\n\nif (!body.organization_id || !body.thread_id) {\n  return { json: { valid: false, reason: 'Thiếu thông tin thread_id hoặc organization_id' } };\n}\n\nlet matchedDept = null;\nif (body.department_id) {\n  matchedDept = registry.find(d => d.department_id === body.department_id);\n} else if (body.department_name) {\n  matchedDept = registry.find(d => d.department_name === body.department_name);\n}\n\nif (!matchedDept) {\n  return { json: { valid: false, reason: 'Department not found in registry (Phòng ban chưa được cấp phép)' } };\n}\n\nconst packKey = matchedDept.department_pack_key;\nif (!packKey) {\n  return { json: { valid: false, reason: 'Backend API did not resolve department_pack_key for this department' } };\n}\n\nconst departmentPack = packs[packKey] || {};\nif (Object.keys(departmentPack).length === 0) {\n  return { json: { valid: false, reason: 'Department Pack payload is missing or empty' } };\n}\n\nreturn { \n  json: { \n    valid: true, \n    thread_id: body.thread_id,\n    organization_id: body.organization_id,\n    body: campaignBrief,\n    campaign_brief: campaignBrief,\n    campaign_goal: campaignGoal || campaignBrief,\n    campaign_duration_days: campaignDurationDays,\n    paid_media_allowed: paidMediaAllowed,\n    target_terms: targetTerms,\n    required_terms: requiredTerms,\n    validation_hints: validationHints,\n    campaign_contract: campaignContract,\n    department_id: matchedDept.department_id, \n    department_name: matchedDept.department_name,\n    department_pack: departmentPack,\n    department_pack_key: packKey,\n    department_pack_label: matchedDept.department_pack || ''\n  } \n};"
       },
       "name": "Scope Resolve",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        14944,
-        1024
+        18528,
+        848
       ],
-      "id": "5905ddff-d68d-4ece-aded-0501302f3dec"
+      "id": "32aecb9b-3f6b-432f-850a-86c81f1d6465"
     },
     {
       "parameters": {
@@ -87,10 +87,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        15152,
-        1024
+        18736,
+        848
       ],
-      "id": "4fa1aef6-7cb1-497b-b3dc-7571dd6db695"
+      "id": "a9d952af-fdc8-4bdd-ae51-9131fd26fdfb"
     },
     {
       "parameters": {
@@ -111,17 +111,17 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Webhook Trigger'].json.body.thread_id,\n  organization_id: $node['Webhook Trigger'].json.body.organization_id,\n  idempotency_key: $execution.id + '_error',\n  sender: 'gatekeeper',\n  body: 'L\u1ed7i Gatekeeper: ' + ($json.reason || 'NEEDS_CLARIFICATION') + (Array.isArray($json.clarification_questions) && $json.clarification_questions.length ? '\\n\\nC\u00e2u h\u1ecfi c\u1ea7n l\u00e0m r\u00f5:\\n- ' + $json.clarification_questions.join('\\n- ') : ''),\n  intent_type: 'clarify_missing_scope'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Webhook Trigger'].json.body.thread_id,\n  organization_id: $node['Webhook Trigger'].json.body.organization_id,\n  idempotency_key: $execution.id + '_error',\n  sender: 'gatekeeper',\n  body: 'Lỗi Gatekeeper: ' + ($json.reason || 'NEEDS_CLARIFICATION') + (Array.isArray($json.clarification_questions) && $json.clarification_questions.length ? '\\n\\nCâu hỏi cần làm rõ:\\n- ' + $json.clarification_questions.join('\\n- ') : ''),\n  intent_type: 'clarify_missing_scope'\n} }}",
         "options": {}
       },
       "name": "Clarify Error (chat_append)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        15344,
-        1216
+        18928,
+        1040
       ],
-      "id": "6130899e-2ece-4070-a7ef-025c388993c1"
+      "id": "1ae257ab-7f98-4b4a-b48d-654d9260e797"
     },
     {
       "parameters": {
@@ -142,22 +142,24 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_ack',\n  sender: 'agent_1_research',\n  body: 'Agent 1 (Research) thu\u1ed9c ph\u00f2ng `' + ($json.department_name || $json.department_id) + '` \u0111\u00e3 nh\u1eadn y\u00eau c\u1ea7u l\u1eadp k\u1ebf ho\u1ea1ch truy\u1ec1n th\u00f4ng. \u0110ang b\u1eaft \u0111\u1ea7u nghi\u00ean c\u1ee9u g\u00f3c \u0111\u1ed9 Viral...',\n  intent_type: 'agent_progress'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_ack',\n  sender: 'agent_1_research',\n  body: 'Agent 1 (Research) thuộc phòng `' + ($json.department_name || $json.department_id) + '` đã nhận yêu cầu lập kế hoạch truyền thông. Đang bắt đầu nghiên cứu góc độ Viral...',\n  intent_type: 'agent_progress'\n} }}",
         "options": {}
       },
       "name": "Acknowledge (chat_append)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        15344,
-        864
+        18928,
+        688
       ],
-      "id": "d5711925-7a7a-4892-a860-0a47f662ca8b"
+      "id": "3e09eda8-012e-4d32-8a7c-df9fe15fad1e"
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -169,30 +171,36 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 1 - Viral Research & Angle. Your capability is strictly BOUNDED. You MUST treat campaign_brief as the SSOT and respect the deterministic contract fields provided by the control plane. You must output a strategic research packet in valid JSON format. Required top-level sections are: `executive_decision`, `icp_and_pain_wedge`, `offer`, `funnel_architecture`, `crm_role`, `chatbot_role`, `creative_architecture`, `media_buying_structure`, `10_day_operating_plan`, `lead_qualification`, `sales_handoff`, `organic_trust_layer`, `measurement_framework`, `budget_allocation`, `risks_policy`, `day_3_gate`, `day_6_gate`, `end_of_pilot_decision_framework`, `assets_required_before_launch`, `do_not_do`, `daily_timeline`, `uses_ads`, `needs_clarification`, `clarification_questions`, and `assumptions_to_confirm`. Fill every required section; if something is underspecified, set `needs_clarification=true` and use concise placeholders instead of omitting keys. For each item in `daily_timeline`, include at minimum: `day`, `objective`, `channel`, `creative`, `budget_vnd`, `metric`, and `gate`. CRITICAL: The `daily_timeline` array MUST contain EXACTLY \" + String($node['Scope Resolve'].json.campaign_duration_days) + \" items. Do NOT group days. Write a separate object for EACH day. RULES: 1. You MUST NOT write final social captions. You MUST NOT output final markdown proposals. Your output is an upstream source of truth for downstream agents. 2. DO NOT ask for clarification on fields that are ALREADY provided in the user message (e.g., do not ask about duration if campaign_duration_days is provided, do not ask about ads if paid_media_allowed is provided). 3. Do NOT invent missing facts, products, audiences, budgets, channels, or constraints. If required specifics are missing and cannot be derived from campaign_brief, campaign_contract, or department_pack, set needs_clarification=true and ask concise clarification_questions. Never fabricate context to satisfy length or completeness.  5. DECISION_OWNERSHIP_GATE: Do NOT ask Human for strategic decisions explicitly delegated to you (e.g., CRM features, Chatbot roles). Research and decide autonomously. Do NOT ask for benchmarks (CPC/CTR); use working assumptions. ONLY set needs_clarification=true if genuinely missing non-researchable data that materially blocks the campaign. 6. CRITICAL: YOU MUST WRITE YOUR ENTIRE JSON RESPONSE IN THE SAME LANGUAGE AS THE `campaign_brief`.'\n    },\n    {\n      role: 'user',\n      content: 'campaign_brief: ' + $node['Scope Resolve'].json.campaign_brief + '\\ncampaign_goal: ' + $node['Scope Resolve'].json.campaign_goal + '\\ncampaign_duration_days: ' + String($node['Scope Resolve'].json.campaign_duration_days) + '\\npaid_media_allowed: ' + String($node['Scope Resolve'].json.paid_media_allowed) + '\\nrequired_terms: ' + JSON.stringify($node['Scope Resolve'].json.required_terms || []) + '\\nvalidation_hints: ' + JSON.stringify($node['Scope Resolve'].json.validation_hints || []) + '\\ndepartment_context: ' + ($node['Scope Resolve'].json.department_name || $node['Scope Resolve'].json.department_id) + '\\ndepartment_pack: ' + JSON.stringify($node['Scope Resolve'].json.department_pack || {}) + '\\n\\nUser Request (verbatim): ' + $node['Scope Resolve'].json.campaign_brief\n    }\n  ]\n} }}",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 1 - Viral Research & Angle. Your capability is strictly BOUNDED. You MUST treat campaign_brief as the SSOT and respect the deterministic contract fields provided by the control plane. You must output a strategic research packet in valid JSON format. Required top-level sections are: `executive_decision`, `icp_and_pain_wedge`, `offer`, `funnel_architecture`, `crm_role`, `chatbot_role`, `creative_architecture`, `media_buying_structure`, `10_day_operating_plan`, `lead_qualification`, `sales_handoff`, `organic_trust_layer`, `measurement_framework`, `budget_allocation`, `risks_policy`, `day_3_gate`, `day_6_gate`, `end_of_pilot_decision_framework`, `assets_required_before_launch`, `do_not_do`, `daily_timeline`, `uses_ads`, `needs_clarification`, `clarification_questions`, and `assumptions_to_confirm`. Fill every required section; if something is underspecified, set `needs_clarification=true` and use concise placeholders instead of omitting keys. For each item in `daily_timeline`, include at minimum: `day`, `objective`, `channel`, `creative`, `budget_vnd`, `metric`, and `gate`. CRITICAL: The `daily_timeline` array MUST contain EXACTLY ' + String($node['Scope Resolve'].json.campaign_duration_days) + ' items. Do NOT group days. Write a separate object for EACH day. RULES: 1. You MUST NOT write final social captions. You MUST NOT output final markdown proposals. Your output is an upstream source of truth for downstream agents. 2. DO NOT ask for clarification on fields that are ALREADY provided in the user message (e.g., do not ask about duration if campaign_duration_days is provided, do not ask about ads if paid_media_allowed is provided). 3. Do NOT invent missing facts, products, audiences, budgets, channels, or constraints. If required specifics are missing and cannot be derived from campaign_brief, campaign_contract, or department_pack, set needs_clarification=true and ask concise clarification_questions. Never fabricate context to satisfy length or completeness. 4. CRITICAL: YOU MUST WRITE YOUR ENTIRE JSON RESPONSE IN THE SAME LANGUAGE AS THE `campaign_brief`.'\n    },\n    {\n      role: 'user',\n      content: 'campaign_brief: ' + $node['Scope Resolve'].json.campaign_brief + '\\ncampaign_goal: ' + $node['Scope Resolve'].json.campaign_goal + '\\ncampaign_duration_days: ' + String($node['Scope Resolve'].json.campaign_duration_days) + '\\npaid_media_allowed: ' + String($node['Scope Resolve'].json.paid_media_allowed) + '\\nrequired_terms: ' + JSON.stringify($node['Scope Resolve'].json.required_terms || []) + '\\nvalidation_hints: ' + JSON.stringify($node['Scope Resolve'].json.validation_hints || []) + '\\ndepartment_context: ' + ($node['Scope Resolve'].json.department_name || $node['Scope Resolve'].json.department_id) + '\\ndepartment_pack: ' + JSON.stringify($node['Scope Resolve'].json.department_pack || {}) + '\\n\\nUser Request (verbatim): ' + $node['Scope Resolve'].json.campaign_brief\n    }\n  ]\n} }}",
         "options": {}
       },
       "name": "Agent 1 - Research",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        15552,
-        864
+        19136,
+        688
       ],
-      "id": "d7cd6d91-1620-4dab-8910-b109a4b6eb7d"
+      "id": "8f676792-cf77-49e3-b9eb-cd21afe440bb",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "u1GGrgkWgG2z9d4K",
+          "name": "OpenAI"
+        }
+      }
     },
     {
       "parameters": {
-        "jsCode": "try {\n  const response = $input.item.json.choices[0].message.content;\n  let parsed;\n  try {\n    parsed = JSON.parse(response);\n  } catch (e) {\n    throw new Error('STRUCTURAL_ERROR: Agent 1 did not return valid JSON.');\n  }\n  \n  const requiredSections = [\n    \"executive_decision\", \"icp_and_pain_wedge\", \"offer\", \"funnel_architecture\",\n    \"crm_role\", \"chatbot_role\", \"creative_architecture\", \"media_buying_structure\",\n    \"10_day_operating_plan\", \"lead_qualification\", \"sales_handoff\", \"organic_trust_layer\",\n    \"measurement_framework\", \"budget_allocation\", \"risks_policy\", \"day_3_gate\", \"day_6_gate\",\n    \"end_of_pilot_decision_framework\", \"assets_required_before_launch\", \"do_not_do\",\n    \"daily_timeline\", \"uses_ads\", \"needs_clarification\", \"clarification_questions\", \"assumptions_to_confirm\"\n  ];\n  \n  const missingSections = requiredSections.filter((key) => !(key in parsed));\n  if (missingSections.length > 0) {\n    throw new Error('STRUCTURAL_ERROR: Agent 1 output is missing required sections: ' + missingSections.join(', '));\n  }\n  \n  if (!Array.isArray(parsed.daily_timeline)) {\n    throw new Error('STRUCTURAL_ERROR: `daily_timeline` must be an array.');\n  }\n  \n  parsed.daily_timeline.forEach((dayPlan, index) => {\n    if (Array.isArray(dayPlan) || !dayPlan || typeof dayPlan !== 'object') {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}] must be an object.`);\n    }\n    const requiredDayKeys = ['day', 'objective', 'channel', 'creative', 'budget_vnd', 'metric', 'gate'];\n    const missingKeys = requiredDayKeys.filter((key) => !(key in dayPlan));\n    if (missingKeys.length > 0) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}] is missing keys: ${missingKeys.join(', ')}`);\n    }\n    for (const key of requiredDayKeys) {\n      const value = dayPlan[key];\n      if (value == null) {\n        throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].${key} is empty.`);\n      }\n      if (typeof value === 'string' && !value.trim()) {\n        throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].${key} is empty.`);\n      }\n    }\n    if (!Number.isInteger(dayPlan.day) || dayPlan.day < 1) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].day must be a positive integer.`);\n    }\n  \n    if (typeof dayPlan.budget_vnd !== 'number' || !Number.isFinite(dayPlan.budget_vnd) || dayPlan.budget_vnd <= 0) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].budget_vnd must be a positive number.`);\n    }\n  });\n  \n  if (typeof parsed.uses_ads !== 'boolean') {\n    throw new Error('STRUCTURAL_ERROR: `uses_ads` must be a boolean.');\n  }\n  if (typeof parsed.needs_clarification !== 'boolean') {\n    throw new Error('STRUCTURAL_ERROR: `needs_clarification` must be a boolean.');\n  }\n  \n  if (!Array.isArray(parsed.clarification_questions)) {\n    throw new Error('STRUCTURAL_ERROR: `clarification_questions` must be an array.');\n  }\n  if (!parsed.clarification_questions.every(q => typeof q === 'string')) {\n    throw new Error('STRUCTURAL_ERROR: `clarification_questions` must be an array of strings.');\n  }\n  \n  if (!Array.isArray(parsed.assumptions_to_confirm)) {\n    throw new Error('STRUCTURAL_ERROR: `assumptions_to_confirm` must be an array.');\n  }\n  if (!parsed.assumptions_to_confirm.every(a => typeof a === 'string')) {\n    throw new Error('STRUCTURAL_ERROR: `assumptions_to_confirm` must be an array of strings.');\n  }\n  \n  const needsClarification = parsed.needs_clarification === true;\n  const clarificationQuestions = parsed.clarification_questions.filter((question) => question.trim());\n  \n  if (needsClarification) {\n    return {\n      json: {\n        ...$input.item.json,\n        needs_clarification: true,\n        clarification_questions: clarificationQuestions,\n        reason: typeof parsed.reason === 'string' && parsed.reason.trim() ? parsed.reason : 'NEEDS_CLARIFICATION'\n      }\n    };\n  }\n  \n  const scope = $node['Scope Resolve'].json;\n  const contract = scope.campaign_contract || {};\n  const paidMediaAllowed = contract.paid_media_allowed;\n  \n  if (Number.isInteger(contract.campaign_duration_days)) {\n    const expectedDays = contract.campaign_duration_days;\n    const timelineLength = parsed.daily_timeline.length;\n    if (timelineLength !== expectedDays) {\n      throw new Error('VALIDATION_ERROR: Expected exactly ' + expectedDays + ' days, got ' + timelineLength);\n    }\n  }\n  \n  if (paidMediaAllowed === false && parsed.uses_ads !== false) {\n    throw new Error('VALIDATION_ERROR: Strategy uses ads despite paid_media_allowed=false.');\n  }\n  \n  return {\n    json: {\n      ...$input.item.json,\n      needs_clarification: false,\n      clarification_questions: []\n    }\n  };\n  \n} catch (error) {\n  return {\n    json: {\n      ...$input.item.json,\n      needs_clarification: true,\n      clarification_questions: [\"L\u1ed6I H\u1ec6 TH\u1ed0NG N\u1ed8I B\u1ed8 (AI sinh JSON l\u1ed7i c\u1ea5u tr\u00fac): \" + error.message + \" --- S\u1ebfp vui l\u00f2ng ra l\u1ec7nh l\u1ea1i v\u00e0 NH\u1eaeC AI l\u00e0m \u0110\u00daNG C\u1ea4U TR\u00daC nh\u00e9!\"],\n      reason: \"SYSTEM_VALIDATION_ERROR\"\n    }\n  };\n}"
+        "jsCode": "try {\n  // --- UNIVERSAL ADAPTER (Supports HTTP Node & LangChain Agent) ---\n  const json = $input.item.json;\n  const response = json.output || json.text || (json.choices && json.choices[0]?.message?.content) || json.message?.content;\n  if (!response) {\n    throw new Error('STRUCTURAL_ERROR: Không tìm thấy nội dung phản hồi từ AI. Output Node không đúng chuẩn.');\n  }\n  // ------------------------------------------------------------------\n  let parsed;\n  try {\n    parsed = JSON.parse(response);\n  } catch (e) {\n    throw new Error('STRUCTURAL_ERROR: Agent 1 did not return valid JSON.');\n  }\n  \n  const requiredSections = [\n    \"executive_decision\", \"icp_and_pain_wedge\", \"offer\", \"funnel_architecture\",\n    \"crm_role\", \"chatbot_role\", \"creative_architecture\", \"media_buying_structure\",\n    \"10_day_operating_plan\", \"lead_qualification\", \"sales_handoff\", \"organic_trust_layer\",\n    \"measurement_framework\", \"budget_allocation\", \"risks_policy\", \"day_3_gate\", \"day_6_gate\",\n    \"end_of_pilot_decision_framework\", \"assets_required_before_launch\", \"do_not_do\",\n    \"daily_timeline\", \"uses_ads\", \"needs_clarification\", \"clarification_questions\", \"assumptions_to_confirm\"\n  ];\n  \n  const missingSections = requiredSections.filter((key) => !(key in parsed));\n  if (missingSections.length > 0) {\n    throw new Error('STRUCTURAL_ERROR: Agent 1 output is missing required sections: ' + missingSections.join(', '));\n  }\n  \n  if (!Array.isArray(parsed.daily_timeline)) {\n    throw new Error('STRUCTURAL_ERROR: `daily_timeline` must be an array.');\n  }\n  \n  parsed.daily_timeline.forEach((dayPlan, index) => {\n    if (Array.isArray(dayPlan) || !dayPlan || typeof dayPlan !== 'object') {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}] must be an object.`);\n    }\n    const requiredDayKeys = ['day', 'objective', 'channel', 'creative', 'budget_vnd', 'metric', 'gate'];\n    const missingKeys = requiredDayKeys.filter((key) => !(key in dayPlan));\n    if (missingKeys.length > 0) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}] is missing keys: ${missingKeys.join(', ')}`);\n    }\n    for (const key of requiredDayKeys) {\n      const value = dayPlan[key];\n      if (value == null) {\n        throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].${key} is empty.`);\n      }\n      if (typeof value === 'string' && !value.trim()) {\n        throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].${key} is empty.`);\n      }\n    }\n    if (!Number.isInteger(dayPlan.day) || dayPlan.day < 1) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].day must be a positive integer.`);\n    }\n  \n    // Đã sửa dấu <= 0 thành < 0 để cho phép ngân sách 0 đồng (Chạy Organic)\n    if (typeof dayPlan.budget_vnd !== 'number' || !Number.isFinite(dayPlan.budget_vnd) || dayPlan.budget_vnd < 0) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].budget_vnd must be a zero or positive number.`);\n    }\n  });\n  \n  if (typeof parsed.uses_ads !== 'boolean') {\n    throw new Error('STRUCTURAL_ERROR: `uses_ads` must be a boolean.');\n  }\n  if (typeof parsed.needs_clarification !== 'boolean') {\n    throw new Error('STRUCTURAL_ERROR: `needs_clarification` must be a boolean.');\n  }\n  \n  if (!Array.isArray(parsed.clarification_questions)) {\n    throw new Error('STRUCTURAL_ERROR: `clarification_questions` must be an array.');\n  }\n  if (!parsed.clarification_questions.every(q => typeof q === 'string')) {\n    throw new Error('STRUCTURAL_ERROR: `clarification_questions` must be an array of strings.');\n  }\n  \n  if (!Array.isArray(parsed.assumptions_to_confirm)) {\n    throw new Error('STRUCTURAL_ERROR: `assumptions_to_confirm` must be an array.');\n  }\n  if (!parsed.assumptions_to_confirm.every(a => typeof a === 'string')) {\n    throw new Error('STRUCTURAL_ERROR: `assumptions_to_confirm` must be an array of strings.');\n  }\n  \n  const needsClarification = parsed.needs_clarification === true;\n  const clarificationQuestions = parsed.clarification_questions.filter((question) => question.trim());\n  \n  if (needsClarification) {\n    return {\n      json: {\n        ...$input.item.json,\n        needs_clarification: true,\n        clarification_questions: clarificationQuestions,\n        reason: typeof parsed.reason === 'string' && parsed.reason.trim() ? parsed.reason : 'NEEDS_CLARIFICATION'\n      }\n    };\n  }\n  \n  const scope = $node['Scope Resolve'].json;\n  const contract = scope.campaign_contract || {};\n  const paidMediaAllowed = contract.paid_media_allowed;\n  \n  if (Number.isInteger(contract.campaign_duration_days)) {\n    const expectedDays = contract.campaign_duration_days;\n    const timelineLength = parsed.daily_timeline.length;\n    if (timelineLength !== expectedDays) {\n      throw new Error('VALIDATION_ERROR: Expected exactly ' + expectedDays + ' days, got ' + timelineLength);\n    }\n  }\n  \n  if (paidMediaAllowed === false && parsed.uses_ads !== false) {\n    throw new Error('VALIDATION_ERROR: Strategy uses ads despite paid_media_allowed=false.');\n  }\n  \n  return {\n    json: {\n      ...$input.item.json,\n      needs_clarification: false,\n      clarification_questions: []\n    }\n  };\n  \n} catch (error) {\n  // ĐÂY LÀ ĐOẠN CATCH LỖI ĐỂ TRÁNH CRASH N8N\n  return {\n    json: {\n      ...$input.item.json,\n      needs_clarification: true,\n      clarification_questions: [\"LỖI HỆ THỐNG NỘI BỘ (AI sinh JSON lỗi cấu trúc): \" + error.message + \" --- Sếp vui lòng ra lệnh lại và NHẮC AI làm ĐÚNG CẤU TRÚC nhé!\"],\n      reason: \"SYSTEM_VALIDATION_ERROR\"\n    }\n  };\n}"
       },
       "name": "Validate Agent 1 Output",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        15760,
-        864
+        19344,
+        688
       ],
-      "id": "25da5432-0186-42d0-abb6-3d9cd4ef6ab9"
+      "id": "10c0bfce-6190-4e3a-a1b3-c6b20477659f"
     },
     {
       "parameters": {
@@ -209,15 +217,17 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        15936,
-        864
+        19520,
+        688
       ],
-      "id": "505bacea-102a-435c-9dbe-f1d14935f145"
+      "id": "e65f8cd0-64e3-4a00-9356-75ae96e411c4"
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -229,17 +239,27 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 4 - Publish Readiness QA. You are a strict gatekeeper. You MUST evaluate if Agent 1\\'s research packet aligns with the user\\'s original brief. You MUST NOT rewrite the strategy or create prompts. You MUST output STRICTLY a JSON object with keys `passed` (boolean) and `reason` (string explaining why it passed or failed) CRITICAL: YOU MUST WRITE YOUR `reason` IN THE EXACT SAME LANGUAGE AS THE Original User Brief.'\n    },\n    {\n      role: 'user',\n      content: 'Original User Brief: ' + $node['Scope Resolve'].json.body + '\\n\\nAgent 1 Research Packet: ' + $json.choices[0].message.content\n    }\n  ]\n} }}",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 4 - Publish Readiness QA. You are a strict gatekeeper. You MUST evaluate if Agent 1\\'s research packet aligns with the user\\'s original brief. You MUST NOT rewrite the strategy or create prompts. You MUST output STRICTLY a JSON object with keys `passed` (boolean) and `reason` (string explaining why it passed or failed).  CRITICAL: YOU MUST WRITE YOUR `reason` IN THE EXACT SAME LANGUAGE AS THE Original User Brief.'\n    },\n    {\n      role: 'user',\n      content: 'Original User Brief: ' + $node['Scope Resolve'].json.body + '\\n\\nAgent 1 Research Packet: ' + $json.choices[0].message.content\n    }\n  ]\n} }}",
         "options": {}
       },
       "name": "Agent 4 - QA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        16160,
-        864
+        19744,
+        688
       ],
-      "id": "80e60f39-7a35-42e6-9b15-fb02668c93ff"
+      "id": "f2bf0f80-b52d-44ba-89c1-549046e43f14",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "qsZuqecdX6PM9qfX",
+          "name": "imgbb"
+        },
+        "httpHeaderAuth": {
+          "id": "u1GGrgkWgG2z9d4K",
+          "name": "OpenAI"
+        }
+      }
     },
     {
       "parameters": {
@@ -249,10 +269,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        16368,
-        864
+        19952,
+        688
       ],
-      "id": "a07cf126-e3c7-460a-ae26-d7231b00b2b4"
+      "id": "7e518b74-0661-4146-b88d-d66ba12a2184"
     },
     {
       "parameters": {
@@ -269,10 +289,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        16560,
-        864
+        20144,
+        688
       ],
-      "id": "ad3c6e2f-1dd5-49b9-86f8-ffca080ae6a2"
+      "id": "14e2e126-41e0-4c23-8ad4-360d2ddb6bd0"
     },
     {
       "parameters": {
@@ -293,22 +313,24 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Scope Resolve'].json.thread_id,\n  organization_id: $node['Scope Resolve'].json.organization_id,\n  idempotency_key: $execution.id + '_qa_reject',\n  sender: 'agent_4_qa',\n  body: '\u26d4 **Agent 4 (QA) \u0111\u00e3 ch\u1eb7n b\u1ea3n K\u1ebf ho\u1ea1ch n\u00e0y v\u00ec kh\u00f4ng \u0111\u1ea1t y\u00eau c\u1ea7u:**\\n\\n' + $json.reason,\n  intent_type: 'agent_response'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Scope Resolve'].json.thread_id,\n  organization_id: $node['Scope Resolve'].json.organization_id,\n  idempotency_key: $execution.id + '_qa_reject',\n  sender: 'agent_4_qa',\n  body: '⛔ **Agent 4 (QA) đã chặn bản Kế hoạch này vì không đạt yêu cầu:**\\n\\n' + $json.reason,\n  intent_type: 'agent_response'\n} }}",
         "options": {}
       },
       "name": "QA Reject (chat_append)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        16768,
-        1024
+        20352,
+        848
       ],
-      "id": "f32f458b-fc71-4f30-bcd5-5a90e32350d2"
+      "id": "bfdff6ba-1bc7-4acf-b007-c65424c4357c"
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -327,10 +349,16 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        16768,
-        768
+        20352,
+        592
       ],
-      "id": "a93000d3-e220-4289-b464-944e77eebfdf"
+      "id": "e465e52a-8733-4373-b451-a2c078a13e19",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "u1GGrgkWgG2z9d4K",
+          "name": "OpenAI"
+        }
+      }
     },
     {
       "parameters": {
@@ -358,10 +386,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        16960,
-        768
+        20544,
+        592
       ],
-      "id": "10dc6bb1-a683-4a78-ac79-83c6eeaec246"
+      "id": "03582845-b451-43e0-9803-7a75d1f3da51"
     }
   ],
   "pinData": {},
@@ -524,7 +552,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "168529e0-df6c-4b0c-9fde-0132d9f6a4de",
+  "versionId": "79d1a2e1-86a6-4257-9ead-d9bd2da1d00b",
   "meta": {
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
   },
