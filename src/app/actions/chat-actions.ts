@@ -1034,7 +1034,16 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
     }
 
     // Fail-closed fallback (Should be unreachable)
-    throw new Error("UNHANDLED_INTENT_REACHED_END_OF_ROUTER");
+    
+      if (intentType === 'plan_campaign') {
+        return await routePlanCampaignCommand(organizationId, threadId, requestId, auth, humanMessageId, executionBody, visual_assets);
+      }
+      if (intentType === 'publish_content') {
+        // Just let it return a clarify message if integration_key is missing
+        executionBody = "/publish " + executionBody;
+      }
+      
+      throw new Error("UNHANDLED_INTENT_REACHED_END_OF_ROUTER: " + intentType);
   } catch (error) {
     if (organizationId && humanMessageId) await dbDeleteChatMessage(organizationId, humanMessageId).catch(() => {});
     if (organizationId && agentMessageId) await dbDeleteChatMessage(organizationId, agentMessageId).catch(() => {});
