@@ -1035,10 +1035,10 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
 
     // Fail-closed fallback (Should be unreachable)
     
-      if (intentType === 'plan_campaign') {
+      if ((intentType as string) === 'plan_campaign') {
         return await routePlanCampaignCommand(organizationId, threadId, requestId, auth, humanMessageId, executionBody, visual_assets);
       }
-      if (intentType === 'publish_content') {
+      if ((intentType as string) === 'publish_content') {
         // Just let it return a clarify message if integration_key is missing
         executionBody = "/publish " + executionBody;
       }
