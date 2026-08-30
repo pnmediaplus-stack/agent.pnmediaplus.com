@@ -1038,10 +1038,7 @@ export async function sendChatMessage(threadId: string, body: string, visual_ass
       if ((intentType as string) === 'plan_campaign') {
         return await routePlanCampaignCommand(organizationId, threadId, requestId, auth, humanMessageId, executionBody, visual_assets);
       }
-      if ((intentType as string) === 'publish_content') {
-        // Just let it return a clarify message if integration_key is missing
-        executionBody = "/publish " + executionBody;
-      }
+      
       
       throw new Error("UNHANDLED_INTENT_REACHED_END_OF_ROUTER: " + intentType);
   } catch (error) {
