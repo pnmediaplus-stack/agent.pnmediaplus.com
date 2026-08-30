@@ -229,7 +229,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 4 - Publish Readiness QA. You are a strict gatekeeper. You MUST evaluate if Agent 1\\'s research packet aligns with the user\\'s original brief. You MUST NOT rewrite the strategy or create prompts. You MUST output STRICTLY a JSON object with keys `passed` (boolean) and `reason` (string explaining why it passed or failed).'\n    },\n    {\n      role: 'user',\n      content: 'Original User Brief: ' + $node['Scope Resolve'].json.body + '\\n\\nAgent 1 Research Packet: ' + $json.choices[0].message.content\n    }\n  ]\n} }}",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 4 - Publish Readiness QA. You are a strict gatekeeper. You MUST evaluate if Agent 1\\'s research packet aligns with the user\\'s original brief. You MUST NOT rewrite the strategy or create prompts. You MUST output STRICTLY a JSON object with keys `passed` (boolean) and `reason` (string explaining why it passed or failed) CRITICAL: YOU MUST WRITE YOUR `reason` IN THE EXACT SAME LANGUAGE AS THE Original User Brief.'\n    },\n    {\n      role: 'user',\n      content: 'Original User Brief: ' + $node['Scope Resolve'].json.body + '\\n\\nAgent 1 Research Packet: ' + $json.choices[0].message.content\n    }\n  ]\n} }}",
         "options": {}
       },
       "name": "Agent 4 - QA",
