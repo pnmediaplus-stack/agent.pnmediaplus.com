@@ -133,7 +133,7 @@ export async function dbLoadContextData(organizationId: string, referenceType: '
   return { data: data[0] || null };
 }
 
-export async function dbCreateContentItemFromBrief(organizationId: string, brief: string, ownerRef: string, campaignId?: string | null, visual_assets: string[] = []) {
+export async function dbCreateContentItemFromBrief(organizationId: string, brief: string, ownerRef: string, campaignId?: string | null, visual_assets: any[] = []) {
   const trimmedBrief = brief.trim();
   let title = trimmedBrief.substring(0, 50).trim();
   if (!title) {
