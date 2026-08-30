@@ -100,47 +100,90 @@ export default function InboxSidebar() {
     }
   };
 
+  const uniqueChannels = Array.from(new Set(threads.map(t => t.channel?.channel_name).filter(Boolean)));
   const normalizedSearch = searchTerm.trim().toLowerCase();
-  const filteredThreads = normalizedSearch
-    ? threads.filter((thread) => {
-        const customer = thread.customer;
-        return [
-          customer?.full_name,
-          customer?.phone_number,
-          customer?.email,
-          thread.channel?.channel_name,
-          ...(customer?.tags || [])
-        ]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(normalizedSearch));
-      })
-    : threads;
+  
+  const filteredThreads = threads.filter((thread) => {
+    // 1. Search text
+    if (normalizedSearch) {
+      const customer = thread.customer;
+      const match = [
+        customer?.full_name,
+        customer?.phone_number,
+        customer?.email,
+        thread.channel?.channel_name,
+        ...(customer?.tags || [])
+      ].filter(Boolean).some((val) => String(val).toLowerCase().includes(normalizedSearch));
+      if (!match) return false;
+    }
+    
+    // 2. Filter Unread
+    if (filterUnread && !(thread.unread_count > 0)) return false;
+    
+    // 3. Filter Tag
+    if (filterTag) {
+      if (!thread.customer?.tags || !thread.customer.tags.includes(filterTag)) return false;
+    }
+    
+    // 4. Filter Channel
+    if (filterChannel && thread.channel?.channel_name !== filterChannel) return false;
+    
+    return true;
+  });
 
   if (isLoadingThreads) {
-    return <div className="p-4 text-center text-sm text-gray-500">Đang tải hội thoại...</div>;
+    return <div className="p-4 flex justify-center text-sm text-gray-500">Dang t?i...</div>;
   }
-
   if (threadsError) {
-    return <div className="p-4 text-center text-sm text-red-600">{threadsError}</div>;
+    return <div className="p-4 flex justify-center text-sm text-red-500">{threadsError}</div>;
   }
 
   return (
-    <div className="flex-1 overflow-y-auto flex flex-col bg-white">
-      <div className="p-4 border-b border-gray-100 bg-white sticky top-0 z-10 shadow-sm">
-        <div className="relative">
-          <svg className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input 
-            type="text" 
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Tìm tên, số điện thoại..." 
-            className="w-full text-sm border-none bg-gray-100 rounded-full pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-800 placeholder-gray-500"
-          />
+    <div className="flex flex-col h-full bg-gray-50/30">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="p-3 border-b border-gray-200 bg-white sticky top-0 z-20 flex flex-col gap-2">
+          <div className="relative flex items-center">
+            <svg className="w-4 h-4 absolute left-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input 
+              type="text" 
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Tìm tên, số điện thoại..." 
+              className="w-full text-sm border-none bg-gray-100 rounded-full pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-800 placeholder-gray-500"
+            />
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            <button 
+              onClick={() => setFilterUnread(!filterUnread)}
+              className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${filterUnread ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+            >
+              Chưa đọc
+            </button>
+            <select 
+              value={filterTag} 
+              onChange={e => setFilterTag(e.target.value)}
+              className="text-xs bg-gray-50 border border-gray-200 text-gray-600 rounded-full px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[120px] truncate"
+            >
+              <option value="">Tất cả Thẻ</option>
+              {availableTags.map(t => (
+                <option key={t.id || t.tag_name} value={t.tag_name}>{t.tag_name}</option>
+              ))}
+            </select>
+            <select 
+              value={filterChannel} 
+              onChange={e => setFilterChannel(e.target.value)}
+              className="text-xs bg-gray-50 border border-gray-200 text-gray-600 rounded-full px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[120px] truncate"
+            >
+              <option value="">Tất cả Kênh</option>
+              {uniqueChannels.map(c => (
+                <option key={String(c)} value={String(c)}>{String(c)}</option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
-      <div className="flex flex-col flex-1 bg-white">
+        <div className="flex flex-col flex-1 bg-white overflow-y-auto">
         {filteredThreads.length === 0 ? (
           <div className="p-8 flex flex-col items-center justify-center text-center text-sm text-gray-500">
             <svg className="w-12 h-12 text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -265,6 +308,7 @@ export default function InboxSidebar() {
             </div>
           ))
         )}
+      </div>
       </div>
 
       {/* Tag Modal */}
