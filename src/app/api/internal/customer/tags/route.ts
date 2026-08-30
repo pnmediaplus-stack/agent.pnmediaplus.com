@@ -80,7 +80,16 @@ export async function POST(request: Request) {
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
     if (normalizedTags.length > 0) {
-      updates.tags = normalizedTags;
+      // Fetch existing tags to merge them instead of overwriting
+      const { data: existingCustomer } = await supabase
+        .from("crm_customers")
+        .select("tags")
+        .eq("organization_id", organizationId)
+        .eq("id", resolvedCustomerId)
+        .maybeSingle();
+        
+      const existingTags = Array.isArray(existingCustomer?.tags) ? existingCustomer.tags : [];
+      updates.tags = Array.from(new Set([...existingTags, ...normalizedTags]));
     }
 
     // Map common LLM hallucinations to correct schema fields
@@ -113,10 +122,19 @@ export async function POST(request: Request) {
     }
 
     if (threadId && normalizedTags.length > 0) {
+      // Fetch existing thread tags
+      const { data: existingThread } = await supabase
+        .from("crm_threads")
+        .select("tags")
+        .eq("organization_id", organizationId)
+        .eq("id", threadId)
+        .maybeSingle();
+      const existingThreadTags = Array.isArray(existingThread?.tags) ? existingThread.tags : [];
+      
       const { error: threadUpdateError } = await supabase
         .from("crm_threads")
         .update({
-          tags: normalizedTags,
+          tags: Array.from(new Set([...existingThreadTags, ...normalizedTags])),
           updated_at: new Date().toISOString()
         })
         .eq("organization_id", organizationId)
