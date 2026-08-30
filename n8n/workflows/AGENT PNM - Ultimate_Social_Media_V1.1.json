@@ -1621,7 +1621,8 @@
           "id": "EV6BkcAkl7spzzEo",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -1817,7 +1818,8 @@
           "id": "EV6BkcAkl7spzzEo",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -1961,7 +1963,8 @@
           "id": "EV6BkcAkl7spzzEo",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -2105,7 +2108,8 @@
           "id": "EV6BkcAkl7spzzEo",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -2249,7 +2253,8 @@
           "id": "EV6BkcAkl7spzzEo",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -2393,7 +2398,8 @@
           "id": "EV6BkcAkl7spzzEo",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -2555,7 +2561,8 @@
           "id": "EV6BkcAkl7spzzEo",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -2681,11 +2688,12 @@
           "id": "EV6BkcAkl7spzzEo",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
-        "jsCode": "// Lấy dữ liệu từ node trước (Process Items for User Response)\nconst meta = $json;\n\n// Lấy danh sách video\nconst items = meta.items || [];\nconst count = meta.count || 0;\n\n// Optional: tên sheet — để backward compatible\nconst sheetName = meta.sheet_name || \"Ultimate Extract Sheet\";\nconst sheetUrl = meta.sheet_url || \"https://docs.google.com/spreadsheets/d/1kfiHVqJY8ld9StWOyJLmBh-1WXty9m3g3Plhx8aMHQk/edit?usp=sharing\";\n\n// 🔥 Trả tất cả dữ liệu về cho AI Tool (Social Agent)\nreturn [\n  {\n    // 🔴 BẮT BUỘC PHẢI CÓ\n    response: `Đã hoàn thành PN01 scraping (${count} video). Bạn có thể xem danh sách video ngay trong phản hồi này.`,\n\n    // 🔥 Dữ liệu mới thêm để Social Agent render ra chatbot\n    keyword: meta.keyword || \"\",\n    limit: meta.limit || null,\n    count: count,\n    items: items,  // <-- danh sách video đầy đủ (caption, url, likes...)\n\n    // 🔥 Dữ liệu cũ giữ nguyên để không phá flow\n    status: \"done\",\n    message: \"PN01 scraping completed\",\n    batch_id: meta.batch_id || null,\n    sheet_name: sheetName,\n    sheet_url: sheetUrl,\n\n    completed_at: new Date().toISOString(),\n  },\n];\n"
+        "jsCode": "const meta = $json;\nconst items = meta.items || [];\nconst count = meta.count || 0;\n\n// Summarize for AI Reasoning\nlet markdown = `## MARKET RESEARCH: ${meta.keyword}\nTotal items scraped: ${count}\n\n`;\n\n// Group by platform\nlet platforms = {};\nitems.forEach(i => {\n  if (!platforms[i.platform]) platforms[i.platform] = [];\n  platforms[i.platform].push(i);\n});\n\nfor (const [plat, platsItems] of Object.entries(platforms)) {\n  markdown += `### Top Ads on ${plat.toUpperCase()}\n`;\n  // Only take top 3 per platform to avoid token overflow\n  const top = platsItems.slice(0, 3);\n  top.forEach(i => {\n    markdown += `- **Caption**: ${i.caption.substring(0, 150)}...\n`;\n    markdown += `  - Stats: ${i.likes} likes, ${i.comments} comments, ${i.shares} shares\n`;\n    markdown += `  - Link: ${i.url}\n`;\n  });\n  markdown += `\n`;\n}\n\nreturn [{\n  json: {\n    market_research_summary: markdown,\n    raw_count: count\n  }\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2745,7 +2753,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Lấy meta\nconst meta = $items('Init Meta')[0].json;\n\n// Lấy danh sách từ từng sheet appender\nfunction collect(nodeName) {\n  try {\n    return $items(nodeName).map((item, idx) => ({\n      index: idx + 1,\n      platform: nodeName.replace(\"Append row \", \"\").toLowerCase(),\n      caption: item.json.caption || item.json.title || \"\",\n      date_posted: item.json.date_posted || \"\",\n      username: item.json.username || \"\",\n      url: item.json.tiktok_url \n            || item.json.instagram_url\n            || item.json.youtube_url\n            || item.json.linkedin_url\n            || item.json.x_url\n            || item.json.reddit_url\n            || \"\",\n      likes: item.json.likes || item.json.upvotes || 0,\n      shares: item.json.shares || 0,\n      views: item.json.views || \"\",\n      comments: item.json.comments || 0,\n      bookmarks: item.json.bookmarks || 0\n    }));\n  } catch (e) {\n    return [];\n  }\n}\n\nconst list = [\n  ...collect(\"Append row TikTok\"),\n  ...collect(\"Append row Instagram\"),\n  ...collect(\"Append row YouTube Longs\"),\n  ...collect(\"Append row YouTube Shorts\"),\n  ...collect(\"Append row LinkedIn\"),\n  ...collect(\"Append row Twitter\"),\n  ...collect(\"Append row Reddit\"),\n];\n\n// Trả về toàn bộ dữ liệu\nreturn [{\n  json: {\n    keyword: meta.keyword,\n    limit: meta.limit,\n    items: list,\n    count: list.length\n  }\n}];"
+        "jsCode": "// Lấy meta\nconst meta = $items('Init Meta')[0].json;\n\n// Lấy danh sách từ từng node\nfunction collect(sheetNode, altNode, platformName) {\n  let items = [];\n  try {\n    // Thử lấy từ Sheet Appender trước\n    items = $items(sheetNode);\n    if (!items || items.length === 0) throw new Error(\"empty\");\n  } catch (e) {\n    // Nếu Sheet Appender bị vô hiệu hóa (Bypass), lấy từ Edit Fields\n    try {\n      items = $items(altNode);\n    } catch(err) {\n      items = [];\n    }\n  }\n\n  return items.map((item, idx) => ({\n    index: idx + 1,\n    platform: platformName,\n    caption: item.json.caption || item.json.title || \"\",\n    date_posted: item.json.date_posted || \"\",\n    username: item.json.username || \"\",\n    url: item.json.tiktok_url \n          || item.json.instagram_url\n          || item.json.youtube_url\n          || item.json.linkedin_url\n          || item.json.x_url\n          || item.json.reddit_url\n          || \"\",\n    likes: item.json.likes || item.json.upvotes || 0,\n    shares: item.json.shares || 0,\n    views: item.json.views || \"\",\n    comments: item.json.comments || 0,\n    bookmarks: item.json.bookmarks || 0\n  }));\n}\n\nconst list = [\n  ...collect(\"Append row Meta Ads\", \"Edit Fields3\", \"meta\"),\n  ...collect(\"Append row TikTok\", \"Edit Fields\", \"tiktok\"),\n  ...collect(\"Append row Instagram\", \"Edit Fields4\", \"instagram\"),\n  ...collect(\"Append row YouTube Longs\", \"Edit Fields1\", \"youtube\"),\n  ...collect(\"Append row YouTube Shorts\", \"Edit Fields2\", \"youtube shorts\"),\n  ...collect(\"Append row LinkedIn\", \"Edit Fields5\", \"linkedin\"),\n  ...collect(\"Append row Twitter\", \"Edit Fields6\", \"twitter\"),\n  ...collect(\"Append row Reddit\", \"Edit Fields7\", \"reddit\"),\n];\n\n// Trả về toàn bộ dữ liệu\nreturn [{\n  json: {\n    keyword: meta.keyword,\n    limit: meta.limit,\n    items: list,\n    count: list.length\n  }\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
