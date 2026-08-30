@@ -370,32 +370,67 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                 <div className="truncate text-sm font-semibold text-white">{markdownPreview.title || 'Attachment'}</div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const res = await fetch(markdownPreview.url);
-                      if (!res.ok) throw new Error("Network error");
-                      const blob = await res.blob();
-                      const url = window.URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.style.display = 'none';
-                      a.href = url;
-                      a.download = markdownPreview.title || markdownPreview.url.split('/').pop() || 'attachment.md';
-                      document.body.appendChild(a);
-                      a.click();
-                      window.URL.revokeObjectURL(url);
-                      document.body.removeChild(a);
-                    } catch (err) {
-                      console.error("Failed to download markdown", err);
-                      window.open(markdownPreview.url, '_blank');
-                    }
-                  }}
-                  className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/20"
-                >
-                  <Download className="h-4 w-4" />
-                  Tải xuống
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        let blob;
+                        if (markdownPreview.url) {
+                          const res = await fetch(markdownPreview.url);
+                          if (!res.ok) throw new Error("Network error");
+                          blob = await res.blob();
+                        } else {
+                          blob = new Blob([markdownPreview.content], { type: 'text/markdown' });
+                        }
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = markdownPreview.title ? `${markdownPreview.title}.md` : (markdownPreview.url ? (markdownPreview.url.split('/').pop() || 'Proposal.md') : 'Proposal.md');
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                      } catch (err) {
+                        console.error("Failed to download markdown", err);
+                        if (markdownPreview.url) window.open(markdownPreview.url, '_blank');
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/20"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    .md
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        let textContent = markdownPreview.content;
+                        if (!textContent && markdownPreview.url) {
+                          const res = await fetch(markdownPreview.url);
+                          textContent = await res.text();
+                        }
+                        const blob = new Blob([textContent], { type: 'text/plain' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = markdownPreview.title ? `${markdownPreview.title}.txt` : 'Proposal.txt';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                      } catch (err) {
+                        console.error("Failed to download text", err);
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/20"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    .txt
+                  </button>
+                  </div>
                 <button
                   type="button"
                   onClick={() => setMarkdownPreview(null)}
