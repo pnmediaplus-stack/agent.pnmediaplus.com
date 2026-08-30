@@ -27,7 +27,7 @@ async function fetchByokToken(organization_id, channel_external_id) {
   let referenceToken = refData;
 
   const expectedSecret = (process.env.CONTROL_PLANE_SECRET || '').trim();
-  const cpUrl = (process.env.NEXTJS_CONTROL_PLANE_BASE_URL || '').replace(/\/$/, '');
+  const cpUrl = (process.env.NEXTJS_CONTROL_PLANE_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://agent_pnmedia:3000').replace(/\/$/, '');
   if (!cpUrl) throw new Error("Missing cpUrl");
 
   const redeemRes = await fetch(`${cpUrl}/api/byok/redeem`, {
