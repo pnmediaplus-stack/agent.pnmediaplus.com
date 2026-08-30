@@ -1097,7 +1097,13 @@ async function routePlanCampaignCommand(
   for (const asset of visual_assets) {
     if (asset.endsWith(".txt") || asset.endsWith(".md")) {
       try {
-        const fetchUrl = asset.startsWith("/") ? "http://127.0.0.1:3000" + asset : asset;
+        let fetchUrl = asset;
+        if (asset.startsWith("/api/assets/public/")) {
+          const { generateR2PresignedDownloadUrl } = await import('@/lib/r2-client');
+          fetchUrl = await generateR2PresignedDownloadUrl(asset.replace('/api/assets/public/', ''), 3600);
+        } else if (asset.startsWith("/")) {
+          fetchUrl = "http://127.0.0.1:3000" + asset;
+        }
         const res = await fetch(fetchUrl);
         if (res.ok) {
           const text = await res.text();
@@ -1271,7 +1277,7 @@ async function routePlanCampaignCommand(
   }
 
   const campaignContract = buildCampaignPlanRequestContract({
-    body,
+    body: finalBody,
     departmentRecord,
     departmentPack
   });
@@ -1280,7 +1286,7 @@ async function routePlanCampaignCommand(
     thread_id: threadId,
     threadId,
     humanMessageId,
-    body,
+    body: finalBody,
     campaign_brief: campaignContract.campaign_brief,
     campaign_goal: campaignContract.campaign_goal,
     campaign_duration_days: campaignContract.campaign_duration_days,
