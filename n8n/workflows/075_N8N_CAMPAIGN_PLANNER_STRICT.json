@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        18128,
-        384
+        23360,
+        224
       ],
-      "id": "f9400721-9b44-4b07-a4c6-82927a9b7050"
+      "id": "3246039d-ba6a-499b-8142-e4970d397499"
     },
     {
       "parameters": {
@@ -26,11 +26,11 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        18128,
-        848
+        23200,
+        720
       ],
       "webhookId": "plan-campaign-intake-webhook-id",
-      "id": "03367ee7-61fb-4483-8d0c-6f4854eb60e8"
+      "id": "8dce8f23-5f8a-465f-be52-f0992e326fac"
     },
     {
       "parameters": {
@@ -54,10 +54,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        18336,
-        848
+        23408,
+        720
       ],
-      "id": "d8a44a76-8a85-4cbe-9221-da0e8f2f32cd"
+      "id": "d6bb6a9c-78fd-409c-8adf-0c201a461916"
     },
     {
       "parameters": {
@@ -67,10 +67,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        18528,
-        848
+        23600,
+        720
       ],
-      "id": "32aecb9b-3f6b-432f-850a-86c81f1d6465"
+      "id": "e56f3a39-5067-48ca-9383-a6b2e1100642"
     },
     {
       "parameters": {
@@ -87,10 +87,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        18736,
-        848
+        23808,
+        720
       ],
-      "id": "a9d952af-fdc8-4bdd-ae51-9131fd26fdfb"
+      "id": "dbce4dd3-52da-41d5-8f71-6da0af0773f8"
     },
     {
       "parameters": {
@@ -118,10 +118,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        18928,
-        1040
+        24080,
+        896
       ],
-      "id": "1ae257ab-7f98-4b4a-b48d-654d9260e797"
+      "id": "39a31a15-76dd-40e1-87c0-1f91eae518d2"
     },
     {
       "parameters": {
@@ -149,45 +149,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        18928,
-        688
+        24080,
+        576
       ],
-      "id": "3e09eda8-012e-4d32-8a7c-df9fe15fad1e"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.openai.com/v1/chat/completions",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 1 - Viral Research & Angle. Your capability is strictly BOUNDED. You MUST treat campaign_brief as the SSOT and respect the deterministic contract fields provided by the control plane. You must output a strategic research packet in valid JSON format. Required top-level sections are: `executive_decision`, `icp_and_pain_wedge`, `offer`, `funnel_architecture`, `crm_role`, `chatbot_role`, `creative_architecture`, `media_buying_structure`, `10_day_operating_plan`, `lead_qualification`, `sales_handoff`, `organic_trust_layer`, `measurement_framework`, `budget_allocation`, `risks_policy`, `day_3_gate`, `day_6_gate`, `end_of_pilot_decision_framework`, `assets_required_before_launch`, `do_not_do`, `daily_timeline`, `uses_ads`, `needs_clarification`, `clarification_questions`, and `assumptions_to_confirm`. Fill every required section; if something is underspecified, set `needs_clarification=true` and use concise placeholders instead of omitting keys. For each item in `daily_timeline`, include at minimum: `day`, `objective`, `channel`, `creative`, `budget_vnd`, `metric`, and `gate`. CRITICAL: The `daily_timeline` array MUST contain EXACTLY ' + String($node['Scope Resolve'].json.campaign_duration_days) + ' items. Do NOT group days. Write a separate object for EACH day. RULES: 1. You MUST NOT write final social captions. You MUST NOT output final markdown proposals. Your output is an upstream source of truth for downstream agents. 2. DO NOT ask for clarification on fields that are ALREADY provided in the user message (e.g., do not ask about duration if campaign_duration_days is provided, do not ask about ads if paid_media_allowed is provided). 3. Do NOT invent missing facts, products, audiences, budgets, channels, or constraints. If required specifics are missing and cannot be derived from campaign_brief, campaign_contract, or department_pack, set needs_clarification=true and ask concise clarification_questions. Never fabricate context to satisfy length or completeness. 4. CRITICAL: YOU MUST WRITE YOUR ENTIRE JSON RESPONSE IN THE SAME LANGUAGE AS THE `campaign_brief`.'\n    },\n    {\n      role: 'user',\n      content: 'campaign_brief: ' + $node['Scope Resolve'].json.campaign_brief + '\\ncampaign_goal: ' + $node['Scope Resolve'].json.campaign_goal + '\\ncampaign_duration_days: ' + String($node['Scope Resolve'].json.campaign_duration_days) + '\\npaid_media_allowed: ' + String($node['Scope Resolve'].json.paid_media_allowed) + '\\nrequired_terms: ' + JSON.stringify($node['Scope Resolve'].json.required_terms || []) + '\\nvalidation_hints: ' + JSON.stringify($node['Scope Resolve'].json.validation_hints || []) + '\\ndepartment_context: ' + ($node['Scope Resolve'].json.department_name || $node['Scope Resolve'].json.department_id) + '\\ndepartment_pack: ' + JSON.stringify($node['Scope Resolve'].json.department_pack || {}) + '\\n\\nUser Request (verbatim): ' + $node['Scope Resolve'].json.campaign_brief\n    }\n  ]\n} }}",
-        "options": {}
-      },
-      "name": "Agent 1 - Research",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        19136,
-        544
-      ],
-      "id": "8f676792-cf77-49e3-b9eb-cd21afe440bb",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "u1GGrgkWgG2z9d4K",
-          "name": "OpenAI"
-        }
-      }
+      "id": "f9d96cf1-fb1b-454e-a7f9-7dfe86ffc599"
     },
     {
       "parameters": {
@@ -197,10 +162,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        19472,
-        688
+        24720,
+        576
       ],
-      "id": "10c0bfce-6190-4e3a-a1b3-c6b20477659f"
+      "id": "a5b30bf0-ac45-44e8-9e0a-a8f273cdfaa1"
     },
     {
       "parameters": {
@@ -217,10 +182,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        19648,
-        688
+        24896,
+        576
       ],
-      "id": "e65f8cd0-64e3-4a00-9356-75ae96e411c4"
+      "id": "10441953-0fed-4ceb-9175-8366caa42012"
     },
     {
       "parameters": {
@@ -246,10 +211,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        19872,
-        688
+        25120,
+        576
       ],
-      "id": "f2bf0f80-b52d-44ba-89c1-549046e43f14",
+      "id": "dba6f02a-dcce-4930-a8d6-e857327636a8",
       "credentials": {
         "httpQueryAuth": {
           "id": "qsZuqecdX6PM9qfX",
@@ -269,10 +234,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        20080,
-        688
+        25328,
+        576
       ],
-      "id": "7e518b74-0661-4146-b88d-d66ba12a2184"
+      "id": "99823001-d3de-402b-866d-5afb1fed2ccf"
     },
     {
       "parameters": {
@@ -289,10 +254,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        20272,
-        688
+        25520,
+        576
       ],
-      "id": "14e2e126-41e0-4c23-8ad4-360d2ddb6bd0"
+      "id": "7a1ecec5-4a6c-4d52-90f6-42a3a5e3ccf2"
     },
     {
       "parameters": {
@@ -320,10 +285,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        20480,
-        848
+        25936,
+        784
       ],
-      "id": "bfdff6ba-1bc7-4acf-b007-c65424c4357c"
+      "id": "eebde01f-094c-4286-b393-468c9b40002c"
     },
     {
       "parameters": {
@@ -349,10 +314,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        20480,
-        592
+        25728,
+        480
       ],
-      "id": "e465e52a-8733-4373-b451-a2c078a13e19",
+      "id": "c5123f00-3f93-435c-84a9-bef252021954",
       "credentials": {
         "httpHeaderAuth": {
           "id": "u1GGrgkWgG2z9d4K",
@@ -386,10 +351,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        20672,
-        592
+        25920,
+        480
       ],
-      "id": "03582845-b451-43e0-9803-7a75d1f3da51"
+      "id": "379e03b1-016b-4fcb-b48c-43671a6798ab"
     },
     {
       "parameters": {
@@ -402,10 +367,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3,
       "position": [
-        19136,
-        688
+        24432,
+        576
       ],
-      "id": "cd3e53d4-e66e-4357-9a31-85ee590ae347",
+      "id": "bb2787e2-c5d0-46dc-96ea-7c8fa475ebbc",
       "name": "AI Agent 1"
     },
     {
@@ -465,10 +430,10 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        19392,
-        880
+        24640,
+        768
       ],
-      "id": "b631c8f3-6206-4d35-9359-7d40678d5ef8",
+      "id": "f78498ed-19aa-4dff-8608-234982db21f2",
       "name": "Market_Research_Subagent"
     },
     {
@@ -492,10 +457,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        19056,
-        880
+        24304,
+        768
       ],
-      "id": "d143a609-52c9-4f76-9407-ac4e8808e4a9",
+      "id": "b3ca1e80-91dd-4c84-95b8-8faca68b78ad",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
@@ -512,27 +477,60 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        18832,
-        848
+        24256,
+        576
       ],
-      "id": "56f0e718-cb6e-4e14-806d-108b2b847bf5"
+      "id": "8573f82d-97c5-4a44-a180-a372ba939247"
     },
     {
       "parameters": {
-        "jsCode": "const data = $('Agent 4 - QA').item.json || {};\nconst newAttempt = $runIndex + 2; // $runIndex starts at 0 for the first QA rejection (which is attempt 1 failing)\n\nif (newAttempt > 3) {\n  return [null, [{ json: { ...data, reason: data.reason } }]]; // Out 1: Reject\n}\n\n// Out 0: Loop back, passing the original body but with qa_feedback\nconst original = $('Init Attempt').item.json;\nreturn [[{ json: { ...original, qa_feedback: data.reason } }], null];"
+        "jsCode": "const data = $('Agent 4 - QA').item.json || {};\nconst newAttempt = $runIndex + 2;\n\nconst original = $('Init Attempt').item.json;\nreturn { json: { ...original, attempt: newAttempt, qa_feedback: data.reason } };"
       },
       "name": "Check Attempt Limit",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        20280,
-        848
+        25536,
+        800
       ],
-      "id": "319aa6a7-4d24-4f2a-a165-c618b501a4cf",
+      "id": "a3157615-1d32-4cba-94fb-44411e8561fc",
       "typeOptions": {
         "multipleOutputs": true
       },
       "outputs": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "32ada2b2-fec3-44ac-8eeb-ee1aa38bd43f",
+              "leftValue": "={{ $json.attempt }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        25744,
+        800
+      ],
+      "id": "777fc4a4-affa-4567-bbbc-14504fdca190",
+      "name": "If"
     }
   ],
   "pinData": {},
@@ -599,11 +597,6 @@
         ]
       ]
     },
-    "Agent 1 - Research": {
-      "main": [
-        []
-      ]
-    },
     "Validate Agent 1 Output": {
       "main": [
         [
@@ -668,7 +661,13 @@
     },
     "Needs Clarification?": {
       "main": [
-        [],
+        [
+          {
+            "node": "Clarify Error (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "Agent 4 - QA",
@@ -726,14 +725,25 @@
       "main": [
         [
           {
-            "node": "AI Agent 1",
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "QA Reject (chat_append)",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "QA Reject (chat_append)",
+            "node": "AI Agent 1",
             "type": "main",
             "index": 0
           }
@@ -745,7 +755,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "98ef1a49-0860-49b4-b132-fad9c6c09866",
+  "versionId": "246a9ba1-7cff-4726-8836-35ea4fb26203",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
