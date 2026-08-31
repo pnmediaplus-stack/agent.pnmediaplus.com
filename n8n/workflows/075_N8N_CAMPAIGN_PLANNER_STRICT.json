@@ -342,7 +342,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 7 - Documentation & Packaging. Your capability is strictly BOUNDED. You MUST convert the approved strategic research packet into a final beautiful Markdown Proposal output for the user. You MUST NOT alter the core strategy. CRITICAL: DO NOT SUMMARIZE OR OMIT ANY DETAILS. You MUST translate EVERY SINGLE KEY, METRIC, AND DAY-BY-DAY PLAN from the JSON into the Markdown proposal. Keep all 20 sections (A to T) intact with full details. You MUST NOT write social captions. Output pure Markdown string (do not wrap in JSON). CRITICAL: YOU MUST WRITE YOUR ENTIRE RESPONSE IN THE SAME LANGUAGE AS THE RESEARCH PACKET. IF THE CONTEXT IS VIETNAMESE, ALL HEADINGS AND TEXT MUST BE IN VIETNAMESE. YOU MUST APPEND EXACTLY \"[[CAMPAIGN_PROPOSAL]]\" AT THE VERY END OF YOUR OUTPUT AS A MARKER.'\n    },\n    {\n      role: 'user',\n      content: 'Approved Research Packet from Agent 1:\\n' + $node['AI Agent 0'].json.output\n    }\n  ]\n} }}",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 7 - Documentation & Packaging. Your capability is strictly BOUNDED. You MUST convert the approved strategic research packet into a final beautiful Markdown Proposal output for the user. You MUST NOT alter the core strategy. CRITICAL: DO NOT SUMMARIZE OR OMIT ANY DETAILS. You MUST translate EVERY SINGLE KEY, METRIC, AND DAY-BY-DAY PLAN from the JSON into the Markdown proposal. Keep all 20 sections (A to T) intact with full details. You MUST NOT write social captions. Output pure Markdown string (do not wrap in JSON). CRITICAL: YOU MUST WRITE YOUR ENTIRE RESPONSE IN THE SAME LANGUAGE AS THE RESEARCH PACKET. IF THE CONTEXT IS VIETNAMESE, ALL HEADINGS AND TEXT MUST BE IN VIETNAMESE. YOU MUST APPEND EXACTLY \"[[CAMPAIGN_PROPOSAL]]\" AT THE VERY END OF YOUR OUTPUT AS A MARKER.'\n    },\n    {\n      role: 'user',\n      content: 'Approved Research Packet from Agent 1:\\n' + $node['AI Agent 1'].json.output\n    }\n  ]\n} }}",
         "options": {}
       },
       "name": "Agent 7 - Packaging",
@@ -406,7 +406,7 @@
         688
       ],
       "id": "cd3e53d4-e66e-4357-9a31-85ee590ae347",
-      "name": "AI Agent 0"
+      "name": "AI Agent 1"
     },
     {
       "parameters": {
@@ -562,7 +562,7 @@
       "main": [
         [
           {
-            "node": "AI Agent 0",
+            "node": "AI Agent 1",
             "type": "main",
             "index": 0
           }
@@ -648,22 +648,11 @@
         ]
       ]
     },
-    "AI Agent 0": {
-      "main": [
-        [
-          {
-            "node": "Validate Agent 1 Output",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Market_Research_Subagent": {
       "ai_tool": [
         [
           {
-            "node": "AI Agent 0",
+            "node": "AI Agent 1",
             "type": "ai_tool",
             "index": 0
           }
@@ -674,8 +663,19 @@
       "ai_languageModel": [
         [
           {
-            "node": "AI Agent 0",
+            "node": "AI Agent 1",
             "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent 1": {
+      "main": [
+        [
+          {
+            "node": "Validate Agent 1 Output",
+            "type": "main",
             "index": 0
           }
         ]
