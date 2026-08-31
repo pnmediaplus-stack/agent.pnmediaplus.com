@@ -528,7 +528,11 @@
         20280,
         848
       ],
-      "id": "319aa6a7-4d24-4f2a-a165-c618b501a4cf"
+      "id": "319aa6a7-4d24-4f2a-a165-c618b501a4cf",
+      "typeOptions": {
+        "multipleOutputs": true
+      },
+      "outputs": 2
     }
   ],
   "pinData": {},
@@ -559,7 +563,7 @@
       "main": [
         [
           {
-            "node": "Init Attempt",
+            "node": "Valid Scope?",
             "type": "main",
             "index": 0
           }
@@ -588,7 +592,7 @@
       "main": [
         [
           {
-            "node": "AI Agent 1",
+            "node": "Init Attempt",
             "type": "main",
             "index": 0
           }
