@@ -1401,7 +1401,7 @@
             {
               "id": "100daa47-ef90-4276-af06-44bbc4616541",
               "name": "platforms",
-              "value": "={{ \n  Array.isArray($json[\"Which_platforms\"])\n    ? $json[\"Which_platforms\"].map(s => s.toLowerCase().trim())\n    : ($json[\"Which_platforms\"] || \"\").toLowerCase().split(\",\").map(s => s.trim())\n}}",
+              "value": "={{ \n  (Array.isArray($json[\"Which_platforms\"]) \n    ? $json[\"Which_platforms\"] \n    : ($json[\"Which_platforms\"] || \"\").split(\",\"))\n  .map(s => {\n    let x = s.toLowerCase().trim();\n    if (x === 'meta') return 'facebook';\n    if (x === 'x') return 'twitter';\n    return x;\n  })\n}}",
               "type": "array"
             },
             {
@@ -1452,7 +1452,8 @@
         160
       ],
       "id": "b58abe3e-a3ce-4179-8da9-67bb749ce8ea",
-      "name": "Summary"
+      "name": "Summary",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -2749,7 +2750,8 @@
         64
       ],
       "id": "7787bd51-184e-4265-ad20-9a04ec681e97",
-      "name": "Merge"
+      "name": "Merge",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -2762,7 +2764,8 @@
         160
       ],
       "id": "7b4422c6-8e7b-484b-8c6c-f9c00d823a4b",
-      "name": "Process Items for User Response"
+      "name": "Process Items for User Response",
+      "alwaysOutputData": true
     }
   ],
   "pinData": {
