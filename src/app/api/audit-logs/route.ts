@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { verifyUiAuth } from '@/lib/ui-auth-guard';
 import { readPortalAccessToken, loadPortalOrganizationContext } from '@/lib/portal-auth';

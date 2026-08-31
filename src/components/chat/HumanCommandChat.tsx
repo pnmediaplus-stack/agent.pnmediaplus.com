@@ -43,8 +43,8 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
       inFlight = true;
       try {
         const [messagesRes, logsRes, latestTasks] = await Promise.all([
-          fetch(`/api/chat-messages?thread_id=${thread.id}`).then(r => r.json()),
-          fetch(`/api/audit-logs?entity_id=${thread.id}`).then(r => r.json()),
+          fetch(`/api/chat-messages?thread_id=${thread.id}`, { cache: 'no-store' }).then(r => r.json()),
+          fetch(`/api/audit-logs?entity_id=${thread.id}`, { cache: 'no-store' }).then(r => r.json()),
           pollActiveTasks()
         ]);
         if (mounted) {
@@ -100,8 +100,8 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
       // We continue to fetch the messages so the system's clarification message is displayed.
       
       const [messagesRes, logsRes, latestTasks] = await Promise.all([
-        fetch(`/api/chat-messages?thread_id=${thread.id}`).then(r => r.json()),
-        fetch(`/api/audit-logs?entity_id=${thread.id}`).then(r => r.json()),
+        fetch(`/api/chat-messages?thread_id=${thread.id}`, { cache: 'no-store' }).then(r => r.json()),
+        fetch(`/api/audit-logs?entity_id=${thread.id}`, { cache: 'no-store' }).then(r => r.json()),
         pollActiveTasks()
       ]);
       if (messagesRes.chat_messages) setMessages(messagesRes.chat_messages);
@@ -144,8 +144,8 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
       }
       
       const [messagesRes, logsRes, latestTasks] = await Promise.all([
-        fetch(`/api/chat-messages?thread_id=${thread.id}`).then(r => r.json()),
-        fetch(`/api/audit-logs?entity_id=${thread.id}`).then(r => r.json()),
+        fetch(`/api/chat-messages?thread_id=${thread.id}`, { cache: 'no-store' }).then(r => r.json()),
+        fetch(`/api/audit-logs?entity_id=${thread.id}`, { cache: 'no-store' }).then(r => r.json()),
         pollActiveTasks()
       ]);
       if (messagesRes.chat_messages) setMessages(messagesRes.chat_messages);

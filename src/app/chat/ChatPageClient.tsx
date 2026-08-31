@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n/useI18n";
 import type { ChatThread, ChatMessage } from "@/types/chat";
 import type { AuditLog } from "@/types/audit";
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetch(url, { cache: 'no-store' }).then((res) => res.json());
 
 export function ChatPageClient() {
   const { t } = useI18n("chat");

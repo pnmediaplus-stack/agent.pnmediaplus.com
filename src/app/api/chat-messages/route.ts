@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { verifyUiAuth } from '@/lib/ui-auth-guard';
 import { readPortalAccessToken, loadPortalOrganizationContext } from '@/lib/portal-auth';
@@ -49,7 +50,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/chat_messages?thread_id=eq.${threadId}&order=created_at.asc`, {
+    const res = await fetch(`${supabaseUrl}/rest/v1/chat_messages?thread_id=eq.${threadId}&order=created_at.desc&limit=100`, {
       headers: {
         'apikey': serviceRoleKey,
         'Authorization': `Bearer ${serviceRoleKey}`,
@@ -62,7 +63,9 @@ export async function GET(req: Request) {
       throw new Error(await res.text());
     }
 
-    const rawData = await res.json();
+    let rawData = await res.json();
+    rawData = rawData.reverse();
+
     const data = rawData.map((row: any) => ({
       id: row.id,
       organization_id: row.organization_id || '',
