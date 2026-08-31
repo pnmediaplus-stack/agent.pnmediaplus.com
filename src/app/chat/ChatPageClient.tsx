@@ -1,19 +1,28 @@
 "use client";
 
-import useSWR from "swr";
+import { useState } from "react";
+import useSWR, { mutate } from "swr";
 import { PageFrame } from "@/components/shared/PageFrame";
 import { HumanCommandChat } from "@/components/chat/HumanCommandChat";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { ChatThread, ChatMessage } from "@/types/chat";
 import type { AuditLog } from "@/types/audit";
+import { createNewChatThread, renameChatThread, deleteChatThread } from "@/app/actions/chat-actions";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
 const fetcher = (url: string) => fetch(url, { cache: 'no-store' }).then((res) => res.json());
 
 export function ChatPageClient() {
   const { t } = useI18n("chat");
+  const [isCreating, setIsCreating] = useState(false);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
 
   const { data: threadsData, isLoading: isLoadingThreads } = useSWR<{ chat_threads: ChatThread[] }>("/api/chat-threads", fetcher);
-  const thread = threadsData?.chat_threads?.[0];
+  
+  // If activeThreadId is set, strictly use it (even if not in cache yet). Otherwise default to [0].
+  const thread = activeThreadId 
+    ? threadsData?.chat_threads?.find((t) => t.id === activeThreadId) 
+    : threadsData?.chat_threads?.[0];
 
   const { data: messagesData, isLoading: isLoadingMessages } = useSWR<{ chat_messages: ChatMessage[] }>(
     thread ? `/api/chat-messages?thread_id=${thread.id}` : null,
@@ -25,7 +34,66 @@ export function ChatPageClient() {
     fetcher
   );
 
-  const isLoading = isLoadingThreads || (thread && isLoadingMessages) || (thread && isLoadingAudit);
+  // If we have an activeThreadId but it's not yet in threadsData, we are loading the new thread.
+  const isWaitingForNewThread = activeThreadId && !thread && !isLoadingThreads;
+  const isLoading = isLoadingThreads || (thread && isLoadingMessages) || (thread && isLoadingAudit) || isWaitingForNewThread;
+
+  const handleNewChat = async () => {
+    const title = window.prompt("Nhập tên cho phiên làm việc mới (để trống sẽ dùng tên mặc định):");
+    if (title === null) return; // User cancelled
+
+    setIsCreating(true);
+    try {
+      const result = await createNewChatThread(title.trim() || undefined);
+      if (result.success && result.threadId) {
+        setActiveThreadId(result.threadId);
+        // Optimistically mutate to trigger immediate fetch
+        await mutate("/api/chat-threads");
+      } else {
+        console.error("Failed to create new chat:", result.error);
+        alert("Có lỗi xảy ra khi tạo phiên làm việc mới.");
+      }
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleRenameChat = async () => {
+    if (!thread) return;
+    const newTitle = window.prompt("Đổi tên phiên làm việc:", thread.title);
+    if (newTitle === null || newTitle.trim() === "" || newTitle === thread.title) return;
+
+    try {
+      const result = await renameChatThread(thread.id, newTitle.trim());
+      if (result.success) {
+        await mutate("/api/chat-threads");
+      } else {
+        alert("Có lỗi xảy ra khi đổi tên phiên làm việc.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Lỗi đổi tên.");
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (!thread) return;
+    const confirm = window.confirm("Bạn có chắc chắn muốn xóa phiên làm việc này không? Phiên sẽ bị đóng và ẩn khỏi danh sách.");
+    if (!confirm) return;
+
+    try {
+      const result = await deleteChatThread(thread.id);
+      if (result.success) {
+        setActiveThreadId(null); // Return to latest
+        await mutate("/api/chat-threads");
+      } else {
+        alert("Có lỗi xảy ra khi xóa phiên làm việc.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Lỗi xóa.");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -45,7 +113,17 @@ export function ChatPageClient() {
         allowedActions={[]}
         forbiddenActions={[]}
       >
-        <div className="p-4 text-sm text-slate-400">Không tìm thấy luồng nào đang hoạt động.</div>
+        <div className="p-4 flex flex-col items-center justify-center space-y-4">
+          <div className="text-sm text-slate-400">Không tìm thấy luồng nào đang hoạt động.</div>
+          <button
+            onClick={handleNewChat}
+            disabled={isCreating}
+            className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-sm transition-colors disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{isCreating ? "Đang tạo..." : "Tạo phiên làm việc mới"}</span>
+          </button>
+        </div>
       </PageFrame>
     );
   }
@@ -71,6 +149,52 @@ export function ChatPageClient() {
         t("chat.page.forbidden.deployProduction") ?? "Triển khai Production"
       ]}
     >
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex flex-col">
+          <label className="text-xs text-slate-500 mb-1">Lịch sử phiên làm việc</label>
+          <div className="flex items-center space-x-2">
+            <select
+              value={thread.id}
+              onChange={(e) => setActiveThreadId(e.target.value)}
+              className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 max-w-sm cursor-pointer"
+            >
+              {threadsData?.chat_threads?.map(t => {
+                const dateObj = new Date(t.created_at);
+                const dateStr = dateObj.toLocaleString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                return (
+                  <option key={t.id} value={t.id}>
+                    {dateStr} - {t.title || 'Phiên làm việc'}
+                  </option>
+                );
+              })}
+            </select>
+            <button
+              onClick={handleRenameChat}
+              className="p-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white rounded transition-colors"
+              title="Đổi tên phiên làm việc hiện tại"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleDeleteChat}
+              className="p-1.5 bg-slate-800 hover:bg-red-900/40 border border-slate-700 hover:border-red-800 text-slate-400 hover:text-red-400 rounded transition-colors"
+              title="Xóa phiên làm việc hiện tại"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <button
+          onClick={handleNewChat}
+          disabled={isCreating}
+          className="flex items-center space-x-2 px-3 py-1.5 bg-emerald-700/20 hover:bg-emerald-700/40 border border-emerald-700/50 text-emerald-400 hover:text-emerald-300 rounded text-xs transition-colors disabled:opacity-50 mt-4"
+          title="Tạo phiên chat mới để tẩy xóa hoàn toàn bộ nhớ của AI Orchestrator"
+        >
+          <Plus className="w-4 h-4" />
+          <span>{isCreating ? "Đang tạo..." : "Tạo phiên mới"}</span>
+        </button>
+      </div>
       <HumanCommandChat thread={thread} initialMessages={messagesData?.chat_messages ?? []} initialAuditLogs={threadAuditLogs} />
     </PageFrame>
   );

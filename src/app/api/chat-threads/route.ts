@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/chat_threads?order=created_at.desc`, {
+    const res = await fetch(`${supabaseUrl}/rest/v1/chat_threads?thread_status=neq.CLOSED&order=created_at.desc`, {
       headers: {
         'apikey': serviceRoleKey,
         'Authorization': `Bearer ${serviceRoleKey}`,

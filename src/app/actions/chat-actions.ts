@@ -1356,3 +1356,47 @@ async function routePlanCampaignCommand(
 }
 
 
+
+export async function createNewChatThread(title?: string) {
+  const auth = await verifyActionAuth();
+  if (!auth.ok) return { success: false, error: 'UNAUTHORIZED' };
+
+  try {
+    const { dbCreateThread } = await import('@/lib/governance-api');
+    const result = await dbCreateThread(auth.tenantId, title);
+    return { success: true, threadId: result.data?.id };
+  } catch (error: any) {
+    console.error('Failed to create new chat thread:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function renameChatThread(threadId: string, newTitle: string) {
+  const auth = await verifyActionAuth();
+  if (!auth.ok) return { success: false, error: 'UNAUTHORIZED' };
+
+  try {
+    const { dbUpdateThreadSubject } = await import('@/lib/governance-api');
+    const result = await dbUpdateThreadSubject(auth.tenantId, threadId, newTitle);
+    if (result.error) return { success: false, error: result.error };
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to rename chat thread:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteChatThread(threadId: string) {
+  const auth = await verifyActionAuth();
+  if (!auth.ok) return { success: false, error: "UNAUTHORIZED" };
+
+  try {
+    const { dbDeleteThread } = await import("@/lib/governance-api");
+    const result = await dbDeleteThread(auth.tenantId, threadId);
+    if (result.error) return { success: false, error: result.error };
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to delete chat thread:", error);
+    return { success: false, error: error.message };
+  }
+}

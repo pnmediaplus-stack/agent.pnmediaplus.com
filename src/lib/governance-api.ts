@@ -324,3 +324,114 @@ export async function dbUpdateThreadCampaign(organizationId: string, threadId: s
   }
   return { error: null };
 }
+export async function dbCreateThread(organizationId: string, title?: string) {
+  const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  const deptRes = await fetch(`${supabaseUrl}/rest/v1/departments?department_key=eq.governance_core&select=id`, {
+    headers: {
+      "apikey": serviceRoleKey || "",
+      "Authorization": `Bearer ${serviceRoleKey}`,
+      "Accept-Profile": "pn_os_ai_department",
+    }
+  });
+  const deptData = deptRes.ok ? await deptRes.json() : [];
+  if (!deptData || deptData.length === 0) {
+    throw new Error("Không tìm thấy phòng ban governance_core");
+  }
+  const departmentId = deptData[0].id;
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/chat_threads`, {
+    method: "POST",
+    headers: {
+      "apikey": serviceRoleKey || "",
+      "Authorization": `Bearer ${serviceRoleKey}`,
+      "Content-Profile": "pn_os_ai_department",
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    },
+    body: JSON.stringify({
+      department_id: departmentId,
+      thread_key: "thread_" + crypto.randomUUID().replace(/-/g, "_"),
+      subject: title || "Phiên làm việc mới",
+      purpose: "Tiếp nhận lệnh, tạo tác vụ, yêu cầu làm rõ, và định tuyến các hành động an toàn đến đúng phòng ban.",
+      thread_status: "ACTIVE",
+      opened_by_actor_type: "HUMAN",
+      opened_by_external_ref: "Human Founder"
+    })
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  const data = await res.json();
+  return { data: data[0] };
+}
+
+export async function dbUpdateThreadSubject(organizationId: string, threadId: string, newTitle: string) {
+  const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  const checkRes = await fetch(`${supabaseUrl}/rest/v1/chat_threads?id=eq.${threadId}&select=id`, {
+    headers: {
+      "apikey": serviceRoleKey || "",
+      "Authorization": `Bearer ${serviceRoleKey}`,
+      "Accept-Profile": "pn_os_ai_department"
+    }
+  });
+  if (!checkRes.ok) return { error: 'FAILED_TO_CHECK_THREAD' };
+  const checkData = await checkRes.json();
+  if (!checkData || checkData.length === 0) return { error: 'THREAD_NOT_FOUND' };
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/chat_threads?id=eq.${threadId}`, {
+    method: 'PATCH',
+    headers: {
+      "apikey": serviceRoleKey || "",
+      "Authorization": `Bearer ${serviceRoleKey}`,
+      "Content-Profile": "pn_os_ai_department",
+      "Content-Type": "application/json",
+      "Prefer": "return=minimal"
+    },
+    body: JSON.stringify({ subject: newTitle })
+  });
+
+  if (!res.ok) {
+    return { error: await res.text() };
+  }
+  return { error: null };
+}
+
+export async function dbDeleteThread(organizationId: string, threadId: string) {
+  const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  const checkRes = await fetch(`${supabaseUrl}/rest/v1/chat_threads?id=eq.${threadId}&select=id`, {
+    headers: {
+      "apikey": serviceRoleKey || "",
+      "Authorization": `Bearer ${serviceRoleKey}`,
+      "Accept-Profile": "pn_os_ai_department"
+    }
+  });
+  if (!checkRes.ok) return { error: 'FAILED_TO_CHECK_THREAD' };
+  const checkData = await checkRes.json();
+  if (!checkData || checkData.length === 0) return { error: 'THREAD_NOT_FOUND' };
+
+  // Soft delete the thread by setting status to CLOSED
+  // (We cannot hard delete because chat_messages has an APPEND_ONLY trigger)
+  const res = await fetch(`${supabaseUrl}/rest/v1/chat_threads?id=eq.${threadId}`, {
+    method: 'PATCH',
+    headers: {
+      "apikey": serviceRoleKey || "",
+      "Authorization": `Bearer ${serviceRoleKey}`,
+      "Content-Profile": "pn_os_ai_department",
+      "Content-Type": "application/json",
+      "Prefer": "return=minimal"
+    },
+    body: JSON.stringify({ thread_status: 'CLOSED' })
+  });
+
+  if (!res.ok) {
+    return { error: await res.text() };
+  }
+  return { error: null };
+}
