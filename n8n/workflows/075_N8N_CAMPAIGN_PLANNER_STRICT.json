@@ -204,7 +204,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 4 - Publish Readiness QA. You are a strict gatekeeper. You MUST evaluate if Agent 1\\'s research packet aligns with the user\\'s original brief. You MUST NOT rewrite the strategy or create prompts. You MUST output STRICTLY a JSON object with keys `passed` (boolean) and `reason` (string explaining why it passed or failed).  CRITICAL: YOU MUST WRITE YOUR `reason` IN THE EXACT SAME LANGUAGE AS THE Original User Brief.'\n    },\n    {\n      role: 'user',\n      content: 'Original User Brief: ' + $node['Scope Resolve'].json.body + '\\n\\nAgent 1 Research Packet: ' + $json.output\n    }\n  ]\n} }}",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 4 - Publish Readiness QA. You are a strict gatekeeper. You MUST evaluate if Agent 1\\'s research packet aligns with the user\\'s original brief. You MUST NOT rewrite the strategy or create prompts. You MUST output STRICTLY a JSON object with keys `passed` (boolean) and `reason` (string explaining why it passed or failed).  CRITICAL: YOU MUST WRITE YOUR `reason` IN THE EXACT SAME LANGUAGE AS THE Original User Brief.'\n    },\n    {\n      role: 'user',\n      content: 'Original User Brief: ' + $('Scope Resolve').first().json.body + '\\n\\nAgent 1 Research Packet: ' + $json.output\n    }\n  ]\n} }}",
         "options": {}
       },
       "name": "Agent 4 - QA",
@@ -278,7 +278,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Scope Resolve'].json.thread_id,\n  organization_id: $node['Scope Resolve'].json.organization_id,\n  idempotency_key: $execution.id + '_qa_reject',\n  sender: 'agent_4_qa',\n  body: '\u26d4 **Agent 4 (QA) \u0111\u00e3 ch\u1eb7n b\u1ea3n K\u1ebf ho\u1ea1ch n\u00e0y v\u00ec kh\u00f4ng \u0111\u1ea1t y\u00eau c\u1ea7u:**\\n\\n' + $json.reason,\n  intent_type: 'agent_response'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $('Scope Resolve').first().json.thread_id,\n  organization_id: $('Scope Resolve').first().json.organization_id,\n  idempotency_key: $execution.id + '_qa_reject',\n  sender: 'agent_4_qa',\n  body: '\u26d4 **Agent 4 (QA) \u0111\u00e3 ch\u1eb7n b\u1ea3n K\u1ebf ho\u1ea1ch n\u00e0y v\u00ec kh\u00f4ng \u0111\u1ea1t y\u00eau c\u1ea7u:**\\n\\n' + $json.reason,\n  intent_type: 'agent_response'\n} }}",
         "options": {}
       },
       "name": "QA Reject (chat_append)",
@@ -307,7 +307,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 7 - Documentation & Packaging. Your capability is strictly BOUNDED. You MUST convert the approved strategic research packet into a final beautiful Markdown Proposal output for the user. You MUST NOT alter the core strategy. CRITICAL: DO NOT SUMMARIZE OR OMIT ANY DETAILS. You MUST translate EVERY SINGLE KEY, METRIC, AND DAY-BY-DAY PLAN from the JSON into the Markdown proposal. Keep all 20 sections (A to T) intact with full details. You MUST NOT write social captions. Output pure Markdown string (do not wrap in JSON). CRITICAL: YOU MUST WRITE YOUR ENTIRE RESPONSE IN THE SAME LANGUAGE AS THE RESEARCH PACKET. IF THE CONTEXT IS VIETNAMESE, ALL HEADINGS AND TEXT MUST BE IN VIETNAMESE. YOU MUST APPEND EXACTLY \"[[CAMPAIGN_PROPOSAL]]\" AT THE VERY END OF YOUR OUTPUT AS A MARKER.'\n    },\n    {\n      role: 'user',\n      content: 'Approved Research Packet from Agent 1:\\n' + $node['AI Agent 1'].json.output\n    }\n  ]\n} }}",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 7 - Documentation & Packaging. Your capability is strictly BOUNDED. You MUST convert the approved strategic research packet into a final beautiful Markdown Proposal output for the user. You MUST NOT alter the core strategy. CRITICAL: DO NOT SUMMARIZE OR OMIT ANY DETAILS. You MUST translate EVERY SINGLE KEY, METRIC, AND DAY-BY-DAY PLAN from the JSON into the Markdown proposal. Keep all 20 sections (A to T) intact with full details. You MUST NOT write social captions. Output pure Markdown string (do not wrap in JSON). CRITICAL: YOU MUST WRITE YOUR ENTIRE RESPONSE IN THE SAME LANGUAGE AS THE RESEARCH PACKET. IF THE CONTEXT IS VIETNAMESE, ALL HEADINGS AND TEXT MUST BE IN VIETNAMESE. YOU MUST APPEND EXACTLY \"[[CAMPAIGN_PROPOSAL]]\" AT THE VERY END OF YOUR OUTPUT AS A MARKER.'\n    },\n    {\n      role: 'user',\n      content: 'Approved Research Packet from Agent 1:\\n' + $('AI Agent 1').last().json.output\n    }\n  ]\n} }}",
         "options": {}
       },
       "name": "Agent 7 - Packaging",
@@ -344,7 +344,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Scope Resolve'].json.thread_id,\n  organization_id: $node['Scope Resolve'].json.organization_id,\n  idempotency_key: $execution.id + '_done',\n  sender: 'agent_7_packaging',\n  body: $json.choices[0].message.content,\n  intent_type: 'campaign_proposal'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $('Scope Resolve').first().json.thread_id,\n  organization_id: $('Scope Resolve').first().json.organization_id,\n  idempotency_key: $execution.id + '_done',\n  sender: 'agent_7_packaging',\n  body: $json.choices[0].message.content,\n  intent_type: 'campaign_proposal'\n} }}",
         "options": {}
       },
       "name": "Delivery (chat_append)",
@@ -484,7 +484,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $('Agent 4 - QA').item.json || {};\nconst newAttempt = $runIndex + 2;\n\nconst original = $('Init Attempt').item.json;\nreturn { json: { ...original, attempt: newAttempt, qa_feedback: data.reason } };"
+        "jsCode": "const data = $('Agent 4 - QA').last().json || {};\nconst newAttempt = $runIndex + 2;\n\nconst original = $('Init Attempt').first().json;\nreturn { json: { ...original, attempt: newAttempt, qa_feedback: data.reason } };"
       },
       "name": "Check Attempt Limit",
       "type": "n8n-nodes-base.code",
