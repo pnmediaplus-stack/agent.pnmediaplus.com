@@ -4,7 +4,7 @@ export type ChatMessage = {
   id: string;
   organization_id: string;
   thread_id: string;
-  sender: "human" | "system" | "agent";
+  sender: "human" | "system" | "agent" | "n8n";
   body: string;
   intent_type?: ChatIntentType;
   metadata?: any;
