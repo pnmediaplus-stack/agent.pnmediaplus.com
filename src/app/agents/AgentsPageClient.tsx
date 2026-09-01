@@ -55,7 +55,25 @@ export function AgentsPageClient() {
       const agData = await agRes.json();
       const dpData = await dpRes.json();
       
-      if (agData.agents) setAgents(agData.agents);
+      
+      if (agData.agents) {
+        // Inject hardcoded Marketing Agent for Phase 1 MVP
+        const marketingAgent: Agent = {
+          id: "mkt-agent-001",
+          organization_id: "org-local",
+          department_id: "dept-marketing",
+          agent_key: "marketing_planner",
+          canonical_name: "Marketing Agent",
+          role_code: "marketing_planner",
+          authority_scope: "TASK_OWNER",
+          state: "ACTIVE" as any,
+          metadata: {},
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setAgents([marketingAgent, ...agData.agents]);
+      }
+
       if (dpData.departments) {
         setDepartments(dpData.departments);
         if (dpData.departments.length > 0) {
@@ -250,7 +268,7 @@ export function AgentsPageClient() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {filteredAgents.map((agent) => (
-            <AgentCard key={agent.id} agent={agent} />
+            <AgentCard key={agent.id} agent={agent} href={agent.id === 'mkt-agent-001' ? '/agents/marketing' : undefined} />
           ))}
         </div>
       )}
