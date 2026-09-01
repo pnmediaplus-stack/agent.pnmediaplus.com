@@ -24,4 +24,13 @@ export const chat = {
   "chat.thread.purpose": "Capture commands, route tasks, and request clarifications.",
   "chat.thread.status": "ACTIVE",
   "chat.audit.label": "Audit trail"
+,
+  "chat.proposal.title": "COMPLETE CAMPAIGN PLAN",
+  "chat.proposal.desc": "The Agent system has analyzed and established a 10-day campaign plan (From A to T) based on your request.",
+  "chat.proposal.expand": "View Full Screen",
+  "chat.proposal.docTitle": "N8N Campaign Plan",
+  "chat.markdown.preview": "Markdown Preview",
+  "chat.markdown.attachment": "Attachment",
+  "chat.markdown.copied": "Copied",
+  "chat.markdown.copy": "Copy"
 } as const;

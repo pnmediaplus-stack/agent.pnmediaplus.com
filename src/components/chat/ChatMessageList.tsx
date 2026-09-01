@@ -73,27 +73,27 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
             <div
               className={`relative max-w-[85%] overflow-hidden rounded-2xl border p-4 shadow-xl backdrop-blur-xl transition-all hover:shadow-2xl ${
                 isHuman
-                  ? "border-cyan-500/30 bg-cyan-950/40 shadow-cyan-900/20 rounded-tr-sm"
+                  ? "border-cyan-500/30 bg-cyan-50/80 dark:bg-cyan-950/40 shadow-cyan-500/10 dark:shadow-cyan-900/20 rounded-tr-sm"
                   : isAgent
-                    ? "border-emerald-500/30 bg-emerald-950/40 shadow-emerald-900/20 rounded-tl-sm"
-                    : "border-slate-800/60 bg-slate-900/50 shadow-black/20 rounded-tl-sm"
+                    ? "border-emerald-500/30 bg-emerald-50/80 dark:bg-emerald-950/40 shadow-emerald-500/10 dark:shadow-emerald-900/20 rounded-tl-sm"
+                    : "border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50 shadow-black/20 rounded-tl-sm"
               }`}
             >
-              <div className="mb-3 flex items-center justify-between gap-4 border-b border-white/5 pb-2">
+              <div className="mb-3 flex items-center justify-between gap-4 border-b border-slate-200 dark:border-white/5 pb-2">
                 <div className="flex items-center gap-2">
                   <div className={`flex h-6 w-6 items-center justify-center rounded-full border ${
-                    isHuman ? "border-cyan-500/50 bg-cyan-500/20" : isAgent ? "border-emerald-500/50 bg-emerald-500/20" : "border-slate-600 bg-slate-800"
+                    isHuman ? "border-cyan-500/50 bg-cyan-100 dark:bg-cyan-500/20" : isAgent ? "border-emerald-500/50 bg-emerald-100 dark:bg-emerald-500/20" : "border-slate-600 bg-slate-100 dark:bg-slate-800"
                   }`}>
                     {isHuman ? (
                       <User className="h-3.5 w-3.5 text-cyan-300" />
                     ) : isAgent ? (
                       <Bot className="h-3.5 w-3.5 text-emerald-300" />
                     ) : (
-                      <LayoutTemplate className="h-3.5 w-3.5 text-slate-300" />
+                      <LayoutTemplate className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
                     )}
                   </div>
                   <span className={`text-[11px] font-semibold uppercase tracking-widest ${
-                    isHuman ? "text-cyan-300" : isAgent ? "text-emerald-300" : "text-slate-400"
+                    isHuman ? "text-cyan-300" : isAgent ? "text-emerald-300" : "text-slate-500 dark:text-slate-400"
                   }`}>
                     {isHuman
                       ? (t("chat.message.sender.human") ?? "Human")
@@ -105,33 +105,33 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                 <div className="font-mono text-[10px] text-slate-500">{new Date(message.created_at).toLocaleTimeString()}</div>
               </div>
 
-              <div className="text-sm leading-relaxed text-slate-200 prose prose-invert prose-sm max-w-none">
+              <div className="text-sm leading-relaxed text-slate-700 dark:text-slate-200 prose dark:prose-invert prose-sm max-w-none">
                 {displayBody?.includes('[[CAMPAIGN_PROPOSAL]]') || (message.intent_type as string) === 'campaign_proposal' ? (
-                    <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-indigo-950/40 to-slate-900/40 rounded-2xl border border-indigo-500/30 shadow-xl my-2 w-[500px] max-w-full">
-                      <div className="flex items-center gap-3 text-indigo-300 font-semibold text-base">
-                        <div className="p-2 bg-indigo-500/20 rounded-lg">
-                          <FileText className="w-5 h-5 text-indigo-400" />
+                    <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-indigo-50/80 to-white dark:from-indigo-950/40 dark:to-slate-900/40 rounded-2xl border border-indigo-200 dark:border-indigo-500/30 shadow-xl my-2 w-[500px] max-w-full">
+                      <div className="flex items-center gap-3 text-indigo-600 dark:text-indigo-300 font-semibold text-base">
+                        <div className="p-2 bg-indigo-100 dark:bg-indigo-500/20 rounded-lg">
+                          <FileText className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
                         </div>
                         <div>
-                          <div className="text-xs text-indigo-400/70 uppercase tracking-widest mb-0.5 flex items-center justify-between"><span>Campaign Planner</span>{loopText && <span className="px-2 py-0.5 bg-rose-500/20 text-rose-300 rounded text-[10px] font-bold">{loopText}</span>}</div>
-                          BẢN KẾ HOẠCH CHIẾN DỊCH HOÀN CHỈNH
+                          <div className="text-xs text-indigo-500 dark:text-indigo-400/70 uppercase tracking-widest mb-0.5 flex items-center justify-between"><span>Campaign Planner</span>{loopText && <span className="px-2 py-0.5 bg-rose-500/20 text-rose-300 rounded text-[10px] font-bold">{loopText}</span>}</div>
+                          {t("chat.proposal.title") ?? "BẢN KẾ HOẠCH CHIẾN DỊCH HOÀN CHỈNH"}
                         </div>
                       </div>
-                      <p className="text-sm text-slate-300/80 leading-relaxed">
-                        Hệ thống Agent đã phân tích và thiết lập xong Kế hoạch chiến dịch 10 ngày (Từ A đến T) dựa trên yêu cầu của sếp.
+                      <p className="text-sm text-slate-600 dark:text-slate-300/80 leading-relaxed">
+                        {t("chat.proposal.desc") ?? "Hệ thống Agent đã phân tích và thiết lập xong Kế hoạch chiến dịch 10 ngày (Từ A đến T) dựa trên yêu cầu của sếp."}
                       </p>
                       <button
                         type="button"
                         onClick={() => setMarkdownPreview({
                           url: '',
-                          title: 'Kế hoạch Chiến dịch N8N',
+                          title: t("chat.proposal.docTitle") ?? 'Kế hoạch Chiến dịch N8N',
                           content: displayBody.replace('[[CAMPAIGN_PROPOSAL]]', ''),
                           loading: false,
                           error: null
                         })}
-                        className="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-900/20 hover:shadow-indigo-500/30 flex items-center justify-center gap-2"
+                        className="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-slate-900 dark:text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-900/20 hover:shadow-indigo-500/30 flex items-center justify-center gap-2"
                       >
-                        <Maximize2 className="w-4 h-4" /> Mở xem toàn màn hình
+                        <Maximize2 className="w-4 h-4" /> {t("chat.proposal.expand") ?? "Mở xem toàn màn hình"}
                       </button>
                     </div>
                   ) : (
@@ -147,7 +147,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img {...props} className="max-h-[300px] w-auto object-contain transition-transform duration-300 group-hover:scale-105" alt={props.alt || 'Chat media'} />
                           <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                            <Maximize2 className="h-8 w-8 text-white/80 drop-shadow-md" />
+                            <Maximize2 className="h-8 w-8 text-slate-900 dark:text-white/80 drop-shadow-md" />
                           </span>
                         </span>
                       );
@@ -160,11 +160,11 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         const [, actionType, id] = href.split(':');
 
                         let Icon = RefreshCw;
-                        let colorClass = "border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20";
+                        let colorClass = "border-indigo-200 dark:border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 dark:bg-indigo-500/20";
 
                         if (actionType === 'approve') {
                           Icon = CheckCircle;
-                          colorClass = "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20";
+                          colorClass = "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-100 dark:bg-emerald-500/20";
                         } else if (actionType === 'reject') {
                           Icon = XCircle;
                           colorClass = "border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20";
@@ -248,7 +248,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         }
 
                         return (
-                          <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded bg-cyan-500/10 border border-cyan-500/20 px-2 py-1 text-xs font-semibold text-cyan-300 no-underline hover:bg-cyan-500/20">
+                          <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded bg-cyan-500/10 border border-cyan-500/20 px-2 py-1 text-xs font-semibold text-cyan-300 no-underline hover:bg-cyan-100 dark:bg-cyan-500/20">
                             {props.children}
                           </a>
                         );
@@ -273,10 +273,10 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
               </div>
 
               {message.intent_type ? (
-                <div className="mt-4 flex items-center gap-1.5 rounded bg-black/20 px-2.5 py-1 w-fit border border-white/5">
-                  <Activity className="h-3.5 w-3.5 text-indigo-400" />
-                  <span className="font-mono text-[10px] text-slate-400">
-                    {t("chat.message.intentPrefix") ?? "INTENT"}: <span className="text-indigo-300">{message.intent_type}</span>
+                <div className="mt-4 flex items-center gap-1.5 rounded bg-slate-100 dark:bg-black/20 px-2.5 py-1 w-fit border border-slate-200 dark:border-white/5">
+                  <Activity className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
+                  <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                    {t("chat.message.intentPrefix") ?? "INTENT"}: <span className="text-indigo-600 dark:text-indigo-300">{message.intent_type}</span>
                   </span>
                 </div>
               ) : null}
@@ -287,10 +287,10 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
 
       {isTyping && (
         <div className="flex w-full justify-start">
-          <div className="relative max-w-[85%] overflow-hidden rounded-2xl border p-4 shadow-xl backdrop-blur-xl border-emerald-500/30 bg-emerald-950/40 shadow-emerald-900/20 rounded-tl-sm animate-pulse">
-            <div className="mb-3 flex items-center justify-between gap-4 border-b border-white/5 pb-2">
+          <div className="relative max-w-[85%] overflow-hidden rounded-2xl border p-4 shadow-xl backdrop-blur-xl border-emerald-500/30 bg-emerald-50/80 dark:bg-emerald-950/40 shadow-emerald-500/10 dark:shadow-emerald-900/20 rounded-tl-sm animate-pulse">
+            <div className="mb-3 flex items-center justify-between gap-4 border-b border-slate-200 dark:border-white/5 pb-2">
               <div className="flex items-center gap-2">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full border border-emerald-500/50 bg-emerald-500/20">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full border border-emerald-500/50 bg-emerald-100 dark:bg-emerald-500/20">
                   <Bot className="h-3.5 w-3.5 text-emerald-300" />
                 </div>
                 <span className="text-[11px] font-semibold uppercase tracking-widest text-emerald-300">
@@ -336,14 +336,14 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                   window.open(lightboxImage, '_blank');
                 }
               }}
-              className="p-3 bg-black/50 hover:bg-black/80 text-white rounded-full transition-colors border border-white/20 backdrop-blur-md shadow-xl"
+              className="p-3 bg-black/50 hover:bg-black/80 text-slate-900 dark:text-white rounded-full transition-colors border border-white/20 backdrop-blur-md shadow-xl"
               title="Download Image"
             >
               <Download className="h-5 w-5" />
             </button>
             <button
               onClick={() => setLightboxImage(null)}
-              className="p-3 bg-black/50 hover:bg-black/80 text-white rounded-full transition-colors border border-white/20 backdrop-blur-md shadow-xl"
+              className="p-3 bg-black/50 hover:bg-black/80 text-slate-900 dark:text-white rounded-full transition-colors border border-white/20 backdrop-blur-md shadow-xl"
               title="Close"
             >
               <X className="h-5 w-5" />
@@ -365,13 +365,13 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
           onClick={() => setMarkdownPreview(null)}
         >
           <div
-            className="relative flex max-h-[92vh] w-[min(95vw,1000px)] flex-col overflow-hidden rounded-xl border border-slate-700/50 bg-[#0f1117] shadow-2xl ring-1 ring-white/10"
+            className="relative flex max-h-[92vh] w-[min(95vw,1000px)] flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-200 dark:border-slate-700/50 bg-white dark:bg-[#0f1117] shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-4 border-b border-slate-800/80 bg-slate-900/50 px-6 py-4 backdrop-blur-md">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 px-6 py-4 backdrop-blur-md">
               <div className="min-w-0">
-                <div className="text-[11px] font-medium uppercase tracking-[0.15em] text-slate-400 mb-1">Markdown Preview</div>
-                <div className="truncate text-base font-semibold text-slate-100">{markdownPreview.title || 'Attachment'}</div>
+                <div className="text-[11px] font-medium uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 mb-1">{t("chat.markdown.preview") ?? "Markdown Preview"}</div>
+                <div className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{markdownPreview.title || (t("chat.markdown.attachment") ?? 'Attachment')}</div>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2">
@@ -391,10 +391,10 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         console.error("Failed to copy markdown", err);
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700 hover:text-white"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white"
                   >
                     {isCopied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                    {isCopied ? "Copied" : "Copy"}
+                    {isCopied ? t("chat.markdown.copied") ?? "Copied" : t("chat.markdown.copy") ?? "Copy"}
                   </button>
                   <button
                     type="button"
@@ -422,7 +422,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         if (markdownPreview.url) window.open(markdownPreview.url, '_blank');
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700 hover:text-white"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white"
                   >
                     <Download className="h-3.5 w-3.5" />
                     .md
@@ -450,7 +450,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         console.error("Failed to download text", err);
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700 hover:text-white"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white"
                   >
                     <Download className="h-3.5 w-3.5" />
                     .txt
@@ -459,7 +459,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                 <button
                   type="button"
                   onClick={() => setMarkdownPreview(null)}
-                  className="rounded-full border border-white/10 bg-white/5 p-2 text-white/80 hover:bg-white/10"
+                  className="rounded-full border border-white/10 bg-white/5 p-2 text-slate-900 dark:text-white/80 hover:bg-white/10"
                   title="Close"
                 >
                   <X className="h-5 w-5" />
@@ -469,7 +469,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
 
             <div className="min-h-0 flex-1 overflow-y-auto p-5">
               {markdownPreview.loading ? (
-                <div className="flex h-48 items-center justify-center text-sm text-slate-400">
+                <div className="flex h-48 items-center justify-center text-sm text-slate-500 dark:text-slate-400">
                   Đang tải nội dung...
                 </div>
               ) : markdownPreview.error ? (
@@ -477,7 +477,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                   {markdownPreview.error}
                 </div>
               ) : (
-                <div className="prose prose-invert max-w-none prose-headings:text-slate-100 prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-slate-300 prose-p:leading-relaxed prose-a:text-blue-400 hover:prose-a:text-blue-300 prose-strong:text-slate-200 prose-ul:text-slate-300 prose-ol:text-slate-300 prose-li:marker:text-slate-500 prose-code:text-emerald-300 prose-code:bg-emerald-400/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-pre:bg-[#0d0f15] prose-pre:border prose-pre:border-slate-800 prose-blockquote:border-l-indigo-500 prose-blockquote:bg-indigo-500/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-blockquote:text-slate-300">
+                <div className="prose dark:prose-invert max-w-none prose-headings:text-slate-900 dark:text-slate-100 prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-slate-600 dark:text-slate-300 prose-p:leading-relaxed prose-a:text-blue-400 hover:prose-a:text-blue-300 prose-strong:text-slate-700 dark:text-slate-200 prose-ul:text-slate-600 dark:text-slate-300 prose-ol:text-slate-600 dark:text-slate-300 prose-li:marker:text-slate-500 prose-code:text-emerald-300 prose-code:bg-emerald-400/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-pre:bg-[#0d0f15] prose-pre:border prose-pre:border-slate-800 prose-blockquote:border-l-indigo-500 prose-blockquote:bg-indigo-500/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-blockquote:text-slate-600 dark:text-slate-300">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {markdownPreview.content}
                   </ReactMarkdown>

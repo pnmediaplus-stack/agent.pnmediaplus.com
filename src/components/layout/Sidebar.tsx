@@ -1,4 +1,5 @@
 "use client";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -169,7 +170,9 @@ export function Sidebar() {
                 : (tLayout("layout.sidebar.userCard.subtitleBlocked") ?? "Login required to access the portal")}
             </div>
           </div>
-          <button
+          <div className="flex gap-2 items-center">
+            <ThemeToggle />
+            <button
             type="button"
             onClick={() => setAccountMenuOpen((current) => !current)}
             aria-expanded={accountMenuOpen}
@@ -177,6 +180,7 @@ export function Sidebar() {
           >
             {tLayout("layout.sidebar.accountMenu.action") ?? "Setting"}
           </button>
+          </div>
         </div>
         {accountMenuOpen ? (
           <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/80 p-2 shadow-xl shadow-slate-950/30">

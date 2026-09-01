@@ -24,4 +24,13 @@ export const chat = {
   "chat.thread.purpose": "Thu nhận lệnh, điều hướng tác vụ và yêu cầu làm rõ khi cần.",
   "chat.thread.status": "ACTIVE",
   "chat.audit.label": "Dấu vết audit"
+,
+  "chat.proposal.title": "BẢN KẾ HOẠCH CHIẾN DỊCH HOÀN CHỈNH",
+  "chat.proposal.desc": "Hệ thống Agent đã phân tích và thiết lập xong Kế hoạch chiến dịch 10 ngày (Từ A đến T) dựa trên yêu cầu của sếp.",
+  "chat.proposal.expand": "Mở xem toàn màn hình",
+  "chat.proposal.docTitle": "Kế hoạch Chiến dịch N8N",
+  "chat.markdown.preview": "Markdown Preview",
+  "chat.markdown.attachment": "Attachment",
+  "chat.markdown.copied": "Copied",
+  "chat.markdown.copy": "Copy"
 } as const;

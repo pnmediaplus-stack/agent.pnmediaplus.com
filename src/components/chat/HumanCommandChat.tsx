@@ -196,7 +196,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
             </div>
             <div className="space-y-2">
               {activeTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between rounded-xl bg-slate-900/50 p-3 border border-white/5">
+                <div key={task.id} className="flex items-center justify-between rounded-xl bg-white dark:bg-slate-900/50 p-3 border border-slate-200 dark:border-white/5">
                   <div className="flex items-center gap-3">
                     {task.state === 'NOT_STARTED' || task.state === 'QUEUED' ? (
                       <Clock className="h-4 w-4 text-slate-400" />
@@ -248,16 +248,16 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
       </div>
       <div className="space-y-4 flex flex-col h-full min-h-0 min-w-0">
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shrink-0">
-          <div className="text-sm font-semibold text-white">{thread.title}</div>
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">{thread.title}</div>
           <p className="mt-2 text-sm leading-6 text-slate-400">{thread.purpose}</p>
           <div className="mt-4 text-xs uppercase tracking-[0.24em] text-slate-500">{tShared("shared.thread.status") ?? "Thread status"}</div>
           <div className="mt-2 text-sm text-slate-200">{thread.status}</div>
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 flex flex-col flex-1 min-h-0">
-          <div className="text-sm font-semibold text-white shrink-0">{tShared("shared.audit.trail") ?? "Audit trail"}</div>
+          <div className="text-sm font-semibold text-slate-900 dark:text-white shrink-0">{tShared("shared.audit.trail") ?? "Audit trail"}</div>
           <div className="mt-3 space-y-3 overflow-y-auto pr-2">
             {auditLogs.map((log) => (
-              <div key={log.id} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 shrink-0">
+              <div key={log.id} className="rounded-xl border border-slate-800 bg-white dark:bg-slate-900/60 p-3 shrink-0">
                 <div className="text-xs uppercase tracking-[0.24em] text-slate-500">{log.action_type}</div>
                 <div className="mt-2 text-sm text-slate-200">
                   {log.metadata ? (

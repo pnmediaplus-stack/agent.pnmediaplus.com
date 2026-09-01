@@ -536,7 +536,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
     >
       {isDragging && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center rounded-2xl bg-slate-900/80 backdrop-blur-sm pointer-events-none border-2 border-dashed border-cyan-400">
-          <div className="text-cyan-400 flex flex-col items-center gap-2">
+          <div className="text-cyan-600 dark:text-cyan-400 flex flex-col items-center gap-2">
             <Paperclip className="h-8 w-8 animate-bounce" />
             <span className="font-semibold tracking-wider uppercase text-sm">Drop file here</span>
           </div>
@@ -551,7 +551,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
           
           {/* Handling loading/empty states for Page */}
           {popupState.type === 'page' && pagesStatus === 'loading' && (
-            <div className="px-3 py-4 text-center text-sm text-slate-400 flex flex-col items-center gap-2">
+            <div className="px-3 py-4 text-center text-sm text-slate-500 dark:text-slate-400 flex flex-col items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
               Đang tải danh sách trang...
             </div>
@@ -563,7 +563,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
             </div>
           )}
           {popupState.type === 'page' && pagesStatus === 'empty' && (
-            <div className="px-3 py-4 text-center text-sm text-slate-400 flex flex-col items-center gap-2">
+            <div className="px-3 py-4 text-center text-sm text-slate-500 dark:text-slate-400 flex flex-col items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
               {pagesError || "Không có trang nào"}
             </div>
@@ -606,11 +606,11 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
                 onMouseEnter={() => setActiveIndex(idx)}
                 onClick={() => selectSuggestion(item)}
                 className={`w-full text-left flex flex-col gap-1 px-3 py-2 rounded-lg transition-colors ${
-                  isActive ? 'bg-indigo-500/20 text-white' : 'text-slate-300 hover:bg-slate-800/50'
+                  isActive ? 'bg-indigo-500/20 text-slate-900 dark:text-white' : 'text-slate-300 hover:bg-slate-800/50'
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <Icon className={`h-4 w-4 ${isActive ? 'text-indigo-400' : 'text-slate-400'}`} />
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`} />
                   <span className="font-medium text-sm truncate">{title}</span>
                   {popupState.type === 'agent' && isAmbiguous && (
                     <span title="Missing role_id, mention will fail-closed" className="flex shrink-0">
@@ -660,11 +660,11 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       {selectedFiles.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-3">
           {selectedFiles.map((file, idx) => (
-            <div key={idx} className="relative rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-2 w-max max-w-full">
+            <div key={idx} className="relative rounded-lg border border-cyan-200 dark:border-cyan-500/30 bg-cyan-950/20 p-2 w-max max-w-full">
               <button
                 type="button"
                 onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
-                className="absolute -right-2 -top-2 rounded-full border border-cyan-800 bg-slate-900 p-1 text-slate-400 hover:bg-slate-800 hover:text-white z-10 shadow-lg"
+                className="absolute -right-2 -top-2 rounded-full border border-cyan-800 bg-slate-900 p-1 text-slate-500 dark:text-slate-400 hover:bg-slate-800 hover:text-slate-900 dark:text-white z-10 shadow-lg"
                 disabled={isUploading}
               >
                 <X className="h-3.5 w-3.5" />
@@ -679,13 +679,13 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
                 </div>
               ) : (
                 <div className="flex items-center gap-2 px-2 py-1 text-sm text-cyan-200 min-w-[150px]">
-                  <Paperclip className="h-4 w-4 text-cyan-400" />
+                  <Paperclip className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
                   <span className="flex-1 truncate">{file.name}</span>
                 </div>
               )}
               {isUploading && (
                 <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-slate-900/70 backdrop-blur-sm">
-                  <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
+                  <Loader2 className="h-6 w-6 animate-spin text-cyan-600 dark:text-cyan-400" />
                 </div>
               )}
             </div>
@@ -708,10 +708,10 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         rows={3}
         disabled={isUploading}
         placeholder={t("chat.composer.placeholder") ?? "Type a command, ask for status, or request a task. Use / for commands, @ to tag agents, # to reference data."}
-        className="w-full rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-500/50 disabled:opacity-50"
+        className="w-full rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-500 focus:border-cyan-500/50 disabled:opacity-50"
       />
       <div className="mt-3 flex items-center justify-between">
-        <label className="text-xs uppercase tracking-[0.24em] text-slate-400 flex items-center gap-4">
+        <label className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 flex items-center gap-4">
           <span>{t("chat.composer.label") ?? "Human command"}</span>
           <input
             type="file"
@@ -723,7 +723,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 transition-colors"
+            className="flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400 hover:text-cyan-300 transition-colors"
             disabled={isUploading}
           >
             <Paperclip className="h-4 w-4" />
@@ -733,7 +733,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
             <button
               type="button"
               onClick={() => onRequestCreateTask(value)}
-              className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-300 transition-colors"
             >
               <CheckSquare className="h-4 w-4" />
               <span className="font-semibold tracking-wider">{t("chat.composer.create_task") ?? "CREATE TASK"}</span>
@@ -744,7 +744,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
           type="button"
           onClick={handleSend}
           disabled={isUploading || (!value.trim() && selectedFiles.length === 0)}
-          className="flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition-colors hover:bg-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 rounded-full border border-cyan-200 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition-colors hover:bg-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isUploading && <Loader2 className="h-4 w-4 animate-spin" />}
           {isUploading ? "Uploading..." : (t("chat.composer.send") ?? "Send command")}
