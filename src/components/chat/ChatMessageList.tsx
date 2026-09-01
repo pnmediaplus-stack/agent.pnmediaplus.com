@@ -3,7 +3,7 @@
 import { useState, memo } from "react";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { ChatMessage } from "@/types/chat";
-import { User, Bot, LayoutTemplate, Activity, ExternalLink, CheckCircle, XCircle, RefreshCw, Maximize2, Download, X, FileText } from "lucide-react";
+import { User, Bot, LayoutTemplate, Activity, ExternalLink, CheckCircle, XCircle, RefreshCw, Maximize2, Download, X, FileText, Copy, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PublishSelector } from "./PublishSelector";
@@ -11,6 +11,7 @@ import { PublishSelector } from "./PublishSelector";
 export const ChatMessageList = memo(function ChatMessageList({ messages, isTyping, onCommand }: { messages: ChatMessage[], isTyping?: boolean, onCommand?: (cmd: string) => void }) {
   const { t } = useI18n("chat");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState<boolean>(false);
   const [markdownPreview, setMarkdownPreview] = useState<{
     title: string;
     url: string;
@@ -371,6 +372,27 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        let textContent = markdownPreview.content;
+                        if (!textContent && markdownPreview.url) {
+                          const res = await fetch(markdownPreview.url);
+                          textContent = await res.text();
+                        }
+                        await navigator.clipboard.writeText(textContent);
+                        setIsCopied(true);
+                        setTimeout(() => setIsCopied(false), 2000);
+                      } catch (err) {
+                        console.error("Failed to copy markdown", err);
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/20"
+                  >
+                    {isCopied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    {isCopied ? "Copied" : "Copy"}
+                  </button>
                   <button
                     type="button"
                     onClick={async () => {
