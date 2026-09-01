@@ -10,6 +10,7 @@ import { useI18n } from "@/lib/i18n/useI18n";
 import { usePortalSession } from "@/components/layout/PortalSessionProvider";
 import {
   LayoutDashboard,
+  Megaphone,
   MessagesSquare,
   Building2,
   Bot,
@@ -55,6 +56,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/departments", labelKey: "nav.departments", fallbackLabel: "Departments", icon: Building2 },
       { href: "/agents", labelKey: "nav.agents", fallbackLabel: "Agents", icon: Bot },
+        { href: "/agents/marketing", labelKey: "nav.marketingAgent", fallbackLabel: "Marketing Agent", icon: Megaphone } as any,
       { href: "/tenant-integrations", labelKey: "nav.tenantIntegrations", fallbackLabel: "API Integrations", icon: PlugZap }
     ]
   },
