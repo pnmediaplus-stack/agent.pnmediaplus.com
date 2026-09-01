@@ -58,6 +58,9 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
         const isHuman = message.sender === "human";
         const isAgent = message.sender === "agent" || message.sender === "n8n";
 
+        const loopMatch = message.body?.match(/\(Lượt\s+(\d+\/\d+|NaN\/\d+)\)/i);
+        const loopText = loopMatch ? `Lượt ${loopMatch[1]}` : null;
+        
         const displayBody = message.body?.startsWith('/publish ')
           ? message.body.replace(/\/publish integration_key:\S+ ([a-f0-9-]+)(?: --page="([^"]+)")?/, "Lệnh đăng bài **$1...** lên page **'$2'**")
           : message.body;
@@ -103,7 +106,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
               </div>
 
               <div className="text-sm leading-relaxed text-slate-200 prose prose-invert prose-sm max-w-none">
-                {displayBody?.includes('[[CAMPAIGN_PROPOSAL]]') ? (
+                {displayBody?.includes('[[CAMPAIGN_PROPOSAL]]') || (message.intent_type as string) === 'campaign_proposal' ? (
                     <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-indigo-950/40 to-slate-900/40 rounded-2xl border border-indigo-500/30 shadow-xl my-2 w-[500px] max-w-full">
                       <div className="flex items-center gap-3 text-indigo-300 font-semibold text-base">
                         <div className="p-2 bg-indigo-500/20 rounded-lg">
