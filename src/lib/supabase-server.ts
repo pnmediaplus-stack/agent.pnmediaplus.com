@@ -152,8 +152,23 @@ export function createServiceRoleClient(): SupabaseClient {
             headers['Prefer'] = 'return=representation';
           }
 
+          if (queryBuilder._operation === 'upsert') {
+            headers['Prefer'] = headers['Prefer'] ? headers['Prefer'] + ',resolution=merge-duplicates' : 'resolution=merge-duplicates';
+          }
+
+          let method = 'GET';
+          if (queryBuilder._operation) {
+            if (queryBuilder._operation === 'insert' || queryBuilder._operation === 'upsert') {
+              method = 'POST';
+            } else if (queryBuilder._operation === 'delete') {
+              method = 'DELETE';
+            } else {
+              method = 'PATCH';
+            }
+          }
+
           const response = await fetch(url.toString(), {
-            method: queryBuilder._operation ? (queryBuilder._operation === 'insert' ? 'POST' : queryBuilder._operation === 'delete' ? 'DELETE' : 'PATCH') : 'GET',
+            method,
             headers,
             body: queryBuilder._values ? JSON.stringify(queryBuilder._values) : undefined
           });
@@ -195,8 +210,23 @@ export function createServiceRoleClient(): SupabaseClient {
               headers['Content-Profile'] = targetSchema;
             }
             
+            if (queryBuilder._operation === 'upsert') {
+              headers['Prefer'] = 'resolution=merge-duplicates';
+            }
+            
+            let method = 'GET';
+            if (queryBuilder._operation) {
+              if (queryBuilder._operation === 'insert' || queryBuilder._operation === 'upsert') {
+                method = 'POST';
+              } else if (queryBuilder._operation === 'delete') {
+                method = 'DELETE';
+              } else {
+                method = 'PATCH';
+              }
+            }
+
             const response = await fetch(url.toString(), {
-              method: queryBuilder._operation ? (queryBuilder._operation === 'insert' ? 'POST' : queryBuilder._operation === 'delete' ? 'DELETE' : 'PATCH') : 'GET',
+              method,
             headers,
             body: queryBuilder._values ? JSON.stringify(queryBuilder._values) : undefined
             });
