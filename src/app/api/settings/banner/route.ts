@@ -82,15 +82,13 @@ export async function POST(req: NextRequest) {
       .eq('setting_key', setting_key)
       .single();
 
-    const { error: upsertError } = await supabase
-      .from('app_settings')
-      .upsert({
+    const { error: upsertError } = await (supabase.from('app_settings') as any).upsert({
         organization_id,
         setting_key,
         setting_value: newUrl,
         object_key: newObjectKey,
         updated_by: user.id
-      });
+      }, { onConflict: 'organization_id,setting_key' });
 
     if (upsertError) {
       console.error("Failed to upsert app_settings:", upsertError);
