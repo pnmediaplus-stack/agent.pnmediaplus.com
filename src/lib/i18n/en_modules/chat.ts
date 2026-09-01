@@ -14,6 +14,13 @@ export const chat = {
   "chat.composer.send": "Send command",
   "chat.composer.create_task": "CREATE TASK",
   "chat.summary.latestFallback": "Latest message will appear here.",
+  "chat.summary.title": "Thread Summary",
+  "chat.active_tasks": "Active Tasks",
+
+  "chat.log.detail": "Detail:",
+  "chat.log.state_change": "State:",
+  "chat.composer.attach": "ATTACH",
+  "chat.composer.uploading": "Uploading...",
   "chat.message.sender.human": "Human",
   "chat.message.sender.agent": "Agent",
   "chat.message.sender.system": "System",

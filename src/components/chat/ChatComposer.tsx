@@ -544,7 +544,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       )}
       {/* Autocomplete Popup */}
       {popupState.isOpen && (filteredSuggestions.length > 0 || (popupState.type === 'campaign' && campaignsStatus !== 'ready') || (popupState.type === 'page' && pagesStatus !== 'ready')) && (
-        <div className="absolute bottom-full mb-2 left-4 w-80 max-h-64 overflow-y-auto rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-white dark:bg-slate-900/95 backdrop-blur-md p-2 shadow-2xl z-50">
+        <div className="absolute bottom-full mb-2 left-4 w-80 max-h-64 overflow-y-auto rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-white dark:bg-slate-900/95 backdrop-blur-md p-2 shadow-2xl z-50">
           <div className="text-[10px] uppercase tracking-widest text-slate-500 px-2 pb-2 mb-1 border-b border-slate-200 dark:border-slate-800">
             {popupState.type === 'command' ? 'Select Command' : popupState.type === 'agent' ? 'Select Agent' : popupState.type === 'department' ? 'Select Department' : popupState.type === 'campaign' ? 'Select Campaign' : popupState.type === 'page' ? 'Select Page' : 'Select Data Reference'}
           </div>
@@ -552,7 +552,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
           {/* Handling loading/empty states for Page */}
           {popupState.type === 'page' && pagesStatus === 'loading' && (
             <div className="px-3 py-4 text-center text-sm text-slate-500 dark:text-slate-400 flex flex-col items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
+              <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
               Đang tải danh sách trang...
             </div>
           )}
@@ -606,11 +606,11 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
                 onMouseEnter={() => setActiveIndex(idx)}
                 onClick={() => selectSuggestion(item)}
                 className={`w-full text-left flex flex-col gap-1 px-3 py-2 rounded-lg transition-colors ${
-                  isActive ? 'bg-indigo-500/20 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                  isActive ? 'bg-emerald-500/20 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <Icon className={`h-4 w-4 ${isActive ? 'text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`} />
                   <span className="font-medium text-sm truncate">{title}</span>
                   {popupState.type === 'agent' && isAmbiguous && (
                     <span title="Missing role_id, mention will fail-closed" className="flex shrink-0">
@@ -708,11 +708,10 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         rows={3}
         disabled={isUploading}
         placeholder={t("chat.composer.placeholder") ?? "Type a command, ask for status, or request a task. Use / for commands, @ to tag agents, # to reference data."}
-        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 focus:bg-white dark:bg-slate-900/80 focus:dark:bg-slate-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all disabled:opacity-50"
+        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white focus:bg-white dark:bg-slate-950 focus:dark:bg-slate-950 shadow-inner px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all disabled:opacity-50"
       />
-      <div className="mt-3 flex items-center justify-between">
+      <div className="mt-1.5 flex items-center justify-between">
         <label className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 flex items-center gap-4">
-          <span>{t("chat.composer.label") ?? "Human command"}</span>
           <input
             type="file"
             ref={fileInputRef}
@@ -723,11 +722,11 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400 hover:text-cyan-300 transition-colors"
+            className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
             disabled={isUploading}
           >
             <Paperclip className="h-4 w-4" />
-            <span className="font-semibold tracking-wider">ATTACH</span>
+            <span className="font-semibold tracking-wider">{t("chat.composer.attach") ?? "ATTACH"}</span>
           </button>
           {onRequestCreateTask && (
             <button
@@ -744,10 +743,10 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
           type="button"
           onClick={handleSend}
           disabled={isUploading || (!value.trim() && selectedFiles.length === 0)}
-          className="flex items-center gap-2 rounded-full border border-cyan-200 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-700 dark:text-cyan-100 transition-colors hover:bg-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700/80 bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-100 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
         >
           {isUploading && <Loader2 className="h-4 w-4 animate-spin" />}
-          {isUploading ? "Uploading..." : (t("chat.composer.send") ?? "Send command")}
+          {isUploading ? (t("chat.composer.uploading") ?? "Uploading...") : (t("chat.composer.send") ?? "Send command")}
         </button>
       </div>
     </div>

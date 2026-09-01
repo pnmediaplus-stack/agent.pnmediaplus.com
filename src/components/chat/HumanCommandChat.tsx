@@ -6,12 +6,13 @@ import type { VisualAsset } from "@/types/artifact";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { DraftContentModal } from "@/components/chat/DraftContentModal";
 import { useI18n } from "@/lib/i18n/useI18n";
-// inferChatIntent removed, must be done on server
 import { sendChatMessage, pollActiveTasks } from "@/app/actions/chat-actions";
 import type { ChatMessage, ChatThread } from "@/types/chat";
 import type { AuditLog } from "@/types/audit";
-import { Loader2, CheckCircle2, Clock, Activity, History, PenLine } from "lucide-react";
-import { UploadBannerButton } from "@/components/shared/UploadBannerButton";
+import {
+  Loader2, CheckCircle2, Clock, History,
+  ChevronDown, ChevronUp, Activity
+} from "lucide-react";
 
 type HumanCommandChatProps = {
   thread: ChatThread;
@@ -27,6 +28,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [isContentModalOpen, setIsContentModalOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const { t: tChat } = useI18n("chat");
   const { t: tShared } = useI18n("shared");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -34,25 +36,23 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
   }, [messages.length, isSending]);
+
   useEffect(() => {
     let mounted = true;
     let inFlight = false;
     const interval = setInterval(async () => {
       if (inFlight) return;
-      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-      
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       inFlight = true;
       try {
         const [messagesRes, logsRes, latestTasks] = await Promise.all([
-          fetch(`/api/chat-messages?thread_id=${thread.id}`, { cache: 'no-store' }).then(r => r.json()),
-          fetch(`/api/audit-logs?entity_id=${thread.id}`, { cache: 'no-store' }).then(r => r.json()),
-          pollActiveTasks()
+          fetch(`/api/chat-messages?thread_id=${thread.id}`, { cache: "no-store" }).then((r) => r.json()),
+          fetch(`/api/audit-logs?entity_id=${thread.id}`, { cache: "no-store" }).then((r) => r.json()),
+          pollActiveTasks(),
         ]);
         if (mounted) {
           if (messagesRes.chat_messages) setMessages(messagesRes.chat_messages);
-          if (logsRes.audit_logs) {
-            setAuditLogs(logsRes.audit_logs);
-          }
+          if (logsRes.audit_logs) setAuditLogs(logsRes.audit_logs);
           setActiveTasks(latestTasks);
         }
       } catch (err) {
@@ -61,7 +61,6 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         inFlight = false;
       }
     }, 5000);
-
     return () => {
       mounted = false;
       clearInterval(interval);
@@ -76,39 +75,27 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   async function handleSubmit(text: string, visual_assets: VisualAsset[] = []) {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
-
     setIsSending(true);
     setSendError(null);
-
     const optimisticMessage: any = {
       id: `optimistic-${Date.now()}`,
       thread_id: thread.id,
       sender: "human",
       body: trimmed,
-      intent_type: "unknown", // Client does not guess intent
-      created_at: new Date().toISOString()
+      intent_type: "unknown",
+      created_at: new Date().toISOString(),
     };
-
     setMessages((prev) => [...prev, optimisticMessage]);
-
     try {
       const result = await sendChatMessage(thread.id, trimmed, visual_assets);
-      // If result.error exists, it is a fatal server error
-      if (result?.error) {
-        throw new Error(result.error);
-      }
-      // If success is false but there's no error string, it is a controlled rejection (e.g., missing scope).
-      // We continue to fetch the messages so the system's clarification message is displayed.
-      
+      if (result?.error) throw new Error(result.error);
       const [messagesRes, logsRes, latestTasks] = await Promise.all([
-        fetch(`/api/chat-messages?thread_id=${thread.id}`, { cache: 'no-store' }).then(r => r.json()),
-        fetch(`/api/audit-logs?entity_id=${thread.id}`, { cache: 'no-store' }).then(r => r.json()),
-        pollActiveTasks()
+        fetch(`/api/chat-messages?thread_id=${thread.id}`, { cache: "no-store" }).then((r) => r.json()),
+        fetch(`/api/audit-logs?entity_id=${thread.id}`, { cache: "no-store" }).then((r) => r.json()),
+        pollActiveTasks(),
       ]);
       if (messagesRes.chat_messages) setMessages(messagesRes.chat_messages);
-      if (logsRes.audit_logs) {
-        setAuditLogs(logsRes.audit_logs);
-      }
+      if (logsRes.audit_logs) setAuditLogs(logsRes.audit_logs);
       setActiveTasks(latestTasks);
     } catch (err) {
       console.error("Failed to send message", err);
@@ -124,35 +111,26 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     setIsContentModalOpen(false);
     setIsSending(true);
     setSendError(null);
-
     const commandStr = `/auto_content ${contentItemId} ${title}`;
-
     const optimisticMessage: any = {
       id: `optimistic-${Date.now()}`,
       thread_id: thread.id,
       sender: "human",
       body: commandStr,
-      intent_type: "unknown", 
-      created_at: new Date().toISOString()
+      intent_type: "unknown",
+      created_at: new Date().toISOString(),
     };
-
     setMessages((prev) => [...prev, optimisticMessage]);
-
     try {
       const result = await sendChatMessage(thread.id, commandStr);
-      if (result?.error) {
-        throw new Error(result.error);
-      }
-      
+      if (result?.error) throw new Error(result.error);
       const [messagesRes, logsRes, latestTasks] = await Promise.all([
-        fetch(`/api/chat-messages?thread_id=${thread.id}`, { cache: 'no-store' }).then(r => r.json()),
-        fetch(`/api/audit-logs?entity_id=${thread.id}`, { cache: 'no-store' }).then(r => r.json()),
-        pollActiveTasks()
+        fetch(`/api/chat-messages?thread_id=${thread.id}`, { cache: "no-store" }).then((r) => r.json()),
+        fetch(`/api/audit-logs?entity_id=${thread.id}`, { cache: "no-store" }).then((r) => r.json()),
+        pollActiveTasks(),
       ]);
       if (messagesRes.chat_messages) setMessages(messagesRes.chat_messages);
-      if (logsRes.audit_logs) {
-        setAuditLogs(logsRes.audit_logs);
-      }
+      if (logsRes.audit_logs) setAuditLogs(logsRes.audit_logs);
       setActiveTasks(latestTasks);
     } catch (err) {
       console.error("Failed to send message", err);
@@ -163,83 +141,93 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     }
   }
 
-  const handleCommand = useCallback(async (cmd: string) => {
-    setIsSending(true);
-    // Optimistic UI update
-    setMessages(prev => [...prev, {
-      id: Date.now().toString(),
-      organization_id: thread.organization_id,
-      thread_id: thread.id,
-      sender: 'human',
-      body: cmd,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    } as any]);
-    
-    try {
-      const result = await sendChatMessage(thread.id, cmd);
-      if (result?.error) throw new Error(result.error);
-    } catch (e: any) {
-      console.error(e);
-    } finally {
-      setIsSending(false);
-    }
-  }, [thread.id, thread.organization_id]);
+  const handleCommand = useCallback(
+    async (cmd: string) => {
+      setIsSending(true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          organization_id: thread.organization_id,
+          thread_id: thread.id,
+          sender: "human",
+          body: cmd,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as any,
+      ]);
+      try {
+        const result = await sendChatMessage(thread.id, cmd);
+        if (result?.error) throw new Error(result.error);
+      } catch (e: any) {
+        console.error(e);
+      } finally {
+        setIsSending(false);
+      }
+    },
+    [thread.id, thread.organization_id]
+  );
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[2fr_1fr]" style={{ height: 'calc(100vh - 120px)' }}>
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_320px]" style={{ height: "calc(100vh - 120px)" }}>
+      {/* ── Left column: Chat ── */}
       <div className="flex flex-col h-full min-h-0 min-w-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm overflow-hidden">
+        
+        {/* Active Tasks Banner */}
         {activeTasks.length > 0 && (
-          <div className="border-b border-indigo-100 dark:border-indigo-500/20 bg-gradient-to-br from-white to-indigo-50/50 dark:from-indigo-950/20 dark:to-indigo-950/20 p-4 shadow-[0_8px_30px_-5px_rgba(99,102,241,0.15)] dark:shadow-lg dark:shadow-indigo-900/10 shrink-0">
-            <div className="flex items-center gap-2 mb-3">
-              <Loader2 className="h-4 w-4 text-indigo-400 animate-spin" />
-              <div className="text-xs uppercase tracking-[0.24em] font-semibold text-indigo-300">Active Tasks in Progress</div>
-            </div>
-            <div className="space-y-2">
-              {activeTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between rounded-xl bg-white dark:bg-slate-900/50 p-3 border border-slate-200 dark:border-white/5">
-                  <div className="flex items-center gap-3">
-                    {task.state === 'NOT_STARTED' || task.state === 'QUEUED' ? (
-                      <Clock className="h-4 w-4 text-slate-400" />
-                    ) : task.state === 'PARTIAL' ? (
-                      <Loader2 className="h-4 w-4 text-emerald-400 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    )}
-                    <div>
-                      <div className="text-sm font-medium text-slate-800 dark:text-slate-200">{task.title}</div>
-                      <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-1">{task.intent_type}   {task.state}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          <div className="shrink-0 border-b border-indigo-100 dark:border-indigo-500/20 bg-gradient-to-r from-indigo-50 to-transparent dark:from-indigo-950/30 dark:to-transparent px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-3.5 w-3.5 text-indigo-500 animate-spin" />
+              <span className="text-[11px] uppercase tracking-widest font-semibold text-indigo-500 dark:text-indigo-400">
+                {tChat("chat.active_tasks") ?? "Active Tasks"}
+              </span>
+              <span className="ml-auto text-[11px] font-mono text-indigo-400 bg-indigo-100 dark:bg-indigo-500/20 rounded-full px-2 py-0.5">
+                {activeTasks.length}
+              </span>
             </div>
           </div>
         )}
 
-        <div className="border-b border-slate-100 dark:border-slate-800 p-4 shrink-0 bg-slate-50/50 dark:bg-transparent">
-          <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{tShared("shared.thread.summary") ?? "Thread summary"}</div>
-          <div className="mt-2 text-sm text-slate-800 dark:text-slate-200 line-clamp-3">{summary}</div>
+        {/* Collapsible Thread Summary */}
+        <div className="shrink-0 border-b border-slate-100 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={() => setSummaryOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
+          >
+            <span className="text-[11px] uppercase tracking-widest font-semibold text-slate-400">
+              {tChat("chat.summary.title") ?? "Thread Summary"}
+            </span>
+            {summaryOpen ? (
+              <ChevronUp className="h-3.5 w-3.5 text-slate-400" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+            )}
+          </button>
+          {summaryOpen && (
+            <div className="px-4 pb-3 text-sm text-slate-700 dark:text-slate-300 leading-relaxed border-t border-slate-100 dark:border-slate-800 pt-2.5 bg-slate-50/50 dark:bg-transparent">
+              {summary}
+            </div>
+          )}
         </div>
 
+        {/* Error Banner */}
         {sendError && (
-          <div className="border-b border-rose-200/80 dark:border-rose-500/30 bg-gradient-to-br from-white to-rose-50/50 dark:from-rose-950/40 dark:to-rose-950/40 p-4 shadow-sm text-sm text-rose-700 dark:text-rose-200">
+          <div className="shrink-0 border-b border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-950/30 px-4 py-2.5 text-sm text-rose-700 dark:text-rose-300">
             {sendError}
           </div>
         )}
-        
-        <div className="flex-1 min-h-0 overflow-y-auto p-4">
-          <ChatMessageList 
-            messages={messages} 
-            isTyping={isSending} 
-            onCommand={handleCommand} 
-          />
+
+        {/* Messages */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3">
+          <ChatMessageList messages={messages} isTyping={isSending} onCommand={handleCommand} />
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="shrink-0 p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
-          <ChatComposer 
-            onSubmit={handleSubmit} 
+        {/* Composer */}
+        <div className="shrink-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 pt-2.5 pb-3">
+          <ChatComposer
+            onSubmit={handleSubmit}
             onRequestCreateTask={(currentDraft) => {
               setModalDraft(currentDraft);
               setIsContentModalOpen(true);
@@ -247,34 +235,75 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           />
         </div>
       </div>
-      <div className="flex flex-col h-full min-h-0 min-w-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm overflow-hidden">
-        <div className="border-b border-slate-100 dark:border-slate-800 p-5 shrink-0 bg-slate-50/50 dark:bg-transparent">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">{thread.title}</div>
-          <p className="mt-2 text-sm leading-6 text-slate-400">{thread.purpose}</p>
-          <div className="mt-4 text-[10px] uppercase tracking-widest font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded w-fit">{tShared("shared.thread.status") ?? "Thread status"}</div>
-          <div className="mt-2 flex items-center gap-2 w-fit rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            {thread.status}
+
+      {/* ── Right column: Thread info + Audit ── */}
+      <div className="flex flex-col h-full min-h-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm overflow-hidden">
+        {/* Thread Info */}
+        <div className="shrink-0 border-b border-slate-100 dark:border-slate-800 px-5 py-4 bg-slate-50/50 dark:bg-transparent">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white leading-snug">{thread.title}</div>
+          <p className="mt-1.5 text-xs leading-5 text-slate-400 dark:text-slate-500">{thread.purpose}</p>
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-widest font-mono text-slate-400">
+              {tShared("shared.thread.status") ?? "Status"}
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-3 w-3" />
+              {thread.status}
+            </span>
           </div>
         </div>
-        <div className="p-5 flex flex-col flex-1 min-h-0">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white shrink-0"><div className="flex items-center gap-2 uppercase tracking-wider"><History className="h-4 w-4 text-slate-400" /> DẤU VẾT AUDIT</div></div>
-          <div className="mt-3 space-y-3 overflow-y-auto pr-2">
+
+        {/* Audit Trail */}
+        <div className="flex flex-col flex-1 min-h-0 px-4 pt-3 pb-4">
+          <div className="shrink-0 flex items-center gap-2 mb-3">
+            <History className="h-3.5 w-3.5 text-slate-400" />
+            <span className="text-[11px] uppercase tracking-widest font-semibold text-slate-500 dark:text-slate-400">
+              {tChat("chat.audit.label") ?? "Audit Trail"}
+            </span>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
+            {auditLogs.length === 0 && (
+              <div className="text-xs text-slate-400 text-center pt-6">—</div>
+            )}
             {auditLogs.map((log) => (
-              <div key={log.id} className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-3 shrink-0">
-                <div className="text-[10px] uppercase tracking-widest font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded w-fit">{log.action_type}</div>
-                <div className="mt-2 text-sm text-slate-800 dark:text-slate-200">
+              <div
+                key={log.id}
+                className="rounded-lg border border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900/40 p-2.5"
+              >
+                {/* Action type badge */}
+                <div className="inline-flex items-center rounded bg-indigo-50 dark:bg-indigo-500/10 px-1.5 py-0.5">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+                    {log.action_type}
+                  </span>
+                </div>
+
+                {/* Metadata */}
+                <div className="mt-1.5 text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
                   {log.metadata ? (
-                    <div className="space-y-1">
-                      {log.metadata.reason && <div><span className="text-slate-400">Chi tiết:</span> {log.metadata.reason}</div>}
+                    <>
+                      {log.metadata.reason && (
+                        <div className="flex gap-1.5">
+                          <span className="shrink-0 text-slate-400">{tChat("chat.log.detail") ?? "Detail:"}</span>
+                          <span className="break-all">{log.metadata.reason}</span>
+                        </div>
+                      )}
                       {log.metadata.before && log.metadata.after && (
-                        <div><span className="text-slate-400">Trạng thái:</span> <span className="font-mono text-xs">{log.metadata.before}</span> &rarr; <span className="font-mono text-xs">{log.metadata.after}</span></div>
+                        <div className="flex items-center gap-1 font-mono text-[10px]">
+                          <span className="text-slate-400">{tChat("chat.log.state_change") ?? "State:"}</span>
+                          <span className="bg-slate-200 dark:bg-slate-700 rounded px-1">{log.metadata.before}</span>
+                          <span className="text-slate-400">→</span>
+                          <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded px-1">{log.metadata.after}</span>
+                        </div>
                       )}
-                      {(!log.metadata.reason && !log.metadata.before) && (
-                        <div className="font-mono text-[10px] break-all">{JSON.stringify(log.metadata)}</div>
+                      {!log.metadata.reason && !log.metadata.before && (
+                        <div className="font-mono text-[10px] break-all text-slate-400">
+                          {JSON.stringify(log.metadata)}
+                        </div>
                       )}
-                    </div>
-                  ) : "-"}
+                    </>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
                 </div>
               </div>
             ))}
@@ -283,9 +312,9 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
       </div>
 
       {isContentModalOpen && (
-        <DraftContentModal 
-          initialTitle={modalDraft} 
-          onClose={() => setIsContentModalOpen(false)} 
+        <DraftContentModal
+          initialTitle={modalDraft}
+          onClose={() => setIsContentModalOpen(false)}
           onSuccess={handleDirectSubmit}
         />
       )}

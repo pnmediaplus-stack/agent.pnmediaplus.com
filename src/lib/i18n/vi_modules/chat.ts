@@ -14,6 +14,13 @@ export const chat = {
   "chat.composer.send": "Gửi lệnh",
   "chat.composer.create_task": "TẠO TASK",
   "chat.summary.latestFallback": "Tin nhắn mới nhất sẽ xuất hiện ở đây.",
+  "chat.summary.title": "Tóm tắt thread",
+  "chat.active_tasks": "Tác vụ đang chạy",
+
+  "chat.log.detail": "Chi tiết:",
+  "chat.log.state_change": "Trạng thái:",
+  "chat.composer.attach": "ĐÍNH KÈM",
+  "chat.composer.uploading": "Đang tải lên...",
   "chat.message.sender.human": "Người dùng",
   "chat.message.sender.agent": "Đặc vụ",
   "chat.message.sender.system": "Hệ thống",
