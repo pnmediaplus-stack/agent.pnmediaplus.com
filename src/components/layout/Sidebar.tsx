@@ -170,9 +170,7 @@ export function Sidebar() {
                 : (tLayout("layout.sidebar.userCard.subtitleBlocked") ?? "Login required to access the portal")}
             </div>
           </div>
-          <div className="flex gap-2 items-center">
-            <ThemeToggle />
-            <button
+          <button
             type="button"
             onClick={() => setAccountMenuOpen((current) => !current)}
             aria-expanded={accountMenuOpen}
@@ -183,7 +181,11 @@ export function Sidebar() {
           </div>
         </div>
         {accountMenuOpen ? (
-          <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/80 p-2 shadow-xl shadow-slate-950/30">
+          <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/80 p-2 shadow-xl shadow-slate-950/30 flex flex-col gap-2">
+            <div className="flex items-center justify-between px-2 py-1">
+              <span className="text-xs font-semibold text-slate-400">Giao diện (Theme)</span>
+              <ThemeToggle />
+            </div>
             <button
               type="button"
               onClick={handleLogout}
