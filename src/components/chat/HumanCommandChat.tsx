@@ -10,7 +10,8 @@ import { useI18n } from "@/lib/i18n/useI18n";
 import { sendChatMessage, pollActiveTasks } from "@/app/actions/chat-actions";
 import type { ChatMessage, ChatThread } from "@/types/chat";
 import type { AuditLog } from "@/types/audit";
-import { Loader2, CheckCircle2, Clock } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, Activity, History, PenLine } from "lucide-react";
+import { UploadBannerButton } from "@/components/shared/UploadBannerButton";
 
 type HumanCommandChatProps = {
   thread: ChatThread;

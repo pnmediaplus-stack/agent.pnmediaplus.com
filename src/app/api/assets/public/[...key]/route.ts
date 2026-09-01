@@ -4,7 +4,7 @@ import { generateR2PresignedDownloadUrl } from "@/lib/r2-client";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const ALLOWED_PREFIXES = ['campaign-media', 'chat-attachments', 'chat_uploads'];
+const ALLOWED_PREFIXES = ['campaign-media', 'chat-attachments', 'chat_uploads', 'banners'];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<any> }) {
   try {

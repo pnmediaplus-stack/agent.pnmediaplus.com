@@ -2,6 +2,8 @@
 
 import { StateBadge } from "@/components/shared/StateBadge";
 import { useI18n } from "@/lib/i18n/useI18n";
+import { useBanner } from "@/hooks/useBanner";
+import { UploadBannerButton } from "@/components/shared/UploadBannerButton";
 
 type PageHeaderProps = {
   title: string;
@@ -11,6 +13,7 @@ type PageHeaderProps = {
   statusDisplayValue?: string;
   allowedActions: string[];
   forbiddenActions?: string[];
+  bannerKey?: string; // e.g. 'chat_dashboard_banner'
 };
 
 export function PageHeader({
@@ -20,41 +23,81 @@ export function PageHeader({
   statusValue,
   statusDisplayValue,
   allowedActions,
-  forbiddenActions = []
+  forbiddenActions = [],
+  bannerKey = 'chat_dashboard_banner'
 }: PageHeaderProps) {
   const { t } = useI18n("shared");
+  const { bannerUrl } = useBanner(bannerKey);
+  const bgImageUrl = bannerUrl || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80';
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-950/75 shadow-sm dark:shadow-[0_0_0_1px_rgba(15,23,42,0.22)]">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-transparent dark:to-transparent dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(15,23,42,0.82))] px-5 py-5 md:px-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-700 dark:text-cyan-200">{statusLabel}</p>
-          <div className="inline-flex items-center rounded-xl border border-cyan-200/80 dark:border-cyan-400/25 bg-gradient-to-br from-cyan-50/80 to-cyan-100/50 dark:from-cyan-400/10 dark:to-cyan-400/10 px-4 py-2 shadow-[0_0_0_1px_rgba(34,211,238,0.08)]">
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h1>
-          </div>
-          <p className="max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">{purpose}</p>
+    <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)]">
+      {/* Header section with a sleek, subtle gradient background */}
+      <div className="relative border-b border-slate-200 dark:border-slate-800 px-5 py-4 sm:py-5 overflow-hidden group">
+        
+        {/* Edit Button (Visible on hover) */}
+        <UploadBannerButton 
+          settingKey={bannerKey} 
+          className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" 
+        />
+
+        {/* Background Image placed on the right */}
+        <div 
+          className="absolute inset-0 bg-cover bg-[center_right] bg-no-repeat opacity-90 dark:opacity-70 transition-all duration-500"
+          style={{ backgroundImage: `url('${bgImageUrl}')` }}
+        />
+        {/* Gradient overlay: Solid white on the left for text readability, fading to transparent on the right to show the robot */}
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent dark:from-slate-950 dark:via-slate-950/95 dark:to-transparent" />
+        {/* Subtle decorative glow */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute -top-[100px] -left-[100px] w-[300px] h-[300px] rounded-full bg-emerald-500/5 dark:bg-emerald-500/10 blur-[80px]" />
         </div>
-        <div className="shrink-0 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white/80 dark:bg-slate-900/90 p-4 shadow-sm dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-          <div className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">{t("shared.page.currentStatus") ?? "Trạng thái hiện tại"}</div>
-          <div className="mt-2">
+
+        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between z-10">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                {statusLabel}
+              </p>
+            </div>
+            
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              {title}
+            </h1>
+            
+            <p className="max-w-2xl text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-400 line-clamp-2">
+              {purpose}
+            </p>
+          </div>
+          
+          <div className="shrink-0 flex flex-col items-start lg:items-end gap-1.5">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              {t("shared.page.currentStatus") ?? "Trạng thái hiện tại"}
+            </div>
             <StateBadge label={statusValue} displayLabel={statusDisplayValue} />
           </div>
         </div>
       </div>
-      </div>
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
-        <ActionGroup
-          title={t("shared.page.allowedActions") ?? "Hành động được phép"}
-          items={allowedActions}
-          tone="emerald"
-          emptyLabel={t("shared.none") ?? "Không có"}
-        />
-        <ActionGroup
-          title={t("shared.page.forbiddenActions") ?? "Hành động bị cấm"}
-          items={forbiddenActions}
-          tone="rose"
-          emptyLabel={t("shared.none") ?? "Không có"}
-        />
+      
+      {/* Actions section */}
+      <div className="grid gap-px bg-slate-200 dark:bg-slate-800 md:grid-cols-2">
+        <div className="bg-white dark:bg-slate-950">
+          <ActionGroup
+            title={t("shared.page.allowedActions") ?? "Hành động được phép"}
+            items={allowedActions}
+            tone="emerald"
+            emptyLabel={t("shared.none") ?? "Không có"}
+          />
+        </div>
+        <div className="bg-white dark:bg-slate-950">
+          <ActionGroup
+            title={t("shared.page.forbiddenActions") ?? "Hành động bị cấm"}
+            items={forbiddenActions}
+            tone="rose"
+            emptyLabel={t("shared.none") ?? "Không có"}
+          />
+        </div>
       </div>
     </div>
   );
@@ -72,29 +115,29 @@ function ActionGroup({
   emptyLabel: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/60 shadow-sm dark:shadow-none">
-      <div className="border-b border-slate-200 dark:border-slate-700/90 bg-white/80 dark:bg-slate-950/80 px-4 py-3">
-        <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-900 dark:text-slate-100">{title}</div>
+    <div className="h-full flex flex-col">
+      <div className="border-b border-slate-100 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-900/30 px-4 py-2 shrink-0">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+          {title}
+        </div>
       </div>
-      <div className="p-4">
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="px-4 py-2 grow flex flex-wrap gap-1.5 content-start">
         {items.length ? (
           items.map((item) => (
             <span
               key={item}
-              className={`rounded-full border px-3 py-1 text-xs font-medium ${
+              className={`rounded border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
                 tone === "emerald"
-                  ? "border-emerald-300 dark:border-emerald-500/30 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
-                  : "border-rose-300 dark:border-rose-500/30 bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-200"
+                  ? "bg-emerald-100/80 border-emerald-200 text-emerald-800 dark:bg-emerald-500/20 dark:border-emerald-500/30 dark:text-emerald-300"
+                  : "bg-rose-100/80 border-rose-200 text-rose-800 dark:bg-rose-500/20 dark:border-rose-500/30 dark:text-rose-300"
               }`}
             >
               {item}
             </span>
           ))
         ) : (
-          <span className="text-sm text-slate-500 dark:text-slate-400">{emptyLabel}</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">{emptyLabel}</span>
         )}
-      </div>
       </div>
     </div>
   );
