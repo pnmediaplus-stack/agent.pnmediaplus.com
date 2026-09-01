@@ -682,7 +682,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
                   <Paperclip className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
                   <span className="flex-1 truncate">{file.name}</span>
                 </div>
-              )}
+            )}
               {isUploading && (
                 <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-900/70 backdrop-blur-sm">
                   <Loader2 className="h-6 w-6 animate-spin text-cyan-600 dark:text-cyan-400" />
@@ -699,7 +699,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         </div>
       )}
 
-        <textarea
+      <textarea
         ref={textareaRef}
         value={value}
         onChange={handleInput}
@@ -708,7 +708,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         rows={3}
         disabled={isUploading}
         placeholder={t("chat.composer.placeholder")}
-        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white focus:bg-white dark:bg-slate-950 focus:dark:bg-slate-950 shadow-inner px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all disabled:opacity-50"
+        className="w-full bg-transparent text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 resize-none transition-all disabled:opacity-50"
       />
       <div className="mt-1.5 flex items-center justify-between">
         <label className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 flex items-center gap-4">
