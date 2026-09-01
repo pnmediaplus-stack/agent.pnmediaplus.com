@@ -188,9 +188,9 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
 
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]" style={{ height: 'calc(100vh - 120px)' }}>
-      <div className="space-y-4 flex flex-col h-full min-h-0 min-w-0">
+      <div className="flex flex-col h-full min-h-0 min-w-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm overflow-hidden">
         {activeTasks.length > 0 && (
-          <div className="rounded-2xl border border-indigo-200/80 dark:border-indigo-500/30 bg-gradient-to-br from-white to-indigo-50/50 dark:from-indigo-950/20 dark:to-indigo-950/20 p-4 shadow-[0_8px_30px_-5px_rgba(99,102,241,0.15)] dark:shadow-lg dark:shadow-indigo-900/10 shrink-0">
+          <div className="border-b border-indigo-100 dark:border-indigo-500/20 bg-gradient-to-br from-white to-indigo-50/50 dark:from-indigo-950/20 dark:to-indigo-950/20 p-4 shadow-[0_8px_30px_-5px_rgba(99,102,241,0.15)] dark:shadow-lg dark:shadow-indigo-900/10 shrink-0">
             <div className="flex items-center gap-2 mb-3">
               <Loader2 className="h-4 w-4 text-indigo-400 animate-spin" />
               <div className="text-xs uppercase tracking-[0.24em] font-semibold text-indigo-300">Active Tasks in Progress</div>
@@ -207,7 +207,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
                       <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     )}
                     <div>
-                      <div className="text-sm font-medium text-slate-200">{task.title}</div>
+                      <div className="text-sm font-medium text-slate-800 dark:text-slate-200">{task.title}</div>
                       <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-1">{task.intent_type}   {task.state}</div>
                     </div>
                   </div>
@@ -217,18 +217,18 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           </div>
         )}
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/70 p-4 shrink-0 shadow-sm">
+        <div className="border-b border-slate-100 dark:border-slate-800 p-4 shrink-0 bg-slate-50/50 dark:bg-transparent">
           <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{tShared("shared.thread.summary") ?? "Thread summary"}</div>
-          <div className="mt-2 text-sm text-slate-200 line-clamp-3">{summary}</div>
+          <div className="mt-2 text-sm text-slate-800 dark:text-slate-200 line-clamp-3">{summary}</div>
         </div>
 
         {sendError && (
-          <div className="rounded-2xl border border-rose-200/80 dark:border-rose-500/30 bg-gradient-to-br from-white to-rose-50/50 dark:from-rose-950/40 dark:to-rose-950/40 p-4 shadow-sm text-sm text-rose-700 dark:text-rose-200">
+          <div className="border-b border-rose-200/80 dark:border-rose-500/30 bg-gradient-to-br from-white to-rose-50/50 dark:from-rose-950/40 dark:to-rose-950/40 p-4 shadow-sm text-sm text-rose-700 dark:text-rose-200">
             {sendError}
           </div>
         )}
         
-        <div className="flex-1 min-h-0 overflow-y-auto rounded-2xl p-2">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4">
           <ChatMessageList 
             messages={messages} 
             isTyping={isSending} 
@@ -237,7 +237,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="shrink-0 pt-2">
+        <div className="shrink-0 p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
           <ChatComposer 
             onSubmit={handleSubmit} 
             onRequestCreateTask={(currentDraft) => {
@@ -247,25 +247,28 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           />
         </div>
       </div>
-      <div className="space-y-4 flex flex-col h-full min-h-0 min-w-0">
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/70 p-5 shrink-0 shadow-sm">
+      <div className="flex flex-col h-full min-h-0 min-w-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm overflow-hidden">
+        <div className="border-b border-slate-100 dark:border-slate-800 p-5 shrink-0 bg-slate-50/50 dark:bg-transparent">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">{thread.title}</div>
           <p className="mt-2 text-sm leading-6 text-slate-400">{thread.purpose}</p>
-          <div className="mt-4 text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{tShared("shared.thread.status") ?? "Thread status"}</div>
-          <div className="mt-2 text-sm text-slate-200">{thread.status}</div>
+          <div className="mt-4 text-[10px] uppercase tracking-widest font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded w-fit">{tShared("shared.thread.status") ?? "Thread status"}</div>
+          <div className="mt-2 flex items-center gap-2 w-fit rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {thread.status}
+          </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/70 p-5 flex flex-col flex-1 min-h-0 shadow-sm">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white shrink-0">{tShared("shared.audit.trail") ?? "Audit trail"}</div>
+        <div className="p-5 flex flex-col flex-1 min-h-0">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white shrink-0"><div className="flex items-center gap-2 uppercase tracking-wider"><History className="h-4 w-4 text-slate-400" /> DẤU VẾT AUDIT</div></div>
           <div className="mt-3 space-y-3 overflow-y-auto pr-2">
             {auditLogs.map((log) => (
               <div key={log.id} className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-3 shrink-0">
-                <div className="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{log.action_type}</div>
-                <div className="mt-2 text-sm text-slate-200">
+                <div className="text-[10px] uppercase tracking-widest font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded w-fit">{log.action_type}</div>
+                <div className="mt-2 text-sm text-slate-800 dark:text-slate-200">
                   {log.metadata ? (
                     <div className="space-y-1">
-                      {log.metadata.reason && <div><span className="text-slate-400">Chi ti?t:</span> {log.metadata.reason}</div>}
+                      {log.metadata.reason && <div><span className="text-slate-400">Chi tiết:</span> {log.metadata.reason}</div>}
                       {log.metadata.before && log.metadata.after && (
-                        <div><span className="text-slate-400">Tr?ng thi:</span> <span className="font-mono text-xs">{log.metadata.before}</span> &rarr; <span className="font-mono text-xs">{log.metadata.after}</span></div>
+                        <div><span className="text-slate-400">Trạng thái:</span> <span className="font-mono text-xs">{log.metadata.before}</span> &rarr; <span className="font-mono text-xs">{log.metadata.after}</span></div>
                       )}
                       {(!log.metadata.reason && !log.metadata.before) && (
                         <div className="font-mono text-[10px] break-all">{JSON.stringify(log.metadata)}</div>
