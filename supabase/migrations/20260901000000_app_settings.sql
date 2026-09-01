@@ -25,3 +25,6 @@ BEGIN
         );
   END IF;
 END $$;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.app_settings TO service_role;
+GRANT SELECT ON TABLE public.app_settings TO authenticated;
