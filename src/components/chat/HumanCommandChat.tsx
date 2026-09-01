@@ -189,7 +189,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         )}
 
         {/* Collapsible Thread Summary */}
-        <div className="shrink-0 border-b border-slate-100 dark:border-slate-800">
+        <div className="shrink-0">
           <button
             type="button"
             onClick={() => setSummaryOpen((v) => !v)}
@@ -205,7 +205,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
             )}
           </button>
           {summaryOpen && (
-            <div className="px-4 pb-3 text-sm text-slate-700 dark:text-slate-300 leading-relaxed border-t border-slate-100 dark:border-slate-800 pt-2.5 bg-slate-50/50 dark:bg-transparent">
+            <div className="px-4 pb-3 text-sm text-slate-700 dark:text-slate-300 leading-relaxed pt-2.5 bg-slate-50/50 dark:bg-transparent">
               {summary}
             </div>
           )}
@@ -213,7 +213,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
 
         {/* Error Banner */}
         {sendError && (
-          <div className="shrink-0 border-b border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-950/30 px-4 py-2.5 text-sm text-rose-700 dark:text-rose-300">
+          <div className="shrink-0 bg-rose-50 dark:bg-rose-950/30 px-4 py-2.5 text-sm text-rose-700 dark:text-rose-300">
             {sendError}
           </div>
         )}
@@ -225,7 +225,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         </div>
 
         {/* Composer */}
-        <div className="shrink-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 pt-2.5 pb-3">
+        <div className="shrink-0 bg-white dark:bg-slate-950 px-4 pt-2.5 pb-3">
           <ChatComposer
             onSubmit={handleSubmit}
             onRequestCreateTask={(currentDraft) => {
