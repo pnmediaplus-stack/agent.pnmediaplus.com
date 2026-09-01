@@ -42,7 +42,12 @@ export async function POST(req: NextRequest) {
 
     const file = formData.get('file') as File | null;
     const setting_key = formData.get('setting_key') as string;
-    const opacity = formData.get('opacity') as string || '100';
+    const opacityStr = formData.get('opacity') as string || '100';
+    const opacity = Number(opacityStr);
+    
+    if (!Number.isFinite(opacity) || opacity < 0 || opacity > 100) {
+      return NextResponse.json({ error: 'Invalid opacity value' }, { status: 400 });
+    }
 
     if (!file || !setting_key) {
       return NextResponse.json({ error: 'Missing file or setting_key' }, { status: 400 });
@@ -86,7 +91,7 @@ export async function POST(req: NextRequest) {
     const { error: upsertError } = await supabase.from('app_settings').upsert({
         organization_id,
         setting_key,
-        setting_value: JSON.stringify({ url: newUrl, opacity: Number(opacity) }),
+        setting_value: JSON.stringify({ url: newUrl, opacity }),
         object_key: newObjectKey,
         updated_by: user.id
       }, { onConflict: 'organization_id,setting_key' });

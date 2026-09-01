@@ -133,7 +133,7 @@ export function UploadBannerButton({ settingKey, className, children }: UploadBa
               {!imageSrc ? (
                 <div className="flex flex-col items-center justify-center">
                   <div 
-                    className="w-full aspect-[21/9] rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+                    className="w-full aspect-[6/1] rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <div className="p-4 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 mb-4 group-hover:scale-110 transition-transform">
