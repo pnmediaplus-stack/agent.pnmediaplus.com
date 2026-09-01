@@ -664,7 +664,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
               <button
                 type="button"
                 onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
-                className="absolute -right-2 -top-2 rounded-full border border-cyan-800 bg-white dark:bg-slate-900 p-1 text-slate-500 dark:text-slate-400 hover:bg-slate-800 hover:text-slate-900 dark:text-white z-10 shadow-lg"
+                className="absolute -right-2 -top-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white z-10 shadow-lg"
                 disabled={isUploading}
               >
                 <X className="h-3.5 w-3.5" />
