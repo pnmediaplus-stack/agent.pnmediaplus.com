@@ -24,8 +24,8 @@ export function PageHeader({
 }: PageHeaderProps) {
   const { t } = useI18n("shared");
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/60 dark:bg-slate-950/75 shadow-[0_8px_30px_-5px_rgba(0,0,0,0.05)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.22)] backdrop-blur-xl">
-      <div className="border-b border-cyan-400/20 bg-gradient-to-br from-white/90 to-slate-50/80 dark:from-transparent dark:to-transparent dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(15,23,42,0.82))] px-5 py-5 md:px-6">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-950/75 shadow-sm dark:shadow-[0_0_0_1px_rgba(15,23,42,0.22)]">
+      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-transparent dark:to-transparent dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(15,23,42,0.82))] px-5 py-5 md:px-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-700 dark:text-cyan-200">{statusLabel}</p>

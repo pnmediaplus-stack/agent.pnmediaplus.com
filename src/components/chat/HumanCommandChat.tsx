@@ -216,7 +216,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           </div>
         )}
 
-        <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white/70 dark:bg-slate-950/70 p-4 shrink-0 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] backdrop-blur-md">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/70 p-4 shrink-0 shadow-sm">
           <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{tShared("shared.thread.summary") ?? "Thread summary"}</div>
           <div className="mt-2 text-sm text-slate-200 line-clamp-3">{summary}</div>
         </div>
@@ -247,17 +247,17 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         </div>
       </div>
       <div className="space-y-4 flex flex-col h-full min-h-0 min-w-0">
-        <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white/70 dark:bg-slate-950/70 p-5 shrink-0 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] backdrop-blur-md">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/70 p-5 shrink-0 shadow-sm">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">{thread.title}</div>
           <p className="mt-2 text-sm leading-6 text-slate-400">{thread.purpose}</p>
           <div className="mt-4 text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{tShared("shared.thread.status") ?? "Thread status"}</div>
           <div className="mt-2 text-sm text-slate-200">{thread.status}</div>
         </div>
-        <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white/70 dark:bg-slate-950/70 p-5 flex flex-col flex-1 min-h-0 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] backdrop-blur-md">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/70 p-5 flex flex-col flex-1 min-h-0 shadow-sm">
           <div className="text-sm font-semibold text-slate-900 dark:text-white shrink-0">{tShared("shared.audit.trail") ?? "Audit trail"}</div>
           <div className="mt-3 space-y-3 overflow-y-auto pr-2">
             {auditLogs.map((log) => (
-              <div key={log.id} className="rounded-xl border border-slate-200/50 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 p-3 shrink-0">
+              <div key={log.id} className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-3 shrink-0">
                 <div className="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{log.action_type}</div>
                 <div className="mt-2 text-sm text-slate-200">
                   {log.metadata ? (
