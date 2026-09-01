@@ -135,10 +135,10 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                     isHuman ? "text-slate-500 dark:text-slate-300" : isAgent ? getAgentTheme(message).text : "text-slate-500 dark:text-slate-400"
                   }`}>
                     {isHuman
-                      ? (t("chat.message.sender.human") ?? "Human")
+                      ? (t("chat.message.sender.human"))
                       : isAgent
-                        ? (t("chat.message.sender.agent") ?? "Agent")
-                        : (t("chat.message.sender.system") ?? "System")}
+                        ? (t("chat.message.sender.agent"))
+                        : (t("chat.message.sender.system"))}
                   </span>
                 </div>
                 <div className="font-mono text-[10px] text-slate-500">{new Date(message.created_at).toLocaleTimeString()}</div>
@@ -153,24 +153,24 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         </div>
                         <div>
                           <div className="text-xs text-emerald-500 dark:text-emerald-400/70 uppercase tracking-widest mb-0.5 flex items-center justify-between"><span>Campaign Planner</span>{loopText && <span className="px-2 py-0.5 bg-rose-500/20 text-rose-300 rounded text-[10px] font-bold">{loopText}</span>}</div>
-                          {t("chat.proposal.title") ?? "BẢN KẾ HOẠCH CHIẾN DỊCH HOÀN CHỈNH"}
+                          {t("chat.proposal.title")}
                         </div>
                       </div>
                       <p className="text-sm text-slate-600 dark:text-slate-300/80 leading-relaxed">
-                        {t("chat.proposal.desc") ?? "Hệ thống Agent đã phân tích và thiết lập xong Kế hoạch chiến dịch 10 ngày (Từ A đến T) dựa trên yêu cầu của sếp."}
+                        {t("chat.proposal.desc")}
                       </p>
                       <button
                         type="button"
                         onClick={() => setMarkdownPreview({
                           url: '',
-                          title: t("chat.proposal.docTitle") ?? 'Kế hoạch Chiến dịch N8N',
+                          title: t("chat.proposal.docTitle"),
                           content: displayBody.replace('[[CAMPAIGN_PROPOSAL]]', ''),
                           loading: false,
                           error: null
                         })}
                         className="w-full mt-2 py-3 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-900/20 hover:shadow-emerald-500/30 flex items-center justify-center gap-2"
                       >
-                        <Maximize2 className="w-4 h-4" /> {t("chat.proposal.expand") ?? "Mở xem toàn màn hình"}
+                        <Maximize2 className="w-4 h-4" /> {t("chat.proposal.expand")}
                       </button>
                     </div>
                   ) : (
@@ -315,7 +315,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                 <div className="mt-4 flex items-center gap-1.5 rounded bg-slate-100 dark:bg-black/20 px-2.5 py-1 w-fit border border-slate-200 dark:border-white/5">
                   <Activity className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />
                   <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
-                    {t("chat.message.intentPrefix") ?? "INTENT"}: <span className="text-emerald-600 dark:text-emerald-300">{message.intent_type}</span>
+                    {t("chat.message.intentPrefix")}: <span className="text-emerald-600 dark:text-emerald-300">{message.intent_type}</span>
                   </span>
                 </div>
               ) : null}
@@ -326,14 +326,14 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
 
       {isTyping && (
         <div className="flex w-full justify-start">
-          <div className="relative max-w-[85%] overflow-hidden rounded-2xl border p-4 bg-slate-50 dark:bg-slate-900/20 border-slate-200 dark:border-slate-800 shadow-sm rounded-tl-sm animate-pulse">
+          <div className="relative max-w-[85%] overflow-hidden rounded-2xl border p-4 bg-slate-50 dark:bg-slate-900/20 border-slate-200 dark:border-slate-800 shadow-sm animate-pulse">
             <div className="mb-3 flex items-center justify-between gap-4 border-b border-slate-200 dark:border-white/5 pb-2">
               <div className="flex items-center gap-2">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
                   <Bot className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                 </div>
                 <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                  {t("chat.message.sender.agent") ?? "Agent"}
+                  {t("chat.message.sender.agent")}
                 </span>
               </div>
             </div>
@@ -409,8 +409,8 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
           >
             <div className="flex items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 px-6 py-4 backdrop-blur-md">
               <div className="min-w-0">
-                <div className="text-[11px] font-medium uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 mb-1">{t("chat.markdown.preview") ?? "Markdown Preview"}</div>
-                <div className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{markdownPreview.title || (t("chat.markdown.attachment") ?? 'Attachment')}</div>
+                <div className="text-[11px] font-medium uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400 mb-1">{t("chat.markdown.preview")}</div>
+                <div className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{markdownPreview.title || (t("chat.markdown.attachment"))}</div>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2">
@@ -433,7 +433,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                     className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-900 dark:text-slate-100 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
                   >
                     {isCopied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                    {isCopied ? t("chat.markdown.copied") ?? "Copied" : t("chat.markdown.copy") ?? "Copy"}
+                    {isCopied ? t("chat.markdown.copied") : t("chat.markdown.copy")}
                   </button>
                   <button
                     type="button"

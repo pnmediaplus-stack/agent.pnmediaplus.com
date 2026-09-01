@@ -707,7 +707,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         onKeyDown={handleKeyDown}
         rows={3}
         disabled={isUploading}
-        placeholder={t("chat.composer.placeholder") ?? "Type a command, ask for status, or request a task. Use / for commands, @ to tag agents, # to reference data."}
+        placeholder={t("chat.composer.placeholder")}
         className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white focus:bg-white dark:bg-slate-950 focus:dark:bg-slate-950 shadow-inner px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all disabled:opacity-50"
       />
       <div className="mt-1.5 flex items-center justify-between">
@@ -726,7 +726,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
             disabled={isUploading}
           >
             <Paperclip className="h-4 w-4" />
-            <span className="font-semibold tracking-wider">{t("chat.composer.attach") ?? "ATTACH"}</span>
+            <span className="font-semibold tracking-wider">{t("chat.composer.attach")}</span>
           </button>
           {onRequestCreateTask && (
             <button
@@ -735,7 +735,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
               className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-300 transition-colors"
             >
               <CheckSquare className="h-4 w-4" />
-              <span className="font-semibold tracking-wider">{t("chat.composer.create_task") ?? "CREATE TASK"}</span>
+              <span className="font-semibold tracking-wider">{t("chat.composer.create_task")}</span>
             </button>
           )}
         </label>
@@ -746,7 +746,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
           className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700/80 bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-100 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
         >
           {isUploading && <Loader2 className="h-4 w-4 animate-spin" />}
-          {isUploading ? (t("chat.composer.uploading") ?? "Uploading...") : (t("chat.composer.send") ?? "Send command")}
+          {isUploading ? (t("chat.composer.uploading")) : (t("chat.composer.send"))}
         </button>
       </div>
     </div>

@@ -11,7 +11,7 @@ import type { ChatMessage, ChatThread } from "@/types/chat";
 import type { AuditLog } from "@/types/audit";
 import {
   Loader2, CheckCircle2, Clock, History,
-  ChevronDown, ChevronUp, Activity
+  ChevronDown, ChevronUp, Activity, XCircle, HelpCircle
 } from "lucide-react";
 
 type HumanCommandChatProps = {
@@ -69,7 +69,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
 
   const summary = useMemo(() => {
     const latest = messages[messages.length - 1];
-    return latest?.body ?? (tChat("chat.summary.latestFallback") ?? "Latest message will appear here.");
+    return latest?.body ?? (tChat("chat.summary.latestFallback"));
   }, [messages, tChat]);
 
   async function handleSubmit(text: string, visual_assets: VisualAsset[] = []) {
@@ -179,7 +179,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
             <div className="flex items-center gap-2">
               <Loader2 className="h-3.5 w-3.5 text-indigo-500 animate-spin" />
               <span className="text-[11px] uppercase tracking-widest font-semibold text-indigo-500 dark:text-indigo-400">
-                {tChat("chat.active_tasks") ?? "Active Tasks"}
+                {tChat("chat.active_tasks")}
               </span>
               <span className="ml-auto text-[11px] font-mono text-indigo-400 bg-indigo-100 dark:bg-indigo-500/20 rounded-full px-2 py-0.5">
                 {activeTasks.length}
@@ -196,7 +196,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
             className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
           >
             <span className="text-[11px] uppercase tracking-widest font-semibold text-slate-400">
-              {tChat("chat.summary.title") ?? "Thread Summary"}
+              {tChat("chat.summary.title")}
             </span>
             {summaryOpen ? (
               <ChevronUp className="h-3.5 w-3.5 text-slate-400" />
@@ -244,12 +244,39 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           <p className="mt-1.5 text-xs leading-5 text-slate-400 dark:text-slate-500">{thread.purpose}</p>
           <div className="mt-3 flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-widest font-mono text-slate-400">
-              {tShared("shared.thread.status") ?? "Status"}
+              {tShared("shared.thread.status")}
             </span>
-            <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="h-3 w-3" />
-              {thread.status}
-            </span>
+            {(() => {
+              const status = (thread.status || "").toUpperCase();
+              let bg = "bg-slate-100 dark:bg-slate-800";
+              let text = "text-slate-600 dark:text-slate-400";
+              let Icon = HelpCircle;
+              
+              if (status === "ACTIVE") {
+                bg = "bg-emerald-50 dark:bg-emerald-500/10";
+                text = "text-emerald-600 dark:text-emerald-400";
+                Icon = Activity;
+              } else if (status === "PENDING" || status === "WAITING") {
+                bg = "bg-amber-50 dark:bg-amber-500/10";
+                text = "text-amber-600 dark:text-amber-400";
+                Icon = Clock;
+              } else if (status === "FAILED" || status === "ERROR") {
+                bg = "bg-rose-50 dark:bg-rose-500/10";
+                text = "text-rose-600 dark:text-rose-400";
+                Icon = XCircle;
+              } else if (status === "CLOSED" || status === "COMPLETED" || status === "DONE") {
+                bg = "bg-blue-50 dark:bg-blue-500/10";
+                text = "text-blue-600 dark:text-blue-400";
+                Icon = CheckCircle2;
+              }
+              
+              return (
+                <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${bg} ${text}`}>
+                  <Icon className="h-3 w-3" />
+                  {thread.status}
+                </span>
+              );
+            })()}
           </div>
         </div>
 
@@ -259,7 +286,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
             <div className="shrink-0 flex items-center gap-2 bg-slate-100/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 px-4 py-3">
               <History className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
               <span className="text-xs uppercase tracking-widest font-bold text-slate-700 dark:text-slate-300">
-                {tChat("chat.audit.label") ?? "Audit Trail"}
+                {tChat("chat.audit.label")}
               </span>
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 pr-2">
@@ -284,13 +311,13 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
                     <>
                       {log.metadata.reason && (
                         <div className="flex gap-1.5">
-                          <span className="shrink-0 text-slate-400">{tChat("chat.log.detail") ?? "Detail:"}</span>
+                          <span className="shrink-0 text-slate-400">{tChat("chat.log.detail")}</span>
                           <span className="break-all">{log.metadata.reason}</span>
                         </div>
                       )}
                       {log.metadata.before && log.metadata.after && (
                         <div className="flex items-center gap-1 font-mono text-[10px]">
-                          <span className="text-slate-400">{tChat("chat.log.state_change") ?? "State:"}</span>
+                          <span className="text-slate-400">{tChat("chat.log.state_change")}</span>
                           <span className="bg-slate-200 dark:bg-slate-700 rounded px-1">{log.metadata.before}</span>
                           <span className="text-slate-400">→</span>
                           <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded px-1">{log.metadata.after}</span>
