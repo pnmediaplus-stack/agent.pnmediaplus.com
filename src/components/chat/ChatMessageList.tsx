@@ -52,7 +52,7 @@ function getAgentTheme(message: any) {
   const body = message.body || "";
   const intent = message.intent_type || "";
   
-  if (intent === "agent_progress") return agentThemes.blue;
+  if (intent === "agent_progress") return agentThemes.violet;
   if (intent === "clarify_missing_scope") return agentThemes.amber;
   if (message.sender === "n8n") return agentThemes.emerald;
   
@@ -65,6 +65,12 @@ function getAgentTheme(message: any) {
   const index = (message.id?.length || 0) % keys.length;
   return agentThemes[keys[index]];
 }
+
+const getBadgeTheme = (intent: string) => {
+  if (intent === 'agent_progress') return { text: 'text-violet-600 dark:text-violet-300', icon: 'text-violet-500 dark:text-violet-400', bg: 'bg-violet-100 dark:bg-violet-500/20' };
+  if (intent === 'clarify_missing_scope') return { text: 'text-amber-600 dark:text-amber-300', icon: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-500/20' };
+  return { text: 'text-emerald-600 dark:text-emerald-300', icon: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-500/20' };
+};
 
 export const ChatMessageList = memo(function ChatMessageList({ messages, isTyping, onCommand }: { messages: ChatMessage[], isTyping?: boolean, onCommand?: (cmd: string) => void }) {
   const { t } = useI18n("chat");
@@ -90,19 +96,22 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
     }
   };
   
-        return (
-    
-    <div className="space-y-3">
+  return (
+    <div className="flex flex-col gap-6 w-full">
       {messages.map((message) => {
         const isHuman = message.sender === "human";
-        const isAgent = message.sender === "agent" || message.sender === "n8n";
-
-        const loopMatch = message.body?.match(/\(Lượt\s+(\d+\/\d+|NaN\/\d+)\)/i);
+        const isAgent = message.sender !== "human" && message.sender !== "system";
+        
+        const loopMatch = message.body?.match(/\(Lu?t\s+(\d+\/\d+|NaN\/\d+)\)/i);
         const loopText = loopMatch ? `Lượt ${loopMatch[1]}` : null;
         
-        const displayBody = message.body?.startsWith('/publish ')
+        let displayBody = message.body?.startsWith('/publish ')
           ? message.body.replace(/\/publish integration_key:\S+ ([a-f0-9-]+)(?: --page="([^"]+)")?/, "Lệnh đăng bài **$1...** lên page **'$2'**")
           : message.body;
+          
+        if (displayBody?.includes("[[LOOP_START]]") && displayBody?.includes("[[LOOP_END]]")) {
+          displayBody = displayBody.replace(/\[\[LOOP_START\]\].*?\[\[LOOP_END\]\]/g, "").trim();
+        }
 
         return (
           <div
@@ -141,7 +150,10 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         : (t("chat.message.sender.system"))}
                   </span>
                 </div>
-                <div className="font-mono text-[10px] text-slate-500">{new Date(message.created_at).toLocaleTimeString()}</div>
+                <div className="flex items-center gap-2">
+                  {loopText && <span className="px-1.5 py-0.5 bg-slate-200/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded text-[9px] uppercase tracking-wider font-bold">{loopText}</span>}
+                  <div className="font-mono text-[10px] text-slate-500">{new Date(message.created_at).toLocaleTimeString()}</div>
+                </div>
               </div>
 
               <div className="text-sm leading-relaxed text-slate-800 dark:text-slate-100 prose dark:prose-invert prose-sm max-w-none">
@@ -152,7 +164,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                           <FileText className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
                         </div>
                         <div>
-                          <div className="text-xs text-emerald-500 dark:text-emerald-400/70 uppercase tracking-widest mb-0.5 flex items-center justify-between"><span>Campaign Planner</span>{loopText && <span className="px-2 py-0.5 bg-rose-500/20 text-rose-300 rounded text-[10px] font-bold">{loopText}</span>}</div>
+                          <div className="text-xs text-emerald-500 dark:text-emerald-400/70 uppercase tracking-widest mb-0.5 flex items-center justify-between"><span>Campaign Planner</span></div>
                           {t("chat.proposal.title")}
                         </div>
                       </div>
@@ -312,11 +324,18 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
               </div>
 
               {message.intent_type ? (
-                <div className="mt-4 flex items-center gap-1.5 rounded bg-slate-100 dark:bg-black/20 px-2.5 py-1 w-fit border border-slate-200 dark:border-white/5">
-                  <Activity className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />
-                  <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
-                    {t("chat.message.intentPrefix")}: <span className="text-emerald-600 dark:text-emerald-300">{message.intent_type}</span>
-                  </span>
+                <div className={`mt-4 flex items-center gap-1.5 rounded px-2.5 py-1 w-fit border border-slate-200 dark:border-white/5 ${getBadgeTheme(message.intent_type as string).bg}`}>
+                  {(() => {
+                    const theme = getBadgeTheme(message.intent_type as string);
+                    return (
+                      <>
+                        <Activity className={`h-3.5 w-3.5 ${theme.icon}`} />
+                        <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                          {t("chat.message.intentPrefix")}: <span className={theme.text}>{message.intent_type}</span>
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
               ) : null}
             </div>

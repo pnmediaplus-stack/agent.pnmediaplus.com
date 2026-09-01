@@ -171,11 +171,11 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_320px]" style={{ height: "calc(100vh - 120px)" }}>
       {/* ── Left column: Chat ── */}
-      <div className="flex flex-col h-full min-h-0 min-w-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm overflow-hidden">
+      <div className="flex flex-col h-full min-h-0 min-w-0">
         
         {/* Active Tasks Banner */}
         {activeTasks.length > 0 && (
-          <div className="shrink-0 border-b border-indigo-100 dark:border-indigo-500/20 bg-gradient-to-r from-indigo-50 to-transparent dark:from-indigo-950/30 dark:to-transparent px-4 py-2.5">
+          <div className="shrink-0 mb-4 rounded-2xl border border-indigo-100 dark:border-indigo-500/20 bg-indigo-50/80 dark:bg-indigo-950/50 px-4 py-2.5">
             <div className="flex items-center gap-2">
               <Loader2 className="h-3.5 w-3.5 text-indigo-500 animate-spin" />
               <span className="text-[11px] uppercase tracking-widest font-semibold text-indigo-500 dark:text-indigo-400">
@@ -189,7 +189,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         )}
 
         {/* Collapsible Thread Summary */}
-        <div className="shrink-0">
+        <div className="shrink-0 mb-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
           <button
             type="button"
             onClick={() => setSummaryOpen((v) => !v)}
@@ -205,7 +205,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
             )}
           </button>
           {summaryOpen && (
-            <div className="px-4 pb-3 text-sm text-slate-700 dark:text-slate-300 leading-relaxed pt-2.5 bg-slate-50/50 dark:bg-transparent">
+            <div className="px-4 pb-3 text-sm text-slate-700 dark:text-slate-300 leading-relaxed border-t border-slate-100 dark:border-slate-800 pt-2.5 bg-slate-50/50 dark:bg-transparent">
               {summary}
             </div>
           )}
@@ -213,19 +213,19 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
 
         {/* Error Banner */}
         {sendError && (
-          <div className="shrink-0 bg-rose-50 dark:bg-rose-950/30 px-4 py-2.5 text-sm text-rose-700 dark:text-rose-300">
+          <div className="shrink-0 mb-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 px-4 py-2.5 text-sm text-rose-700 dark:text-rose-300">
             {sendError}
           </div>
         )}
 
         {/* Messages */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3">
+        <div className="flex-1 min-h-0 overflow-y-auto px-1 py-2">
           <ChatMessageList messages={messages} isTyping={isSending} onCommand={handleCommand} />
           <div ref={messagesEndRef} />
         </div>
 
         {/* Composer */}
-        <div className="shrink-0 bg-white dark:bg-slate-950 px-4 pt-2.5 pb-3">
+        <div className="shrink-0 mt-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-1">
           <ChatComposer
             onSubmit={handleSubmit}
             onRequestCreateTask={(currentDraft) => {
