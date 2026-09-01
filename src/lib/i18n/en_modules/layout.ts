@@ -18,4 +18,6 @@ export const layout = {
   "layout.sidebar.integrations.apiSettings": "API settings",
   "layout.sidebar.integrations.disabled": "Disabled",
   "layout.sidebar.noPublishLaunch": "No publish or launch actions are wired in Phase 1."
+,
+  "layout.theme.toggle": "Toggle theme"
 } as const;

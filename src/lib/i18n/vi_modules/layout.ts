@@ -18,4 +18,6 @@ export const layout = {
   "layout.sidebar.integrations.apiSettings": "Cài đặt API",
   "layout.sidebar.integrations.disabled": "Tắt",
   "layout.sidebar.noPublishLaunch": "Không có hành động publish hoặc launch nào được nối trong Phase 1."
+,
+  "layout.theme.toggle": "Đổi giao diện Sáng/Tối"
 } as const;

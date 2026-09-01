@@ -391,7 +391,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         console.error("Failed to copy markdown", err);
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
                   >
                     {isCopied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                     {isCopied ? t("chat.markdown.copied") ?? "Copied" : t("chat.markdown.copy") ?? "Copy"}
@@ -422,7 +422,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         if (markdownPreview.url) window.open(markdownPreview.url, '_blank');
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
                   >
                     <Download className="h-3.5 w-3.5" />
                     .md
@@ -450,7 +450,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         console.error("Failed to download text", err);
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
                   >
                     <Download className="h-3.5 w-3.5" />
                     .txt
@@ -477,7 +477,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                   {markdownPreview.error}
                 </div>
               ) : (
-                <div className="prose dark:prose-invert max-w-none prose-headings:text-slate-900 dark:text-slate-100 prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-slate-600 dark:text-slate-300 prose-p:leading-relaxed prose-a:text-blue-400 hover:prose-a:text-blue-300 prose-strong:text-slate-700 dark:text-slate-200 prose-ul:text-slate-600 dark:text-slate-300 prose-ol:text-slate-600 dark:text-slate-300 prose-li:marker:text-slate-500 prose-code:text-emerald-300 prose-code:bg-emerald-400/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-pre:bg-[#0d0f15] prose-pre:border prose-pre:border-slate-800 prose-blockquote:border-l-indigo-500 prose-blockquote:bg-indigo-500/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-blockquote:text-slate-600 dark:text-slate-300">
+                <div className="prose dark:prose-invert max-w-none prose-headings:text-slate-900 dark:prose-headings:text-slate-100 prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-p:leading-relaxed prose-a:text-blue-500 dark:prose-a:text-blue-400 hover:prose-a:text-blue-600 dark:hover:prose-a:text-blue-300 prose-strong:text-slate-900 dark:prose-strong:text-slate-200 prose-ul:text-slate-600 dark:prose-ul:text-slate-300 prose-ol:text-slate-600 dark:prose-ol:text-slate-300 prose-li:marker:text-slate-400 dark:prose-li:marker:text-slate-500 prose-code:text-emerald-600 dark:prose-code:text-emerald-300 prose-code:bg-emerald-500/10 dark:prose-code:bg-emerald-400/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-pre:bg-slate-50 dark:prose-pre:bg-[#0d0f15] prose-pre:border prose-pre:border-slate-200 dark:prose-pre:border-slate-800 prose-blockquote:border-l-indigo-500 prose-blockquote:bg-indigo-500/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-blockquote:text-slate-600 dark:prose-blockquote:text-slate-300">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {markdownPreview.content}
                   </ReactMarkdown>
