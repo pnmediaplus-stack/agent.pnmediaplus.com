@@ -112,7 +112,7 @@ export function createServiceRoleClient(): SupabaseClient {
           queryBuilder._operation = "upsert";
           queryBuilder._values = values;
           if (options?.onConflict) {
-            queryBuilder._filters.push(`on_conflict=${encodeURIComponent(options.onConflict)}`);
+            queryBuilder._filters.push(`on_conflict=${options.onConflict}`);
           }
           return queryBuilder;
         },
