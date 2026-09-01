@@ -526,8 +526,8 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
     <div 
       className={`rounded-2xl border transition-all duration-200 p-4 relative ${
         isDragging 
-          ? "border-cyan-500 bg-cyan-950/20 shadow-[0_0_15px_rgba(6,182,212,0.3)] border-dashed" 
-          : "border-slate-800 bg-slate-950/70"
+          ? "border-cyan-500 bg-cyan-50 dark:bg-cyan-950/20 shadow-[0_0_15px_rgba(6,182,212,0.3)] border-dashed" 
+          : "border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/70"
       }`}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
@@ -535,7 +535,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       onDrop={handleDrop}
     >
       {isDragging && (
-        <div className="absolute inset-0 z-[60] flex items-center justify-center rounded-2xl bg-slate-900/80 backdrop-blur-sm pointer-events-none border-2 border-dashed border-cyan-400">
+        <div className="absolute inset-0 z-[60] flex items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm pointer-events-none border-2 border-dashed border-cyan-400">
           <div className="text-cyan-600 dark:text-cyan-400 flex flex-col items-center gap-2">
             <Paperclip className="h-8 w-8 animate-bounce" />
             <span className="font-semibold tracking-wider uppercase text-sm">Drop file here</span>
@@ -544,8 +544,8 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       )}
       {/* Autocomplete Popup */}
       {popupState.isOpen && (filteredSuggestions.length > 0 || (popupState.type === 'campaign' && campaignsStatus !== 'ready') || (popupState.type === 'page' && pagesStatus !== 'ready')) && (
-        <div className="absolute bottom-full mb-2 left-4 w-80 max-h-64 overflow-y-auto rounded-xl border border-indigo-500/30 bg-slate-900/95 backdrop-blur-md p-2 shadow-2xl z-50">
-          <div className="text-[10px] uppercase tracking-widest text-slate-500 px-2 pb-2 mb-1 border-b border-slate-800">
+        <div className="absolute bottom-full mb-2 left-4 w-80 max-h-64 overflow-y-auto rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-white dark:bg-slate-900/95 backdrop-blur-md p-2 shadow-2xl z-50">
+          <div className="text-[10px] uppercase tracking-widest text-slate-500 px-2 pb-2 mb-1 border-b border-slate-200 dark:border-slate-800">
             {popupState.type === 'command' ? 'Select Command' : popupState.type === 'agent' ? 'Select Agent' : popupState.type === 'department' ? 'Select Department' : popupState.type === 'campaign' ? 'Select Campaign' : popupState.type === 'page' ? 'Select Page' : 'Select Data Reference'}
           </div>
           
@@ -606,7 +606,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
                 onMouseEnter={() => setActiveIndex(idx)}
                 onClick={() => selectSuggestion(item)}
                 className={`w-full text-left flex flex-col gap-1 px-3 py-2 rounded-lg transition-colors ${
-                  isActive ? 'bg-indigo-500/20 text-slate-900 dark:text-white' : 'text-slate-300 hover:bg-slate-800/50'
+                  isActive ? 'bg-indigo-500/20 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -628,7 +628,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       )}
 
       {popupState.isOpen && popupState.type === "agent" && agentsStatus !== "ready" && (
-        <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-950/30 p-3 text-xs text-amber-200">
+        <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-950/30 p-3 text-xs text-amber-700 dark:text-amber-200">
           {agentsStatus === "loading" && "Đang tải danh sách agent..."}
           {agentsStatus === "empty" && (agentsError ?? "Không có agent nào khả dụng.")}
           {agentsStatus === "error" && (agentsError ?? "Không tải được danh sách agent.")}
@@ -636,13 +636,13 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       )}
 
       {popupState.isOpen && popupState.type === "agent" && agentsStatus === "empty" && (
-        <div className="mb-3 rounded-lg border border-slate-700 bg-slate-900/70 p-3 text-xs text-slate-300">
+        <div className="mb-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/70 p-3 text-xs text-slate-600 dark:text-slate-300">
           Registry governance rỗng hoặc chưa load được. Mention cần `@role_id` hợp lệ, nếu không hệ thống sẽ fail-closed.
         </div>
       )}
 
       {popupState.isOpen && popupState.type === "department" && departmentsStatus !== "ready" && (
-        <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-950/30 p-3 text-xs text-amber-200">
+        <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-950/30 p-3 text-xs text-amber-700 dark:text-amber-200">
           {departmentsStatus === "loading" && "Đang tải danh sách phòng ban..."}
           {departmentsStatus === "empty" && (departmentsError ?? "Không có phòng ban nào khả dụng.")}
           {departmentsStatus === "error" && (departmentsError ?? "Không tải được danh sách phòng ban.")}
@@ -650,7 +650,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       )}
 
       {popupState.isOpen && popupState.type === "campaign" && campaignsStatus !== "ready" && (
-        <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-950/30 p-3 text-xs text-amber-200">
+        <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-950/30 p-3 text-xs text-amber-700 dark:text-amber-200">
           {campaignsStatus === "loading" && "Đang tải danh sách chiến dịch..."}
           {campaignsStatus === "empty" && (campaignsError ?? "Không có chiến dịch nào khả dụng.")}
           {campaignsStatus === "error" && (campaignsError ?? "Không tải được danh sách chiến dịch.")}
@@ -660,11 +660,11 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       {selectedFiles.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-3">
           {selectedFiles.map((file, idx) => (
-            <div key={idx} className="relative rounded-lg border border-cyan-200 dark:border-cyan-500/30 bg-cyan-950/20 p-2 w-max max-w-full">
+            <div key={idx} className="relative rounded-lg border border-cyan-200 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-950/20 p-2 w-max max-w-full">
               <button
                 type="button"
                 onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
-                className="absolute -right-2 -top-2 rounded-full border border-cyan-800 bg-slate-900 p-1 text-slate-500 dark:text-slate-400 hover:bg-slate-800 hover:text-slate-900 dark:text-white z-10 shadow-lg"
+                className="absolute -right-2 -top-2 rounded-full border border-cyan-800 bg-white dark:bg-slate-900 p-1 text-slate-500 dark:text-slate-400 hover:bg-slate-800 hover:text-slate-900 dark:text-white z-10 shadow-lg"
                 disabled={isUploading}
               >
                 <X className="h-3.5 w-3.5" />
@@ -684,7 +684,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
                 </div>
               )}
               {isUploading && (
-                <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-slate-900/70 backdrop-blur-sm">
+                <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-900/70 backdrop-blur-sm">
                   <Loader2 className="h-6 w-6 animate-spin text-cyan-600 dark:text-cyan-400" />
                 </div>
               )}
@@ -694,7 +694,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       )}
 
       {uploadError && (
-        <div className="mb-3 rounded-lg border border-red-500/20 bg-red-950/30 p-2 text-sm text-red-400">
+        <div className="mb-3 rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-950/30 p-2 text-sm text-red-600 dark:text-red-400">
           Error: {uploadError}
         </div>
       )}
@@ -708,7 +708,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         rows={3}
         disabled={isUploading}
         placeholder={t("chat.composer.placeholder") ?? "Type a command, ask for status, or request a task. Use / for commands, @ to tag agents, # to reference data."}
-        className="w-full rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-500 focus:border-cyan-500/50 disabled:opacity-50"
+        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-500 focus:border-cyan-500/50 disabled:opacity-50"
       />
       <div className="mt-3 flex items-center justify-between">
         <label className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 flex items-center gap-4">
@@ -744,7 +744,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
           type="button"
           onClick={handleSend}
           disabled={isUploading || (!value.trim() && selectedFiles.length === 0)}
-          className="flex items-center gap-2 rounded-full border border-cyan-200 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-100 transition-colors hover:bg-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 rounded-full border border-cyan-200 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-700 dark:text-cyan-100 transition-colors hover:bg-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isUploading && <Loader2 className="h-4 w-4 animate-spin" />}
           {isUploading ? "Uploading..." : (t("chat.composer.send") ?? "Send command")}

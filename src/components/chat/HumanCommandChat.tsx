@@ -189,7 +189,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]" style={{ height: 'calc(100vh - 120px)' }}>
       <div className="space-y-4 flex flex-col h-full min-h-0 min-w-0">
         {activeTasks.length > 0 && (
-          <div className="rounded-2xl border border-indigo-500/30 bg-indigo-950/20 p-4 shadow-lg shadow-indigo-900/10 shrink-0">
+          <div className="rounded-2xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-950/20 p-4 shadow-lg shadow-indigo-900/10 shrink-0">
             <div className="flex items-center gap-2 mb-3">
               <Loader2 className="h-4 w-4 text-indigo-400 animate-spin" />
               <div className="text-xs uppercase tracking-[0.24em] font-semibold text-indigo-300">Active Tasks in Progress</div>
@@ -207,7 +207,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
                     )}
                     <div>
                       <div className="text-sm font-medium text-slate-200">{task.title}</div>
-                      <div className="text-xs text-slate-500 font-mono mt-1">{task.intent_type}   {task.state}</div>
+                      <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-1">{task.intent_type}   {task.state}</div>
                     </div>
                   </div>
                 </div>
@@ -216,13 +216,13 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
           </div>
         )}
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shrink-0">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/70 p-4 shrink-0">
           <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{tShared("shared.thread.summary") ?? "Thread summary"}</div>
           <div className="mt-2 text-sm text-slate-200 line-clamp-3">{summary}</div>
         </div>
 
         {sendError && (
-          <div className="rounded-2xl border border-rose-500/30 bg-rose-950/40 p-4 text-sm text-rose-200">
+          <div className="rounded-2xl border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-950/40 p-4 text-sm text-rose-700 dark:text-rose-200">
             {sendError}
           </div>
         )}
@@ -247,18 +247,18 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         </div>
       </div>
       <div className="space-y-4 flex flex-col h-full min-h-0 min-w-0">
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shrink-0">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/70 p-5 shrink-0">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">{thread.title}</div>
           <p className="mt-2 text-sm leading-6 text-slate-400">{thread.purpose}</p>
-          <div className="mt-4 text-xs uppercase tracking-[0.24em] text-slate-500">{tShared("shared.thread.status") ?? "Thread status"}</div>
+          <div className="mt-4 text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{tShared("shared.thread.status") ?? "Thread status"}</div>
           <div className="mt-2 text-sm text-slate-200">{thread.status}</div>
         </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 flex flex-col flex-1 min-h-0">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/70 p-5 flex flex-col flex-1 min-h-0">
           <div className="text-sm font-semibold text-slate-900 dark:text-white shrink-0">{tShared("shared.audit.trail") ?? "Audit trail"}</div>
           <div className="mt-3 space-y-3 overflow-y-auto pr-2">
             {auditLogs.map((log) => (
-              <div key={log.id} className="rounded-xl border border-slate-800 bg-white dark:bg-slate-900/60 p-3 shrink-0">
-                <div className="text-xs uppercase tracking-[0.24em] text-slate-500">{log.action_type}</div>
+              <div key={log.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-3 shrink-0">
+                <div className="text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">{log.action_type}</div>
                 <div className="mt-2 text-sm text-slate-200">
                   {log.metadata ? (
                     <div className="space-y-1">
