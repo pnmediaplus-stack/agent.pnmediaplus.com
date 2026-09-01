@@ -8,7 +8,7 @@ type SupabaseClient = {
     select: (query: string) => any;
     insert: (values: any) => any;
     update: (values: any) => any;
-    upsert: (values: any) => any;
+    upsert: (values: any, options?: { onConflict?: string }) => any;
     delete: () => any;
     eq: (column: string, value: any) => any;
     order: (column: string, options?: { ascending?: boolean }) => any;
@@ -21,7 +21,7 @@ type SupabaseClient = {
       select: (query: string) => any;
       insert: (values: any) => any;
       update: (values: any) => any;
-      upsert: (values: any) => any;
+      upsert: (values: any, options?: { onConflict?: string }) => any;
       delete: () => any;
       eq: (column: string, value: any) => any;
       order: (column: string, options?: { ascending?: boolean }) => any;
@@ -108,9 +108,12 @@ export function createServiceRoleClient(): SupabaseClient {
           queryBuilder._values = values;
           return queryBuilder;
         },
-        upsert: (values: any) => {
+        upsert: (values: any, options?: { onConflict?: string }) => {
           queryBuilder._operation = "upsert";
           queryBuilder._values = values;
+          if (options?.onConflict) {
+            queryBuilder._filters.push(`on_conflict=${encodeURIComponent(options.onConflict)}`);
+          }
           return queryBuilder;
         },
         delete: () => {

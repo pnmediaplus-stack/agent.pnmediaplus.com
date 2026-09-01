@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       .eq('setting_key', setting_key)
       .single();
 
-    const { error: upsertError } = await (supabase.from('app_settings') as any).upsert({
+    const { error: upsertError } = await supabase.from('app_settings').upsert({
         organization_id,
         setting_key,
         setting_value: newUrl,
