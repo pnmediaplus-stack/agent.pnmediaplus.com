@@ -28,6 +28,12 @@ const agentThemes: Record<string, any> = {
     text: "text-amber-700 dark:text-amber-300",
     iconBg: "bg-amber-100 dark:bg-amber-900/40 border-amber-300 dark:border-amber-700",
   },
+  emerald: {
+    border: "border-emerald-200 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-700",
+    bg: "bg-emerald-50/30 dark:bg-emerald-950/20",
+    text: "text-emerald-700 dark:text-emerald-300",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700",
+  },
   blue: {
     border: "border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700",
     bg: "bg-blue-50/30 dark:bg-blue-950/20",
