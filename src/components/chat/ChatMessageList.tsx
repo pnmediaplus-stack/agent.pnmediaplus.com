@@ -110,7 +110,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                           <FileText className="w-5 h-5 text-indigo-400" />
                         </div>
                         <div>
-                          <div className="text-xs text-indigo-400/70 uppercase tracking-widest mb-0.5">Campaign Planner</div>
+                          <div className="text-xs text-indigo-400/70 uppercase tracking-widest mb-0.5 flex items-center justify-between"><span>Campaign Planner</span>{loopText && <span className="px-2 py-0.5 bg-rose-500/20 text-rose-300 rounded text-[10px] font-bold">{loopText}</span>}</div>
                           BẢN KẾ HOẠCH CHIẾN DỊCH HOÀN CHỈNH
                         </div>
                       </div>
