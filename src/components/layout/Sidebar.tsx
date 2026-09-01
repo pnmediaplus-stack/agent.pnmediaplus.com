@@ -10,7 +10,6 @@ import { useI18n } from "@/lib/i18n/useI18n";
 import { usePortalSession } from "@/components/layout/PortalSessionProvider";
 import {
   LayoutDashboard,
-  Megaphone,
   MessagesSquare,
   Building2,
   Bot,
