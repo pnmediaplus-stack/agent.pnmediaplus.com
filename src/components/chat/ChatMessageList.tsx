@@ -362,13 +362,13 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
           onClick={() => setMarkdownPreview(null)}
         >
           <div
-            className="relative flex max-h-[90vh] w-[min(92vw,960px)] flex-col overflow-hidden rounded-2xl border border-violet-500/20 bg-slate-950 shadow-2xl"
+            className="relative flex max-h-[92vh] w-[min(95vw,1000px)] flex-col overflow-hidden rounded-xl border border-slate-700/50 bg-[#0f1117] shadow-2xl ring-1 ring-white/10"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-4 border-b border-white/10 px-4 py-3">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-800/80 bg-slate-900/50 px-6 py-4 backdrop-blur-md">
               <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-[0.24em] text-violet-300/70">Markdown Preview</div>
-                <div className="truncate text-sm font-semibold text-white">{markdownPreview.title || 'Attachment'}</div>
+                <div className="text-[11px] font-medium uppercase tracking-[0.15em] text-slate-400 mb-1">Markdown Preview</div>
+                <div className="truncate text-base font-semibold text-slate-100">{markdownPreview.title || 'Attachment'}</div>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2">
@@ -388,7 +388,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         console.error("Failed to copy markdown", err);
                       }
                     }}
-                    className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/20"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700 hover:text-white"
                   >
                     {isCopied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                     {isCopied ? "Copied" : "Copy"}
@@ -419,7 +419,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         if (markdownPreview.url) window.open(markdownPreview.url, '_blank');
                       }
                     }}
-                    className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/20"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700 hover:text-white"
                   >
                     <Download className="h-3.5 w-3.5" />
                     .md
@@ -447,7 +447,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         console.error("Failed to download text", err);
                       }
                     }}
-                    className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/20"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700 hover:text-white"
                   >
                     <Download className="h-3.5 w-3.5" />
                     .txt
@@ -474,7 +474,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                   {markdownPreview.error}
                 </div>
               ) : (
-                <div className="prose prose-invert prose-sm max-w-none">
+                <div className="prose prose-invert max-w-none prose-headings:text-slate-100 prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-slate-300 prose-p:leading-relaxed prose-a:text-blue-400 hover:prose-a:text-blue-300 prose-strong:text-slate-200 prose-ul:text-slate-300 prose-ol:text-slate-300 prose-li:marker:text-slate-500 prose-code:text-emerald-300 prose-code:bg-emerald-400/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-pre:bg-[#0d0f15] prose-pre:border prose-pre:border-slate-800 prose-blockquote:border-l-indigo-500 prose-blockquote:bg-indigo-500/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-blockquote:text-slate-300">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {markdownPreview.content}
                   </ReactMarkdown>
