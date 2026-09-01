@@ -169,10 +169,6 @@
               {
                 "name": "file_name",
                 "value": "={{ $('Validate Active Canonical Document').first().json.file_name }}"
-              },
-              {
-                "name": "canonical_manifest",
-                "value": "PN_TELESALES_FINAL_KNOWLEDGE_PACKAGE_v1.0"
               }
             ]
           }
@@ -352,7 +348,7 @@
     {
       "parameters": {
         "method": "DELETE",
-        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_chunks?metadata->>document_id=eq.{{ $('Validate Active Canonical Document').first().json.document_id }}&metadata->>organization_id=eq.{{ $('Validate Active Canonical Document').first().json.organization_id }}",
+        "url": "={{($env[\"SUPABASE_URL\"] || 'http://supabase:8000')}}/rest/v1/crm_knowledge_chunks?document_id=eq.{{ $('Validate Active Canonical Document').first().json.document_id }}&organization_id=eq.{{ $('Validate Active Canonical Document').first().json.organization_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
