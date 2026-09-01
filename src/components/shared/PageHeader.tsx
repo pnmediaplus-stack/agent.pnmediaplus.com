@@ -41,9 +41,9 @@ export function PageHeader({
           className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" 
         />
 
-        {/* Background Image - Force stretch to fill container exactly */}
+        {/* Background Image - Use bg-cover without distortion, anchored to the right so the main subject isn't clipped */}
         <div 
-          className="absolute inset-0 bg-[length:100%_100%] bg-center bg-no-repeat transition-all duration-500"
+          className="absolute inset-0 bg-cover bg-right bg-no-repeat transition-all duration-500"
           style={{ 
             backgroundImage: `url('${bgImageUrl}')`,
             opacity: 1 // Full opacity for the uploaded banner
