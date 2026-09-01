@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
 
     const file = formData.get('file') as File | null;
     const setting_key = formData.get('setting_key') as string;
+    const opacity = formData.get('opacity') as string || '100';
 
     if (!file || !setting_key) {
       return NextResponse.json({ error: 'Missing file or setting_key' }, { status: 400 });
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
     const { error: upsertError } = await supabase.from('app_settings').upsert({
         organization_id,
         setting_key,
-        setting_value: newUrl,
+        setting_value: JSON.stringify({ url: newUrl, opacity: Number(opacity) }),
         object_key: newObjectKey,
         updated_by: user.id
       }, { onConflict: 'organization_id,setting_key' });
@@ -157,7 +158,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ url: null });
     }
     
-    return NextResponse.json({ url: data.setting_value });
+    try {
+      const parsed = JSON.parse(data.setting_value);
+      return NextResponse.json(parsed);
+    } catch (e) {
+      // Fallback for old data where setting_value was just a string
+      return NextResponse.json({ url: data.setting_value });
+    }
   } catch (err) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }

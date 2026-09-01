@@ -27,7 +27,7 @@ export function PageHeader({
   bannerKey = 'chat_dashboard_banner'
 }: PageHeaderProps) {
   const { t } = useI18n("shared");
-  const { bannerUrl } = useBanner(bannerKey);
+  const { bannerUrl, opacity } = useBanner(bannerKey);
   const bgImageUrl = bannerUrl || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80';
 
   return (
@@ -41,13 +41,19 @@ export function PageHeader({
           className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" 
         />
 
-        {/* Background Image placed on the right */}
+        {/* Background Image - Set to object-cover so it spans full width naturally, without fading too much */}
         <div 
-          className="absolute inset-0 bg-cover bg-[center_right] bg-no-repeat opacity-90 dark:opacity-70 transition-all duration-500"
-          style={{ backgroundImage: `url('${bgImageUrl}')` }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-500"
+          style={{ 
+            backgroundImage: `url('${bgImageUrl}')`,
+            opacity: 1 // Full opacity for the uploaded banner
+          }}
         />
-        {/* Gradient overlay: Solid white on the left for text readability, fading to transparent on the right to show the robot */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent dark:from-slate-950 dark:via-slate-950/95 dark:to-transparent" />
+        {/* Configurable Gradient overlay */}
+        <div 
+          className="absolute inset-0 bg-gradient-to-r from-white via-white/50 to-transparent dark:from-slate-950 dark:via-slate-950/50 dark:to-transparent" 
+          style={{ opacity: opacity !== undefined ? opacity / 100 : 1 }}
+        />
         {/* Subtle decorative glow */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
           <div className="absolute -top-[100px] -left-[100px] w-[300px] h-[300px] rounded-full bg-emerald-500/5 dark:bg-emerald-500/10 blur-[80px]" />
