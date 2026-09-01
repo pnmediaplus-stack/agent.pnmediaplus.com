@@ -11,7 +11,7 @@ export function Header() {
   const portalSession = usePortalSession();
 
   return (
-    <header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/70 px-5 py-4 backdrop-blur">
+    <header className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-950/70 shadow-sm shadow-slate-200/50 dark:shadow-none backdrop-blur-md px-5 py-4 backdrop-blur">
       <div>
         <div className="text-sm font-medium text-slate-900 dark:text-white">{tLayout("layout.header.title") ?? "agent.pnmediaplus.com"}</div>
         <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">{tLayout("layout.header.description") ?? "Next.js shell with live data surfaces and safe server routes."}</p>

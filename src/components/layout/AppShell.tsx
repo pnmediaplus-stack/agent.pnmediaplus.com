@@ -4,7 +4,7 @@ import { Header } from "@/components/layout/Header";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.12),_transparent_35%),linear-gradient(180deg,_#020617_0%,_#0f172a_100%)] dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.06),_transparent_40%),linear-gradient(180deg,_#ffffff_0%,_#f1f5f9_100%)] text-slate-900 dark:bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.12),_transparent_35%),linear-gradient(180deg,_#020617_0%,_#0f172a_100%)] dark:text-slate-100 transition-colors duration-300">
       <div className="min-h-screen lg:pl-[290px]">
         <Sidebar />
         <div className="flex min-h-screen min-w-0 flex-col">

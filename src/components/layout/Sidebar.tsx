@@ -115,7 +115,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-full flex-col border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-950/90 px-4 py-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:h-screen lg:w-[290px] lg:border-b-0 lg:border-r lg:overflow-y-auto">
+    <aside className="flex h-full flex-col border-b border-slate-200/80 dark:border-slate-800 bg-white/60 dark:bg-slate-950/90 backdrop-blur-xl shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] dark:shadow-none px-4 py-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:h-screen lg:w-[290px] lg:border-b-0 lg:border-r lg:overflow-y-auto">
       <div className="mb-5">
         <div className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-600 dark:text-cyan-300/80">{tLayout("layout.brand.name") ?? "PN OS AI Department"}</div>
         <div className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{tLayout("layout.brand.phase") ?? "Phase 1 Internal MVP"}</div>

@@ -527,7 +527,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       className={`rounded-2xl border transition-all duration-200 p-4 relative ${
         isDragging 
           ? "border-cyan-500 bg-cyan-50 dark:bg-cyan-950/20 shadow-[0_0_15px_rgba(6,182,212,0.3)] border-dashed" 
-          : "border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/70"
+          : "border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-950/70 shadow-[0_-8px_30px_-5px_rgba(0,0,0,0.06)] dark:shadow-none backdrop-blur-xl"
       }`}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
@@ -708,7 +708,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         rows={3}
         disabled={isUploading}
         placeholder={t("chat.composer.placeholder") ?? "Type a command, ask for status, or request a task. Use / for commands, @ to tag agents, # to reference data."}
-        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-500 focus:border-cyan-500/50 disabled:opacity-50"
+        className="w-full rounded-xl border border-slate-200/70 dark:border-slate-800 bg-white/50 focus:bg-white dark:bg-slate-900/80 focus:dark:bg-slate-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-500 focus:border-cyan-400 focus:shadow-[0_2px_10px_-3px_rgba(34,211,238,0.2)] focus:dark:shadow-none transition-all disabled:opacity-50"
       />
       <div className="mt-3 flex items-center justify-between">
         <label className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 flex items-center gap-4">

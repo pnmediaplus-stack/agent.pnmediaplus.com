@@ -24,17 +24,17 @@ export function PageHeader({
 }: PageHeaderProps) {
   const { t } = useI18n("shared");
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white/75 dark:bg-slate-950/75 shadow-[0_0_0_1px_rgba(15,23,42,0.22)] backdrop-blur">
-      <div className="border-b border-cyan-400/20 bg-slate-50 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(15,23,42,0.82))] px-5 py-5 md:px-6">
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/60 dark:bg-slate-950/75 shadow-[0_8px_30px_-5px_rgba(0,0,0,0.05)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.22)] backdrop-blur-xl">
+      <div className="border-b border-cyan-400/20 bg-gradient-to-br from-white/90 to-slate-50/80 dark:from-transparent dark:to-transparent dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(15,23,42,0.82))] px-5 py-5 md:px-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-700 dark:text-cyan-200">{statusLabel}</p>
-          <div className="inline-flex items-center rounded-xl border border-cyan-300 dark:border-cyan-400/25 bg-cyan-100 dark:bg-cyan-400/10 px-4 py-2 shadow-[0_0_0_1px_rgba(34,211,238,0.08)]">
+          <div className="inline-flex items-center rounded-xl border border-cyan-200/80 dark:border-cyan-400/25 bg-gradient-to-br from-cyan-50/80 to-cyan-100/50 dark:from-cyan-400/10 dark:to-cyan-400/10 px-4 py-2 shadow-[0_0_0_1px_rgba(34,211,238,0.08)]">
             <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h1>
           </div>
           <p className="max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">{purpose}</p>
         </div>
-        <div className="shrink-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+        <div className="shrink-0 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white/80 dark:bg-slate-900/90 p-4 shadow-sm dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
           <div className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">{t("shared.page.currentStatus") ?? "Trạng thái hiện tại"}</div>
           <div className="mt-2">
             <StateBadge label={statusValue} displayLabel={statusDisplayValue} />
@@ -72,7 +72,7 @@ function ActionGroup({
   emptyLabel: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60">
+    <div className="overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/60 shadow-sm dark:shadow-none">
       <div className="border-b border-slate-200 dark:border-slate-700/90 bg-white/80 dark:bg-slate-950/80 px-4 py-3">
         <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-900 dark:text-slate-100">{title}</div>
       </div>
