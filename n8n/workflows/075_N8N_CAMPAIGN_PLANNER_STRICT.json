@@ -1,9 +1,9 @@
 {
-  "name": "Phase 075 - Campaign Planner AI (Strict Contract)",
+  "name": "Tavily Search API Sub-workflow",
   "nodes": [
     {
       "parameters": {
-        "content": "## Phase 075 Campaign Planner Contract\n\n**1. Trigger + Enrich**\n- Ph\u1ea3i c\u00f3 b\u01b0\u1edbc enrich t\u1ed1i thi\u1ec3u \u0111\u1ec3 l\u1ea5y \u0111\u1ee7: thread_id, organization_id, brief/body.\n- N\u1ebfu thi\u1ebfu organization_id ho\u1eb7c kh\u00f4ng resolve \u0111\u01b0\u1ee3c thread context, workflow ph\u1ea3i fail-closed.\n\n**2. Scope Resolve Before LLM**\n- Tr\u01b0\u1edbc khi g\u1ecdi LLM, workflow ph\u1ea3i resolve ch\u00ednh x\u00e1c department scope.\n- Ch\u1ec9 ch\u1ea5p nh\u1eadn: department_id, department_name.\n- N\u1ebfu thi\u1ebfu scope, ph\u1ea3i tr\u1ea3 v\u1ec1 chat_append \u0111\u1ec3 h\u1ecfi l\u1ea1i ng\u01b0\u1eddi d\u00f9ng.\n\n**3. Callback Output Must Preserve Markdown**\n- K\u1ebft qu\u1ea3 t\u1eeb LLM ph\u1ea3i \u0111\u01b0\u1ee3c gi\u1eef nguy\u00ean d\u1ea1ng raw Markdown string.\n- Kh\u00f4ng d\u00f9ng JSON.stringify cho body callback.",
+        "content": "## Phase 075 Campaign Planner Contract\n\n**1. Trigger + Enrich**\n- Phải có bước enrich tối thiểu để lấy đủ: thread_id, organization_id, brief/body.\n- Nếu thiếu organization_id hoặc không resolve được thread context, workflow phải fail-closed.\n\n**2. Scope Resolve Before LLM**\n- Trước khi gọi LLM, workflow phải resolve chính xác department scope.\n- Chỉ chấp nhận: department_id, department_name.\n- Nếu thiếu scope, phải trả về chat_append để hỏi lại người dùng.\n\n**3. Callback Output Must Preserve Markdown**\n- Kết quả từ LLM phải được giữ nguyên dạng raw Markdown string.\n- Không dùng JSON.stringify cho body callback.",
         "height": 450,
         "width": 450
       },
@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        23360,
-        224
+        35104,
+        576
       ],
-      "id": "3246039d-ba6a-499b-8142-e4970d397499"
+      "id": "1c031fc6-75dc-4da6-9479-f5f25c0c641a"
     },
     {
       "parameters": {
@@ -26,11 +26,11 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        23200,
-        720
+        34944,
+        1072
       ],
       "webhookId": "plan-campaign-intake-webhook-id",
-      "id": "8dce8f23-5f8a-465f-be52-f0992e326fac"
+      "id": "33d76785-dc23-4a6d-b9f5-652386947743"
     },
     {
       "parameters": {
@@ -54,23 +54,23 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        23408,
-        720
+        35152,
+        1072
       ],
-      "id": "d6bb6a9c-78fd-409c-8adf-0c201a461916"
+      "id": "5fed080c-2859-429b-9797-8457d48cf222"
     },
     {
       "parameters": {
-        "jsCode": "const body = $('Webhook Trigger').item.json.body || {};\nconst registryData = $input.item.json || {};\nconst registry = registryData.departments || [];\nconst packs = registryData.packs || {};\n\nconst campaignContract = body.campaign_contract && typeof body.campaign_contract === 'object' ? body.campaign_contract : null;\n\nif (!campaignContract || typeof campaignContract.campaign_brief !== 'string' || !campaignContract.campaign_brief.trim() || campaignContract.campaign_duration_days === undefined || campaignContract.paid_media_allowed === undefined || !Array.isArray(campaignContract.required_terms)) {\n  return { json: { valid: false, reason: 'Thi\u1ebfu campaign_contract ho\u1eb7c contract thi\u1ebfu field b\u1eaft bu\u1ed9c (campaign_duration_days, paid_media_allowed, required_terms).' } };\n}\n\nconst campaignBrief = campaignContract.campaign_brief;\nconst campaignGoal = campaignContract.campaign_goal || '';\nconst campaignDurationDays = campaignContract.campaign_duration_days;\nconst paidMediaAllowed = campaignContract.paid_media_allowed;\nconst requiredTerms = campaignContract.required_terms;\nconst targetTerms = Array.isArray(campaignContract.target_terms) ? campaignContract.target_terms : requiredTerms;\nconst validationHints = Array.isArray(campaignContract.validation_hints) ? campaignContract.validation_hints : [];\n\nconst envelopeBrief = typeof body.campaign_brief === 'string' ? body.campaign_brief : (typeof body.body === 'string' ? body.body : '');\nconst envelopeGoal = typeof body.campaign_goal === 'string' ? body.campaign_goal : '';\nconst envelopeDurationDays = Number.isInteger(body.campaign_duration_days) ? body.campaign_duration_days : null;\nconst envelopePaidMediaAllowed = body.paid_media_allowed === true ? true : body.paid_media_allowed === false ? false : null;\n\nconst contractMismatch = (\n  (envelopeBrief !== '' && envelopeBrief !== campaignBrief) ||\n  (envelopeGoal !== '' && envelopeGoal !== campaignGoal) ||\n  (envelopeDurationDays !== null && envelopeDurationDays !== campaignDurationDays) ||\n  (envelopePaidMediaAllowed !== null && envelopePaidMediaAllowed !== paidMediaAllowed)\n);\n\nif (contractMismatch) {\n  return { json: { valid: false, reason: 'Campaign contract mismatch between control plane envelope and resolved contract' } };\n}\n\nif (!body.organization_id || !body.thread_id) {\n  return { json: { valid: false, reason: 'Thi\u1ebfu th\u00f4ng tin thread_id ho\u1eb7c organization_id' } };\n}\n\nlet matchedDept = null;\nif (body.department_id) {\n  matchedDept = registry.find(d => d.department_id === body.department_id);\n} else if (body.department_name) {\n  matchedDept = registry.find(d => d.department_name === body.department_name);\n}\n\nif (!matchedDept) {\n  return { json: { valid: false, reason: 'Department not found in registry (Ph\u00f2ng ban ch\u01b0a \u0111\u01b0\u1ee3c c\u1ea5p ph\u00e9p)' } };\n}\n\nconst packKey = matchedDept.department_pack_key;\nif (!packKey) {\n  return { json: { valid: false, reason: 'Backend API did not resolve department_pack_key for this department' } };\n}\n\nconst departmentPack = packs[packKey] || {};\nif (Object.keys(departmentPack).length === 0) {\n  return { json: { valid: false, reason: 'Department Pack payload is missing or empty' } };\n}\n\nreturn { \n  json: { \n    valid: true, \n    thread_id: body.thread_id,\n    organization_id: body.organization_id,\n    body: campaignBrief,\n    campaign_brief: campaignBrief,\n    campaign_goal: campaignGoal || campaignBrief,\n    campaign_duration_days: campaignDurationDays,\n    paid_media_allowed: paidMediaAllowed,\n    target_terms: targetTerms,\n    required_terms: requiredTerms,\n    validation_hints: validationHints,\n    campaign_contract: campaignContract,\n    department_id: matchedDept.department_id, \n    department_name: matchedDept.department_name,\n    department_pack: departmentPack,\n    department_pack_key: packKey,\n    department_pack_label: matchedDept.department_pack || ''\n  } \n};"
+        "jsCode": "const body = $('Webhook Trigger').item.json.body || {};\nconst registryData = $input.item.json || {};\nconst registry = registryData.departments || [];\nconst packs = registryData.packs || {};\n\nconst campaignContract = body.campaign_contract && typeof body.campaign_contract === 'object' ? body.campaign_contract : null;\n\nif (!campaignContract || typeof campaignContract.campaign_brief !== 'string' || !campaignContract.campaign_brief.trim() || campaignContract.campaign_duration_days === undefined || campaignContract.paid_media_allowed === undefined || !Array.isArray(campaignContract.required_terms)) {\n  return { json: { valid: false, reason: 'Thiếu campaign_contract hoặc contract thiếu field bắt buộc (campaign_duration_days, paid_media_allowed, required_terms).' } };\n}\n\nconst campaignBrief = campaignContract.campaign_brief;\nconst campaignGoal = campaignContract.campaign_goal || '';\nconst campaignDurationDays = campaignContract.campaign_duration_days;\nconst paidMediaAllowed = campaignContract.paid_media_allowed;\nconst requiredTerms = campaignContract.required_terms;\nconst targetTerms = Array.isArray(campaignContract.target_terms) ? campaignContract.target_terms : requiredTerms;\nconst validationHints = Array.isArray(campaignContract.validation_hints) ? campaignContract.validation_hints : [];\n\nconst envelopeBrief = typeof body.campaign_brief === 'string' ? body.campaign_brief : (typeof body.body === 'string' ? body.body : '');\nconst envelopeGoal = typeof body.campaign_goal === 'string' ? body.campaign_goal : '';\nconst envelopeDurationDays = Number.isInteger(body.campaign_duration_days) ? body.campaign_duration_days : null;\nconst envelopePaidMediaAllowed = body.paid_media_allowed === true ? true : body.paid_media_allowed === false ? false : null;\n\nconst contractMismatch = (\n  (envelopeBrief !== '' && envelopeBrief !== campaignBrief) ||\n  (envelopeGoal !== '' && envelopeGoal !== campaignGoal) ||\n  (envelopeDurationDays !== null && envelopeDurationDays !== campaignDurationDays) ||\n  (envelopePaidMediaAllowed !== null && envelopePaidMediaAllowed !== paidMediaAllowed)\n);\n\nif (contractMismatch) {\n  return { json: { valid: false, reason: 'Campaign contract mismatch between control plane envelope and resolved contract' } };\n}\n\nif (!body.organization_id || !body.thread_id) {\n  return { json: { valid: false, reason: 'Thiếu thông tin thread_id hoặc organization_id' } };\n}\n\nlet matchedDept = null;\nif (body.department_id) {\n  matchedDept = registry.find(d => d.department_id === body.department_id);\n} else if (body.department_name) {\n  matchedDept = registry.find(d => d.department_name === body.department_name);\n}\n\nif (!matchedDept) {\n  return { json: { valid: false, reason: 'Department not found in registry (Phòng ban chưa được cấp phép)' } };\n}\n\nconst packKey = matchedDept.department_pack_key;\nif (!packKey) {\n  return { json: { valid: false, reason: 'Backend API did not resolve department_pack_key for this department' } };\n}\n\nconst departmentPack = packs[packKey] || {};\nif (Object.keys(departmentPack).length === 0) {\n  return { json: { valid: false, reason: 'Department Pack payload is missing or empty' } };\n}\n\nreturn { \n  json: { \n    valid: true, \n    thread_id: body.thread_id,\n    organization_id: body.organization_id,\n    body: campaignBrief,\n    campaign_brief: campaignBrief,\n    campaign_goal: campaignGoal || campaignBrief,\n    campaign_duration_days: campaignDurationDays,\n    paid_media_allowed: paidMediaAllowed,\n    target_terms: targetTerms,\n    required_terms: requiredTerms,\n    validation_hints: validationHints,\n    campaign_contract: campaignContract,\n    department_id: matchedDept.department_id, \n    department_name: matchedDept.department_name,\n    department_pack: departmentPack,\n    department_pack_key: packKey,\n    department_pack_label: matchedDept.department_pack || ''\n  } \n};"
       },
       "name": "Scope Resolve",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        23600,
-        720
+        35344,
+        1072
       ],
-      "id": "e56f3a39-5067-48ca-9383-a6b2e1100642"
+      "id": "56610864-03c3-4511-8a76-cb16db40078d"
     },
     {
       "parameters": {
@@ -87,10 +87,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        23808,
-        720
+        35552,
+        1072
       ],
-      "id": "dbce4dd3-52da-41d5-8f71-6da0af0773f8"
+      "id": "4fd088a5-ed8a-4529-b8a1-ea0beae89048"
     },
     {
       "parameters": {
@@ -111,17 +111,17 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Webhook Trigger'].json.body.thread_id,\n  organization_id: $node['Webhook Trigger'].json.body.organization_id,\n  idempotency_key: $execution.id + '_error',\n  sender: 'gatekeeper',\n  body: 'L\u1ed7i Gatekeeper: ' + ($json.reason || 'NEEDS_CLARIFICATION') + (Array.isArray($json.clarification_questions) && $json.clarification_questions.length ? '\\n\\nC\u00e2u h\u1ecfi c\u1ea7n l\u00e0m r\u00f5:\\n- ' + $json.clarification_questions.join('\\n- ') : ''),\n  intent_type: 'clarify_missing_scope'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $node['Webhook Trigger'].json.body.thread_id,\n  organization_id: $node['Webhook Trigger'].json.body.organization_id,\n  idempotency_key: $execution.id + '_error',\n  sender: 'gatekeeper',\n  body: 'Lỗi Gatekeeper: ' + ($json.reason || 'NEEDS_CLARIFICATION') + (Array.isArray($json.clarification_questions) && $json.clarification_questions.length ? '\\n\\nCâu hỏi cần làm rõ:\\n- ' + $json.clarification_questions.join('\\n- ') : ''),\n  intent_type: 'clarify_missing_scope'\n} }}",
         "options": {}
       },
       "name": "Clarify Error (chat_append)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        24080,
-        896
+        35824,
+        1248
       ],
-      "id": "39a31a15-76dd-40e1-87c0-1f91eae518d2"
+      "id": "a62ba155-f638-42b6-ae3b-da3add4ff8da"
     },
     {
       "parameters": {
@@ -142,30 +142,30 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_ack',\n  sender: 'agent_1_research',\n  body: 'Agent 1 (Research) thu\u1ed9c ph\u00f2ng `' + ($json.department_name || $json.department_id) + '` \u0111\u00e3 nh\u1eadn y\u00eau c\u1ea7u l\u1eadp k\u1ebf ho\u1ea1ch truy\u1ec1n th\u00f4ng. \u0110ang b\u1eaft \u0111\u1ea7u nghi\u00ean c\u1ee9u g\u00f3c \u0111\u1ed9 Viral...',\n  intent_type: 'agent_progress'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_ack',\n  sender: 'agent_1_research',\n  body: 'Agent 1 (Research) thuộc phòng `' + ($json.department_name || $json.department_id) + '` đã nhận yêu cầu lập kế hoạch truyền thông. Đang bắt đầu nghiên cứu góc độ Viral...',\n  intent_type: 'agent_progress'\n} }}",
         "options": {}
       },
       "name": "Acknowledge (chat_append)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        24080,
-        576
+        35824,
+        928
       ],
-      "id": "f9d96cf1-fb1b-454e-a7f9-7dfe86ffc599"
+      "id": "6f54a0d7-f6eb-42b2-8e38-8c80477682dd"
     },
     {
       "parameters": {
-        "jsCode": "try {\n  // --- UNIVERSAL ADAPTER (Supports HTTP Node & LangChain Agent) ---\n  const json = $input.item.json;\n  const response = json.output || json.text || (json.choices && json.choices[0]?.message?.content) || json.message?.content;\n  if (!response) {\n    throw new Error('STRUCTURAL_ERROR: Kh\u00f4ng t\u00ecm th\u1ea5y n\u1ed9i dung ph\u1ea3n h\u1ed3i t\u1eeb AI. Output Node kh\u00f4ng \u0111\u00fang chu\u1ea9n.');\n  }\n  // ------------------------------------------------------------------\n  \n  let parsed;\n  try {\n    parsed = JSON.parse(response);\n  } catch (e) {\n    throw new Error('STRUCTURAL_ERROR: Agent 1 did not return valid JSON.');\n  }\n  \n  const requiredSections = [\n    \"executive_decision\", \"icp_and_pain_wedge\", \"offer\", \"funnel_architecture\",\n    \"crm_role\", \"chatbot_role\", \"creative_architecture\", \"media_buying_structure\",\n    \"10_day_operating_plan\", \"lead_qualification\", \"sales_handoff\", \"organic_trust_layer\",\n    \"measurement_framework\", \"budget_allocation\", \"risks_policy\", \"day_3_gate\", \"day_6_gate\",\n    \"end_of_pilot_decision_framework\", \"assets_required_before_launch\", \"do_not_do\",\n    \"daily_timeline\", \"uses_ads\", \"needs_clarification\", \"clarification_questions\", \"assumptions_to_confirm\"\n  ];\n  \n  const missingSections = requiredSections.filter((key) => !(key in parsed));\n  if (missingSections.length > 0) {\n    throw new Error('STRUCTURAL_ERROR: Agent 1 output is missing required sections: ' + missingSections.join(', '));\n  }\n  \n  if (!Array.isArray(parsed.daily_timeline)) {\n    throw new Error('STRUCTURAL_ERROR: `daily_timeline` must be an array.');\n  }\n  \n  parsed.daily_timeline.forEach((dayPlan, index) => {\n    if (Array.isArray(dayPlan) || !dayPlan || typeof dayPlan !== 'object') {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}] must be an object.`);\n    }\n    const requiredDayKeys = ['day', 'objective', 'channel', 'creative', 'budget_vnd', 'metric', 'gate'];\n    const missingKeys = requiredDayKeys.filter((key) => !(key in dayPlan));\n    if (missingKeys.length > 0) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}] is missing keys: ${missingKeys.join(', ')}`);\n    }\n    for (const key of requiredDayKeys) {\n      const value = dayPlan[key];\n      if (value == null) {\n        throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].${key} is empty.`);\n      }\n      if (typeof value === 'string' && !value.trim()) {\n        throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].${key} is empty.`);\n      }\n    }\n    if (!Number.isInteger(dayPlan.day) || dayPlan.day < 1) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].day must be a positive integer.`);\n    }\n  \n    if (typeof dayPlan.budget_vnd !== 'number' || !Number.isFinite(dayPlan.budget_vnd) || dayPlan.budget_vnd < 0) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].budget_vnd must be a zero or positive number.`);\n    }\n  });\n  \n  if (typeof parsed.uses_ads !== 'boolean') {\n    throw new Error('STRUCTURAL_ERROR: `uses_ads` must be a boolean.');\n  }\n  if (typeof parsed.needs_clarification !== 'boolean') {\n    throw new Error('STRUCTURAL_ERROR: `needs_clarification` must be a boolean.');\n  }\n  \n  if (!Array.isArray(parsed.clarification_questions)) {\n    throw new Error('STRUCTURAL_ERROR: `clarification_questions` must be an array.');\n  }\n  if (!parsed.clarification_questions.every(q => typeof q === 'string')) {\n    throw new Error('STRUCTURAL_ERROR: `clarification_questions` must be an array of strings.');\n  }\n  \n  if (!Array.isArray(parsed.assumptions_to_confirm)) {\n    throw new Error('STRUCTURAL_ERROR: `assumptions_to_confirm` must be an array.');\n  }\n  if (!parsed.assumptions_to_confirm.every(a => typeof a === 'string')) {\n    throw new Error('STRUCTURAL_ERROR: `assumptions_to_confirm` must be an array of strings.');\n  }\n  \n  const needsClarification = parsed.needs_clarification === true;\n  const clarificationQuestions = parsed.clarification_questions.filter((question) => question.trim());\n  \n  if (needsClarification) {\n    return {\n      json: {\n        ...$input.item.json,\n        needs_clarification: true,\n        clarification_questions: clarificationQuestions,\n        reason: typeof parsed.reason === 'string' && parsed.reason.trim() ? parsed.reason : 'NEEDS_CLARIFICATION'\n      }\n    };\n  }\n  \n  const scope = $node['Scope Resolve'].json;\n  const contract = scope.campaign_contract || {};\n  const paidMediaAllowed = contract.paid_media_allowed;\n  \n  if (Number.isInteger(contract.campaign_duration_days)) {\n    const expectedDays = contract.campaign_duration_days;\n    const timelineLength = parsed.daily_timeline.length;\n    if (timelineLength !== expectedDays) {\n      throw new Error('VALIDATION_ERROR: Expected exactly ' + expectedDays + ' days, got ' + timelineLength);\n    }\n  }\n  \n  if (paidMediaAllowed === false && parsed.uses_ads !== false) {\n    throw new Error('VALIDATION_ERROR: Strategy uses ads despite paid_media_allowed=false.');\n  }\n  \n  return {\n    json: {\n      ...$input.item.json,\n      needs_clarification: false,\n      clarification_questions: []\n    }\n  };\n  \n} catch (error) {\n  // \u0110\u00c2Y L\u00c0 \u0110O\u1ea0N CATCH L\u1ed6I \u0110\u1ec2 TR\u00c1NH CRASH N8N\n  return {\n    json: {\n      ...$input.item.json,\n      needs_clarification: true,\n      clarification_questions: [\"L\u1ed6I H\u1ec6 TH\u1ed0NG N\u1ed8I B\u1ed8 (AI sinh JSON l\u1ed7i c\u1ea5u tr\u00fac): \" + error.message + \" --- S\u1ebfp vui l\u00f2ng ra l\u1ec7nh l\u1ea1i v\u00e0 NH\u1eaeC AI l\u00e0m \u0110\u00daNG C\u1ea4U TR\u00daC nh\u00e9!\"],\n      reason: \"SYSTEM_VALIDATION_ERROR\"\n    }\n  };\n}"
+        "jsCode": "try {\n  // --- UNIVERSAL ADAPTER (Supports HTTP Node & LangChain Agent) ---\n  const json = $input.item.json;\n  const response = json.output || json.text || (json.choices && json.choices[0]?.message?.content) || json.message?.content;\n  if (!response) {\n    throw new Error('STRUCTURAL_ERROR: Không tìm thấy nội dung phản hồi từ AI. Output Node không đúng chuẩn.');\n  }\n  // ------------------------------------------------------------------\n  \n  let parsed;\n  try {\n    parsed = JSON.parse(response);\n  } catch (e) {\n    throw new Error('STRUCTURAL_ERROR: Agent 1 did not return valid JSON.');\n  }\n  \n  const requiredSections = [\n    \"executive_decision\", \"icp_and_pain_wedge\", \"offer\", \"funnel_architecture\",\n    \"crm_role\", \"chatbot_role\", \"creative_architecture\", \"media_buying_structure\",\n    \"10_day_operating_plan\", \"lead_qualification\", \"sales_handoff\", \"organic_trust_layer\",\n    \"measurement_framework\", \"budget_allocation\", \"risks_policy\", \"day_3_gate\", \"day_6_gate\",\n    \"end_of_pilot_decision_framework\", \"assets_required_before_launch\", \"do_not_do\",\n    \"daily_timeline\", \"uses_ads\", \"needs_clarification\", \"clarification_questions\", \"assumptions_to_confirm\"\n  ];\n  \n  const missingSections = requiredSections.filter((key) => !(key in parsed));\n  if (missingSections.length > 0) {\n    throw new Error('STRUCTURAL_ERROR: Agent 1 output is missing required sections: ' + missingSections.join(', '));\n  }\n  \n  if (!Array.isArray(parsed.daily_timeline)) {\n    throw new Error('STRUCTURAL_ERROR: `daily_timeline` must be an array.');\n  }\n  \n  parsed.daily_timeline.forEach((dayPlan, index) => {\n    if (Array.isArray(dayPlan) || !dayPlan || typeof dayPlan !== 'object') {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}] must be an object.`);\n    }\n    const requiredDayKeys = ['day', 'objective', 'channel', 'creative', 'budget_vnd', 'metric', 'gate'];\n    const missingKeys = requiredDayKeys.filter((key) => !(key in dayPlan));\n    if (missingKeys.length > 0) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}] is missing keys: ${missingKeys.join(', ')}`);\n    }\n    for (const key of requiredDayKeys) {\n      const value = dayPlan[key];\n      if (value == null) {\n        throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].${key} is empty.`);\n      }\n      if (typeof value === 'string' && !value.trim()) {\n        throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].${key} is empty.`);\n      }\n    }\n    if (!Number.isInteger(dayPlan.day) || dayPlan.day < 1) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].day must be a positive integer.`);\n    }\n  \n    if (typeof dayPlan.budget_vnd !== 'number' || !Number.isFinite(dayPlan.budget_vnd) || dayPlan.budget_vnd < 0) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].budget_vnd must be a zero or positive number.`);\n    }\n  });\n  \n  if (typeof parsed.uses_ads !== 'boolean') {\n    throw new Error('STRUCTURAL_ERROR: `uses_ads` must be a boolean.');\n  }\n  if (typeof parsed.needs_clarification !== 'boolean') {\n    throw new Error('STRUCTURAL_ERROR: `needs_clarification` must be a boolean.');\n  }\n  \n  if (!Array.isArray(parsed.clarification_questions)) {\n    throw new Error('STRUCTURAL_ERROR: `clarification_questions` must be an array.');\n  }\n  if (!parsed.clarification_questions.every(q => typeof q === 'string')) {\n    throw new Error('STRUCTURAL_ERROR: `clarification_questions` must be an array of strings.');\n  }\n  \n  if (!Array.isArray(parsed.assumptions_to_confirm)) {\n    throw new Error('STRUCTURAL_ERROR: `assumptions_to_confirm` must be an array.');\n  }\n  if (!parsed.assumptions_to_confirm.every(a => typeof a === 'string')) {\n    throw new Error('STRUCTURAL_ERROR: `assumptions_to_confirm` must be an array of strings.');\n  }\n  \n  const needsClarification = parsed.needs_clarification === true;\n  const clarificationQuestions = parsed.clarification_questions.filter((question) => question.trim());\n  \n  if (needsClarification) {\n    return {\n      json: {\n        ...$input.item.json,\n        needs_clarification: true,\n        clarification_questions: clarificationQuestions,\n        reason: typeof parsed.reason === 'string' && parsed.reason.trim() ? parsed.reason : 'NEEDS_CLARIFICATION'\n      }\n    };\n  }\n  \n  const scope = $node['Scope Resolve'].json;\n  const contract = scope.campaign_contract || {};\n  const paidMediaAllowed = contract.paid_media_allowed;\n  \n  if (Number.isInteger(contract.campaign_duration_days)) {\n    const expectedDays = contract.campaign_duration_days;\n    const timelineLength = parsed.daily_timeline.length;\n    if (timelineLength !== expectedDays) {\n      throw new Error('VALIDATION_ERROR: Expected exactly ' + expectedDays + ' days, got ' + timelineLength);\n    }\n  }\n  \n  if (paidMediaAllowed === false && parsed.uses_ads !== false) {\n    throw new Error('VALIDATION_ERROR: Strategy uses ads despite paid_media_allowed=false.');\n  }\n  \n  return {\n    json: {\n      ...$input.item.json,\n      needs_clarification: false,\n      clarification_questions: []\n    }\n  };\n  \n} catch (error) {\n  // ĐÂY LÀ ĐOẠN CATCH LỖI ĐỂ TRÁNH CRASH N8N\n  return {\n    json: {\n      ...$input.item.json,\n      needs_clarification: true,\n      clarification_questions: [\"LỖI HỆ THỐNG NỘI BỘ (AI sinh JSON lỗi cấu trúc): \" + error.message + \" --- Sếp vui lòng ra lệnh lại và NHẮC AI làm ĐÚNG CẤU TRÚC nhé!\"],\n      reason: \"SYSTEM_VALIDATION_ERROR\"\n    }\n  };\n}"
       },
       "name": "Validate Agent 1 Output",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        24720,
-        576
+        36464,
+        928
       ],
-      "id": "a5b30bf0-ac45-44e8-9e0a-a8f273cdfaa1"
+      "id": "1c3bdcd1-73ce-4699-a148-bf6837ed208f"
     },
     {
       "parameters": {
@@ -182,10 +182,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        24896,
-        576
+        36640,
+        928
       ],
-      "id": "10441953-0fed-4ceb-9175-8366caa42012"
+      "id": "ae51909e-54d6-4579-9658-5d49aa138dd9"
     },
     {
       "parameters": {
@@ -211,10 +211,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        25120,
-        576
+        36864,
+        928
       ],
-      "id": "dba6f02a-dcce-4930-a8d6-e857327636a8",
+      "id": "5e09c282-a8bf-47e3-9318-0c7622ccf3a9",
       "credentials": {
         "httpQueryAuth": {
           "id": "qsZuqecdX6PM9qfX",
@@ -234,10 +234,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        25328,
-        576
+        37072,
+        928
       ],
-      "id": "99823001-d3de-402b-866d-5afb1fed2ccf"
+      "id": "27809221-dc94-4767-81d0-518a6fb69c21"
     },
     {
       "parameters": {
@@ -254,10 +254,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        25520,
-        576
+        37264,
+        928
       ],
-      "id": "7a1ecec5-4a6c-4d52-90f6-42a3a5e3ccf2"
+      "id": "612c4da6-fbb0-49c8-9964-f8d31bd84002"
     },
     {
       "parameters": {
@@ -278,17 +278,17 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $('Scope Resolve').first().json.thread_id,\n  organization_id: $('Scope Resolve').first().json.organization_id,\n  idempotency_key: $execution.id + '_qa_reject',\n  sender: 'agent_4_qa',\n  body: '\u26d4 **Agent 4 (QA) \u0111\u00e3 ch\u1eb7n b\u1ea3n K\u1ebf ho\u1ea1ch n\u00e0y v\u00ec kh\u00f4ng \u0111\u1ea1t y\u00eau c\u1ea7u:**\\n\\n' + $json.reason,\n  intent_type: 'agent_response'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $('Scope Resolve').first().json.thread_id,\n  organization_id: $('Scope Resolve').first().json.organization_id,\n  idempotency_key: $execution.id + '_qa_reject',\n  sender: 'agent_4_qa',\n  body: '⛔ **Agent 4 (QA) đã chặn bản Kế hoạch này (sau ' + ($json.attempt - 1) + ' lượt sửa) vì không đạt yêu cầu:**\\n\\n' + ($json.qa_feedback || 'Lỗi không xác định'),\n  intent_type: 'agent_response'\n} }}",
         "options": {}
       },
       "name": "QA Reject (chat_append)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        25936,
-        784
+        37680,
+        1136
       ],
-      "id": "eebde01f-094c-4286-b393-468c9b40002c"
+      "id": "706110ef-dd29-487b-aa71-64369026c66d"
     },
     {
       "parameters": {
@@ -314,10 +314,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        25728,
-        480
+        37472,
+        832
       ],
-      "id": "c5123f00-3f93-435c-84a9-bef252021954",
+      "id": "1557f4b0-d8aa-46ef-b369-8ee675a760b1",
       "credentials": {
         "httpHeaderAuth": {
           "id": "u1GGrgkWgG2z9d4K",
@@ -344,33 +344,33 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $('Scope Resolve').first().json.thread_id,\n  organization_id: $('Scope Resolve').first().json.organization_id,\n  idempotency_key: $execution.id + '_done',\n  sender: 'agent_7_packaging',\n  body: $json.choices[0].message.content,\n  intent_type: 'campaign_proposal'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $('Scope Resolve').first().json.thread_id,\n  organization_id: $('Scope Resolve').first().json.organization_id,\n  idempotency_key: $execution.id + '_done',\n  sender: 'agent_7_packaging',\n  body: '✅ **Kế hoạch đã được duyệt (Lượt ' + ($('AI Agent 1').last().runIndex + 1) + '/3)**\\n\\n' + $json.choices[0].message.content,\n  intent_type: 'campaign_proposal'\n} }}",
         "options": {}
       },
       "name": "Delivery (chat_append)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        25920,
-        480
+        37664,
+        832
       ],
-      "id": "379e03b1-016b-4fcb-b48c-43671a6798ab"
+      "id": "db839621-0cf9-4c77-a919-408d35f3f72f"
     },
     {
       "parameters": {
         "promptType": "define",
         "text": "={{ 'campaign_brief: ' + $node['Scope Resolve'].json.campaign_brief + '\\ncampaign_goal: ' + $node['Scope Resolve'].json.campaign_goal + '\\ncampaign_duration_days: ' + String($node['Scope Resolve'].json.campaign_duration_days) + '\\npaid_media_allowed: ' + String($node['Scope Resolve'].json.paid_media_allowed) + '\\nrequired_terms: ' + JSON.stringify($node['Scope Resolve'].json.required_terms || []) + '\\nvalidation_hints: ' + JSON.stringify($node['Scope Resolve'].json.validation_hints || []) + '\\ndepartment_context: ' + ($node['Scope Resolve'].json.department_name || $node['Scope Resolve'].json.department_id) + '\\ndepartment_pack: ' + JSON.stringify($node['Scope Resolve'].json.department_pack || {}) + '\\n\\nUser Request (verbatim): ' + $node['Scope Resolve'].json.campaign_brief + '\\n\\n' + ($json.qa_feedback ? '================\\nPREVIOUS QA FEEDBACK (YOU MUST FIX THIS IN YOUR NEW PLAN):\\n' + $json.qa_feedback + '\\n================' : '') }}",
         "options": {
-          "systemMessage": "={{ 'You are Agent 1 - Viral Research & Angle. Your capability is strictly BOUNDED. You MUST treat campaign_brief as the SSOT and respect the deterministic contract fields provided by the control plane. You must output a strategic research packet in valid JSON format. Required top-level sections are: `executive_decision` (string), `icp_and_pain_wedge` (string), `offer` (string), `funnel_architecture` (string), `crm_role` (string), `chatbot_role` (string), `creative_architecture` (string), `media_buying_structure` (string), `10_day_operating_plan` (object), `lead_qualification` (string), `sales_handoff` (string), `organic_trust_layer` (string), `measurement_framework` (string), `budget_allocation` (string), `risks_policy` (string), `day_3_gate` (object), `day_6_gate` (object), `end_of_pilot_decision_framework` (string), `assets_required_before_launch` (string), `do_not_do` (string), `daily_timeline` (array of objects), `uses_ads` (boolean), `needs_clarification` (boolean), `clarification_questions` (array of strings), and `assumptions_to_confirm` (array of strings). Fill every required section; if something is underspecified, set `needs_clarification=true` and use concise placeholders instead of omitting keys. For each item in `daily_timeline`, include at minimum: `day`, `objective`, `channel`, `creative`, `budget_vnd`, `metric`, and `gate`. CRITICAL: The `daily_timeline` array MUST contain EXACTLY ' + String($node['Scope Resolve'].json.campaign_duration_days) + ' items. Do NOT group days. Write a separate object for EACH day. RULES: 1. You MUST NOT write final social captions. You MUST NOT output final markdown proposals. Your output is an upstream source of truth for downstream agents. 2. DO NOT ask for clarification on fields that are ALREADY provided in the user message. 3. Do NOT invent missing facts, products, audiences, budgets. 4. CRITICAL: YOU MUST WRITE YOUR ENTIRE JSON RESPONSE IN THE SAME LANGUAGE AS THE `campaign_brief`. 5. TOOL IMPERATIVE: If the campaign_brief lacks specific market metrics, competitor benchmarks (CPC, CTR), or deep reasoning data, YOU MUST USE THE `Market_Research_Subagent` TOOL to gather real-time data BEFORE deciding to output needs_clarification=true.' }}"
+          "systemMessage": "={{ 'You are Agent 1 - Viral Research & Angle. Your capability is strictly BOUNDED. You MUST treat campaign_brief as the SSOT and respect the deterministic contract fields provided by the control plane. You must output a strategic research packet in valid JSON format. Required top-level sections are: `executive_decision` (string), `icp_and_pain_wedge` (string), `offer` (string), `funnel_architecture` (string), `crm_role` (string), `chatbot_role` (string), `creative_architecture` (string), `media_buying_structure` (string), `10_day_operating_plan` (object), `lead_qualification` (string), `sales_handoff` (string), `organic_trust_layer` (string), `measurement_framework` (string), `budget_allocation` (string), `risks_policy` (string), `day_3_gate` (object), `day_6_gate` (object), `end_of_pilot_decision_framework` (string), `assets_required_before_launch` (string), `do_not_do` (string), `daily_timeline` (array of objects), `uses_ads` (boolean), `needs_clarification` (boolean), `clarification_questions` (array of strings), and `assumptions_to_confirm` (array of strings). Fill every required section; if something is underspecified, set `needs_clarification=true` and use concise placeholders instead of omitting keys. For each item in `daily_timeline`, include at minimum: `day`, `objective`, `channel`, `creative`, `budget_vnd`, `metric`, and `gate`. CRITICAL: The `daily_timeline` array MUST contain EXACTLY ' + String($node['Scope Resolve'].json.campaign_duration_days) + ' items. Do NOT group days. Write a separate object for EACH day. RULES: 1. You MUST NOT write final social captions. You MUST NOT output final markdown proposals. Your output is an upstream source of truth for downstream agents. 2. DO NOT ask for clarification on fields that are ALREADY provided in the user message. 3. Do NOT invent missing facts, products, audiences, budgets. 4. CRITICAL: YOU MUST WRITE YOUR ENTIRE JSON RESPONSE IN THE SAME LANGUAGE AS THE `campaign_brief`. 5. TOOL IMPERATIVE: If the campaign_brief lacks specific market metrics, competitor benchmarks (CPC, CPL), or deep reasoning data, YOU MUST USE THE Tavily_Market_Search to gather real-time data BEFORE deciding on KPI and budget. Do not use Market_Research_Subagent for macro data (that is for Social Listening only). Return data according to contract: web_research_summary, sources, confidence, key_metrics. 6. LOGIC GATE: If your web research reveals that the provided budget is mathematically insufficient to achieve the goal (e.g., Total Budget < Average CPL), you MUST set needs_clarification=true, set executive_decision to explain the budget deficit, and list the exact calculation in clarification_questions. DO NOT hallucinate fake KPIs to make the math work.' }}"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3,
       "position": [
-        24432,
-        576
+        36176,
+        928
       ],
-      "id": "bb2787e2-c5d0-46dc-96ea-7c8fa475ebbc",
+      "id": "f495d566-3a01-4c76-acdb-8f7f25f30095",
       "name": "AI Agent 1"
     },
     {
@@ -430,10 +430,10 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        24640,
-        768
+        36416,
+        1120
       ],
-      "id": "f78498ed-19aa-4dff-8608-234982db21f2",
+      "id": "c4e1503e-8161-4b52-86dc-477611ccd0bf",
       "name": "Market_Research_Subagent"
     },
     {
@@ -457,10 +457,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        24304,
-        768
+        36048,
+        1120
       ],
-      "id": "b3ca1e80-91dd-4c84-95b8-8faca68b78ad",
+      "id": "59c03c76-b7fe-428d-aeaf-c564c492ddcd",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
@@ -477,23 +477,23 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        24256,
-        576
+        36000,
+        928
       ],
-      "id": "8573f82d-97c5-4a44-a180-a372ba939247"
+      "id": "76820d31-096f-4c9e-a0ae-77db96b8859d"
     },
     {
       "parameters": {
-        "jsCode": "const data = $('Agent 4 - QA').last().json || {};\nconst newAttempt = $runIndex + 2;\n\nconst original = $('Init Attempt').first().json;\nreturn { json: { ...original, attempt: newAttempt, qa_feedback: data.reason } };"
+        "jsCode": "const qaData = $('QA Verdict Parser').last().json || {};\nconst newAttempt = $runIndex + 2;\n\nconst original = $('Init Attempt').first().json;\nreturn { json: { ...original, attempt: newAttempt, qa_feedback: qaData.reason } };"
       },
       "name": "Check Attempt Limit",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        25536,
-        800
+        37280,
+        1152
       ],
-      "id": "a3157615-1d32-4cba-94fb-44411e8561fc",
+      "id": "54fae670-ca85-4669-a26c-5b07a3dc222f",
       "typeOptions": {
         "multipleOutputs": true
       },
@@ -526,11 +526,31 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        25744,
-        800
+        37488,
+        1152
       ],
-      "id": "777fc4a4-affa-4567-bbbc-14504fdca190",
+      "id": "5eba3297-1cc7-48a5-a7c1-52c31e788552",
       "name": "If"
+    },
+    {
+      "parameters": {
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        36224,
+        1120
+      ],
+      "id": "4e92a5a9-208e-4ac4-89e5-742c227eaa41",
+      "name": "Search in Tavily",
+      "credentials": {
+        "tavilyApi": {
+          "id": "HyrZdVo3mEVKYOP9",
+          "name": "Tavily account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -749,13 +769,24 @@
           }
         ]
       ]
+    },
+    "Search in Tavily": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent 1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "246a9ba1-7cff-4726-8836-35ea4fb26203",
+  "versionId": "c9db1576-618c-4748-abfc-417e111edecc",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"

@@ -24,6 +24,11 @@ export async function POST(req: Request) {
     const title = formData.get('title') as string;
     const channelIdStr = formData.get('channel_id') as string;
     const channelId = (channelIdStr && channelIdStr !== 'null' && channelIdStr !== 'undefined' && channelIdStr.trim() !== '') ? channelIdStr : null;
+    const namespace = formData.get('namespace') as string;
+    
+    if (namespace && !['cskh', 'marketing'].includes(namespace)) {
+      return NextResponse.json({ error: 'INVALID_NAMESPACE', message: 'Namespace must be cskh or marketing' }, { status: 400 });
+    }
 
     if (!file || !title) {
       return NextResponse.json({ error: 'Missing file or title' }, { status: 400 });
@@ -95,6 +100,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         organization_id: organizationId,
         channel_id: channelId,
+        namespace: namespace || 'cskh',
         title: title,
         file_url: storagePath,
         status: 'processing',
@@ -116,11 +122,16 @@ export async function POST(req: Request) {
     if (n8nUrl) {
       const webhookRes = await fetch(n8nUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.N8N_API_KEY || process.env.CONTROL_PLANE_SECRET || ''}`,
+            'x-n8n-api-key': process.env.N8N_API_KEY || process.env.CONTROL_PLANE_SECRET || ''
+          },
         body: JSON.stringify({
           document_id: document.id,
           organization_id: organizationId,
           channel_id: channelId,
+        namespace: namespace || 'cskh',
           file_path: storagePath,
           file_name: file.name,
           mime_type: file.type || 'application/octet-stream'

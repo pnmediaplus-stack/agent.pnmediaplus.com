@@ -70,10 +70,11 @@ function KnowledgeTab() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+  const [selectedNamespace, setSelectedNamespace] = useState<string>('cskh');
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  const { data: documents, error: docsError, mutate: mutateDocs } = useSWR("/api/crm/knowledge", fetcher, { refreshInterval: 3000 });
+  const { data: documents, error: docsError, mutate: mutateDocs } = useSWR(`/api/crm/knowledge?namespace=${selectedNamespace}`, fetcher, { refreshInterval: 3000 });
   const { data: channels, error: channelsError } = useSWR("/api/crm/channels/prompt", fetcher);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,6 +103,7 @@ function KnowledgeTab() {
       if (selectedChannelId) {
         formData.append("channel_id", selectedChannelId);
       }
+        formData.append("namespace", selectedNamespace);
 
       try {
         const res = await fetch("/api/crm/knowledge/upload", { method: "POST", body: formData });
@@ -193,8 +195,22 @@ function KnowledgeTab() {
       
       {/* Upload Box */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center border-dashed">
-        <div className="w-full max-w-lg mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phạm vi tài liệu (Scope)</label>
+        
+        <div className="w-full max-w-lg mb-4 flex gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phân vùng (Namespace)</label>
+            <select 
+              className="w-full bg-white text-gray-900 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
+              value={selectedNamespace}
+              onChange={(e) => setSelectedNamespace(e.target.value)}
+            >
+              <option value="cskh">Kho CSKH (Mặc định)</option>
+              <option value="marketing">Kho Marketing</option>
+            </select>
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phạm vi tài liệu (Scope)</label>
+
           <select 
             className="w-full bg-white text-gray-900 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
             value={selectedChannelId || ""}
@@ -205,6 +221,7 @@ function KnowledgeTab() {
               <option key={c.id} value={c.id}>Tài liệu riêng: {c.channel_name}</option>
             ))}
           </select>
+          </div>
         </div>
 
         <UploadCloud className="h-10 w-10 text-gray-400 mb-3" />

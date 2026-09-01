@@ -5,6 +5,12 @@ import { readPortalAccessToken, loadPortalOrganizationContext } from '@/lib/port
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const namespace = url.searchParams.get('namespace') || 'cskh';
+  
+  if (namespace && !['cskh', 'marketing'].includes(namespace)) {
+    return NextResponse.json({ error: 'INVALID_NAMESPACE', message: 'Namespace must be cskh or marketing' }, { status: 400 });
+  }
   try {
     const auth = await verifyUiAuth(req);
     if (!auth.ok) return auth.response;
@@ -23,7 +29,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'CONFIG_MISSING', message: 'Supabase config missing' }, { status: 500 });
     }
 
-    const res = await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents?organization_id=eq.${organizationId}&order=created_at.desc`, {
+    const res = await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents?organization_id=eq.${organizationId}&namespace=eq.${namespace}&order=created_at.desc`, {
       headers: {
         'apikey': serviceRoleKey,
         'Authorization': `Bearer ${serviceRoleKey}`,
