@@ -156,7 +156,7 @@ export function ChatPageClient() {
             <select
               value={thread.id}
               onChange={(e) => setActiveThreadId(e.target.value)}
-              className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 max-w-sm cursor-pointer"
+              className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 max-w-sm cursor-pointer"
             >
               {threadsData?.chat_threads?.map(t => {
                 const dateObj = new Date(t.created_at);
@@ -170,14 +170,14 @@ export function ChatPageClient() {
             </select>
             <button
               onClick={handleRenameChat}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white rounded transition-colors"
+              className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded transition-colors"
               title="Đổi tên phiên làm việc hiện tại"
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleDeleteChat}
-              className="p-1.5 bg-slate-800 hover:bg-red-900/40 border border-slate-700 hover:border-red-800 text-slate-400 hover:text-red-400 rounded transition-colors"
+              className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/40 border border-slate-300 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-800 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors"
               title="Xóa phiên làm việc hiện tại"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -188,7 +188,7 @@ export function ChatPageClient() {
         <button
           onClick={handleNewChat}
           disabled={isCreating}
-          className="flex items-center space-x-2 px-3 py-1.5 bg-emerald-700/20 hover:bg-emerald-700/40 border border-emerald-700/50 text-emerald-400 hover:text-emerald-300 rounded text-xs transition-colors disabled:opacity-50 mt-4"
+          className="flex items-center space-x-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-700/20 hover:bg-emerald-100 dark:hover:bg-emerald-700/40 border border-emerald-200 dark:border-emerald-700/50 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 rounded text-xs transition-colors disabled:opacity-50 mt-4"
           title="Tạo phiên chat mới để tẩy xóa hoàn toàn bộ nhớ của AI Orchestrator"
         >
           <Plus className="w-4 h-4" />
