@@ -56,13 +56,13 @@ function SectionFrame({
 }) {
   return (
     <section
-      className={`overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.24)] ${
+      className={`overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.06)] ${
         className ?? ""
       }`}
     >
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900 px-5 py-4">
-        <div className="inline-flex max-w-full rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">{title}</div>
+      <div className="border-b border-violet-200 dark:border-violet-400/20 bg-white dark:bg-slate-900 px-5 py-4">
+        <div className="inline-flex max-w-full rounded-lg border border-violet-300 dark:border-violet-400/30 bg-violet-50 dark:bg-violet-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold tracking-tight text-violet-900 dark:text-white">{title}</div>
         </div>
         <div className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-300">{description}</div>
       </div>
@@ -90,47 +90,47 @@ function CampaignControlBar({
   ];
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.24)]">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900 px-4 py-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-            <div className="text-sm font-semibold text-slate-900 dark:text-white">{t("dashboard.controls.title") ?? "Locked campaign workspace"}</div>
+    <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
+      <div className="border-b border-violet-200 dark:border-violet-400/20 bg-white dark:bg-slate-900 px-4 py-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="inline-flex rounded-lg border border-violet-300 dark:border-violet-400/30 bg-violet-50 dark:bg-violet-400/10 px-3 py-1.5">
+              <div className="text-sm font-semibold text-violet-900 dark:text-white">{t("dashboard.controls.title") ?? "Locked campaign workspace"}</div>
+            </div>
+            <div className="mt-1 max-w-3xl text-xs leading-5 text-slate-500 dark:text-slate-400">
+              {t("dashboard.controls.description") ??
+                "Vertical dashboard shell. No page-level horizontal mode. Wide content stays inside internal rails, tables, and snapshots."}
+            </div>
           </div>
-          <div className="mt-1 max-w-3xl text-xs leading-5 text-slate-500 dark:text-slate-400">
-            {t("dashboard.controls.description") ??
-              "Vertical dashboard shell. No page-level horizontal mode. Wide content stays inside internal rails, tables, and snapshots."}
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((tab) => {
+              const isActive = tab.id === activeTab;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => onTabChange(tab.id)}
+                  className={[
+                    "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.12em] transition",
+                    isActive
+                      ? "border-violet-500 bg-violet-600 text-white dark:bg-violet-500/20 dark:border-violet-400/40 dark:text-violet-200"
+                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 text-slate-700 dark:text-slate-200 hover:border-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  ].join(" ")}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {tabs.map((tab) => {
-            const isActive = tab.id === activeTab;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className={[
-                  "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.12em] transition",
-                  isActive
-                    ? "border-cyan-400/40 bg-cyan-50 dark:bg-cyan-400/10 text-cyan-100"
-                    : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 text-slate-700 dark:text-slate-200 hover:border-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                ].join(" ")}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
       </div>
-      </div>
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-200">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+        <span className="rounded-full border border-violet-300 bg-violet-50 dark:border-violet-500/30 dark:bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-300">
           {t("dashboard.controls.fixedSidebar") ?? "Fixed sidebar"}
         </span>
-        <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">
+        <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-200">
           {t("dashboard.controls.internalHorizontalScrollOnly") ?? "Internal horizontal scroll only"}
         </span>
-        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-200">
+        <span className="rounded-full border border-emerald-300 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">
           {t("dashboard.controls.campaignManagerInspired") ?? "Campaign-manager inspired"}
         </span>
       </div>
@@ -142,13 +142,13 @@ function SummaryGrid({ cards }: { cards: SummaryCard[] }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => (
-        <div key={card.label} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
-          <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-4 py-3">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-100">{card.label}</div>
+        <div key={card.label} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950/80">
+          <div className="border-b border-violet-200 dark:border-violet-400/20 bg-violet-50 dark:bg-slate-900/90 px-4 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-violet-700 dark:text-violet-300">{card.label}</div>
           </div>
           <div className="p-4">
-          <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{card.value}</div>
-          <div className="mt-1.5 text-sm leading-6 text-slate-500 dark:text-slate-400">{card.note}</div>
+            <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{card.value}</div>
+            <div className="mt-1.5 text-sm leading-6 text-slate-500 dark:text-slate-400">{card.note}</div>
           </div>
         </div>
       ))}
@@ -176,17 +176,17 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
     : (t("dashboard.labels.pendingUpper") ?? "PENDING");
 
   return (
-    <div className="flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.16)]">
-      <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/90 px-4 py-3">
+    <div className="flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
+      <div className="border-b border-violet-200 dark:border-slate-700 bg-white dark:bg-slate-900/90 px-4 py-3">
         <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-            <div className="inline-flex max-w-full rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-              <div className="break-words whitespace-normal text-sm font-semibold leading-6 text-slate-900 dark:text-white">{item.title}</div>
+          <div className="min-w-0">
+            <div className="inline-flex max-w-full rounded-lg border border-violet-300 dark:border-violet-400/20 bg-violet-50 dark:bg-violet-400/10 px-3 py-1.5">
+              <div className="break-words whitespace-normal text-sm font-semibold leading-6 text-violet-900 dark:text-white">{item.title}</div>
             </div>
             <div className="mt-1 break-words whitespace-normal text-xs leading-5 text-slate-500 dark:text-slate-400">{item.contentKey}</div>
+          </div>
+          <StateBadge label={item.currentState} />
         </div>
-        <StateBadge label={item.currentState} />
-      </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4 pr-1">
@@ -212,7 +212,7 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
             {assets.missing.map((assetType) => (
               <span
                 key={assetType}
-              className="inline-flex items-center rounded-full border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-rose-600 dark:text-rose-200"
+                className="inline-flex items-center rounded-full border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-rose-600 dark:text-rose-200"
               >
                 {`${t("dashboard.labels.missingPrefix") ?? "missing"}:${assetType}`}
               </span>
@@ -226,7 +226,7 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[9.5rem_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 px-3 py-2">
+    <div className="grid grid-cols-[9.5rem_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-3 py-2">
       <span className="min-w-0 text-slate-500">{label}</span>
       <span className="min-w-0 break-words text-right font-medium text-slate-900 dark:text-white">{value}</span>
     </div>
@@ -238,7 +238,7 @@ function PipelineBoard() {
   const data = useDashboardData();
   return (
     <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden">
-        <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
+      <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
         {PHASE2_PIPELINE_STATES.map((state) => (
           <StateBadge key={state} label={state} displayLabel={t(`dashboard.state.${state}`) ?? state} />
         ))}
@@ -311,7 +311,7 @@ function LedgerShell({
               <col key={column.key} style={{ width: column.width }} />
             ))}
           </colgroup>
-          <thead className="text-xs uppercase tracking-[0.22em] text-slate-600 dark:text-slate-300">
+          <thead className="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">
             <tr>
               {columns.map((column) => (
                 <th
@@ -331,9 +331,9 @@ function LedgerShell({
                 <col key={column.key} style={{ width: column.width }} />
               ))}
             </colgroup>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {rows.map((row, index) => (
-                <tr key={index} className="text-slate-600 dark:text-slate-300">
+                <tr key={index} className="text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
                   {renderRow(row).map((cell, cellIndex) => (
                     <td key={cellIndex} className="px-5 py-4 align-top">
                       {cell}
@@ -345,6 +345,17 @@ function LedgerShell({
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SectionHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="border-b border-violet-200 dark:border-violet-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
+      <div className="inline-flex rounded-lg border border-violet-300 dark:border-violet-400/30 bg-violet-50 dark:bg-violet-400/10 px-3 py-1.5">
+        <div className="text-sm font-semibold text-violet-900 dark:text-white">{title}</div>
+      </div>
+      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{description}</div>
     </div>
   );
 }
@@ -362,12 +373,10 @@ function TaskView() {
 
   return (
     <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
-        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">{t("dashboard.sections.taskLedgerTitle") ?? "Task ledger / agent_tasks"}</div>
-        </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t("dashboard.sections.taskLedgerDescription") ?? "Campaign-style task rows with wide columns kept inside the panel."}</div>
-      </div>
+      <SectionHeader
+        title={t("dashboard.sections.taskLedgerTitle") ?? "Task ledger / agent_tasks"}
+        description={t("dashboard.sections.taskLedgerDescription") ?? "Campaign-style task rows with wide columns kept inside the panel."}
+      />
       <div className="min-h-0 flex-1">
         <LedgerShell
           columns={columns}
@@ -406,15 +415,10 @@ function AssetView() {
 
   return (
     <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
-        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">{t("dashboard.sections.assetsTitle") ?? "Creative assets / assets"}</div>
-        </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {t("dashboard.sections.assetsDescription") ??
-            "Research, visual, and caption assets stay in a single horizontal ledger before QA_ready."}
-        </div>
-      </div>
+      <SectionHeader
+        title={t("dashboard.sections.assetsTitle") ?? "Creative assets / assets"}
+        description={t("dashboard.sections.assetsDescription") ?? "Research, visual, and caption assets stay in a single horizontal ledger before QA_ready."}
+      />
       <div className="min-h-0 flex-1">
         <LedgerShell
           columns={columns}
@@ -453,15 +457,10 @@ function QAView() {
 
   return (
     <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
-        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">{t("dashboard.sections.qaTitle") ?? "QA gate / qa_reviews"}</div>
-        </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {t("dashboard.sections.qaDescription") ??
-            "Reviews are read as approval gates, with risk and publish eligibility visible at a glance."}
-        </div>
-      </div>
+      <SectionHeader
+        title={t("dashboard.sections.qaTitle") ?? "QA gate / qa_reviews"}
+        description={t("dashboard.sections.qaDescription") ?? "Reviews are read as approval gates, with risk and publish eligibility visible at a glance."}
+      />
       <div className="min-h-0 flex-1">
         <LedgerShell
           columns={columns}
@@ -509,15 +508,10 @@ function PerformanceView() {
 
   return (
     <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
-        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">{t("dashboard.sections.performanceTitle") ?? "Performance ledger / performance_records"}</div>
-        </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {t("dashboard.sections.performanceDescription") ??
-            "Post-publish snapshots only. Missing metrics render as pending / incomplete."}
-        </div>
-      </div>
+      <SectionHeader
+        title={t("dashboard.sections.performanceTitle") ?? "Performance ledger / performance_records"}
+        description={t("dashboard.sections.performanceDescription") ?? "Post-publish snapshots only. Missing metrics render as pending / incomplete."}
+      />
       <div className="mb-6 mt-4 min-h-0">
         <PerformanceChart data={aggregatePerformanceData(data.performanceRecords)} />
       </div>
@@ -618,46 +612,46 @@ export function Phase2Dashboard({
   return (
     <DashboardDataContext.Provider value={data}>
       <PageFrame bannerKey="media_pipeline_banner"
-      className="flex min-h-full min-w-0 flex-col overflow-hidden"
-      contentClassName="flex min-h-0 min-w-0 flex-1 flex-col gap-5 overflow-hidden pr-1"
-      title={t("dashboard.page.title") ?? "Bảng điều khiển"}
-      purpose={
-        t("dashboard.page.purpose") ??
-        "Bảng điều khiển pipeline Phase 2 cho content_items, agent_tasks, assets, qa_reviews, và performance_records."
-      }
-      statusLabel={t("dashboard.page.statusLabel") ?? "Phase 2 pipeline"}
-      statusValue="QA_ready"
-      statusDisplayValue={t("dashboard.state.QA_ready") ?? "Sẵn sàng QA"}
-      allowedActions={[
-        t("dashboard.page.allowed.inspectPipeline") ?? "Xem pipeline",
-        t("dashboard.page.allowed.reviewOwnership") ?? "Xem quyền sở hữu task",
-        t("dashboard.page.allowed.checkEligibility") ?? "Kiểm tra điều kiện xuất bản"
-      ]}
-      forbiddenActions={[
-        t("dashboard.page.forbidden.autoPublish") ?? "Tự động xuất bản",
-        t("dashboard.page.forbidden.autoApprove") ?? "Tự động phê duyệt",
-        t("dashboard.page.forbidden.bypassQa") ?? "Bỏ qua QA"
-      ]}
-    >
-      <CampaignControlBar activeTab={activeTab} onTabChange={setActiveTab} />
-      <SummaryGrid cards={summaryCards} />
+        className="flex min-h-full min-w-0 flex-col overflow-hidden"
+        contentClassName="flex min-h-0 min-w-0 flex-1 flex-col gap-5 overflow-hidden pr-1"
+        title={t("dashboard.page.title") ?? "Bảng điều khiển"}
+        purpose={
+          t("dashboard.page.purpose") ??
+          "Bảng điều khiển pipeline Phase 2 cho content_items, agent_tasks, assets, qa_reviews, và performance_records."
+        }
+        statusLabel={t("dashboard.page.statusLabel") ?? "Phase 2 pipeline"}
+        statusValue="QA_ready"
+        statusDisplayValue={t("dashboard.state.QA_ready") ?? "Sẵn sàng QA"}
+        allowedActions={[
+          t("dashboard.page.allowed.inspectPipeline") ?? "Xem pipeline",
+          t("dashboard.page.allowed.reviewOwnership") ?? "Xem quyền sở hữu task",
+          t("dashboard.page.allowed.checkEligibility") ?? "Kiểm tra điều kiện xuất bản"
+        ]}
+        forbiddenActions={[
+          t("dashboard.page.forbidden.autoPublish") ?? "Tự động xuất bản",
+          t("dashboard.page.forbidden.autoApprove") ?? "Tự động phê duyệt",
+          t("dashboard.page.forbidden.bypassQa") ?? "Bỏ qua QA"
+        ]}
+      >
+        <CampaignControlBar activeTab={activeTab} onTabChange={setActiveTab} />
+        <SummaryGrid cards={summaryCards} />
 
-      {activeTab === "pipeline" && (
-        <SectionFrame
-          className="flex min-h-0 min-w-0 flex-col"
-          bodyClassName="min-h-0 min-w-0 flex-1 overflow-hidden"
-          title={t("dashboard.sections.pipelineBoard") ?? "Pipeline board (content_items)"}
-          description={t("dashboard.sections.pipelineBoardDescription") ?? "idea → research_ready → visual_ready → caption_ready → QA_ready → QA_passed → scheduled → published"}
-        >
-          <PipelineBoard />
-        </SectionFrame>
-      )}
+        {activeTab === "pipeline" && (
+          <SectionFrame
+            className="flex min-h-0 min-w-0 flex-col"
+            bodyClassName="min-h-0 min-w-0 flex-1 overflow-hidden"
+            title={t("dashboard.sections.pipelineBoard") ?? "Pipeline board (content_items)"}
+            description={t("dashboard.sections.pipelineBoardDescription") ?? "idea → research_ready → visual_ready → caption_ready → QA_ready → QA_passed → scheduled → published"}
+          >
+            <PipelineBoard />
+          </SectionFrame>
+        )}
 
-      {activeTab === "tasks" && <TaskView />}
-      {activeTab === "assets" && <AssetView />}
-      {activeTab === "qa" && <QAView />}
-      {activeTab === "performance" && <PerformanceView />}
-    </PageFrame>
+        {activeTab === "tasks" && <TaskView />}
+        {activeTab === "assets" && <AssetView />}
+        {activeTab === "qa" && <QAView />}
+        {activeTab === "performance" && <PerformanceView />}
+      </PageFrame>
     </DashboardDataContext.Provider>
   );
 }
