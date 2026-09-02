@@ -240,7 +240,7 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
     : item.ownerRef;
 
   return (
-    <div className={`flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border-l-4 ${accent} border border-violet-100 dark:border-slate-700/60 bg-gradient-to-br from-white to-violet-50/60 dark:from-slate-800 dark:to-slate-900 shadow-md`}>
+    <div className={`flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border-l-4 ${accent} border border-violet-100 dark:border-slate-700/60 bg-gradient-to-br from-white to-violet-50/60 dark:from-slate-800 dark:to-slate-900 shadow-md transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 hover:border-violet-200 dark:hover:border-slate-600`}>
 
       {/* ── HEADER ─────────────────────────────────── */}
       <div className="px-4 pt-4 pb-3">
