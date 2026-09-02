@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
+import useSWRInfinite from "swr/infinite";
 import { UploadCloud, FileText, Loader2, CheckCircle2, XCircle, Trash2, Settings, MessageSquare, Bot , Tag, Plus, X} from "lucide-react";
 
 const fetcher = async (url: string) => {
@@ -52,7 +53,7 @@ export default function AIControlCenterPage() {
           </nav>
       </div>
 
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-6">
         {activeTab === "knowledge" && <KnowledgeTab />}
         {activeTab === "persona" && <PersonaTab />}
         {activeTab === "campaigns" && <CampaignsTab />}
@@ -74,7 +75,15 @@ function KnowledgeTab() {
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  const { data: documents, error: docsError, mutate: mutateDocs } = useSWR(`/api/crm/knowledge?namespace=${selectedNamespace}`, fetcher, { refreshInterval: 3000 });
+  const getKey = (pageIndex: number, previousPageData: any) => {
+    if (previousPageData && !previousPageData.length) return null; // Đã tải hết
+    return `/api/crm/knowledge?namespace=${selectedNamespace}&limit=20&offset=${pageIndex * 20}`;
+  };
+
+  const { data, error: docsError, size, setSize, mutate: mutateDocs, isValidating } = useSWRInfinite(getKey, fetcher, { refreshInterval: 5000 });
+  const documents = data ? data.flat() : undefined;
+  const isReachingEnd = data && data[data.length - 1]?.length < 20;
+
   const { data: channels, error: channelsError } = useSWR("/api/crm/channels/prompt", fetcher);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -277,7 +286,15 @@ function KnowledgeTab() {
         ) : !Array.isArray(documents) || documents.length === 0 ? (
           <div className="p-10 text-center text-gray-500">Chưa có tài liệu nào.</div>
         ) : (
-          <div className="flex-1 overflow-auto custom-scrollbar">
+          <div 
+            className="flex-1 overflow-auto custom-scrollbar"
+            onScroll={(e) => {
+              const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+              if (scrollHeight - scrollTop <= clientHeight * 1.5 && !isValidating && !isReachingEnd) {
+                setSize(size + 1);
+              }
+            }}
+          >
             <table className="min-w-full divide-y divide-gray-200 relative">
               <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
                 <tr>
@@ -345,6 +362,12 @@ function KnowledgeTab() {
                 ))}
               </tbody>
             </table>
+            {isValidating && documents.length > 0 && (
+              <div className="p-4 flex justify-center border-t border-gray-100">
+                <Loader2 className="animate-spin text-blue-500 h-5 w-5" />
+                <span className="ml-2 text-sm text-gray-500">Đang tải thêm...</span>
+              </div>
+            )}
           </div>
         )}
       </div>
