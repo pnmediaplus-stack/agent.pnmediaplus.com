@@ -73,6 +73,8 @@ function KnowledgeTab() {
   const [selectedNamespace, setSelectedNamespace] = useState<string>('cskh');
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
   
   const { data: documents, error: docsError, mutate: mutateDocs } = useSWR(`/api/crm/knowledge?namespace=${selectedNamespace}`, fetcher, { refreshInterval: 3000 });
   const { data: channels, error: channelsError } = useSWR("/api/crm/channels/prompt", fetcher);
@@ -297,7 +299,7 @@ function KnowledgeTab() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {documents.map((doc: any) => (
+                {documents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((doc: any) => (
                   <tr key={doc.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <input 
@@ -345,6 +347,34 @@ function KnowledgeTab() {
                 ))}
               </tbody>
             </table>
+            
+            {/* Pagination Controls */}
+            {documents && Math.ceil(documents.length / itemsPerPage) > 1 && (
+              <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 bg-white">
+                <div className="text-sm text-gray-700">
+                  Hiển thị <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> đến <span className="font-medium">{Math.min(currentPage * itemsPerPage, documents.length)}</span> trong số <span className="font-medium">{documents.length}</span> tài liệu
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Trước
+                  </button>
+                  <span className="text-sm font-medium text-gray-700">
+                    Trang {currentPage} / {Math.ceil(documents.length / itemsPerPage)}
+                  </span>
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.min(Math.ceil(documents.length / itemsPerPage), p + 1))}
+                    disabled={currentPage === Math.ceil(documents.length / itemsPerPage)}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Sau
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
