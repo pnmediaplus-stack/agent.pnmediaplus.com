@@ -12,6 +12,18 @@ interface ThemeState {
   customGradAngle: number;
   bgImageUrl: string;
   bgImageOpacity: number;
+  textColor: string;
+  
+  sidebarBgType: BackgroundType;
+  sidebarBgColor: string;
+  sidebarBgGradient: string;
+  sidebarCustomGrad1: string;
+  sidebarCustomGrad2: string;
+  sidebarCustomGradAngle: number;
+  sidebarBgImageUrl: string;
+  sidebarBgImageOpacity: number;
+  sidebarTextColor: string;
+
   setBgType: (type: BackgroundType) => void;
   setBgColor: (color: string) => void;
   setBgGradient: (gradient: string) => void;
@@ -20,6 +32,18 @@ interface ThemeState {
   setCustomGradAngle: (angle: number) => void;
   setBgImageUrl: (url: string) => void;
   setBgImageOpacity: (opacity: number) => void;
+  setTextColor: (color: string) => void;
+
+  setSidebarBgType: (type: BackgroundType) => void;
+  setSidebarBgColor: (color: string) => void;
+  setSidebarBgGradient: (gradient: string) => void;
+  setSidebarCustomGrad1: (color: string) => void;
+  setSidebarCustomGrad2: (color: string) => void;
+  setSidebarCustomGradAngle: (angle: number) => void;
+  setSidebarBgImageUrl: (url: string) => void;
+  setSidebarBgImageOpacity: (opacity: number) => void;
+  setSidebarTextColor: (color: string) => void;
+  
   resetTheme: () => void;
 }
 
@@ -34,6 +58,18 @@ export const useThemeStore = create<ThemeState>()(
       customGradAngle: 135,
       bgImageUrl: "",
       bgImageOpacity: 100,
+        textColor: "",
+
+      sidebarBgType: "default",
+      sidebarBgColor: "#0f172a",
+      sidebarBgGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      sidebarCustomGrad1: "#667eea",
+      sidebarCustomGrad2: "#764ba2",
+      sidebarCustomGradAngle: 135,
+      sidebarBgImageUrl: "",
+      sidebarBgImageOpacity: 100,
+        sidebarTextColor: "",
+
       setBgType: (type) => set({ bgType: type }),
       setBgColor: (color) => set({ bgColor: color }),
       setBgGradient: (gradient) => set({ bgGradient: gradient }),
@@ -42,6 +78,18 @@ export const useThemeStore = create<ThemeState>()(
       setCustomGradAngle: (angle) => set({ customGradAngle: angle }),
       setBgImageUrl: (url) => set({ bgImageUrl: url }),
       setBgImageOpacity: (opacity) => set({ bgImageOpacity: opacity }),
+      setTextColor: (color) => set({ textColor: color }),
+
+      setSidebarBgType: (type) => set({ sidebarBgType: type }),
+      setSidebarBgColor: (color) => set({ sidebarBgColor: color }),
+      setSidebarBgGradient: (gradient) => set({ sidebarBgGradient: gradient }),
+      setSidebarCustomGrad1: (color) => set({ sidebarCustomGrad1: color }),
+      setSidebarCustomGrad2: (color) => set({ sidebarCustomGrad2: color }),
+      setSidebarCustomGradAngle: (angle) => set({ sidebarCustomGradAngle: angle }),
+      setSidebarBgImageUrl: (url) => set({ sidebarBgImageUrl: url }),
+      setSidebarBgImageOpacity: (opacity) => set({ sidebarBgImageOpacity: opacity }),
+      setSidebarTextColor: (color) => set({ sidebarTextColor: color }),
+
       resetTheme: () => set({ 
         bgType: "default", 
         bgColor: "#0f172a", 
@@ -50,7 +98,15 @@ export const useThemeStore = create<ThemeState>()(
         customGrad2: "#764ba2",
         customGradAngle: 135,
         bgImageUrl: "", 
-        bgImageOpacity: 100 
+        bgImageOpacity: 100,
+        sidebarBgType: "default", 
+        sidebarBgColor: "#0f172a", 
+        sidebarBgGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
+        sidebarCustomGrad1: "#667eea",
+        sidebarCustomGrad2: "#764ba2",
+        sidebarCustomGradAngle: 135,
+        sidebarBgImageUrl: "", 
+        sidebarBgImageOpacity: 100
       }),
     }),
     {

@@ -92,6 +92,9 @@ const futureIntegrations: { labelKey: string; fallbackLabel: string }[] = [
   { labelKey: "layout.sidebar.integrations.apiSettings", fallbackLabel: "API settings" }
 ];
 
+import { useThemeStore } from "@/store/useThemeStore";
+import { useEffect } from "react";
+
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -100,6 +103,20 @@ export function Sidebar() {
   const portalSession = usePortalSession();
   const [logoutState, setLogoutState] = useState<"idle" | "loading" | "blocked">("idle");
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+
+  const [mounted, setMounted] = useState(false);
+  const {
+    sidebarBgType,
+    sidebarBgColor,
+    sidebarBgGradient,
+    sidebarBgImageUrl,
+    sidebarBgImageOpacity
+  } = useThemeStore();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
 
   async function handleLogout() {
     setLogoutState("loading");
@@ -118,9 +135,33 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-full flex-col bg-gradient-to-b from-violet-50/70 via-purple-50/40 to-fuchsia-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950/30 px-3 py-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:h-screen lg:w-[272px] lg:border-b-0 lg:border-r lg:border-violet-100 dark:lg:border-slate-800/60 lg:overflow-y-auto shadow-xl shadow-violet-200/40 dark:shadow-black/20">
+    <aside className={`flex flex-col relative overflow-hidden px-3 py-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:h-screen lg:w-[290px] lg:border-b-0 lg:border-r lg:border-violet-100 dark:lg:border-slate-800/60 lg:overflow-y-auto shadow-xl shadow-violet-200/40 dark:shadow-black/20 ${
+      mounted && sidebarBgType !== "default" 
+        ? "bg-transparent" 
+        : "bg-gradient-to-b from-violet-50/70 via-purple-50/40 to-fuchsia-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950/30"
+    }`}>
 
-      {/* ── BRAND ─────────────────────────────────── */}
+      
+      {/* Sidebar Custom Background Layer */}
+      {mounted && sidebarBgType === "color" && (
+        <div className="absolute inset-0 -z-10" style={{ backgroundColor: sidebarBgColor }} />
+      )}
+      {mounted && sidebarBgType === "gradient" && (
+        <div className="absolute inset-0 -z-10" style={{ backgroundImage: sidebarBgGradient }} />
+      )}
+      {mounted && sidebarBgType === "image" && sidebarBgImageUrl && (
+        <div 
+          className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat transition-opacity duration-300" 
+          style={{ 
+            backgroundImage: `url(${sidebarBgImageUrl})`, 
+            opacity: sidebarBgImageOpacity / 100 
+          }} 
+        />
+      )}
+
+      <div className="relative z-0 flex flex-col h-full w-full">
+
+        {/* ── BRAND ─────────────────────────────────── */}
       <div className="mb-6 px-2">
         <div className="text-[10px] font-bold uppercase tracking-[0.4em] text-violet-600 dark:text-violet-400">
           {tLayout("layout.brand.name") ?? "PN OS AI Department"}
@@ -251,6 +292,7 @@ export function Sidebar() {
           </div>
         ) : null}
       </div>
+          </div>
     </aside>
   );
 }
