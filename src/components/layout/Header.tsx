@@ -46,7 +46,7 @@ export function Header() {
           <button
             type="button"
             onClick={() => setLocale?.("en")}
-            className={`rounded-full px-2.5 py-1 font-semibold transition ${locale === "en" ? "bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-200" : "hover:bg-slate-200 dark:hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"}`}
+            className={`rounded-full px-2.5 py-1 font-semibold transition ${locale === "en" ? "bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-200" : "hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"}`}
             aria-pressed={locale === "en"}
           >
             {tShared("shared.locale.en") ?? "EN"}
@@ -54,7 +54,7 @@ export function Header() {
           <button
             type="button"
             onClick={() => setLocale?.("vi")}
-            className={`rounded-full px-2.5 py-1 font-semibold transition ${locale === "vi" ? "bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-200" : "hover:bg-slate-200 dark:hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"}`}
+            className={`rounded-full px-2.5 py-1 font-semibold transition ${locale === "vi" ? "bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-200" : "hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"}`}
             aria-pressed={locale === "vi"}
           >
             {tShared("shared.locale.vi") ?? "VI"}
