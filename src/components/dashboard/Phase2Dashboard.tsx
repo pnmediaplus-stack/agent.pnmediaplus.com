@@ -240,17 +240,16 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
     : item.ownerRef;
 
   return (
-    <div className={`flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border-l-4 ${accent} border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm`}>
+    <div className={`flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border-l-4 ${accent} border border-slate-700/60 bg-gradient-to-br from-slate-800 to-slate-900 shadow-lg`}>
 
       {/* ── HEADER ─────────────────────────────────── */}
       <div className="px-4 pt-4 pb-3">
-        {/* Status badge — top right */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 dark:text-white">
+            <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-white">
               {title || item.title}
             </h3>
-            <p className="mt-0.5 truncate font-mono text-[10px] text-slate-400 dark:text-slate-500">
+            <p className="mt-0.5 truncate font-mono text-[10px] text-slate-500">
               {item.contentKey}
             </p>
           </div>
@@ -262,8 +261,8 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
           {/* Assets */}
           <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
             assets.present.length === assets.totalRequired
-              ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
-              : "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+              ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
+              : "border-amber-500/40 bg-amber-500/15 text-amber-300"
           }`}>
             <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
               <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -274,10 +273,10 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
           {/* QA */}
           <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
             review?.verdict === "pass"
-              ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"
+              ? "border-blue-500/40 bg-blue-500/15 text-blue-300"
               : review
-              ? "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300"
-              : "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+              ? "border-rose-500/40 bg-rose-500/15 text-rose-300"
+              : "border-slate-600 bg-slate-700/60 text-slate-400"
           }`}>
             <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
               <path d="M6 1L1.5 3v3.5C1.5 9.5 6 11 6 11s4.5-1.5 4.5-4.5V3L6 1z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
@@ -288,10 +287,10 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
           {/* Risk */}
           <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
             !review
-              ? "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+              ? "border-slate-600 bg-slate-700/60 text-slate-400"
               : isHighRisk
-              ? "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300"
-              : "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+              ? "border-rose-500/40 bg-rose-500/15 text-rose-300"
+              : "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
           }`}>
             <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
               <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.4"/>
@@ -302,37 +301,37 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
         </div>
       </div>
 
-      <div className="mx-4 border-t border-slate-100 dark:border-slate-800" />
+      <div className="mx-4 border-t border-slate-700/60" />
 
       {/* ── DETAILS ────────────────────────────────── */}
       <div className="px-4 py-3 space-y-2 text-xs">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-slate-400 dark:text-slate-500">Owner</span>
-          <span className="truncate font-medium text-slate-700 dark:text-slate-200 max-w-[160px]" title={item.ownerRef}>{ownerDisplay}</span>
+          <span className="text-slate-500">Owner</span>
+          <span className="truncate font-medium text-slate-200 max-w-[160px]" title={item.ownerRef}>{ownerDisplay}</span>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-slate-400 dark:text-slate-500">Next state</span>
-          <span className="font-medium text-slate-700 dark:text-slate-200">{t(`dashboard.state.${nextState}`) ?? nextState}</span>
+          <span className="text-slate-500">Next state</span>
+          <span className="font-medium text-slate-200">{t(`dashboard.state.${nextState}`) ?? nextState}</span>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-slate-400 dark:text-slate-500">Publish</span>
+          <span className="text-slate-500">Publish</span>
           {publish.ready ? (
-            <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+            <span className="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
               Eligible
             </span>
           ) : (
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+            <span className="rounded-full border border-slate-600 bg-slate-700/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
               {t(`dashboard.publishState.${publish.gateState}`) ?? publish.gateState}
             </span>
           )}
         </div>
       </div>
 
-      <div className="mx-4 border-t border-slate-100 dark:border-slate-800" />
+      <div className="mx-4 border-t border-slate-700/60" />
 
       {/* ── ASSETS ─────────────────────────────────── */}
       <div className="px-4 py-3">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Required Assets</p>
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">Required Assets</p>
         <div className="flex flex-wrap gap-1.5">
           {[...assets.present.map(a => ({ key: a, present: true })), ...assets.missing.map(a => ({ key: a, present: false }))].map(({ key, present }) => (
             <AssetChip
@@ -346,11 +345,11 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
       </div>
 
       {/* ── FOOTER ─────────────────────────────────── */}
-      <div className="mt-auto flex items-center justify-between border-t border-slate-100 dark:border-slate-800 px-4 py-2.5">
-        <span className="text-[11px] text-slate-400 dark:text-slate-500">
+      <div className="mt-auto flex items-center justify-between border-t border-slate-700/60 px-4 py-2.5">
+        <span className="text-[11px] text-slate-500">
           → {t(`dashboard.state.${nextState}`) ?? nextState}
         </span>
-        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-700 text-[10px] font-bold text-slate-300">
           {ownerInitial(item.ownerRef)}
         </div>
       </div>
