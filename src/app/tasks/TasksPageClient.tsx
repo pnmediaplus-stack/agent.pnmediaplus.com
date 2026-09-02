@@ -136,22 +136,32 @@ export function TasksPageClient() {
       ]}
     >
       <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t("tasks.board.title") ?? "Bảng tác vụ"}</h2>
+        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">{t("tasks.board.title") ?? "Bảng tác vụ"}</h2>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 transition-all hover:bg-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+          className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+            showForm 
+              ? "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700" 
+              : "bg-indigo-600 text-white shadow-indigo-500/20 hover:bg-indigo-500 hover:shadow-indigo-500/30"
+          }`}
         >
-          <Plus className="h-4 w-4" />
+          <Plus className={`h-4 w-4 transition-transform duration-300 ${showForm ? "rotate-45" : ""}`} />
           {showForm ? (t("tasks.form.cancel") ?? "Hủy") : (t("tasks.form.assign") ?? "Giao việc")}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-6 text-lg font-bold text-slate-700 dark:text-slate-200">{t("tasks.form.title") ?? "Giao tác vụ mới"}</h3>
+        <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 bg-gradient-to-br from-indigo-50/50 to-white dark:from-slate-900 dark:to-indigo-950/20 p-6 backdrop-blur-xl shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-400 to-cyan-400 opacity-50"></div>
+          <h3 className="mb-6 flex items-center gap-2 text-lg font-bold text-slate-800 dark:text-slate-200">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400">
+              <Plus className="h-4 w-4" />
+            </span>
+            {t("tasks.form.title") ?? "Giao tác vụ mới"}
+          </h3>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <div className="lg:col-span-1">
-              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("tasks.form.keyLabel") ?? "Mã tác vụ (định danh duy nhất)"}</label>
+              <label className="mb-2 block text-[13px] font-semibold text-slate-600 dark:text-slate-400">{t("tasks.form.keyLabel") ?? "Mã tác vụ (định danh duy nhất)"}</label>
               <input
                 type="text"
                 required
@@ -159,32 +169,32 @@ export function TasksPageClient() {
                 value={taskKey}
                 onChange={(e) => setTaskKey(e.target.value)}
                 placeholder={t("tasks.form.keyPlaceholder") ?? "vd: generate_report_1"}
-                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/50 p-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
               />
             </div>
             <div className="lg:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("tasks.form.titleLabel") ?? "Tiêu đề"}</label>
+              <label className="mb-2 block text-[13px] font-semibold text-slate-600 dark:text-slate-400">{t("tasks.form.titleLabel") ?? "Tiêu đề"}</label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={t("tasks.form.titlePlaceholder") ?? "vd: Tạo báo cáo tài chính Q3"}
-                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/50 p-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
               />
             </div>
             <div className="lg:col-span-3">
-              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("tasks.form.summaryLabel") ?? "Tóm tắt (tùy chọn)"}</label>
+              <label className="mb-2 block text-[13px] font-semibold text-slate-600 dark:text-slate-400">{t("tasks.form.summaryLabel") ?? "Tóm tắt (tùy chọn)"}</label>
               <textarea
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
                 placeholder={t("tasks.form.summaryPlaceholder") ?? "Chi tiết công việc cần làm..."}
                 rows={2}
-                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/50 p-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none resize-none custom-scrollbar"
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("tasks.form.priorityLabel") ?? "Độ ưu tiên (1-100)"}</label>
+              <label className="mb-2 block text-[13px] font-semibold text-slate-600 dark:text-slate-400">{t("tasks.form.priorityLabel") ?? "Độ ưu tiên (1-100)"}</label>
               <input
                 type="number"
                 min="1"
@@ -192,11 +202,11 @@ export function TasksPageClient() {
                 required
                 value={priority}
                 onChange={(e) => setPriority(Number(e.target.value))}
-                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/50 p-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("tasks.form.departmentLabel") ?? "Phòng ban"}</label>
+              <label className="mb-2 block text-[13px] font-semibold text-slate-600 dark:text-slate-400">{t("tasks.form.departmentLabel") ?? "Phòng ban"}</label>
               <select
                 required
                 value={deptId}
@@ -204,7 +214,7 @@ export function TasksPageClient() {
                   setDeptId(e.target.value);
                   setAgentId(""); // reset agent when dept changes
                 }}
-                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/50 p-2.5 text-sm text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
               >
                 {departments.map(d => (
                   <option key={d.id} value={d.id} className="bg-white dark:bg-slate-900">{d.canonical_name}</option>
@@ -212,11 +222,11 @@ export function TasksPageClient() {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("tasks.form.agentLabel") ?? "Giao cho Agent (tùy chọn)"}</label>
+              <label className="mb-2 block text-[13px] font-semibold text-slate-600 dark:text-slate-400">{t("tasks.form.agentLabel") ?? "Giao cho Agent (tùy chọn)"}</label>
               <select
                 value={agentId}
                 onChange={(e) => setAgentId(e.target.value)}
-                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/50 p-2.5 text-sm text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
               >
                 <option value="" className="bg-white dark:bg-slate-900">{t("tasks.form.agentUnassigned") ?? "-- Chưa giao --"}</option>
                 {availableAgents.map(a => (
@@ -229,7 +239,7 @@ export function TasksPageClient() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-slate-900 dark:text-white transition-all hover:bg-indigo-500 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-indigo-500/20 transition-all hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-lg hover:shadow-indigo-500/30 disabled:pointer-events-none disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               {t("tasks.form.submit") ?? "Gửi tác vụ"}
