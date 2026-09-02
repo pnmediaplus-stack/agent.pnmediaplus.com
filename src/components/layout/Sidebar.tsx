@@ -116,16 +116,25 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-full flex-col border-b border-slate-200/80 dark:border-slate-800 bg-white/60 dark:bg-slate-950/90 backdrop-blur-xl shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] dark:shadow-none px-4 py-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:h-screen lg:w-[290px] lg:border-b-0 lg:border-r lg:overflow-y-auto">
-      <div className="mb-5">
-        <div className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-600 dark:text-cyan-300/80">{tLayout("layout.brand.name") ?? "PN OS AI Department"}</div>
-        <div className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{tLayout("layout.brand.phase") ?? "Phase 1 Internal MVP"}</div>
+    <aside className="flex h-full flex-col bg-gradient-to-b from-slate-900 via-slate-900 to-violet-950 px-3 py-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:h-screen lg:w-[272px] lg:border-b-0 lg:border-r lg:border-slate-800/60 lg:overflow-y-auto shadow-xl shadow-black/20">
+
+      {/* ── BRAND ─────────────────────────────────── */}
+      <div className="mb-6 px-2">
+        <div className="text-[10px] font-bold uppercase tracking-[0.4em] text-violet-400">
+          {tLayout("layout.brand.name") ?? "PN OS AI Department"}
+        </div>
+        <div className="mt-1.5 text-base font-semibold text-white/90">
+          {tLayout("layout.brand.phase") ?? "Phase 1 Internal MVP"}
+        </div>
+        <div className="mt-2 h-px bg-gradient-to-r from-violet-500/40 via-slate-600/30 to-transparent" />
       </div>
+
+      {/* ── NAV ───────────────────────────────────── */}
       <nav className="flex flex-1 gap-1 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
-        <div className="flex flex-col gap-6 w-full">
+        <div className="flex flex-col gap-5 w-full">
           {navGroups.map((group) => (
-            <div key={group.title} className="flex flex-col gap-1 w-full">
-              <div className="px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-500 mb-1 lg:block hidden">
+            <div key={group.title} className="flex flex-col gap-0.5 w-full">
+              <div className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500 lg:block hidden">
                 {group.title}
               </div>
               {group.items.map((item) => {
@@ -135,14 +144,17 @@ export function Sidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex min-w-max items-center gap-3 rounded-xl px-3 py-2 text-sm transition lg:min-w-0 ${
+                    className={`group flex min-w-max items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-150 lg:min-w-0 ${
                       active
-                        ? "bg-slate-100 dark:bg-slate-800/60 text-slate-900 dark:text-white font-semibold shadow-sm ring-1 ring-slate-200 dark:ring-slate-700/50"
-                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+                        ? "bg-violet-500/15 text-violet-300 font-semibold border-l-2 border-violet-500 pl-[10px] shadow-sm"
+                        : "text-slate-400 border-l-2 border-transparent pl-[10px] hover:bg-white/5 hover:text-white"
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
-                    {tShared(`shared.${item.labelKey}`) ?? item.fallbackLabel}
+                    <Icon className={`h-4 w-4 shrink-0 transition-colors ${active ? "text-violet-400" : "text-slate-500 group-hover:text-violet-400"}`} />
+                    <span className="truncate">{tShared(`shared.${item.labelKey}`) ?? item.fallbackLabel}</span>
+                    {active && (
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-violet-400 shrink-0" />
+                    )}
                   </Link>
                 );
               })}
@@ -150,21 +162,25 @@ export function Sidebar() {
           ))}
         </div>
       </nav>
-      <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 p-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+
+      {/* ── PHASE NOTE ────────────────────────────── */}
+      <div className="mt-4 rounded-xl border border-white/5 bg-white/3 px-3 py-2.5 text-xs leading-5 text-slate-500">
         {tLayout("layout.sidebar.noPublishLaunch") ?? "No publish or launch actions are wired in Phase 1."}
       </div>
-      <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 p-3 text-xs leading-5 text-slate-500 dark:text-slate-400 lg:mt-auto">
+
+      {/* ── USER CARD ─────────────────────────────── */}
+      <div className="mt-3 rounded-xl border border-white/8 bg-white/5 p-3 text-xs lg:mt-auto">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-500">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
               {portalSession.state === "ready"
                 ? (tLayout("layout.sidebar.userCard.titleReady") ?? "Signed in")
                 : (tLayout("layout.sidebar.userCard.titleBlocked") ?? "Portal blocked")}
             </div>
-            <div className="mt-2 truncate font-semibold text-slate-900 dark:text-white">
+            <div className="mt-1.5 truncate font-semibold text-white/90">
               {portalSession.state === "ready" ? portalSession.organizationName : (tShared("shared.portal.blocked") ?? "Portal blocked")}
             </div>
-            <div className="mt-1 truncate text-slate-500 dark:text-slate-400">
+            <div className="mt-0.5 truncate text-slate-400">
               {portalSession.state === "ready"
                 ? `${portalSession.role}${portalSession.email ? ` · ${portalSession.email}` : ""}`
                 : (tLayout("layout.sidebar.userCard.subtitleBlocked") ?? "Login required to access the portal")}
@@ -174,22 +190,23 @@ export function Sidebar() {
             type="button"
             onClick={() => setAccountMenuOpen((current) => !current)}
             aria-expanded={accountMenuOpen}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-950/70 px-2.5 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 transition hover:border-cyan-400 hover:text-cyan-600 dark:hover:border-cyan-300/50 dark:hover:text-cyan-100"
+            className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-400 transition hover:border-violet-500/50 hover:bg-violet-500/10 hover:text-violet-300"
           >
             {tLayout("layout.sidebar.accountMenu.action") ?? "Setting"}
           </button>
         </div>
+
         {accountMenuOpen ? (
-          <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 p-2 shadow-xl shadow-slate-200/50 dark:shadow-slate-950/30 flex flex-col gap-2">
+          <div className="mt-3 rounded-xl border border-white/8 bg-slate-950/60 p-2 shadow-xl flex flex-col gap-2">
             <div className="flex items-center justify-between px-2 py-1">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{tLayout("layout.theme.toggle") ?? "Giao diện (Theme)"}</span>
+              <span className="text-xs font-semibold text-slate-400">{tLayout("layout.theme.toggle") ?? "Giao diện (Theme)"}</span>
               <ThemeToggle />
             </div>
             <button
               type="button"
               onClick={handleLogout}
               disabled={logoutState === "loading"}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-950/70 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 transition hover:border-rose-300/50 hover:bg-rose-50 dark:hover:bg-rose-400/10 hover:text-rose-600 dark:hover:text-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <LogOut className="h-3.5 w-3.5" />
               {logoutState === "loading"
@@ -197,16 +214,16 @@ export function Sidebar() {
                 : (tLayout("layout.sidebar.logout.action") ?? "Logout")}
             </button>
             {logoutState === "blocked" ? (
-              <div className="mt-2 rounded-lg border border-rose-200 dark:border-rose-400/30 bg-rose-50 dark:bg-rose-400/10 px-2 py-1.5 text-[11px] text-rose-600 dark:text-rose-100">
+              <div className="mt-2 rounded-lg border border-rose-400/30 bg-rose-400/10 px-2 py-1.5 text-[11px] text-rose-300">
                 {tLayout("layout.sidebar.logout.error") ?? "Logout failed."}
               </div>
             ) : null}
-            <div className="mt-3 border-t border-slate-200 dark:border-slate-800 pt-3">
-              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-500">
+            <div className="mt-3 border-t border-white/8 pt-3">
+              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-500">
                 <PlugZap className="h-3.5 w-3.5" />
                 {tLayout("layout.sidebar.integrations.title") ?? "Future integrations"}
               </div>
-              <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-500">
+              <div className="mt-2 text-[11px] text-slate-600">
                 {tLayout("layout.sidebar.integrations.description") ?? "Disabled slots for future provider settings."}
               </div>
               <div className="mt-3 grid gap-1.5">
@@ -215,10 +232,10 @@ export function Sidebar() {
                     key={item.labelKey}
                     type="button"
                     disabled
-                    className="flex cursor-not-allowed items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100/55 dark:bg-slate-950/55 px-2.5 py-2 text-left text-[11px] text-slate-500 dark:text-slate-500"
+                    className="flex cursor-not-allowed items-center justify-between rounded-lg border border-white/6 bg-white/3 px-2.5 py-2 text-left text-[11px] text-slate-600"
                   >
                     <span>{tLayout(item.labelKey) ?? item.fallbackLabel}</span>
-                    <span className="rounded-full border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-600">
+                    <span className="rounded-full border border-white/8 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-slate-600">
                       {tLayout("layout.sidebar.integrations.disabled") ?? "Disabled"}
                     </span>
                   </button>
