@@ -120,7 +120,6 @@ export function Sidebar() {
       <div className="mb-5">
         <div className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-600 dark:text-cyan-300/80">{tLayout("layout.brand.name") ?? "PN OS AI Department"}</div>
         <div className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{tLayout("layout.brand.phase") ?? "Phase 1 Internal MVP"}</div>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400 dark:text-slate-400 lg:max-w-none">{tLayout("layout.brand.tagline") ?? "Thin-shell UI for commands, registry state, approvals, and workflow monitoring."}</p>
       </div>
       <nav className="flex flex-1 gap-1 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
         <div className="flex flex-col gap-6 w-full">
@@ -138,8 +137,8 @@ export function Sidebar() {
                     href={item.href}
                     className={`flex min-w-max items-center gap-3 rounded-xl px-3 py-2 text-sm transition lg:min-w-0 ${
                       active
-                        ? "bg-cyan-500/10 text-cyan-200 ring-1 ring-cyan-500/30"
-                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white"
+                        ? "bg-slate-100 dark:bg-slate-800/60 text-slate-900 dark:text-white font-semibold shadow-sm ring-1 ring-slate-200 dark:ring-slate-700/50"
+                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white"
                     }`}
                   >
                     <Icon className="h-4 w-4" />

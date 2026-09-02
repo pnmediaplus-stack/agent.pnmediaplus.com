@@ -26,17 +26,15 @@ export function ChatPageClient() {
 
   const { data: messagesData, isLoading: isLoadingMessages } = useSWR<{ chat_messages: ChatMessage[] }>(
     thread ? `/api/chat-messages?thread_id=${thread.id}` : null,
-    fetcher
+    fetcher,
+    { keepPreviousData: true }
   );
 
   const { data: auditData, isLoading: isLoadingAudit } = useSWR<{ audit_logs: AuditLog[] }>(
     thread ? `/api/audit-logs?entity_id=${thread.id}` : null,
-    fetcher
+    fetcher,
+    { keepPreviousData: true }
   );
-
-  // If we have an activeThreadId but it's not yet in threadsData, we are loading the new thread.
-  const isWaitingForNewThread = activeThreadId && !thread && !isLoadingThreads;
-  const isLoading = isLoadingThreads || (thread && isLoadingMessages) || (thread && isLoadingAudit) || isWaitingForNewThread;
 
   const handleNewChat = async () => {
     const title = window.prompt("Nhập tên cho phiên làm việc mới (để trống sẽ dùng tên mặc định):");
@@ -47,7 +45,6 @@ export function ChatPageClient() {
       const result = await createNewChatThread(title.trim() || undefined);
       if (result.success && result.threadId) {
         setActiveThreadId(result.threadId);
-        // Optimistically mutate to trigger immediate fetch
         await mutate("/api/chat-threads");
       } else {
         console.error("Failed to create new chat:", result.error);
@@ -84,7 +81,7 @@ export function ChatPageClient() {
     try {
       const result = await deleteChatThread(thread.id);
       if (result.success) {
-        setActiveThreadId(null); // Return to latest
+        setActiveThreadId(null);
         await mutate("/api/chat-threads");
       } else {
         alert("Có lỗi xảy ra khi xóa phiên làm việc.");
@@ -95,13 +92,8 @@ export function ChatPageClient() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <PageFrame title={t("chat.page.title") ?? "Trò chuyện mệnh lệnh Human"} purpose="" statusLabel="Đang tải" statusValue="LOADING" allowedActions={[]} forbiddenActions={[]}>
-        <div className="flex h-64 items-center justify-center text-white/50">Đang tải trò chuyện...</div>
-      </PageFrame>
-    );
-  }
+  // Filter audit logs for this specific thread
+  const threadAuditLogs = (auditData?.audit_logs ?? []).filter(log => log.entity_id === thread?.id && log.entity_type === 'chat_thread');
 
   if (!thread) {
     return (
@@ -128,9 +120,6 @@ export function ChatPageClient() {
     );
   }
 
-  // Filter audit logs for this specific thread
-  const threadAuditLogs = (auditData?.audit_logs ?? []).filter(log => log.entity_id === thread.id && log.entity_type === 'chat_thread');
-
   return (
     <PageFrame
       title={t("chat.page.title") ?? "Trò chuyện mệnh lệnh Human"}
@@ -156,13 +145,13 @@ export function ChatPageClient() {
             <select
               value={thread.id}
               onChange={(e) => setActiveThreadId(e.target.value)}
-              className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 max-w-sm cursor-pointer"
+              className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 max-w-sm cursor-pointer"
             >
               {threadsData?.chat_threads?.map(t => {
                 const dateObj = new Date(t.created_at);
                 const dateStr = dateObj.toLocaleString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
                 return (
-                  <option key={t.id} value={t.id}>
+                  <option key={t.id} value={t.id} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-300">
                     {dateStr} - {t.title || 'Phiên làm việc'}
                   </option>
                 );
