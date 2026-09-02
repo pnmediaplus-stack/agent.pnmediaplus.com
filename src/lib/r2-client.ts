@@ -1,5 +1,5 @@
 import "server-only";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const accountId = process.env.R2_ACCOUNT_ID;
@@ -65,6 +65,15 @@ export async function uploadBufferToR2(objectKey: string, buffer: Uint8Array | B
     Key: objectKey,
     Body: buffer,
     ContentType: contentType,
+  });
+  await client.send(command);
+}
+
+export async function deleteObjectFromR2(objectKey: string): Promise<void> {
+  const client = getR2Client();
+  const command = new DeleteObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: objectKey,
   });
   await client.send(command);
 }
