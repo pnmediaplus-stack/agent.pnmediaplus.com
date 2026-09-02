@@ -88,13 +88,13 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       } else {
         setAgents([]);
         setAgentsStatus("empty");
-        setAgentsError("Marketing registry hiện tại không có agent nào khả dụng.");
+        setAgentsError(t("chat.composer.registry_empty"));
       }
     } catch (e) {
       console.error("Failed to load agents", e);
       setAgents([]);
       setAgentsStatus("error");
-      setAgentsError("Không tải được marketing registry từ /api/governance/marketing-agents.");
+      setAgentsError(t("chat.composer.registry_error"));
     }
   };
 
@@ -130,7 +130,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       } else {
         setDepartments([]);
         setDepartmentsStatus("empty");
-        setDepartmentsError("Không có phòng ban nào khả dụng.");
+        setDepartmentsError(t("chat.composer.no_departments"));
       }
     } catch (e) {
       console.error("Failed to load departments", e);
@@ -201,7 +201,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       console.error("Failed to load pages", e);
       setPages([]);
       setPagesStatus("error");
-      setPagesError("Lỗi mạng khi tải danh sách page.");
+      setPagesError(t("chat.composer.network_error_pages"));
     }
   };
 
@@ -412,10 +412,10 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         setSelectedFiles(prev => [...prev, ...validFiles]);
         setUploadError(null);
         if (validFiles.length < files.length) {
-          setUploadError("Some files were not supported and were skipped.");
+          setUploadError(t("chat.composer.files_skipped"));
         }
       } else {
-        setUploadError("File types not supported.");
+        setUploadError(t("chat.composer.files_unsupported"));
       }
     }
   };
@@ -449,10 +449,10 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         setSelectedFiles(prev => [...prev, ...validFiles]);
         setUploadError(null);
         if (validFiles.length < files.length) {
-          setUploadError("Some files were not supported and were skipped.");
+          setUploadError(t("chat.composer.files_skipped"));
         }
       } else {
-        setUploadError("File types not supported via drag and drop.");
+        setUploadError(t("chat.composer.files_unsupported"));
       }
     }
   };
@@ -523,7 +523,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
   };
 
   return (
-    <div className="flex flex-col gap-1.5 w-full">
+    <div className="flex flex-col gap-1.5 w-full shrink-0 mt-auto">
       <div 
         className={`transition-all duration-200 p-4 relative ${
           isDragging 
@@ -539,7 +539,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         <div className="absolute inset-0 z-[60] flex items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm pointer-events-none border-2 border-dashed border-cyan-400">
           <div className="text-cyan-600 dark:text-cyan-400 flex flex-col items-center gap-2">
             <Paperclip className="h-8 w-8 animate-bounce" />
-            <span className="font-semibold tracking-wider uppercase text-sm">Drop file here</span>
+            <span className="font-semibold tracking-wider uppercase text-sm">{t("chat.composer.drop_file")}</span>
           </div>
         </div>
       )}
@@ -547,7 +547,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
       {popupState.isOpen && (filteredSuggestions.length > 0 || (popupState.type === 'campaign' && campaignsStatus !== 'ready') || (popupState.type === 'page' && pagesStatus !== 'ready')) && (
         <div className="absolute bottom-full mb-2 left-4 w-80 max-h-64 overflow-y-auto rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-white dark:bg-slate-900/95 backdrop-blur-md p-2 shadow-2xl z-50">
           <div className="text-[10px] uppercase tracking-widest text-slate-500 px-2 pb-2 mb-1 border-b border-slate-200 dark:border-slate-800">
-            {popupState.type === 'command' ? 'Select Command' : popupState.type === 'agent' ? 'Select Agent' : popupState.type === 'department' ? 'Select Department' : popupState.type === 'campaign' ? 'Select Campaign' : popupState.type === 'page' ? 'Select Page' : 'Select Data Reference'}
+            {popupState.type === 'command' ? t('chat.composer.select_command') : popupState.type === 'agent' ? t('chat.composer.select_agent') : popupState.type === 'department' ? t('chat.composer.select_department') : popupState.type === 'campaign' ? t('chat.composer.select_campaign') : popupState.type === 'page' ? t('chat.composer.select_page') : t('chat.composer.select_data')}
           </div>
           
           {/* Handling loading/empty states for Page */}
@@ -560,13 +560,13 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
           {popupState.type === 'page' && pagesStatus === 'error' && (
             <div className="px-3 py-4 text-center text-sm text-rose-400 flex flex-col items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
-              {pagesError || "Lỗi tải danh sách"}
+              {pagesError || t("chat.composer.error_pages")}
             </div>
           )}
           {popupState.type === 'page' && pagesStatus === 'empty' && (
             <div className="px-3 py-4 text-center text-sm text-slate-500 dark:text-slate-400 flex flex-col items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
-              {pagesError || "Không có trang nào"}
+              {pagesError || t("chat.composer.no_pages")}
             </div>
           )}
 
@@ -630,31 +630,31 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
 
       {popupState.isOpen && popupState.type === "agent" && agentsStatus !== "ready" && (
         <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-950/30 p-3 text-xs text-amber-700 dark:text-amber-200">
-          {agentsStatus === "loading" && "Đang tải danh sách agent..."}
-          {agentsStatus === "empty" && (agentsError ?? "Không có agent nào khả dụng.")}
-          {agentsStatus === "error" && (agentsError ?? "Không tải được danh sách agent.")}
+          {agentsStatus === "loading" && t("chat.composer.loading_agents")}
+          {agentsStatus === "empty" && (agentsError ?? t("chat.composer.no_agents"))}
+          {agentsStatus === "error" && (agentsError ?? t("chat.composer.error_agents"))}
         </div>
       )}
 
       {popupState.isOpen && popupState.type === "agent" && agentsStatus === "empty" && (
         <div className="mb-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/70 p-3 text-xs text-slate-600 dark:text-slate-300">
-          Registry governance rỗng hoặc chưa load được. Mention cần `@role_id` hợp lệ, nếu không hệ thống sẽ fail-closed.
+          {t("chat.composer.missing_role_id")}
         </div>
       )}
 
       {popupState.isOpen && popupState.type === "department" && departmentsStatus !== "ready" && (
         <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-950/30 p-3 text-xs text-amber-700 dark:text-amber-200">
-          {departmentsStatus === "loading" && "Đang tải danh sách phòng ban..."}
-          {departmentsStatus === "empty" && (departmentsError ?? "Không có phòng ban nào khả dụng.")}
-          {departmentsStatus === "error" && (departmentsError ?? "Không tải được danh sách phòng ban.")}
+          {departmentsStatus === "loading" && t("chat.composer.loading_departments")}
+          {departmentsStatus === "empty" && (departmentsError ?? t("chat.composer.no_departments"))}
+          {departmentsStatus === "error" && (departmentsError ?? t("chat.composer.error_departments"))}
         </div>
       )}
 
       {popupState.isOpen && popupState.type === "campaign" && campaignsStatus !== "ready" && (
         <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-950/30 p-3 text-xs text-amber-700 dark:text-amber-200">
-          {campaignsStatus === "loading" && "Đang tải danh sách chiến dịch..."}
-          {campaignsStatus === "empty" && (campaignsError ?? "Không có chiến dịch nào khả dụng.")}
-          {campaignsStatus === "error" && (campaignsError ?? "Không tải được danh sách chiến dịch.")}
+          {campaignsStatus === "loading" && t("chat.composer.loading_campaigns")}
+          {campaignsStatus === "empty" && (campaignsError ?? t("chat.composer.no_campaigns"))}
+          {campaignsStatus === "error" && (campaignsError ?? t("chat.composer.error_campaigns"))}
         </div>
       )}
 

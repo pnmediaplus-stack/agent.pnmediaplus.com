@@ -225,15 +225,13 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         </div>
 
         {/* Composer */}
-        <div className="shrink-0 bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-1">
-          <ChatComposer
-            onSubmit={handleSubmit}
-            onRequestCreateTask={(currentDraft) => {
-              setModalDraft(currentDraft);
-              setIsContentModalOpen(true);
-            }}
-          />
-        </div>
+        <ChatComposer
+          onSubmit={handleSubmit}
+          onRequestCreateTask={(currentDraft) => {
+            setModalDraft(currentDraft);
+            setIsContentModalOpen(true);
+          }}
+        />
             </div>
 
       {/* ── Right column: Thread info + Audit ── */}
