@@ -124,7 +124,7 @@ export default function CustomerProfile() {
       </div>
 
       {/* Details */}
-      <div className="p-4 space-y-4 text-sm flex-1 overflow-y-auto">
+      <div className="p-4 space-y-4 text-sm flex-1">
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Họ tên</label>
           <input type="text" readOnly={!isEditing} value={isEditing ? formData.full_name : customer.full_name || ''} onChange={e => setFormData({...formData, full_name: e.target.value})} placeholder="Chưa có" className={`w-full border rounded px-2 py-1.5 ${isEditing ? 'border-blue-400 bg-white' : 'border-gray-200 bg-gray-50'} text-gray-700 font-medium`} />

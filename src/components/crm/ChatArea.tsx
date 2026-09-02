@@ -131,7 +131,7 @@ export default function ChatArea() {
 
   return (
     <div className="flex flex-col h-full bg-[#F9FAFB]">
-      <div className="h-16 border-b border-gray-200 px-6 flex items-center justify-between bg-white shadow-sm z-10">
+      <div className="h-16 border-b border-gray-200 px-6 flex items-center justify-between bg-white shadow-sm z-10 sticky top-0">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
             {activeThread?.customer?.full_name?.charAt(0) || '?'}
@@ -167,7 +167,7 @@ export default function ChatArea() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col space-y-6 no-scrollbar">
+      <div className="flex-1 p-6 flex flex-col space-y-6">
         {threadMessages.map(msg => {
           const isCustomer = msg.sender_type === 'customer';
           const isBot = msg.sender_type === 'bot';
@@ -224,7 +224,7 @@ export default function ChatArea() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] z-10">
+      <div className="p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] z-10 sticky bottom-0">
         {errorMessage && (
           <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -30,7 +30,7 @@ export default function OmnichannelWorkspace() {
   }, [data, error, setThreads, setThreadsError]);
 
   return (
-    <div className="flex min-h-[600px] h-[calc(100vh-15rem)] w-full overflow-hidden bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <div className="flex min-h-[600px] w-full bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100 items-stretch">
       <div className="w-1/4 border-r border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col">
         <InboxSidebar />
       </div>
@@ -49,7 +49,7 @@ export default function OmnichannelWorkspace() {
       </div>
 
       {activeThreadId && (
-        <div className="w-1/4 border-l border-gray-200 bg-gray-50/50 overflow-y-auto no-scrollbar">
+        <div className="w-1/4 border-l border-gray-200 bg-gray-50/50">
           <CustomerProfile />
         </div>
       )}
