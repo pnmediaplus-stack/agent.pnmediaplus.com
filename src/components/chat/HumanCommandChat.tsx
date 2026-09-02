@@ -205,7 +205,7 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
             )}
           </button>
           {summaryOpen && (
-            <div className="px-4 pb-3 text-sm text-slate-700 dark:text-slate-300 leading-relaxed border-t border-slate-200 dark:border-slate-800 pt-2.5 bg-slate-50/80 dark:bg-slate-900/80">
+            <div className="px-4 pb-3 text-sm text-slate-700 dark:text-slate-300 leading-relaxed border-t border-slate-200 dark:border-slate-800 pt-2.5 bg-slate-50/80 dark:bg-slate-900/80 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
               {summary}
             </div>
           )}
