@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import { Settings, X, Moon, Sun, Monitor, Image as ImageIcon, PaintBucket } from "lucide-react";
 import { useI18n } from "@/lib/i18n/useI18n";
 
-export function ThemeSettingsModal() {
+export function ThemeSettingsModal({ trigger }: { trigger?: React.ReactNode }) {
   const { t } = useI18n("shared");
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -22,13 +22,19 @@ export function ThemeSettingsModal() {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white"
-        aria-label="Theme settings"
-      >
-        <Settings className="h-4 w-4" />
-      </button>
+      {trigger ? (
+        <div onClick={() => setIsOpen(true)} className="w-full">
+          {trigger}
+        </div>
+      ) : (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white"
+          aria-label="Theme settings"
+        >
+          <Settings className="h-4 w-4" />
+        </button>
+      )}
 
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">

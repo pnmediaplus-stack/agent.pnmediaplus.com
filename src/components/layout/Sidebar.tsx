@@ -1,5 +1,6 @@
 "use client";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ThemeSettingsModal } from "@/components/layout/ThemeSettingsModal";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -33,7 +34,8 @@ import {
   ShieldAlert,
   Scale,
   LogOut,
-  PlugZap
+  PlugZap,
+  Settings
 } from "lucide-react";
 
 type NavItem = { href: Route; labelKey: string; fallbackLabel: string; icon: ComponentType<{ className?: string }> };
@@ -198,10 +200,14 @@ export function Sidebar() {
 
         {accountMenuOpen ? (
           <div className="mt-3 rounded-xl border border-violet-100 dark:border-white/8 bg-white/95 dark:bg-slate-950/60 p-2 shadow-xl shadow-violet-200/40 dark:shadow-black/20 flex flex-col gap-2">
-            <div className="flex items-center justify-between px-2 py-1">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{tLayout("layout.theme.toggle") ?? "Giao diện (Theme)"}</span>
-              <ThemeToggle />
-            </div>
+            <ThemeSettingsModal
+              trigger={
+                <div className="flex w-full items-center justify-between px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer transition-colors group">
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{tLayout("layout.theme.toggle") ?? "Giao diện (Theme)"}</span>
+                  <Settings className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
+                </div>
+              }
+            />
             <button
               type="button"
               onClick={handleLogout}
