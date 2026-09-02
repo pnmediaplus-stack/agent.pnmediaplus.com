@@ -1,6 +1,6 @@
 export const layout = {
   "layout.brand.name": "PN OS AI Department",
-  "layout.brand.phase": "MVP nội bộ Phase 1",
+  "layout.brand.phase": "Enterprise AI Workspace",
   "layout.brand.tagline": "Shell UI mỏng cho lệnh, trạng thái registry, phê duyệt và giám sát workflow.",
   "layout.header.title": "agent.pnmediaplus.com",
   "layout.header.description": "Next.js shell với các bề mặt dữ liệu live và server routes an toàn.",

@@ -226,11 +226,6 @@ export function Sidebar() {
         </div>
       </nav>
 
-      {/* ── PHASE NOTE ────────────────────────────── */}
-      <div className="mt-4 rounded-xl border border-violet-100 dark:border-white/5 bg-white/60 dark:bg-white/3 px-3 py-2.5 text-xs leading-5 text-slate-600 dark:text-slate-500">
-        {tLayout("layout.sidebar.noPublishLaunch") ?? "No publish or launch actions are wired in Phase 1."}
-      </div>
-
       {/* ── USER CARD ─────────────────────────────── */}
       <div className="mt-3 rounded-xl border border-violet-100 dark:border-white/8 bg-white/80 dark:bg-white/5 p-3 text-xs lg:mt-auto shadow-sm dark:shadow-none">
         <div className="flex items-start justify-between gap-3">
