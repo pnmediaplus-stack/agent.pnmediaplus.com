@@ -31,7 +31,7 @@ export function PageHeader({
   const bgImageUrl = bannerUrl || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80';
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)]">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-50 dark:bg-slate-950 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)]">
       {/* Header section with a sleek, subtle gradient background */}
       <div className="relative border-b border-slate-200 dark:border-slate-800 px-5 py-4 sm:py-5 overflow-hidden group">
         
@@ -72,13 +72,13 @@ export function PageHeader({
               {title}
             </h1>
             
-            <p className="max-w-2xl text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-400 line-clamp-2">
+            <p className="max-w-2xl text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-500 dark:text-slate-400 line-clamp-2">
               {purpose}
             </p>
           </div>
           
           <div className="shrink-0 flex flex-col items-start lg:items-end gap-1.5">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-slate-500">
               {t("shared.page.currentStatus") ?? "Trạng thái hiện tại"}
             </div>
             <StateBadge label={statusValue} displayLabel={statusDisplayValue} />
@@ -87,8 +87,8 @@ export function PageHeader({
       </div>
       
       {/* Actions section */}
-      <div className="grid gap-px bg-slate-200 dark:bg-slate-800 md:grid-cols-2">
-        <div className="bg-white dark:bg-slate-950">
+      <div className="grid gap-px bg-slate-200 dark:bg-slate-100 dark:bg-slate-800 md:grid-cols-2">
+        <div className="bg-white dark:bg-slate-50 dark:bg-slate-950">
           <ActionGroup
             title={t("shared.page.allowedActions") ?? "Hành động được phép"}
             items={allowedActions}
@@ -96,7 +96,7 @@ export function PageHeader({
             emptyLabel={t("shared.none") ?? "Không có"}
           />
         </div>
-        <div className="bg-white dark:bg-slate-950">
+        <div className="bg-white dark:bg-slate-50 dark:bg-slate-950">
           <ActionGroup
             title={t("shared.page.forbiddenActions") ?? "Hành động bị cấm"}
             items={forbiddenActions}
@@ -122,7 +122,7 @@ function ActionGroup({
 }) {
   return (
     <div className="h-full flex flex-col">
-      <div className="border-b border-slate-100 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-900/30 px-4 py-2 shrink-0">
+      <div className="border-b border-slate-100 dark:border-slate-200 dark:border-slate-800/60 bg-slate-50 dark:bg-white dark:bg-slate-900/30 px-4 py-2 shrink-0">
         <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
           {title}
         </div>
@@ -135,7 +135,7 @@ function ActionGroup({
               className={`rounded border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
                 tone === "emerald"
                   ? "bg-emerald-100/80 border-emerald-200 text-emerald-800 dark:bg-emerald-500/20 dark:border-emerald-500/30 dark:text-emerald-300"
-                  : "bg-rose-100/80 border-rose-200 text-rose-800 dark:bg-rose-500/20 dark:border-rose-500/30 dark:text-rose-300"
+                  : "bg-rose-100/80 border-rose-200 text-rose-800 dark:bg-rose-500/20 dark:border-rose-200 dark:border-rose-500/30 dark:text-rose-300"
               }`}
             >
               {item}

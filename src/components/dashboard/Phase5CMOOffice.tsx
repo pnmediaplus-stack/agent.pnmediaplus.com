@@ -109,25 +109,25 @@ export function Phase5CMOOffice() {
   };
 
   return (
-    <div className="rounded-2xl border border-red-500/30 bg-slate-950/80 p-5 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+    <div className="rounded-2xl border border-red-500/30 bg-slate-50 dark:bg-slate-950/80 p-5 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
       <div className="mb-4 flex items-center justify-between">
         <div className="inline-flex rounded-lg border border-red-400/20 bg-red-400/10 px-3 py-1.5">
           <div className="text-sm font-semibold text-red-300">
             👑 CMO AI Office (Phase 5)
           </div>
         </div>
-        <div className="text-xs text-slate-400">
+        <div className="text-xs text-slate-500 dark:text-slate-400">
           Bộ não tự điều chỉnh (Auto-Pivot)
         </div>
       </div>
 
       <div className="space-y-4">
         {/* Active Strategy Info */}
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
-          <div className="text-sm font-semibold text-white">
+        <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">
             Chiến Lược Hiện Tại: {strategy ? strategy.name : "Không tìm thấy chiến lược"}
           </div>
-          <div className="mt-1 text-xs text-slate-400">
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Vision: {strategy ? strategy.vision : "Vui lòng cấu hình chiến lược trong Database..."}
           </div>
         </div>
@@ -140,7 +140,7 @@ export function Phase5CMOOffice() {
           <button 
             onClick={handleRunAnalysis}
             disabled={loading}
-            className="rounded-md bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors disabled:opacity-50"
+            className="rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 transition-colors disabled:opacity-50"
           >
             {loading ? "Đang phân tích..." : "🔍 Phân Tích Thủ Công"}
           </button>
@@ -165,7 +165,7 @@ export function Phase5CMOOffice() {
               <button 
                 onClick={() => handleApprovePivot(proposal.id || 'mock_id')} // mock for UI thin shell
                 disabled={loading}
-                className="ml-4 whitespace-nowrap rounded-lg bg-red-600 hover:bg-red-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-red-500/20 transition-all disabled:opacity-50"
+                className="ml-4 whitespace-nowrap rounded-lg bg-red-600 hover:bg-red-500 px-5 py-3 text-sm font-bold text-slate-900 dark:text-white shadow-lg shadow-red-500/20 transition-all disabled:opacity-50"
               >
                 🚨 DUYỆT BẺ LÁI
               </button>
@@ -174,7 +174,7 @@ export function Phase5CMOOffice() {
         )}
 
         {actionMsg && (
-          <div className="mt-2 text-xs font-medium text-emerald-400">
+          <div className="mt-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
             {actionMsg}
           </div>
         )}

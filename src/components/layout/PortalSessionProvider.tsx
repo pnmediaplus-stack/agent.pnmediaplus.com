@@ -115,17 +115,17 @@ export function PortalSessionProvider({ children, redirectPath }: { children: Re
   if (portalSession.state !== "ready") {
     return (
       <PortalSessionContext.Provider value={value}>
-        <div className="grid min-h-screen place-items-center bg-slate-950 px-6 text-slate-100">
-          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-center shadow-2xl shadow-slate-950/40">
+        <div className="grid min-h-screen place-items-center bg-slate-50 dark:bg-slate-950 px-6 text-slate-100">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-6 text-center shadow-2xl shadow-slate-950/40">
             <div className="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-200">
               {t("shared.shell.guardTitle") ?? "Portal guard"}
             </div>
-            <div className="mt-3 text-lg font-semibold text-white">
+            <div className="mt-3 text-lg font-semibold text-slate-900 dark:text-white">
               {portalSession.state === "blocked"
                 ? t("shared.shell.blocked") ?? "Session blocked"
                 : t("shared.shell.loading") ?? "Checking session"}
             </div>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
+            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
               {t("shared.shell.description") ?? "The private app shell mounts only after a valid portal session and active membership are confirmed."}
             </p>
           </div>

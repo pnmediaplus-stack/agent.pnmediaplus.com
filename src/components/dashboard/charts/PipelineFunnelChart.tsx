@@ -24,7 +24,7 @@ export default function PipelineFunnelChart({ data }: PipelineFunnelChartProps) 
   
   if (!data || data.length === 0) {
     return (
-      <div className="flex h-[300px] items-center justify-center rounded-2xl border border-slate-800 bg-slate-900/50">
+      <div className="flex h-[300px] items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50">
         <p className="text-sm text-slate-500">{t("dashboard.charts.noData") ?? "No pipeline data available"}</p>
       </div>
     );
@@ -39,7 +39,7 @@ export default function PipelineFunnelChart({ data }: PipelineFunnelChartProps) 
   }, [data, t]);
 
   return (
-    <div className="h-[200px] w-full rounded-2xl border border-slate-800/60 bg-slate-900/40 p-4 pt-6">
+    <div className="h-[200px] w-full rounded-2xl border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 p-4 pt-6">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />

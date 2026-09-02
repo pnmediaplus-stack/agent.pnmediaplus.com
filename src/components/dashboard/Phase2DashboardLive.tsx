@@ -55,13 +55,13 @@ function SectionFrame({
 }) {
   return (
     <section
-      className={`overflow-hidden rounded-3xl border border-slate-700 bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.24)] ${className ?? ""}`}
+      className={`overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.24)] ${className ?? ""}`}
     >
-      <div className="border-b border-cyan-400/20 bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(15,23,42,0.84))] px-5 py-4">
-        <div className="inline-flex max-w-full rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold tracking-tight text-white">{title}</div>
+      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900 px-5 py-4">
+        <div className="inline-flex max-w-full rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">{title}</div>
         </div>
-        <div className="mt-2 text-xs leading-5 text-slate-300">{description}</div>
+        <div className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-300">{description}</div>
       </div>
       <div className={`p-5 ${bodyClassName ?? ""}`}>{children}</div>
     </section>
@@ -85,16 +85,16 @@ function CampaignControlBar() {
 
   return (
     <>
-      <div className="overflow-hidden rounded-3xl border border-slate-700 bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.24)]">
-        <div className="border-b border-cyan-400/20 bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(15,23,42,0.82))] px-4 py-4">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.24)]">
+        <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900 px-4 py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
-                <div className="text-sm font-semibold text-white">
+              <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
+                <div className="text-sm font-semibold text-slate-900 dark:text-white">
                   {t("dashboard.controls.title") ?? "Locked campaign workspace"}
                 </div>
               </div>
-              <div className="mt-1 max-w-3xl text-xs leading-5 text-slate-400">
+              <div className="mt-1 max-w-3xl text-xs leading-5 text-slate-500 dark:text-slate-400">
                 {t("dashboard.controls.description") ??
                   "Vertical dashboard shell. No page-level horizontal mode. Wide content stays inside internal rails, tables, and snapshots."}
               </div>
@@ -107,15 +107,15 @@ function CampaignControlBar() {
                     className={[
                       "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.12em]",
                       index === 0
-                        ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-100"
-                        : "border-slate-700 bg-slate-900/70 text-slate-200"
+                        ? "border-cyan-400/40 bg-cyan-50 dark:bg-cyan-400/10 text-cyan-100"
+                        : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 text-slate-700 dark:text-slate-200"
                     ].join(" ")}
                   >
                     {tab}
                   </span>
                 ))}
               </div>
-              <div className="h-6 w-px bg-slate-800"></div>
+              <div className="h-6 w-px bg-slate-100 dark:bg-slate-800"></div>
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="inline-flex items-center rounded-full bg-cyan-500 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-cyan-950 hover:bg-cyan-400"
@@ -129,7 +129,7 @@ function CampaignControlBar() {
           <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-200">
             {t("dashboard.controls.fixedSidebar") ?? "Fixed sidebar"}
           </span>
-          <span className="rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-200">
+          <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">
             {t("dashboard.controls.internalHorizontalScrollOnly") ?? "Internal horizontal scroll only"}
           </span>
           <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-200">
@@ -153,13 +153,13 @@ function SummaryGrid({ cards }: { cards: SummaryCard[] }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => (
-        <div key={card.label} className="min-w-0 overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/80">
-          <div className="border-b border-cyan-400/20 bg-slate-900/90 px-4 py-3">
+        <div key={card.label} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
+          <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-4 py-3">
             <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-100">{card.label}</div>
           </div>
           <div className="p-4">
-            <div className="mt-2 text-2xl font-semibold text-white">{card.value}</div>
-            <div className="mt-1.5 text-sm leading-6 text-slate-400">{card.note}</div>
+            <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{card.value}</div>
+            <div className="mt-1.5 text-sm leading-6 text-slate-500 dark:text-slate-400">{card.note}</div>
           </div>
         </div>
       ))}
@@ -217,16 +217,16 @@ function PipelineCard({
     : (t("dashboard.labels.pendingUpper") ?? "PENDING");
 
   return (
-    <div className="flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.16)]">
-      <div className="border-b border-slate-700 bg-slate-900/90 px-4 py-3">
+    <div className="flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.16)]">
+      <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/90 px-4 py-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="inline-flex max-w-full rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
-              <div className="break-words whitespace-normal text-sm font-semibold leading-6 text-white">{item.title}</div>
+            <div className="inline-flex max-w-full rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
+              <div className="break-words whitespace-normal text-sm font-semibold leading-6 text-slate-900 dark:text-white">{item.title}</div>
             </div>
-            <div className="mt-1 break-words whitespace-normal text-xs leading-5 text-slate-400">{item.contentKey}</div>
+            <div className="mt-1 break-words whitespace-normal text-xs leading-5 text-slate-500 dark:text-slate-400">{item.contentKey}</div>
             {item.brief ? (
-              <div className="mt-2 max-h-16 overflow-hidden break-words whitespace-normal text-xs leading-5 text-slate-300">
+              <div className="mt-2 max-h-16 overflow-hidden break-words whitespace-normal text-xs leading-5 text-slate-600 dark:text-slate-300">
                 {item.brief}
               </div>
             ) : null}
@@ -236,7 +236,7 @@ function PipelineCard({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4 pr-1">
-        <div className="grid gap-3 text-sm text-slate-300">
+        <div className="grid gap-3 text-sm text-slate-600 dark:text-slate-300">
           <InfoRow label={t("dashboard.labels.owner") ?? "Owner"} value={item.ownerRef} />
           <InfoRow label={t("dashboard.labels.taskOwner") ?? "Task owner"} value={item.taskOwnerRef} />
           <InfoRow label={t("dashboard.labels.nextState") ?? "Next state"} value={t(`dashboard.state.${nextState}`) ?? nextState} />
@@ -258,7 +258,7 @@ function PipelineCard({
             {requiredAssets.missing.map((assetType) => (
               <span
                 key={assetType}
-                className="inline-flex items-center rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-rose-200"
+                className="inline-flex items-center rounded-full border border-rose-200 dark:border-rose-500/30 bg-rose-50 0/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-rose-600 dark:text-rose-200"
               >
                 {`${t("dashboard.labels.missingPrefix") ?? "missing"}:${assetType}`}
               </span>
@@ -267,13 +267,13 @@ function PipelineCard({
         </div>
 
         {item.currentState === 'QA_passed' && (
-          <div className="mt-4 border-t border-slate-700/50 pt-4">
+          <div className="mt-4 border-t border-slate-200 dark:border-slate-700/50 pt-4">
             <button
               onClick={handlePublish}
               disabled={isPublishing || !publish.ready}
-              className={`w-full rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors ${
+              className={`w-full rounded-lg px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white shadow-sm transition-colors ${
                 isPublishing || !publish.ready
-                  ? "cursor-not-allowed bg-slate-700 text-slate-400"
+                  ? "cursor-not-allowed bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
                   : "bg-cyan-600 hover:bg-cyan-500"
               }`}
             >
@@ -288,26 +288,26 @@ function PipelineCard({
         )}
 
         {item.currentState === 'published' && performanceRecords && performanceRecords.some(p => p.contentItemId === item.id) && (
-          <div className="mt-4 border-t border-slate-700/50 pt-4">
-            <div className="text-xs uppercase tracking-[0.22em] text-cyan-400 mb-2">Performance Metrics</div>
+          <div className="mt-4 border-t border-slate-200 dark:border-slate-700/50 pt-4">
+            <div className="text-xs uppercase tracking-[0.22em] text-cyan-600 dark:text-cyan-400 mb-2">Performance Metrics</div>
             <div className="grid grid-cols-2 gap-2">
               {performanceRecords.filter(p => p.contentItemId === item.id).slice(0, 1).map((perf, idx) => (
                 <React.Fragment key={idx}>
-                  <div className="rounded-lg bg-slate-900/50 p-2 text-center border border-slate-800">
-                    <div className="text-[10px] text-slate-400 uppercase">Views</div>
-                    <div className="text-sm font-bold text-white">{perf.views?.toLocaleString() || 0}</div>
+                  <div className="rounded-lg bg-white dark:bg-slate-900/50 p-2 text-center border border-slate-200 dark:border-slate-800">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Views</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-white">{perf.views?.toLocaleString() || 0}</div>
                   </div>
-                  <div className="rounded-lg bg-slate-900/50 p-2 text-center border border-slate-800">
-                    <div className="text-[10px] text-slate-400 uppercase">Likes</div>
-                    <div className="text-sm font-bold text-white">{perf.likes?.toLocaleString() || 0}</div>
+                  <div className="rounded-lg bg-white dark:bg-slate-900/50 p-2 text-center border border-slate-200 dark:border-slate-800">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Likes</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-white">{perf.likes?.toLocaleString() || 0}</div>
                   </div>
-                  <div className="rounded-lg bg-slate-900/50 p-2 text-center border border-slate-800">
-                    <div className="text-[10px] text-slate-400 uppercase">Comments</div>
-                    <div className="text-sm font-bold text-white">{perf.comments?.toLocaleString() || 0}</div>
+                  <div className="rounded-lg bg-white dark:bg-slate-900/50 p-2 text-center border border-slate-200 dark:border-slate-800">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Comments</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-white">{perf.comments?.toLocaleString() || 0}</div>
                   </div>
-                  <div className="rounded-lg bg-slate-900/50 p-2 text-center border border-slate-800">
-                    <div className="text-[10px] text-slate-400 uppercase">CTR</div>
-                    <div className="text-sm font-bold text-white">{perf.CTR ? perf.CTR.toFixed(2) + '%' : '0%'}</div>
+                  <div className="rounded-lg bg-white dark:bg-slate-900/50 p-2 text-center border border-slate-200 dark:border-slate-800">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">CTR</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-white">{perf.CTR ? perf.CTR.toFixed(2) + '%' : '0%'}</div>
                   </div>
                 </React.Fragment>
               ))}
@@ -321,9 +321,9 @@ function PipelineCard({
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[9.5rem_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2">
+    <div className="grid grid-cols-[9.5rem_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 px-3 py-2">
       <span className="min-w-0 text-slate-500">{label}</span>
-      <span className="min-w-0 break-words text-right font-medium text-white">{value}</span>
+      <span className="min-w-0 break-words text-right font-medium text-slate-900 dark:text-white">{value}</span>
     </div>
   );
 }
@@ -430,10 +430,10 @@ function LedgerShell({
               <col key={column.key} style={{ width: column.width }} />
             ))}
           </colgroup>
-          <thead className="text-xs uppercase tracking-[0.22em] text-slate-300">
+          <thead className="text-xs uppercase tracking-[0.22em] text-slate-600 dark:text-slate-300">
             <tr>
               {columns.map((column) => (
-                <th key={column.key} className="border-b border-slate-800 bg-slate-900/95 px-5 py-3 backdrop-blur">
+                <th key={column.key} className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/95 px-5 py-3 backdrop-blur">
                   {column.label}
                 </th>
               ))}
@@ -449,7 +449,7 @@ function LedgerShell({
             </colgroup>
             <tbody className="divide-y divide-slate-800">
               {rows.map((row, index) => (
-                <tr key={index} className="text-slate-300">
+                <tr key={index} className="text-slate-600 dark:text-slate-300">
                   {renderRow(row).map((cell, cellIndex) => (
                     <td key={cellIndex} className="px-5 py-4 align-top">
                       {cell}
@@ -483,13 +483,13 @@ function TaskView({
 
   if (!tasks.length) {
     return (
-      <div className="rounded-2xl border border-slate-700 bg-slate-950/80 p-5">
-        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-white">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 p-5">
+        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.taskLedgerTitle") ?? "Task ledger / agent_tasks"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-400">
+        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {t("dashboard.sections.taskLedgerDescription") ?? "Campaign-style task rows with wide columns kept inside the panel."}
         </div>
         <div className="mt-4">
@@ -503,14 +503,14 @@ function TaskView({
   }
 
   return (
-    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/80">
-      <div className="border-b border-cyan-400/20 bg-slate-900/90 px-5 py-4">
-        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-white">
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
+      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
+        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.taskLedgerTitle") ?? "Task ledger / agent_tasks"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-400">
+        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {t("dashboard.sections.taskLedgerDescription") ?? "Campaign-style task rows with wide columns kept inside the panel."}
         </div>
       </div>
@@ -524,13 +524,13 @@ function TaskView({
             const content = contentItems.find((row) => row.id === currentTask.contentItemId);
             return [
               <>
-                <div className="font-medium text-white">{content?.title ?? (t("dashboard.labels.pending") ?? "pending")}</div>
+                <div className="font-medium text-slate-900 dark:text-white">{content?.title ?? (t("dashboard.labels.pending") ?? "pending")}</div>
                 <div className="text-xs text-slate-500">{content?.contentKey ?? currentTask.contentItemId}</div>
               </>,
               t(`dashboard.taskKind.${currentTask.taskKind}`) ?? currentTask.taskKind,
               currentTask.ownerRef,
               <StateBadge label={currentTask.state} displayLabel={t(`dashboard.taskState.${currentTask.state}`) ?? currentTask.state} />,
-              <span className="text-white">
+              <span className="text-slate-900 dark:text-white">
                 {content
                   ? (t(`dashboard.state.${getPhase2NextState(content.currentState)}`) ?? getPhase2NextState(content.currentState))
                   : (t("dashboard.labels.pending") ?? "pending")}
@@ -560,13 +560,13 @@ function AssetView({
 
   if (!assets.length) {
     return (
-      <div className="rounded-2xl border border-slate-700 bg-slate-950/80 p-5">
-        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-white">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 p-5">
+        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.assetsTitle") ?? "Creative assets / assets"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-400">
+        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {t("dashboard.sections.assetsDescription") ?? "Research, visual, and caption assets stay in a single horizontal ledger before QA_ready."}
         </div>
         <div className="mt-4">
@@ -580,14 +580,14 @@ function AssetView({
   }
 
   return (
-    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/80">
-      <div className="border-b border-cyan-400/20 bg-slate-900/90 px-5 py-4">
-        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-white">
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
+      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
+        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.assetsTitle") ?? "Creative assets / assets"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-400">
+        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {t("dashboard.sections.assetsDescription") ?? "Research, visual, and caption assets stay in a single horizontal ledger before QA_ready."}
         </div>
       </div>
@@ -601,18 +601,18 @@ function AssetView({
             const content = contentItems.find((row) => row.id === currentAsset.contentItemId);
             return [
               <>
-                <div className="font-medium text-white">{content?.title ?? (t("dashboard.labels.pending") ?? "pending")}</div>
+                <div className="font-medium text-slate-900 dark:text-white">{content?.title ?? (t("dashboard.labels.pending") ?? "pending")}</div>
                 <div className="text-xs text-slate-500">
                   {content ? (t(`dashboard.state.${content.currentState}`) ?? content.currentState) : (t("dashboard.labels.pending") ?? "pending")}
                 </div>
               </>,
               <StateBadge label={currentAsset.assetType} displayLabel={t(`dashboard.assetType.${currentAsset.assetType}`) ?? currentAsset.assetType} />,
-              <span className="text-xs font-mono text-slate-400" title={currentAsset.ownerRef}>
+              <span className="text-xs font-mono text-slate-500 dark:text-slate-400" title={currentAsset.ownerRef}>
                 {currentAsset.ownerRef.split('-')[0]}...
               </span>,
-              <div className="max-w-[300px] overflow-hidden text-ellipsis whitespace-nowrap text-xs text-slate-300" title={currentAsset.assetUri}>
+              <div className="max-w-[300px] overflow-hidden text-ellipsis whitespace-nowrap text-xs text-slate-600 dark:text-slate-300" title={currentAsset.assetUri}>
                 {currentAsset.assetUri && currentAsset.assetUri.startsWith('http') ? (
-                  <a href={currentAsset.assetUri} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">
+                  <a href={currentAsset.assetUri} target="_blank" rel="noreferrer" className="text-cyan-600 dark:text-cyan-400 hover:underline">
                     [Link Hình Ảnh]
                   </a>
                 ) : (
@@ -649,13 +649,13 @@ function QAView({
 
   if (!contentItems.length) {
     return (
-      <div className="rounded-2xl border border-slate-700 bg-slate-950/80 p-5">
-        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-white">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 p-5">
+        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.qaTitle") ?? "QA gate / qa_reviews"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-400">
+        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {t("dashboard.sections.qaDescription") ?? "Reviews are read as approval gates, with risk and publish eligibility visible at a glance."}
         </div>
         <div className="mt-4">
@@ -669,14 +669,14 @@ function QAView({
   }
 
   return (
-    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/80">
-      <div className="border-b border-cyan-400/20 bg-slate-900/90 px-5 py-4">
-        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-white">
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
+      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
+        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.qaTitle") ?? "QA gate / qa_reviews"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-400">
+        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {t("dashboard.sections.qaDescription") ?? "Reviews are read as approval gates, with risk and publish eligibility visible at a glance."}
         </div>
       </div>
@@ -691,7 +691,7 @@ function QAView({
             const publish = getPhase2PublishEligibility(currentContent.id, assets, reviews);
             return [
               <>
-                <div className="font-medium text-white">{currentContent.title}</div>
+                <div className="font-medium text-slate-900 dark:text-white">{currentContent.title}</div>
                 <div className="text-xs text-slate-500">{t(`dashboard.state.${currentContent.currentState}`) ?? currentContent.currentState}</div>
               </>,
               review ? review.averageScore.toFixed(1) : (t("dashboard.labels.pending") ?? "pending"),
@@ -705,7 +705,7 @@ function QAView({
                 label={review ? review.verdict : (t("dashboard.labels.pending") ?? "pending")}
                 displayLabel={review ? (t(`dashboard.verdict.${review.verdict}`) ?? review.verdict) : (t("dashboard.labels.pending") ?? "pending")}
               />,
-              <div className="text-xs text-slate-400 break-all max-w-[200px] max-h-20 overflow-y-auto">{review?.evidenceRef ?? (t("dashboard.labels.pending") ?? "pending")}</div>,
+              <div className="text-xs text-slate-500 dark:text-slate-400 break-all max-w-[200px] max-h-20 overflow-y-auto">{review?.evidenceRef ?? (t("dashboard.labels.pending") ?? "pending")}</div>,
               <StateBadge
                 label={publish.ready ? "ELIGIBLE" : publish.gateState}
                 displayLabel={publish.ready ? (t("dashboard.labels.eligible") ?? "ELIGIBLE") : (t(`dashboard.publishState.${publish.gateState}`) ?? publish.gateState)}
@@ -740,13 +740,13 @@ function PerformanceView({
 
   if (!records.length) {
     return (
-      <div className="rounded-2xl border border-slate-700 bg-slate-950/80 p-5">
-        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-white">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 p-5">
+        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.performanceTitle") ?? "Performance ledger / performance_records"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-400">
+        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {t("dashboard.sections.performanceDescription") ?? "Post-publish snapshots only. Missing metrics render as pending / incomplete."}
         </div>
         <div className="mt-4">
@@ -760,14 +760,14 @@ function PerformanceView({
   }
 
   return (
-    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/80">
-      <div className="border-b border-cyan-400/20 bg-slate-900/90 px-5 py-4">
-        <div className="inline-flex rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-white">
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
+      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
+        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.performanceTitle") ?? "Performance ledger / performance_records"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-400">
+        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {t("dashboard.sections.performanceDescription") ?? "Post-publish snapshots only. Missing metrics render as pending / incomplete."}
         </div>
       </div>
@@ -782,20 +782,20 @@ function PerformanceView({
             const content = contentItems.find((row) => row.id === currentRecord.contentItemId);
             return [
               <>
-                <div className="font-medium text-white">{content?.title ?? (t("dashboard.labels.pending") ?? "pending")}</div>
+                <div className="font-medium text-slate-900 dark:text-white">{content?.title ?? (t("dashboard.labels.pending") ?? "pending")}</div>
                 <div className="text-xs text-slate-500">{content?.currentState ?? (t("dashboard.labels.pending") ?? "pending")}</div>
               </>,
               currentRecord.ownerRef,
               ...PHASE2_PERFORMANCE_METRIC_FIELDS.map((metric) => {
                 const value = currentRecord[metric];
                 return (
-                  <span className="text-white">
+                  <span className="text-slate-900 dark:text-white">
                     {typeof value === "number" ? value : (t("dashboard.labels.pendingIncomplete") ?? "pending / incomplete")}
                   </span>
                 );
               }),
-              <span className="text-xs text-slate-400">{currentRecord.sourceRef}</span>,
-              <span className="text-xs text-slate-400">{currentRecord.capturedAt}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">{currentRecord.sourceRef}</span>,
+              <span className="text-xs text-slate-500 dark:text-slate-400">{currentRecord.capturedAt}</span>
             ];
           }}
         />
@@ -936,7 +936,7 @@ export function Phase2Dashboard({
       {loadState === "blocked" ? (
         <div
           role="alert"
-          className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-5 py-4 text-rose-100"
+          className="rounded-2xl border border-rose-200 dark:border-rose-500/30 bg-rose-50 0/10 px-5 py-4 text-rose-100"
         >
           <div className="text-sm font-semibold">
             {t("dashboard.live.blockedTitle") ?? "Live Supabase read blocked"}
@@ -965,7 +965,7 @@ export function Phase2Dashboard({
             performanceRecords={liveData.performanceRecords}
           />
         
-        <div className="mt-4 flex items-center justify-between border-t border-slate-700/50 pt-4 px-2">
+        <div className="mt-4 flex items-center justify-between border-t border-slate-200 dark:border-slate-700/50 pt-4 px-2">
           <button
             onClick={() => {
               if (liveData.page && liveData.page > 1) {
@@ -973,11 +973,11 @@ export function Phase2Dashboard({
               }
             }}
             disabled={!liveData.page || liveData.page === 1}
-            className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white transition-colors hover:bg-slate-200 dark:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             ← Previous
           </button>
-          <div className="text-sm font-medium text-cyan-400">
+          <div className="text-sm font-medium text-cyan-600 dark:text-cyan-400">
             Page {liveData.page || 1}
           </div>
           <button
@@ -985,7 +985,7 @@ export function Phase2Dashboard({
               router.push(`?page=${(liveData.page || 1) + 1}`);
             }}
             disabled={!liveData.hasNextPage}
-            className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white transition-colors hover:bg-slate-200 dark:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next →
           </button>
@@ -1011,13 +1011,13 @@ export function Phase2Dashboard({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {liveData.lessonsLearned.map((lesson) => (
                   <div key={lesson.id} className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-2 opacity-50 text-emerald-400 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-0 right-0 p-2 opacity-50 text-emerald-600 dark:text-emerald-400 group-hover:opacity-100 transition-opacity">
                       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
                     </div>
-                    <div className="text-xs font-semibold text-emerald-400 mb-2">{lesson.metricHighlight}</div>
-                    <div className="text-sm text-slate-300 whitespace-pre-wrap">{lesson.lessonText}</div>
+                    <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-2">{lesson.metricHighlight}</div>
+                    <div className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{lesson.lessonText}</div>
                   </div>
                 ))}
               </div>
