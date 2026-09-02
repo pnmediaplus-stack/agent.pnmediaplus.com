@@ -55,9 +55,9 @@ function SectionFrame({
 }) {
   return (
     <section
-      className={`overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.24)] ${className ?? ""}`}
+      className={`overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80 shadow-md hover:shadow-lg transition-shadow duration-300 ${className ?? ""}`}
     >
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900 px-5 py-4">
+      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-5 py-4">
         <div className="inline-flex max-w-full rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
           <div className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">{title}</div>
         </div>
@@ -85,8 +85,8 @@ function CampaignControlBar() {
 
   return (
     <>
-      <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.24)]">
-        <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900 px-4 py-4">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80 shadow-md hover:shadow-lg transition-shadow duration-300">
+        <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-4 py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
@@ -153,8 +153,8 @@ function SummaryGrid({ cards }: { cards: SummaryCard[] }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => (
-        <div key={card.label} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
-          <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-4 py-3">
+        <div key={card.label} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80">
+          <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-4 py-3">
             <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-100">{card.label}</div>
           </div>
           <div className="p-4">
@@ -217,8 +217,8 @@ function PipelineCard({
     : (t("dashboard.labels.pendingUpper") ?? "PENDING");
 
   return (
-    <div className="flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.16)]">
-      <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/90 px-4 py-3">
+    <div className="flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+      <div className="border-b border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-4 py-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="inline-flex max-w-full rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
@@ -483,7 +483,7 @@ function TaskView({
 
   if (!tasks.length) {
     return (
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 p-5">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80 p-5">
         <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.taskLedgerTitle") ?? "Task ledger / agent_tasks"}
@@ -503,8 +503,8 @@ function TaskView({
   }
 
   return (
-    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80">
+      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-5 py-4">
         <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.taskLedgerTitle") ?? "Task ledger / agent_tasks"}
@@ -560,7 +560,7 @@ function AssetView({
 
   if (!assets.length) {
     return (
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 p-5">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80 p-5">
         <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.assetsTitle") ?? "Creative assets / assets"}
@@ -580,8 +580,8 @@ function AssetView({
   }
 
   return (
-    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80">
+      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-5 py-4">
         <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.assetsTitle") ?? "Creative assets / assets"}
@@ -649,7 +649,7 @@ function QAView({
 
   if (!contentItems.length) {
     return (
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 p-5">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80 p-5">
         <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.qaTitle") ?? "QA gate / qa_reviews"}
@@ -669,8 +669,8 @@ function QAView({
   }
 
   return (
-    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80">
+      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-5 py-4">
         <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.qaTitle") ?? "QA gate / qa_reviews"}
@@ -740,7 +740,7 @@ function PerformanceView({
 
   if (!records.length) {
     return (
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 p-5">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80 p-5">
         <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.performanceTitle") ?? "Performance ledger / performance_records"}
@@ -760,8 +760,8 @@ function PerformanceView({
   }
 
   return (
-    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-900/90 px-5 py-4">
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80">
+      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-5 py-4">
         <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">
             {t("dashboard.sections.performanceTitle") ?? "Performance ledger / performance_records"}
@@ -1028,3 +1028,4 @@ export function Phase2Dashboard({
     </PageFrame>
   );
 }
+
