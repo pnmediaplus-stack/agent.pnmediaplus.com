@@ -279,9 +279,9 @@ function KnowledgeTab() {
         ) : !Array.isArray(documents) || documents.length === 0 ? (
           <div className="p-10 text-center text-gray-500">Chưa có tài liệu nào.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="overflow-auto h-[1200px] custom-scrollbar">
+            <table className="min-w-full divide-y divide-gray-200 relative">
+              <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
                 <tr>
                   <th className="px-6 py-3 text-left w-12">
                     <input 
