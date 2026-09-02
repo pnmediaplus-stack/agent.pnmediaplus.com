@@ -16,13 +16,13 @@ export default function AIControlCenterPage() {
   const [activeTab, setActiveTab] = useState("knowledge");
   
   return (
-    <div className="flex-1 overflow-auto bg-gray-50 h-full flex flex-col">
-      <div className="px-6 pt-6 pb-2">
+    <div className="flex-1 bg-gray-50 h-full flex flex-col overflow-hidden">
+      <div className="px-6 pt-6 pb-2 shrink-0">
         <h1 className="text-2xl font-semibold text-gray-900">Trung Tâm Điều Khiển AI</h1>
         <p className="text-sm text-gray-500 mt-1">Cấu hình tri thức, tính cách và chiến dịch chủ động cho trợ lý ảo của bạn.</p>
       </div>
 
-      <div className="px-6 border-b border-gray-200">
+      <div className="px-6 border-b border-gray-200 shrink-0">
         <nav className="-mb-px flex space-x-8">
           <button 
             onClick={() => setActiveTab("knowledge")}
@@ -53,7 +53,7 @@ export default function AIControlCenterPage() {
           </nav>
       </div>
 
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-6 flex flex-col min-h-0" id="tab-scroll-container">
         {activeTab === "knowledge" && <KnowledgeTab />}
         {activeTab === "persona" && <PersonaTab />}
         {activeTab === "campaigns" && <CampaignsTab />}
@@ -200,10 +200,10 @@ function KnowledgeTab() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-full min-h-0 space-y-6">
       
       {/* Upload Box */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center border-dashed">
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center border-dashed shrink-0">
         
         <div className="w-full max-w-lg mb-4 flex gap-4">
           <div className="flex-1">
@@ -266,7 +266,7 @@ function KnowledgeTab() {
         {uploadError && <p className="text-red-500 text-sm mt-4 whitespace-pre-line text-center">{uploadError}</p>}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col h-[800px]">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg font-medium text-gray-900">Tài liệu đã tải lên</h2>
           {selectedDocumentIds.length > 0 && (

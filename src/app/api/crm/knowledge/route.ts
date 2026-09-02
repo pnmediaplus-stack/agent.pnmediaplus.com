@@ -29,8 +29,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'CONFIG_MISSING', message: 'Supabase config missing' }, { status: 500 });
     }
 
-    const limit = parseInt(url.searchParams.get('limit') || '20', 10);
-    const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+    let limit = parseInt(url.searchParams.get('limit') || '20', 10);
+    if (isNaN(limit) || limit < 1) limit = 20;
+    limit = Math.min(limit, 100);
+
+    let offset = parseInt(url.searchParams.get('offset') || '0', 10);
+    if (isNaN(offset) || offset < 0) offset = 0;
 
     const res = await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents?organization_id=eq.${organizationId}&namespace=eq.${namespace}&order=created_at.desc&limit=${limit}&offset=${offset}`, {
       headers: {
