@@ -136,9 +136,9 @@ export function Sidebar() {
   }
 
   return (
-    <aside className={`sidebar-custom-text flex flex-col relative overflow-hidden px-3 py-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:h-screen lg:w-[290px] lg:border-b-0 lg:border-r lg:border-violet-100 dark:lg:border-slate-800/60 lg:overflow-y-auto shadow-xl shadow-violet-200/40 dark:shadow-black/20 ${
+    <aside className={`sidebar-custom-text flex flex-col relative overflow-hidden px-3 py-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:h-screen lg:w-[290px] lg:border-b-0 lg:border-r lg:border-slate-200/50 dark:lg:border-slate-800/60 lg:overflow-y-auto shadow-xl shadow-slate-200/20 dark:shadow-black/20 ${
       mounted && sidebarBgType !== "default" 
-        ? "bg-transparent" 
+        ? "bg-transparent border-r-white/10 dark:border-r-white/5" 
         : "bg-gradient-to-b from-violet-50/70 via-purple-50/40 to-fuchsia-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950/30"
     }`}>
 
@@ -227,7 +227,7 @@ export function Sidebar() {
       </nav>
 
       {/* ── USER CARD ─────────────────────────────── */}
-      <div className="mt-3 rounded-xl border border-violet-100 dark:border-white/8 bg-white/80 dark:bg-white/5 p-3 text-xs lg:mt-auto shadow-sm dark:shadow-none">
+      <div className="mt-3 rounded-xl bg-black/5 dark:bg-white/5 p-3 text-xs lg:mt-auto shadow-sm backdrop-blur-sm">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
@@ -248,7 +248,7 @@ export function Sidebar() {
             type="button"
             onClick={() => setAccountMenuOpen((current) => !current)}
             aria-expanded={accountMenuOpen}
-            className="rounded-lg border border-violet-100 dark:border-white/10 bg-white/60 dark:bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 transition hover:border-violet-300 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-700 dark:hover:text-violet-300"
+            className="rounded-lg bg-black/10 dark:bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-black/15 dark:hover:bg-white/20 hover:text-cyan-600 dark:hover:text-cyan-300"
           >
             {tLayout("layout.sidebar.accountMenu.action") ?? "Setting"}
           </button>
