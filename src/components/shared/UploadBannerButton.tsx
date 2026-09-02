@@ -133,13 +133,13 @@ export function UploadBannerButton({ settingKey, className, children }: UploadBa
               {!imageSrc ? (
                 <div className="flex flex-col items-center justify-center">
                   <div 
-                    className="w-full aspect-[6/1] rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-100 dark:bg-slate-800/50 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-slate-800 transition-colors group"
+                    className="w-full aspect-[6/1] rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-slate-800 transition-colors group"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <div className="p-4 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 mb-4 group-hover:scale-110 transition-transform">
                       <ImageIcon className="w-8 h-8" />
                     </div>
-                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-600 dark:text-slate-300">Nhấn để chọn ảnh từ máy tính</p>
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nhấn để chọn ảnh từ máy tính</p>
                     <p className="text-xs text-slate-500 mt-2">PNG, JPG, WEBP (Tối đa 5MB)</p>
                   </div>
                   
@@ -214,7 +214,7 @@ export function UploadBannerButton({ settingKey, className, children }: UploadBa
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-white dark:bg-slate-900/50 flex items-center justify-end gap-3">
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={closeModal}
