@@ -122,7 +122,7 @@ export function UploadBannerButton({ settingKey, className, children }: UploadBa
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Cập nhật ảnh bìa</h3>
               <button 
                 onClick={closeModal}
-                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-600 dark:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

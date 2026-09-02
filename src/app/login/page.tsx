@@ -162,7 +162,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
-                  className="grid w-11 place-items-center rounded-r-xl border-l border-slate-200 dark:border-slate-800 text-cyan-100 transition hover:bg-cyan-50 dark:bg-cyan-400/10"
+                  className="grid w-11 place-items-center rounded-r-xl border-l border-slate-200 dark:border-slate-800 text-cyan-100 transition hover:bg-cyan-50 dark:hover:bg-cyan-400/10"
                   aria-pressed={showPassword}
                   aria-label={passwordToggleLabel}
                   title={passwordToggleLabel}

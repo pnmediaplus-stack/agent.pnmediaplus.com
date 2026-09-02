@@ -211,11 +211,11 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         const [, actionType, id] = href.split(':');
 
                         let Icon = RefreshCw;
-                        let colorClass = "border-emerald-200 dark:border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-100 dark:bg-emerald-500/20";
+                        let colorClass = "border-emerald-200 dark:border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20";
 
                         if (actionType === 'approve') {
                           Icon = CheckCircle;
-                          colorClass = "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-100 dark:bg-emerald-500/20";
+                          colorClass = "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20";
                         } else if (actionType === 'reject') {
                           Icon = XCircle;
                           colorClass = "border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20";
@@ -299,7 +299,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                         }
 
                         return (
-                          <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded bg-cyan-500/10 border border-cyan-500/20 px-2 py-1 text-xs font-semibold text-cyan-300 no-underline hover:bg-cyan-100 dark:bg-cyan-500/20">
+                          <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded bg-cyan-500/10 border border-cyan-500/20 px-2 py-1 text-xs font-semibold text-cyan-300 no-underline hover:bg-cyan-100 dark:hover:bg-cyan-500/20">
                             {props.children}
                           </a>
                         );
