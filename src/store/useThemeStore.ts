@@ -7,11 +7,17 @@ interface ThemeState {
   bgType: BackgroundType;
   bgColor: string;
   bgGradient: string;
+  customGrad1: string;
+  customGrad2: string;
+  customGradAngle: number;
   bgImageUrl: string;
   bgImageOpacity: number;
   setBgType: (type: BackgroundType) => void;
   setBgColor: (color: string) => void;
   setBgGradient: (gradient: string) => void;
+  setCustomGrad1: (color: string) => void;
+  setCustomGrad2: (color: string) => void;
+  setCustomGradAngle: (angle: number) => void;
   setBgImageUrl: (url: string) => void;
   setBgImageOpacity: (opacity: number) => void;
   resetTheme: () => void;
@@ -23,14 +29,29 @@ export const useThemeStore = create<ThemeState>()(
       bgType: "default",
       bgColor: "#0f172a",
       bgGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      customGrad1: "#667eea",
+      customGrad2: "#764ba2",
+      customGradAngle: 135,
       bgImageUrl: "",
       bgImageOpacity: 100,
       setBgType: (type) => set({ bgType: type }),
       setBgColor: (color) => set({ bgColor: color }),
       setBgGradient: (gradient) => set({ bgGradient: gradient }),
+      setCustomGrad1: (color) => set({ customGrad1: color }),
+      setCustomGrad2: (color) => set({ customGrad2: color }),
+      setCustomGradAngle: (angle) => set({ customGradAngle: angle }),
       setBgImageUrl: (url) => set({ bgImageUrl: url }),
       setBgImageOpacity: (opacity) => set({ bgImageOpacity: opacity }),
-      resetTheme: () => set({ bgType: "default", bgColor: "#0f172a", bgGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", bgImageUrl: "", bgImageOpacity: 100 }),
+      resetTheme: () => set({ 
+        bgType: "default", 
+        bgColor: "#0f172a", 
+        bgGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
+        customGrad1: "#667eea",
+        customGrad2: "#764ba2",
+        customGradAngle: 135,
+        bgImageUrl: "", 
+        bgImageOpacity: 100 
+      }),
     }),
     {
       name: "theme-storage",

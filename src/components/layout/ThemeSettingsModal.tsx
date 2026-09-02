@@ -12,7 +12,13 @@ export function ThemeSettingsModal({ trigger }: { trigger?: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   
   const { theme, setTheme } = useTheme();
-  const { bgType, bgColor, bgGradient, bgImageUrl, bgImageOpacity, setBgType, setBgColor, setBgGradient, setBgImageUrl, setBgImageOpacity, resetTheme } = useThemeStore();
+  const { 
+    bgType, bgColor, bgGradient, bgImageUrl, bgImageOpacity, 
+    customGrad1, customGrad2, customGradAngle,
+    setBgType, setBgColor, setBgGradient, setBgImageUrl, setBgImageOpacity, 
+    setCustomGrad1, setCustomGrad2, setCustomGradAngle,
+    resetTheme 
+  } = useThemeStore();
 
   useEffect(() => {
     setMounted(true);
@@ -172,6 +178,54 @@ export function ThemeSettingsModal({ trigger }: { trigger?: React.ReactNode }) {
                             style={{ backgroundImage: grad, borderColor: bgGradient === grad ? "#fff" : "transparent", outline: bgGradient === grad ? "2px solid #06b6d4" : "none" }}
                           />
                         ))}
+                      </div>
+                      <div className="pt-3 border-t border-slate-200 dark:border-slate-700/50">
+                        <div className="text-[13px] text-slate-600 dark:text-slate-300 mb-2">Hoặc tự phối màu:</div>
+                        <div className="space-y-3">
+                          <div className="flex gap-3">
+                            <div className="flex flex-1 items-center gap-2">
+                              <input 
+                                type="color" 
+                                value={customGrad1} 
+                                onChange={(e) => {
+                                  setCustomGrad1(e.target.value);
+                                  setBgGradient(`linear-gradient(${customGradAngle}deg, ${e.target.value} 0%, ${customGrad2} 100%)`);
+                                }} 
+                                className="h-8 w-8 cursor-pointer rounded bg-transparent p-0 border-0 outline-none"
+                              />
+                              <span className="text-[11px] font-mono text-slate-500 uppercase">{customGrad1}</span>
+                            </div>
+                            <div className="flex flex-1 items-center gap-2">
+                              <input 
+                                type="color" 
+                                value={customGrad2} 
+                                onChange={(e) => {
+                                  setCustomGrad2(e.target.value);
+                                  setBgGradient(`linear-gradient(${customGradAngle}deg, ${customGrad1} 0%, ${e.target.value} 100%)`);
+                                }} 
+                                className="h-8 w-8 cursor-pointer rounded bg-transparent p-0 border-0 outline-none"
+                              />
+                              <span className="text-[11px] font-mono text-slate-500 uppercase">{customGrad2}</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Góc độ (Angle)</label>
+                              <span className="text-xs font-mono text-cyan-600 dark:text-cyan-400">{customGradAngle}°</span>
+                            </div>
+                            <input 
+                              type="range" 
+                              min="0" 
+                              max="360" 
+                              value={customGradAngle} 
+                              onChange={(e) => {
+                                setCustomGradAngle(Number(e.target.value));
+                                setBgGradient(`linear-gradient(${e.target.value}deg, ${customGrad1} 0%, ${customGrad2} 100%)`);
+                              }} 
+                              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-cyan-500"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
