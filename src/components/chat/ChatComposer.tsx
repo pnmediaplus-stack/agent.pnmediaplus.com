@@ -525,10 +525,10 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
   return (
     <div className="flex flex-col gap-1.5 w-full">
       <div 
-        className={`transition-all duration-200 relative ${
+        className={`transition-all duration-200 p-4 relative ${
           isDragging 
-            ? "rounded-2xl border-2 border-dashed border-cyan-500 bg-cyan-50 dark:bg-cyan-950/20 p-4 shadow-[0_0_15px_rgba(6,182,212,0.3)]" 
-            : ""
+            ? "rounded-2xl border-2 border-dashed border-cyan-500 bg-cyan-50 dark:bg-cyan-950/20 shadow-[0_0_15px_rgba(6,182,212,0.3)]" 
+            : "rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 shadow-sm"
         }`}
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
@@ -709,7 +709,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
         rows={3}
         disabled={isUploading}
         placeholder={t("chat.composer.placeholder")}
-        className="w-full bg-transparent text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 resize-none transition-all disabled:opacity-50"
+        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 resize-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-inner disabled:opacity-50"
       />
       <div className="mt-1.5 flex items-center justify-between">
         <label className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 flex items-center gap-4">
@@ -744,9 +744,9 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
           type="button"
           onClick={handleSend}
           disabled={isUploading || (!value.trim() && selectedFiles.length === 0)}
-          className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700/80 bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-100 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+          className="flex items-center gap-2 rounded-full border border-transparent bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-blue-700 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
         >
-          {isUploading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isUploading && <Loader2 className="h-4 w-4 animate-spin text-blue-100" />}
           {isUploading ? (t("chat.composer.uploading")) : (t("chat.composer.send"))}
         </button>
       </div>
