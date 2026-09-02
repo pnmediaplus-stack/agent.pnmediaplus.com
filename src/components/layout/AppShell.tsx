@@ -9,24 +9,37 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isFullViewport = pathname?.startsWith("/agents/marketing");
   const [mounted, setMounted] = useState(false);
-  const { bgType, bgColor, bgImageUrl } = useThemeStore();
+  const { bgType, bgColor, bgGradient, bgImageUrl, bgImageOpacity } = useThemeStore();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const customStyle = mounted && bgType === "color" 
-    ? { backgroundColor: bgColor, backgroundImage: "none" } 
-    : mounted && bgType === "image" && bgImageUrl 
-      ? { backgroundImage: `url(${bgImageUrl})`, backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }
-      : {};
-
   return (
     <div 
-      className="min-h-screen bg-slate-100 text-slate-900 dark:bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.12),_transparent_35%),linear-gradient(180deg,_#020617_0%,_#0f172a_100%)] dark:text-slate-100 transition-colors duration-300"
-      style={customStyle}
+      className={`min-h-screen text-slate-900 dark:text-slate-100 transition-colors duration-300 relative ${
+        mounted && bgType !== "default" ? "bg-transparent" : "bg-slate-100 dark:bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.12),_transparent_35%),linear-gradient(180deg,_#020617_0%,_#0f172a_100%)]"
+      }`}
     >
-      <div className="min-h-screen lg:pl-[290px]">
+      {/* Custom Background Layer */}
+      {mounted && bgType === "color" && (
+        <div className="fixed inset-0 -z-10" style={{ backgroundColor: bgColor }} />
+      )}
+      {mounted && bgType === "gradient" && (
+        <div className="fixed inset-0 -z-10" style={{ backgroundImage: bgGradient }} />
+      )}
+      {mounted && bgType === "image" && bgImageUrl && (
+        <div 
+          className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat transition-opacity duration-300" 
+          style={{ 
+            backgroundImage: `url(${bgImageUrl})`, 
+            opacity: bgImageOpacity / 100 
+          }} 
+        />
+      )}
+
+      {/* Main Content */}
+      <div className="min-h-screen lg:pl-[290px] relative z-0">
         <Sidebar />
         <div className="flex min-h-screen min-w-0 flex-col bg-white/30 dark:bg-black/20">
           <Header />
