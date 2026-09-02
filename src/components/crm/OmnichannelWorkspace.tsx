@@ -30,7 +30,7 @@ export default function OmnichannelWorkspace() {
   }, [data, error, setThreads, setThreadsError]);
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <div className="flex min-h-[600px] h-[calc(100vh-15rem)] w-full overflow-hidden bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <div className="w-1/4 border-r border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col">
         <InboxSidebar />
       </div>

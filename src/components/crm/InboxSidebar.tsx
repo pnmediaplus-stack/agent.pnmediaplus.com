@@ -132,7 +132,7 @@ export default function InboxSidebar() {
   });
 
   if (isLoadingThreads) {
-    return <div className="p-4 flex justify-center text-sm text-gray-500">Dang t?i...</div>;
+    return <div className="p-4 flex justify-center text-sm text-gray-500">Đang tải...
   }
   if (threadsError) {
     return <div className="p-4 flex justify-center text-sm text-red-500">{threadsError}</div>;
