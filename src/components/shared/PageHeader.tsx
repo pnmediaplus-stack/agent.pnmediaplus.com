@@ -27,7 +27,7 @@ export function PageHeader({
   bannerKey = 'chat_dashboard_banner'
 }: PageHeaderProps) {
   const { t } = useI18n("shared");
-  const { bannerUrl, opacity } = useBanner(bannerKey);
+  const { bannerUrl, opacity, isLoading } = useBanner(bannerKey);
   const bgImageUrl = bannerUrl || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80';
 
   return (
@@ -45,8 +45,8 @@ export function PageHeader({
         <div 
           className="absolute inset-0 bg-cover bg-right bg-no-repeat transition-all duration-500"
           style={{ 
-            backgroundImage: `url('${bgImageUrl}')`,
-            opacity: 1 // Full opacity for the uploaded banner
+            backgroundImage: isLoading ? 'none' : `url('${bgImageUrl}')`,
+            opacity: isLoading ? 0 : 1
           }}
         />
         {/* Configurable Gradient overlay */}
