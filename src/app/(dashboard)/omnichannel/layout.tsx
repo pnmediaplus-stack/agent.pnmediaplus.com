@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Inbox, Library } from "lucide-react";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export default function OmnichannelLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -24,28 +25,36 @@ export default function OmnichannelLayout({ children }: { children: React.ReactN
   ];
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
-      {/* Sub-sidebar for Omnichannel Workspace */}
-      <div className="w-14 flex flex-col items-center py-4 border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 space-y-4">
+    <div className="flex flex-col h-[calc(100vh-8rem)] space-y-6">
+      <PageHeader 
+        title="Omnichannel CSKH"
+        purpose="Quản lý và tương tác đa kênh tích hợp AI"
+        statusLabel="Trạng thái"
+        statusValue="OPEN"
+        allowedActions={["view", "edit"]}
+        bannerKey="omnichannel_banner"
+      />
+
+      {/* Horizontal Tabs */}
+      <div className="flex space-x-1 border-b border-slate-200 dark:border-slate-800 pb-px">
         {tabs.map((tab) => (
           <Link
             key={tab.href}
             href={tab.href}
-            title={tab.name}
-            className={`p-2.5 rounded-lg transition-colors ${
+            className={`flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               tab.active
-                ? "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-400"
-                : "text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-800"
+                ? "border-cyan-500 text-cyan-600 dark:border-cyan-400 dark:text-cyan-400"
+                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600"
             }`}
           >
-            <tab.icon className="w-5 h-5" />
-            <span className="sr-only">{tab.name}</span>
+            <tab.icon className="w-4 h-4 mr-2" />
+            {tab.name}
           </Link>
         ))}
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
         {children}
       </div>
     </div>
