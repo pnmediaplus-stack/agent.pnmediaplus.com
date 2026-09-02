@@ -91,8 +91,7 @@ const futureIntegrations: { labelKey: string; fallbackLabel: string }[] = [
   { labelKey: "layout.sidebar.integrations.gemini", fallbackLabel: "Gemini" },
   { labelKey: "layout.sidebar.integrations.apiSettings", fallbackLabel: "API settings" }
 ];
-
-import { useThemeStore } from "@/store/useThemeStore";
+import { useThemeStore, isValidHexColor } from "@/store/useThemeStore";
 import { useEffect } from "react";
 
 export function Sidebar() {
@@ -118,7 +117,6 @@ export function Sidebar() {
     setMounted(true);
   }, []);
 
-
   async function handleLogout() {
     setLogoutState("loading");
 
@@ -135,31 +133,17 @@ export function Sidebar() {
     }
   }
 
-  return (
-    <aside className={`sidebar-custom-text flex flex-col relative overflow-hidden px-3 py-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:h-screen lg:w-[290px] lg:border-b-0 lg:border-r lg:border-slate-200/50 dark:lg:border-slate-800/60 lg:overflow-y-auto shadow-xl shadow-slate-200/20 dark:shadow-black/20 ${
-      mounted && sidebarBgType !== "default" 
-        ? "bg-transparent border-r-white/10 dark:border-r-white/5" 
-        : "bg-gradient-to-b from-violet-50/70 via-purple-50/40 to-fuchsia-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950/30"
-    }`}>
+  const validSidebarTextColor = mounted && isValidHexColor(sidebarTextColor) && sidebarTextColor ? sidebarTextColor : undefined;
 
-      {sidebarTextColor && (
-        <style dangerouslySetInnerHTML={{ __html: `
-          .sidebar-custom-text { color: ${sidebarTextColor}; }
-          .sidebar-custom-text .text-slate-900:not(.sidebar-menu-protected *),
-          .sidebar-custom-text .text-slate-600:not(.sidebar-menu-protected *),
-          .sidebar-custom-text .text-slate-500:not(.sidebar-menu-protected *),
-          .sidebar-custom-text .text-slate-400:not(.sidebar-menu-protected *),
-          .sidebar-custom-text .dark\\:text-white\\/90:not(.sidebar-menu-protected *),
-          .sidebar-custom-text .dark\\:text-slate-400:not(.sidebar-menu-protected *),
-          .sidebar-custom-text .dark\\:text-slate-500:not(.sidebar-menu-protected *) {
-            color: ${sidebarTextColor} !important;
-          }
-          .sidebar-menu-protected,
-          .sidebar-menu-protected * {
-            color: revert;
-          }
-        `}} />
-      )}
+  return (
+    <aside 
+      style={validSidebarTextColor ? { color: validSidebarTextColor } : undefined}
+      className={`flex flex-col relative overflow-hidden px-3 py-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:h-screen lg:w-[290px] lg:border-b-0 lg:border-r lg:border-slate-200/50 dark:lg:border-slate-800/60 lg:overflow-y-auto shadow-xl shadow-slate-200/20 dark:shadow-black/20 ${
+        mounted && sidebarBgType !== "default" 
+          ? "bg-transparent border-r-white/10 dark:border-r-white/5" 
+          : "bg-gradient-to-b from-violet-50/70 via-purple-50/40 to-fuchsia-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950/30"
+      }`}
+    >
 
       
       {/* Sidebar Custom Background Layer */}

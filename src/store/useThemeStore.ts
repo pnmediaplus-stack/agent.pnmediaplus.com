@@ -47,6 +47,13 @@ interface ThemeState {
   resetTheme: () => void;
 }
 
+const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+export function isValidHexColor(color: string): boolean {
+  if (!color) return true;
+  return HEX_COLOR_REGEX.test(color.trim());
+}
+
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
@@ -58,7 +65,7 @@ export const useThemeStore = create<ThemeState>()(
       customGradAngle: 135,
       bgImageUrl: "",
       bgImageOpacity: 100,
-        textColor: "",
+      textColor: "",
 
       sidebarBgType: "default",
       sidebarBgColor: "#0f172a",
@@ -68,7 +75,7 @@ export const useThemeStore = create<ThemeState>()(
       sidebarCustomGradAngle: 135,
       sidebarBgImageUrl: "",
       sidebarBgImageOpacity: 100,
-        sidebarTextColor: "",
+      sidebarTextColor: "",
 
       setBgType: (type) => set({ bgType: type }),
       setBgColor: (color) => set({ bgColor: color }),
@@ -78,7 +85,12 @@ export const useThemeStore = create<ThemeState>()(
       setCustomGradAngle: (angle) => set({ customGradAngle: angle }),
       setBgImageUrl: (url) => set({ bgImageUrl: url }),
       setBgImageOpacity: (opacity) => set({ bgImageOpacity: opacity }),
-      setTextColor: (color) => set({ textColor: color }),
+      setTextColor: (color) => {
+        const trimmed = (color || "").trim();
+        if (!trimmed || HEX_COLOR_REGEX.test(trimmed)) {
+          set({ textColor: trimmed });
+        }
+      },
 
       setSidebarBgType: (type) => set({ sidebarBgType: type }),
       setSidebarBgColor: (color) => set({ sidebarBgColor: color }),
@@ -88,7 +100,12 @@ export const useThemeStore = create<ThemeState>()(
       setSidebarCustomGradAngle: (angle) => set({ sidebarCustomGradAngle: angle }),
       setSidebarBgImageUrl: (url) => set({ sidebarBgImageUrl: url }),
       setSidebarBgImageOpacity: (opacity) => set({ sidebarBgImageOpacity: opacity }),
-      setSidebarTextColor: (color) => set({ sidebarTextColor: color }),
+      setSidebarTextColor: (color) => {
+        const trimmed = (color || "").trim();
+        if (!trimmed || HEX_COLOR_REGEX.test(trimmed)) {
+          set({ sidebarTextColor: trimmed });
+        }
+      },
 
       resetTheme: () => set({ 
         bgType: "default", 
@@ -99,6 +116,7 @@ export const useThemeStore = create<ThemeState>()(
         customGradAngle: 135,
         bgImageUrl: "", 
         bgImageOpacity: 100,
+        textColor: "",
         sidebarBgType: "default", 
         sidebarBgColor: "#0f172a", 
         sidebarBgGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
@@ -106,7 +124,8 @@ export const useThemeStore = create<ThemeState>()(
         sidebarCustomGrad2: "#764ba2",
         sidebarCustomGradAngle: 135,
         sidebarBgImageUrl: "", 
-        sidebarBgImageOpacity: 100
+        sidebarBgImageOpacity: 100,
+        sidebarTextColor: ""
       }),
     }),
     {

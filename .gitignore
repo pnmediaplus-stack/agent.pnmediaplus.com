@@ -2,7 +2,12 @@ node_modules
 .next
 out
 dist
+.env
+.env.*
 .env.local
+.env*.local
+*.log
+dev.log
 .DS_Store
 npm-debug.log*
 pnpm-debug.log*
