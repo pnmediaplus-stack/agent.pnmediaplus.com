@@ -234,14 +234,14 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
             }}
           />
         </div>
-      </div>
+            </div>
 
       {/* ── Right column: Thread info + Audit ── */}
-      <div className="flex flex-col h-full min-h-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm overflow-hidden">
+      <div className="flex flex-col h-full min-h-0 space-y-4">
         {/* Thread Info */}
-        <div className="shrink-0 border-b border-slate-100 dark:border-slate-800 px-5 py-4 bg-slate-50/50 dark:bg-transparent">
+        <div className="shrink-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-5 py-4 shadow-sm">
           <div className="text-sm font-semibold text-slate-900 dark:text-white leading-snug">{thread.title}</div>
-          <p className="mt-1.5 text-xs leading-5 text-slate-400 dark:text-slate-500">{thread.purpose}</p>
+          <p className="mt-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">{thread.purpose}</p>
           <div className="mt-3 flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-widest font-mono text-slate-400">
               {tShared("shared.thread.status")}
@@ -281,22 +281,21 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
         </div>
 
         {/* Audit Trail */}
-        <div className="flex flex-col flex-1 min-h-0 p-4">
-          <div className="flex flex-col flex-1 min-h-0 bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <div className="shrink-0 flex items-center gap-2 bg-slate-100/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 px-4 py-3">
-              <History className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
-              <span className="text-xs uppercase tracking-widest font-bold text-slate-700 dark:text-slate-300">
-                {tChat("chat.audit.label")}
-              </span>
-            </div>
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 pr-2">
+        <div className="flex flex-col flex-1 min-h-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 overflow-hidden shadow-sm">
+          <div className="shrink-0 flex items-center gap-2 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 px-4 py-3">
+            <History className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
+            <span className="text-xs uppercase tracking-widest font-bold text-slate-700 dark:text-slate-300">
+              {tChat("chat.audit.label")}
+            </span>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
             {auditLogs.length === 0 && (
-              <div className="text-xs text-slate-400 text-center pt-6">—</div>
+              <div className="text-xs text-slate-400 text-center pt-4">-</div>
             )}
             {auditLogs.map((log) => (
               <div
                 key={log.id}
-                className="rounded-lg border border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900/40 p-2.5"
+                className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 p-3"
               >
                 {/* Action type badge */}
                 <div className="inline-flex items-center rounded bg-indigo-50 dark:bg-indigo-500/10 px-1.5 py-0.5">
@@ -306,13 +305,13 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
                 </div>
 
                 {/* Metadata */}
-                <div className="mt-1.5 text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+                <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 space-y-1">
                   {log.metadata ? (
                     <>
                       {log.metadata.reason && (
-                        <div className="flex gap-1.5">
-                          <span className="shrink-0 text-slate-400">{tChat("chat.log.detail")}</span>
-                          <span className="break-all">{log.metadata.reason}</span>
+                        <div className="leading-relaxed">
+                          <span className="text-slate-400 mr-1.5">{tChat("chat.log.detail")}</span>
+                          <span className="break-words">{log.metadata.reason}</span>
                         </div>
                       )}
                       {log.metadata.before && log.metadata.after && (
@@ -335,7 +334,6 @@ export function HumanCommandChat({ thread, initialMessages, initialAuditLogs }: 
                 </div>
               </div>
             ))}
-          </div>
           </div>
         </div>
       </div>
