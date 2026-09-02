@@ -33,7 +33,6 @@ export default function OmnichannelLayout({ children }: { children: React.ReactN
         statusLabel="Trạng thái"
         statusValue="OPEN"
         allowedActions={["view", "edit"]}
-        bannerKey="omnichannel_banner"
       />
 
       {/* Horizontal Tabs */}
