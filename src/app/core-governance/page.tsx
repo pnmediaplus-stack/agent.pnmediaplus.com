@@ -8,7 +8,7 @@ export default function CoreGovernancePage() {
   const { t } = useI18n("coreGovernance");
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="page_banner"
       title={t("coreGovernance.page.title") ?? "Vận hành Core Governance"}
       purpose={t("coreGovernance.page.purpose") ?? "Surface boundary chỉ đọc cho routing, normalization, reconciliation, block và escalation."}
       statusLabel={t("coreGovernance.page.statusLabel") ?? "Bề mặt Core Governance"}

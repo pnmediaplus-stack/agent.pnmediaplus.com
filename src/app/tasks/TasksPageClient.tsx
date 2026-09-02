@@ -118,7 +118,7 @@ export function TasksPageClient() {
   const availableAgents = agents.filter(a => a.department_id === deptId);
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="taskspageclient_banner"
       title={t("tasks.page.title") ?? "Tác vụ"}
       purpose={t("tasks.page.purpose") ?? "Hàng đợi trung tâm cho tất cả các tác vụ đang hoạt động và chờ xử lý."}
       statusLabel={t("tasks.page.statusLabel") ?? "Hàng đợi tác vụ"}

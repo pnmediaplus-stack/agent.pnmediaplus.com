@@ -147,7 +147,7 @@ export function DepartmentGovernanceView({ response }: DepartmentGovernanceViewP
 
   return (
     <div className="space-y-5">
-      <PageHeader
+      <PageHeader bannerKey="department_governance_banner"
         title={t("departmentGovernance.page.title") ?? "Department Governance"}
         purpose={t("departmentGovernance.page.purpose") ?? "Read-only admin view for the approved Department Governance bundle."}
         statusLabel={t("departmentGovernance.page.statusLabel") ?? "API status"}

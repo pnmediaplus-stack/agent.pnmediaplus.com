@@ -8,7 +8,7 @@ export default function Phase066EvidencePage() {
   const { t } = useI18n("phase066");
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="phase066_banner"
       title={t("page.title") ?? "Phase 066 evidence intake"}
       purpose={t("page.purpose") ?? "Controlled UI for submitting Marketing -> Media -> Operations evidence packets."}
       statusLabel={t("page.statusLabel") ?? "Evidence control plane"}

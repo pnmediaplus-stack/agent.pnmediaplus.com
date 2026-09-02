@@ -13,7 +13,7 @@ export function ApprovalsPageClient() {
   const { data, error, isLoading } = useSWR<{ approvals: Approval[] }>("/api/approvals", fetcher);
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="approvalspageclient_banner"
       title={t("approvals.page.title") ?? "Phê duyệt"}
       purpose={t("approvals.page.purpose") ?? "Bảng phê duyệt cho các yêu cầu đang chờ, quyết định rõ ràng và yêu cầu thay đổi."}
       statusLabel={t("approvals.page.statusLabel") ?? "Bảng điều khiển phê duyệt"}

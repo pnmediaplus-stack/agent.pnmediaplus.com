@@ -13,7 +13,7 @@ export function AuditLogsPageClient() {
   const { data, error, isLoading } = useSWR<{ audit_logs: AuditLog[] }>("/api/audit-logs", fetcher);
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="auditlogspageclient_banner"
       title={t("audit.page.title") ?? "Nhật ký Audit"}
       purpose={t("audit.page.purpose") ?? "Lưu vết sự kiện cho các lệnh, thay đổi trạng thái workflow và hành động phê duyệt."}
       statusLabel={t("audit.page.statusLabel") ?? "Trình xem audit"}

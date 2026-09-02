@@ -8,7 +8,7 @@ export default function MarketingPage() {
   const { t } = useI18n("marketing");
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="page_banner"
       title={t("marketing.page.title") ?? "Marketing execution"}
       purpose={t("marketing.page.purpose") ?? "Read-only marketing surface for positioning, GTM framing, claim boundary, and handoff to Media."}
       statusLabel={t("marketing.page.statusLabel") ?? "Marketing surface"}

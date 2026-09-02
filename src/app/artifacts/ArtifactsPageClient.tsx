@@ -13,7 +13,7 @@ export function ArtifactsPageClient() {
   const { data, error, isLoading } = useSWR<{ artifacts: Artifact[] }>("/api/artifacts", fetcher);
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="artifactspageclient_banner"
       title={t("artifacts.page.title") ?? "Tài nguyên"}
       purpose={t("artifacts.page.purpose") ?? "Kho lưu trữ tài nguyên cho các bản brief, prompt, tài sản, ghi chú quy trình và các trạng thái liên quan."}
       statusLabel={t("artifacts.page.statusLabel") ?? "Kho lưu trữ tài nguyên"}

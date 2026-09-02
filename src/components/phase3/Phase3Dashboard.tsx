@@ -22,7 +22,7 @@ export function Phase3Dashboard({ data, loadReason, loadState }: Phase3Dashboard
 
   return (
     <div className="space-y-5">
-      <PageHeader
+      <PageHeader bannerKey="phase3_banner"
         title={t("phase3.page.title") ?? "Phase 3 Operations"}
         purpose={
           t("phase3.page.purpose") ??

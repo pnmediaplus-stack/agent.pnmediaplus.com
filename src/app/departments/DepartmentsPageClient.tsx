@@ -99,7 +99,7 @@ export function DepartmentsPageClient() {
   const COLORS = ['#06b6d4', '#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6'];
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="departmentspageclient_banner"
       title={t("departments.page.title") ?? "Phòng ban"}
       purpose={t("departments.page.purpose") ?? "Danh bạ phòng ban nội bộ với quyền sở hữu, mục đích và số tác vụ đang mở."}
       statusLabel={t("departments.page.statusLabel") ?? "Danh bạ phòng ban"}

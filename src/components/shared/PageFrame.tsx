@@ -9,6 +9,7 @@ type PageFrameProps = {
   statusDisplayValue?: string;
   allowedActions: string[];
   forbiddenActions?: string[];
+  bannerKey?: string;
   children: ReactNode;
   className?: string;
   contentClassName?: string;
@@ -22,6 +23,7 @@ export function PageFrame({
   statusDisplayValue,
   allowedActions,
   forbiddenActions,
+  bannerKey,
   children,
   className,
   contentClassName
@@ -36,6 +38,7 @@ export function PageFrame({
         statusDisplayValue={statusDisplayValue}
         allowedActions={allowedActions}
         forbiddenActions={forbiddenActions}
+        bannerKey={bannerKey}
       />
       <div className={contentClassName ?? "grid gap-6"}>{children}</div>
     </div>

@@ -13,7 +13,7 @@ export function QaReviewsPageClient() {
   const { data, error, isLoading } = useSWR<{ qa_reviews: QAReview[] }>("/api/qa-reviews", fetcher);
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="qareviewspageclient_banner"
       title={t("qa.page.title") ?? "Đánh giá QA"}
       purpose={t("qa.page.purpose") ?? "Bảng đánh giá QA với kết quả đạt, tạm giữ, chặn cho quản trị nội bộ."}
       statusLabel={t("qa.page.statusLabel") ?? "Bảng đánh giá QA"}

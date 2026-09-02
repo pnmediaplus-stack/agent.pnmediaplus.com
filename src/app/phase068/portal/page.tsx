@@ -8,7 +8,7 @@ export default function Phase068PortalPage() {
   const { t } = useI18n("phase068");
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="phase068_banner"
       title={t("page.title") ?? "Phase 068 Product Portal"}
       purpose={t("page.purpose") ?? "Canonical Product Portal core for identity, tenant, packaging, and workspace scaffolds."}
       statusLabel={t("page.statusLabel") ?? "Portal core"}

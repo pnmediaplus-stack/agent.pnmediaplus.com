@@ -8,7 +8,7 @@ export default function BusinessTruthPage() {
   const { t } = useI18n("businessTruth");
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="page_banner"
       title={t("businessTruth.page.title") ?? "Vận hành Business Truth"}
       purpose={t("businessTruth.page.purpose") ?? "Surface Business Truth chỉ đọc cho billing, auth, identity, offer và package truth."}
       statusLabel={t("businessTruth.page.statusLabel") ?? "Bề mặt Business Truth"}

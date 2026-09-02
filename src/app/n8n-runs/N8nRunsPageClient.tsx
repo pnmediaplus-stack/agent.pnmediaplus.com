@@ -33,7 +33,7 @@ export function N8nRunsPageClient() {
   }, []);
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="n8n_runs_banner"
       title={t("n8n.page.title") ?? "n8n Runs"}
       purpose={t("n8n.page.purpose") ?? "Monitor safe run status from n8n without exposing secrets or triggering launch workflows."}
       statusLabel={t("n8n.page.statusLabel") ?? "n8n run monitor"}

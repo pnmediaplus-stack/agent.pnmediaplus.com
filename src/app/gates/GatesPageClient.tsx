@@ -13,7 +13,7 @@ export function GatesPageClient() {
   const { data, error, isLoading } = useSWR<{ gates: Gate[] }>("/api/gates", fetcher);
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="gatespageclient_banner"
       title={t("gates.page.title") ?? "Cổng"}
       purpose={t("gates.page.purpose") ?? "Gate và approval console cho quyền Human rõ ràng và bảo vệ state."}
       statusLabel={t("gates.page.statusLabel") ?? "Gate console"}

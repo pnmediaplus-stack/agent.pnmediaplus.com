@@ -8,7 +8,7 @@ export default function CustomerPage() {
   const { t } = useI18n("customer");
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="page_banner"
       title={t("customer.page.title") ?? "Vận hành Customer"}
       purpose={t("customer.page.purpose") ?? "Surface Customer chỉ đọc cho intake, triage, escalation, feedback summary và issue status."}
       statusLabel={t("customer.page.statusLabel") ?? "Bề mặt Customer"}

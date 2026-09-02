@@ -25,7 +25,7 @@ export function Phase4ObservabilityDashboard({ data, loadReason, loadState }: Ph
 
   return (
     <div className="space-y-5">
-      <PageHeader
+      <PageHeader bannerKey="phase4observabilitydashboard_banner"
         title={t("phase4.page.title") ?? "Giám sát thực thi"}
         purpose={t("phase4.page.purpose") ?? "Theo dõi thực thi chỉ đọc cho quy trình chạy, biên lai, thử lại, độ trễ và kết quả kiểm toán."}
         statusLabel={t("phase4.page.statusLabel") ?? "Trạng thái Phase 4"}

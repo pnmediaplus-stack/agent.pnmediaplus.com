@@ -13,7 +13,7 @@ export function OperationsPageClient() {
   const { data, error, isLoading } = useSWR<{ runs: WorkflowRun[] }>("/api/workflow-runs", fetcher);
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="operations_banner"
       title={t("operations.page.title") ?? "Operations execution"}
       purpose={t("operations.page.purpose") ?? "Read-only operations surface for workflow execution, routing, monitoring, escalation, and customer output."}
       statusLabel={t("operations.page.statusLabel") ?? "Operations surface"}

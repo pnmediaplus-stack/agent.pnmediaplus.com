@@ -136,7 +136,7 @@ export function AgentsPageClient() {
     : agents.filter(a => a.department_id === filterDept);
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="agentspageclient_banner"
       title={t("agents.page.title") ?? "Đặc vụ"}
       purpose={t("agents.page.purpose") ?? "Danh bạ các đặc vụ, nhóm theo phòng ban và trọng tâm."}
       statusLabel={t("agents.page.statusLabel") ?? "Danh bạ đặc vụ"}

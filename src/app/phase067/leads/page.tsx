@@ -8,7 +8,7 @@ export default function Phase067LeadsPage() {
   const { t } = useI18n("phase067");
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="phase067_banner"
       title={t("page.title") ?? "Phase 067 lead intake"}
       purpose={t("page.purpose") ?? "Read-only lead funnel and performance memory intake surface."}
       statusLabel={t("page.statusLabel") ?? "Lead read model"}

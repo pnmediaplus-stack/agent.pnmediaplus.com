@@ -27,7 +27,7 @@ export default function OmnichannelLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)] space-y-6">
-      <PageHeader 
+      <PageHeader bannerKey="omnichannel_banner" 
         title="Omnichannel CSKH"
         purpose="Quản lý và tương tác đa kênh tích hợp AI"
         statusLabel="Trạng thái"

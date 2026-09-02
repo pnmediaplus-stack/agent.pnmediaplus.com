@@ -45,7 +45,7 @@ export function WorkflowsPageClient() {
   }, [runs]);
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="workflowspageclient_banner"
       title={t("workflows.page.title") ?? "Bảng quy trình"}
       purpose={t("workflows.page.purpose") ?? "Bảng quy trình cho việc chuyển trạng thái, trạng thái chạy và các điểm kiểm tra an toàn."}
       statusLabel={t("workflows.page.statusLabel") ?? "Bảng quy trình"}

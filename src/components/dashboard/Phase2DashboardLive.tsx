@@ -912,7 +912,7 @@ export function Phase2Dashboard({
   ];
 
   return (
-    <PageFrame
+    <PageFrame bannerKey="media_pipeline_banner"
       className="flex min-h-full min-w-0 flex-col overflow-hidden"
       contentClassName="flex min-h-0 min-w-0 flex-1 flex-col gap-5 overflow-hidden pr-1"
       title={t("dashboard.page.title") ?? "Dashboard"}
