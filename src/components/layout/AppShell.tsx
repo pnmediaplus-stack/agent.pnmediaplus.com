@@ -9,7 +9,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isFullViewport = pathname?.startsWith("/agents/marketing");
   const [mounted, setMounted] = useState(false);
-  const { bgType, bgColor, bgGradient, bgImageUrl, bgImageOpacity } = useThemeStore();
+  const { bgType, bgColor, bgGradient, bgImageUrl, bgImageOpacity, textColor } = useThemeStore();
 
   useEffect(() => {
     setMounted(true);
@@ -17,10 +17,31 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div 
-      className={`min-h-screen text-slate-900 dark:text-slate-100 transition-colors duration-300 relative ${
+      className={`main-custom-text min-h-screen text-slate-900 dark:text-slate-100 transition-colors duration-300 relative ${
         mounted && bgType !== "default" ? "bg-transparent" : "bg-slate-100 dark:bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.12),_transparent_35%),linear-gradient(180deg,_#020617_0%,_#0f172a_100%)]"
       }`}
     >
+
+      {textColor && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          .main-custom-text { color: ${textColor} !important; }
+          .main-custom-text .text-slate-900,
+          .main-custom-text .text-slate-800,
+          .main-custom-text .text-slate-700,
+          .main-custom-text .text-slate-600,
+          .main-custom-text .text-slate-500,
+          .main-custom-text .text-slate-400,
+          .main-custom-text .dark\\:text-white,
+          .main-custom-text .dark\\:text-white\\/90,
+          .main-custom-text .dark\\:text-slate-200,
+          .main-custom-text .dark\\:text-slate-300,
+          .main-custom-text .dark\\:text-slate-400,
+          .main-custom-text .dark\\:text-slate-500 {
+            color: ${textColor} !important;
+          }
+        `}} />
+      )}
+
       {/* Custom Background Layer */}
       {mounted && bgType === "color" && (
         <div className="fixed inset-0 -z-10" style={{ backgroundColor: bgColor }} />
