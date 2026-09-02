@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function OmnichannelPage() {
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-white">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900">
       <OmnichannelWorkspace />
     </div>
   );

@@ -30,12 +30,12 @@ export default function OmnichannelWorkspace() {
   }, [data, error, setThreads, setThreadsError]);
 
   return (
-    <div className="flex h-full w-full overflow-hidden border-t border-gray-200 bg-white text-gray-900">
-      <div className="w-1/4 border-r border-gray-200 bg-gray-50/50 flex flex-col">
+    <div className="flex h-full w-full overflow-hidden bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+      <div className="w-1/4 border-r border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col">
         <InboxSidebar />
       </div>
 
-      <div className="flex-1 flex flex-col bg-white">
+      <div className="flex-1 flex flex-col bg-white dark:bg-slate-900">
         {activeThreadId ? (
           <ChatArea />
         ) : (
