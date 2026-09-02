@@ -1,11 +1,35 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState, useMemo } from "react";
 import { StateBadge } from "@/components/shared/StateBadge";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { Phase070ProviderCatalogItem, Phase070TenantIntegrationStatus } from "@/lib/tenant-integrations";
 import { IntegrationCard } from "@/components/ui/IntegrationCard";
 import { ConnectedAccountRow } from "./ConnectedAccountRow";
+import { 
+  createTenantIntegration, 
+  rotateTenantIntegration, 
+  revokeTenantIntegration, 
+  issueReferenceToken, 
+  updateTenantIntegrationMetadata, 
+  type VaultActionResponse 
+} from "@/app/actions/vault-actions";
+import { ProviderCatalogModal } from "./ProviderCatalogModal";
+import { 
+  ShieldCheck, 
+  KeyRound, 
+  Sparkles, 
+  Layers, 
+  Search, 
+  CheckCircle2, 
+  AlertCircle, 
+  Settings, 
+  Globe, 
+  Bot, 
+  Filter,
+  RefreshCw
+} from "lucide-react";
+import { toast } from "sonner";
 
 type TenantIntegrationsResponse = {
   ok: boolean;
@@ -36,33 +60,6 @@ type TenantIntegrationActionResponse = {
   };
 };
 
-function Panel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
-  return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/5 bg-slate-950/40 backdrop-blur-2xl shadow-2xl ring-1 ring-white/10">
-      {/* Subtle top inner glow */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" />
-      
-      <div className="relative border-b border-white/5 bg-slate-900/40 px-6 py-5">
-        <div className="text-sm font-semibold text-slate-100 tracking-wide">{title}</div>
-        <div className="mt-1 text-xs leading-5 text-slate-400">{description}</div>
-      </div>
-      <div className="relative p-6 z-10">{children}</div>
-    </section>
-  );
-}
-
-function MetadataRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-3">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</div>
-      <div className="mt-2 break-words text-sm text-slate-200">{value}</div>
-    </div>
-  );
-}
-
-import { createTenantIntegration, rotateTenantIntegration, revokeTenantIntegration, issueReferenceToken, updateTenantIntegrationMetadata, type VaultActionResponse } from "@/app/actions/vault-actions";
-import { ProviderCatalogModal } from "./ProviderCatalogModal";
-
 export function TenantIntegrationsView() {
   const { t } = useI18n("phase070");
   const [response, setResponse] = useState<TenantIntegrationsResponse | null>(null);
@@ -70,6 +67,8 @@ export function TenantIntegrationsView() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [operationResult, setOperationResult] = useState<TenantIntegrationActionResponse | null>(null);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"all" | "connected" | "ai" | "channels">("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   async function load() {
     setLoading(true);
@@ -109,14 +108,22 @@ export function TenantIntegrationsView() {
     setOperationResult(null);
     try {
       const result = await actionFn();
-      setOperationResult(result as TenantIntegrationActionResponse);
+      const actionRes = result as TenantIntegrationActionResponse;
+      setOperationResult(actionRes);
+      if (actionRes.state === "ready") {
+        toast.success("Thao tác thực thi thành công!");
+      } else {
+        toast.error(`Thao tác thất bại: ${actionRes.reason}`);
+      }
       await load();
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
       setOperationResult({
         ok: false,
         state: "blocked",
-        reason: error instanceof Error ? error.message : String(error)
+        reason: msg
       });
+      toast.error(`Lỗi: ${msg}`);
     } finally {
       setActionLoading(null);
     }
@@ -146,8 +153,7 @@ export function TenantIntegrationsView() {
     }
 
     const accessToken = String(formData.get("secret_material") || "").trim();
-
-    let existingIntegration = response?.data?.integrations.find(i => i.integration_key === integrationKey);
+    const existingIntegration = response?.data?.integrations.find(i => i.integration_key === integrationKey);
 
     if (existingIntegration) {
       await executeAction(providerCode, () => 
@@ -157,7 +163,6 @@ export function TenantIntegrationsView() {
       await executeAction(providerCode, async () => {
         let result = await createTenantIntegration(providerCode, integrationKey, integrationName, accessToken, pageId);
         if (!result.ok && result.reason && result.reason.includes("ALREADY_EXISTS")) {
-           // Fallback to rotate if it exists but was hidden from the view
            result = await rotateTenantIntegration(integrationKey, accessToken, pageId);
         }
         return result;
@@ -172,7 +177,7 @@ export function TenantIntegrationsView() {
     const formData = new FormData(form);
     const integrationKey = String(formData.get("integration_key") ?? "").trim();
     if (!integrationKey) {
-      setOperationResult({ ok: false, state: "blocked", reason: "PHASE074_INTEGRATION_KEY_REQUIRED" });
+      toast.error("Thiếu mã định danh integration_key");
       return;
     }
     const providerCode = String(formData.get("provider_code") || "");
@@ -191,7 +196,7 @@ export function TenantIntegrationsView() {
     const formData = new FormData(form);
     const integrationKey = String(formData.get("integration_key") ?? "").trim();
     if (!integrationKey) {
-      setOperationResult({ ok: false, state: "blocked", reason: "PHASE074_INTEGRATION_KEY_REQUIRED" });
+      toast.error("Thiếu mã định danh integration_key");
       return;
     }
     const providerCode = String(formData.get("provider_code") || "revoke");
@@ -206,7 +211,7 @@ export function TenantIntegrationsView() {
     const formData = new FormData(form);
     const integrationKey = String(formData.get("integration_key") ?? "").trim();
     if (!integrationKey) {
-      setOperationResult({ ok: false, state: "blocked", reason: "PHASE074_INTEGRATION_KEY_REQUIRED" });
+      toast.error("Thiếu mã định danh integration_key");
       return;
     }
     const providerCode = String(formData.get("provider_code") || "test");
@@ -217,75 +222,153 @@ export function TenantIntegrationsView() {
 
   if (loading) {
     return (
-      <Panel title={t("phase070.loading.title") ?? "Đang tải tích hợp khách hàng"} description={t("phase070.loading.description") ?? "Đang đọc danh mục nhà cung cấp và siêu dữ liệu tích hợp của khách hàng."}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-             <div key={i} className="h-64 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/60" />
+             <div key={i} className="h-24 animate-pulse rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60" />
           ))}
         </div>
-      </Panel>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+             <div key={i} className="h-64 animate-pulse rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60" />
+          ))}
+        </div>
+      </div>
     );
   }
 
   if (!response?.data) {
     return (
-      <Panel title={t("phase070.blocked.title") ?? "Tích hợp khách hàng bị chặn"} description={t("phase070.blocked.description") ?? "Phase 070 đóng cho đến khi phiên cổng, thành viên và bề mặt đọc sẵn sàng."}>
-        <div className="rounded-xl border border-rose-900/50 bg-rose-950/30 p-6">
-          <div className="text-sm font-medium text-rose-400">Response State: {response?.state ?? "Unknown"}</div>
-          <div className="mt-2 text-sm text-slate-300">Reason: {response?.reason ?? "No data received from API"}</div>
-        </div>
-      </Panel>
+      <div className="rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/80 dark:bg-rose-950/30 p-8 text-center space-y-3 backdrop-blur-xl">
+        <AlertCircle className="w-8 h-8 text-rose-600 dark:text-rose-400 mx-auto" />
+        <h3 className="text-base font-bold text-rose-900 dark:text-rose-200">Không thể tải dữ liệu Tích hợp</h3>
+        <p className="text-xs text-rose-700 dark:text-rose-400 max-w-md mx-auto">
+          {response?.reason ?? "Phiên làm việc hoặc quyền hạn chưa sẵn sàng."}
+        </p>
+        <button 
+          onClick={load}
+          className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-xl shadow-sm transition-all"
+        >
+          Thử lại
+        </button>
+      </div>
     );
   }
 
   const { organization, providers, integrations } = response.data;
   const activeIntegrations = integrations.filter(i => i.credential_configured && i.status !== 'revoked');
 
+  // Filter logic
+  const filteredProviders = providers.filter((p) => {
+    const matchesSearch = p.provider_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          p.provider_code.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+
+    if (activeTab === "ai") {
+      return p.provider_code !== "facebook_page";
+    }
+    if (activeTab === "channels") {
+      return p.provider_code === "facebook_page";
+    }
+    if (activeTab === "connected") {
+      return activeIntegrations.some(i => i.provider_code === p.provider_code);
+    }
+    return true;
+  });
+
   return (
-    <div className="relative w-full text-slate-300">
-      {/* Background Mesh */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-1/4 -left-1/4 h-1/2 w-1/2 rounded-full bg-indigo-900/20 blur-[120px] mix-blend-screen" />
-        <div className="absolute top-1/3 -right-1/4 h-1/2 w-1/2 rounded-full bg-emerald-900/10 blur-[120px] mix-blend-screen" />
-        <div className="absolute -bottom-1/4 left-1/3 h-1/2 w-1/2 rounded-full bg-blue-900/15 blur-[120px] mix-blend-screen" />
-      </div>
-      
-      <div className="relative z-10 space-y-8">
-      {/* Operation Feedback */}
-      {operationResult && (
-        <div className={`rounded-xl border p-4 ${operationResult.state === "ready" ? "border-emerald-900/50 bg-emerald-950/30" : "border-rose-900/50 bg-rose-950/30"}`}>
-          <div className="flex items-center space-x-3">
-            <StateBadge label={operationResult.state === "ready" ? "pass" : "blocked"} displayLabel={operationResult.state} />
-            <div className={`text-sm font-medium ${operationResult.state === "ready" ? "text-emerald-400" : "text-rose-400"}`}>
-              {operationResult.state === "ready" ? "Thao tác thành công" : "Thao tác thất bại"}
-            </div>
+    <div className="relative w-full space-y-7">
+      {/* ── TOP STATS BAR ─────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Org Stat */}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tổ chức / Doanh nghiệp</span>
+            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 rounded-full border border-violet-200 dark:border-violet-800/60">
+              {organization.role}
+            </span>
           </div>
-          <div className="mt-1 text-sm text-slate-400">Lý do: {operationResult.reason}</div>
+          <div className="mt-2 text-base font-extrabold text-slate-900 dark:text-white truncate">
+            {organization.organization_name}
+          </div>
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-mono truncate">
+            {organization.organization_key}
+          </div>
+        </div>
+
+        {/* Security Vault Stat */}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Két khóa bảo mật SSOT</span>
+            <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div className="mt-2 text-base font-extrabold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Write-Only Vault Active</span>
+          </div>
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Khóa API không bao giờ bị lộ ra bề mặt đọc
+          </div>
+        </div>
+
+        {/* Active Integrations Stat */}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl p-5 shadow-sm sm:col-span-2 lg:col-span-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Trạng thái kết nối</span>
+            <Layers className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+          </div>
+          <div className="mt-2 text-base font-extrabold text-slate-900 dark:text-white">
+            {activeIntegrations.length} / {providers.length} Kênh đã kích hoạt
+          </div>
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Sẵn sàng đồng bộ trực tiếp với Agent & n8n
+          </div>
+        </div>
+      </div>
+
+      {/* ── OPERATION RECEIPT CARD (IF PRESENT) ──────────── */}
+      {operationResult && (
+        <div className={`rounded-2xl border p-4.5 backdrop-blur-xl animate-in fade-in duration-200 ${
+          operationResult.state === "ready" 
+            ? "border-emerald-500/30 bg-emerald-50/70 dark:bg-emerald-950/30" 
+            : "border-rose-500/30 bg-rose-50/70 dark:bg-rose-950/30"
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <StateBadge label={operationResult.state === "ready" ? "pass" : "blocked"} displayLabel={operationResult.state === "ready" ? "THÀNH CÔNG" : "THẤT BẠI"} />
+              <div className={`text-xs font-bold ${operationResult.state === "ready" ? "text-emerald-800 dark:text-emerald-300" : "text-rose-800 dark:text-rose-300"}`}>
+                Lý do: {operationResult.reason}
+              </div>
+            </div>
+            <button 
+              onClick={() => setOperationResult(null)}
+              className="text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Đóng
+            </button>
+          </div>
           {operationResult.data?.receipt && (
-            <div className="mt-3 text-xs text-slate-500 font-mono space-y-1">
-               <p>Biên lai mã hóa: {operationResult.data.receipt.receipt_ref}</p>
+            <div className="mt-2 text-[11px] font-mono text-slate-600 dark:text-slate-400 space-y-0.5 bg-white/50 dark:bg-black/20 p-2 rounded-lg border border-slate-200/50 dark:border-white/5">
+               <p>Mã biên lai (Receipt Ref): {operationResult.data.receipt.receipt_ref}</p>
                <p>Trạng thái Broker: {operationResult.data.receipt.broker_status}</p>
             </div>
           )}
         </div>
       )}
 
-      {/* Tenant Context */}
-      <Panel title={t("phase070.summary.organization") ?? "Ngữ cảnh tổ chức"} description={t("phase070.summary.modeValue") ?? "Các claims được xác thực từ phiên cổng đang hoạt động"}>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <MetadataRow label="Organization Name" value={organization.organization_name} />
-          <MetadataRow label="Organization Key" value={organization.organization_key} />
-          <MetadataRow label="Role" value={organization.role} />
-        </div>
-      </Panel>
-
-      {/* Connected Accounts Dashboard */}
+      {/* ── CONNECTED FANPAGES & ACCOUNTS SECTION ─────────── */}
       {activeIntegrations.length > 0 && (
-        <section className="mb-8">
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold text-slate-100">{t("phase070.dashboard.title") ?? "Bảng Tổng Quan Fanpage & Tích Hợp"}</h2>
-            <p className="mt-1 text-sm text-slate-400">{t("phase070.dashboard.description") ?? "Quản lý trạng thái kết nối và thay đổi cấu hình mã truy cập."}</p>
+        <section className="space-y-3.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">Fanpage & Tài Khoản Đang Hoạt Động</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Danh sách các kênh tích hợp đã xác thực và cấp quyền cho AI Agent</p>
+            </div>
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+              {activeIntegrations.length} Active
+            </span>
           </div>
+
           <div className="space-y-3">
             {activeIntegrations.map((integration) => {
               const provider = providers.find((p) => p.provider_code === integration.provider_code);
@@ -323,28 +406,87 @@ export function TenantIntegrationsView() {
         </section>
       )}
 
-      {/* Dynamic Catalog */}
-      <section>
-        <div className="mb-6 flex justify-between items-start">
-           <div>
-             <h2 className="text-xl font-semibold text-slate-100">{t("phase070.providers.title") ?? "Danh mục Nhà Cung Cấp"}</h2>
-             <p className="mt-1 text-sm text-slate-400">{t("phase070.writeOnly.description") ?? "Cấu hình quyền truy cập BYOK (Bring Your Own Key) cho khách hàng của bạn. Bí mật chỉ ghi và được lưu trữ ngay lập tức."}</p>
-           </div>
-           {(organization.role === "admin" || organization.role === "owner") && (
-             <button
-               onClick={() => setIsAdminModalOpen(true)}
-               className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium rounded-lg border border-slate-700 transition-colors flex items-center gap-2"
-             >
-               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-               </svg>
-               Quản lý Danh Mục AI (Admin)
-             </button>
-           )}
+      {/* ── PROVIDERS CATALOG SECTION ─────────────────────── */}
+      <section className="space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">Danh Mục Nhà Cung Cấp (BYOK Vault)</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Kết nối các mô hình AI riêng (Bring Your Own Key) và các cổng giao tiếp</p>
+          </div>
+
+          {(organization.role === "admin" || organization.role === "owner") && (
+            <button
+              onClick={() => setIsAdminModalOpen(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-md shadow-violet-500/20 transition-all hover:-translate-y-0.5 shrink-0"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Quản lý Danh Mục AI (Admin)</span>
+            </button>
+          )}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {providers.map((provider) => {
+
+        {/* Search & Tabs Toolbar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-1.5 rounded-2xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-white/10 backdrop-blur-xl">
+          {/* Tabs */}
+          <div className="flex items-center space-x-1 w-full sm:w-auto overflow-x-auto">
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                activeTab === "all"
+                  ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              Tất cả ({providers.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("connected")}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                activeTab === "connected"
+                  ? "bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              Đã nối ({activeIntegrations.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("ai")}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                activeTab === "ai"
+                  ? "bg-white dark:bg-slate-800 text-cyan-700 dark:text-cyan-400 shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              Mô hình AI
+            </button>
+            <button
+              onClick={() => setActiveTab("channels")}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                activeTab === "channels"
+                  ? "bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              Fanpage / Kênh
+            </button>
+          </div>
+
+          {/* Search Input */}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+            <input 
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm kiếm nhà cung cấp..."
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-cyan-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {filteredProviders.map((provider) => {
              const providerIntegrations = activeIntegrations.filter(i => i.provider_code === provider.provider_code);
              
              // Only show the 'Add New' card if the provider supports multiple (e.g. facebook) OR if it has 0 integrations
@@ -365,14 +507,18 @@ export function TenantIntegrationsView() {
              return null;
           })}
         </div>
-        {providers.length === 0 && (
-           <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-12 text-center">
-              <p className="text-sm text-slate-400">{t("phase070.providers.noCapabilities") ?? "Không tìm thấy nhà cung cấp AI đang hoạt động nào trong danh mục."}</p>
+
+        {filteredProviders.length === 0 && (
+           <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/60 dark:bg-slate-900/50 p-12 text-center backdrop-blur-xl">
+              <Sparkles className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-50" />
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                {searchQuery ? `Không tìm thấy nhà cung cấp nào khớp với "${searchQuery}"` : "Không có nhà cung cấp nào trong mục này."}
+              </p>
            </div>
         )}
       </section>
-      </div>
 
+      {/* Admin Catalog Modal */}
       <ProviderCatalogModal
         isOpen={isAdminModalOpen}
         onClose={() => setIsAdminModalOpen(false)}
