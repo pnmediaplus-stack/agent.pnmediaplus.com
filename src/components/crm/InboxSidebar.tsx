@@ -183,7 +183,7 @@ export default function InboxSidebar() {
             </select>
           </div>
         </div>
-        <div className="flex flex-col flex-1 bg-white overflow-y-auto">
+        <div className="flex flex-col flex-1 bg-white overflow-y-auto no-scrollbar">
         {filteredThreads.length === 0 ? (
           <div className="p-8 flex flex-col items-center justify-center text-center text-sm text-gray-500">
             <svg className="w-12 h-12 text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

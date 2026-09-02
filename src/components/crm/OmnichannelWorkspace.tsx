@@ -49,7 +49,7 @@ export default function OmnichannelWorkspace() {
       </div>
 
       {activeThreadId && (
-        <div className="w-1/4 border-l border-gray-200 bg-gray-50/50 overflow-y-auto">
+        <div className="w-1/4 border-l border-gray-200 bg-gray-50/50 overflow-y-auto no-scrollbar">
           <CustomerProfile />
         </div>
       )}
