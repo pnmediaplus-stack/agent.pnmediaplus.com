@@ -167,7 +167,7 @@ export default function ChatArea() {
         </button>
       </div>
 
-      <div className="flex-1 p-6 flex flex-col space-y-6">
+      <div className="flex-1 overflow-y-auto p-6 flex flex-col space-y-6 custom-scrollbar">
         {threadMessages.map(msg => {
           const isCustomer = msg.sender_type === 'customer';
           const isBot = msg.sender_type === 'bot';
