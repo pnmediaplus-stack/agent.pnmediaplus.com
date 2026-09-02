@@ -156,6 +156,63 @@ function SummaryGrid({ cards }: { cards: SummaryCard[] }) {
   );
 }
 
+// Map pipeline state to a left-border accent color class
+function getStateAccent(state: string): string {
+  switch (state) {
+    case "published":     return "border-l-emerald-500";
+    case "scheduled":     return "border-l-amber-400";
+    case "QA_passed":     return "border-l-blue-500";
+    case "QA_ready":      return "border-l-violet-500";
+    case "caption_ready": return "border-l-indigo-400";
+    case "visual_ready":  return "border-l-purple-400";
+    case "research_ready":return "border-l-sky-400";
+    case "idea":          return "border-l-slate-400";
+    default:              return "border-l-slate-300";
+  }
+}
+
+// Strip CLI-style prefixes like "--image-action=generate_new " from titles
+function cleanTitle(raw: string): string {
+  return raw.replace(/^--[\w-]+=[\w_]+\s+/g, "").trim();
+}
+
+// Abbreviated owner: "pnmediaplus@gmail.com" → "pnmediaplus" or just first initial letter
+function ownerInitial(email: string): string {
+  return (email.split("@")[0]?.[0] ?? "?").toUpperCase();
+}
+
+function AssetChip({ label, present, displayLabel }: { label: string; present: boolean; displayLabel: string }) {
+  const colors: Record<string, string> = {
+    viral_research_packet: present
+      ? "bg-emerald-500 text-white border-emerald-500"
+      : "bg-rose-50 text-rose-600 border-rose-300 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/40",
+    visual_asset: present
+      ? "bg-violet-600 text-white border-violet-600"
+      : "bg-rose-50 text-rose-600 border-rose-300 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/40",
+    caption_output: present
+      ? "bg-amber-500 text-white border-amber-500"
+      : "bg-rose-50 text-rose-600 border-rose-300 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/40",
+  };
+  const cls = colors[label] ?? (present
+    ? "bg-slate-700 text-white border-slate-700"
+    : "bg-rose-50 text-rose-600 border-rose-300 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/40");
+
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${cls}`}>
+      {present ? (
+        <svg className="h-3 w-3 shrink-0" viewBox="0 0 12 12" fill="none">
+          <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ) : (
+        <svg className="h-3 w-3 shrink-0" viewBox="0 0 12 12" fill="none">
+          <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+        </svg>
+      )}
+      {displayLabel}
+    </span>
+  );
+}
+
 function PipelineCard({ contentItemId }: { contentItemId: string }) {
   const { t } = useI18n("dashboard");
   const data = useDashboardData();
@@ -167,57 +224,134 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
   const publish = getPhase2PublishEligibility(item.id, data.qaReviews, data.assets);
   const nextState = getPhase2NextState(item.currentState);
 
-  const assetCompletionText = `${assets.present.length}/${assets.totalRequired} ${t("dashboard.labels.requiredAssets") ?? "required assets"}`;
-  const qaGateText = review ? (t(`dashboard.verdict.${review.verdict}`) ?? review.verdict) : (t("dashboard.labels.pending") ?? "pending");
-  const riskText = review
-    ? review.overclaimRisk > 3 || review.averageScore < 7
-      ? t("dashboard.labels.high") ?? "HIGH"
-      : t("dashboard.labels.low") ?? "LOW"
-    : (t("dashboard.labels.pendingUpper") ?? "PENDING");
+  const title = cleanTitle(item.title);
+  const accent = getStateAccent(item.currentState);
+
+  const qaLabel = review
+    ? (t(`dashboard.verdict.${review.verdict}`) ?? review.verdict)
+    : (t("dashboard.labels.pending") ?? "—");
+
+  const isHighRisk = review && (review.overclaimRisk > 3 || review.averageScore < 7);
+  const riskLabel = review ? (isHighRisk ? "HIGH" : "LOW") : "—";
+
+  // owner display
+  const ownerDisplay = item.ownerRef.includes("@")
+    ? item.ownerRef.split("@")[0]
+    : item.ownerRef;
 
   return (
-    <div className="flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
-      <div className="border-b border-violet-200 dark:border-slate-700 bg-white dark:bg-slate-900/90 px-4 py-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="inline-flex max-w-full rounded-lg border border-violet-300 dark:border-violet-400/20 bg-violet-50 dark:bg-violet-400/10 px-3 py-1.5">
-              <div className="break-words whitespace-normal text-sm font-semibold leading-6 text-violet-900 dark:text-white">{item.title}</div>
-            </div>
-            <div className="mt-1 break-words whitespace-normal text-xs leading-5 text-slate-500 dark:text-slate-400">{item.contentKey}</div>
+    <div className={`flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border-l-4 ${accent} border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm`}>
+
+      {/* ── HEADER ─────────────────────────────────── */}
+      <div className="px-4 pt-4 pb-3">
+        {/* Status badge — top right */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 dark:text-white">
+              {title || item.title}
+            </h3>
+            <p className="mt-0.5 truncate font-mono text-[10px] text-slate-400 dark:text-slate-500">
+              {item.contentKey}
+            </p>
           </div>
           <StateBadge label={item.currentState} />
         </div>
+
+        {/* ── 3 METRIC CHIPS ── */}
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {/* Assets */}
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+            assets.present.length === assets.totalRequired
+              ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+              : "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+          }`}>
+            <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            {assets.present.length}/{assets.totalRequired} Assets
+          </span>
+
+          {/* QA */}
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+            review?.verdict === "pass"
+              ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"
+              : review
+              ? "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300"
+              : "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+          }`}>
+            <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1L1.5 3v3.5C1.5 9.5 6 11 6 11s4.5-1.5 4.5-4.5V3L6 1z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
+            </svg>
+            QA: {qaLabel}
+          </span>
+
+          {/* Risk */}
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+            !review
+              ? "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+              : isHighRisk
+              ? "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300"
+              : "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+          }`}>
+            <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
+              <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.4"/>
+              <path d="M6 4v3M6 8.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+            Risk: {riskLabel}
+          </span>
+        </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4 pr-1">
-        <div className="grid gap-3 text-sm text-slate-600 dark:text-slate-300">
-          <InfoRow label={t("dashboard.labels.owner") ?? "Owner"} value={item.ownerRef} />
-          <InfoRow label={t("dashboard.labels.taskOwner") ?? "Task owner"} value={item.taskOwnerRef} />
-          <InfoRow label={t("dashboard.labels.nextState") ?? "Next state"} value={t(`dashboard.state.${nextState}`) ?? nextState} />
-          <InfoRow label={t("dashboard.labels.assetCompleteness") ?? "Asset completeness"} value={assetCompletionText} />
-          <InfoRow label={t("dashboard.labels.qaGate") ?? "QA gate"} value={qaGateText} />
-          <InfoRow label={t("dashboard.labels.riskState") ?? "Risk state"} value={riskText} />
-          <InfoRow
-            label={t("dashboard.labels.publishEligibility") ?? "Publish eligibility"}
-            value={publish.ready ? (t("dashboard.labels.eligible") ?? "ELIGIBLE") : (t(`dashboard.publishState.${publish.gateState}`) ?? publish.gateState)}
-          />
-        </div>
+      <div className="mx-4 border-t border-slate-100 dark:border-slate-800" />
 
-        <div className="mt-4 space-y-2">
-          <div className="text-xs uppercase tracking-[0.22em] text-slate-500">{t("dashboard.labels.requiredAssets") ?? "Required assets"}</div>
-          <div className="flex flex-wrap gap-2">
-            {assets.present.map((assetType) => (
-              <StateBadge key={assetType} label={assetType} displayLabel={t(`dashboard.assetType.${assetType}`) ?? assetType} />
-            ))}
-            {assets.missing.map((assetType) => (
-              <span
-                key={assetType}
-                className="inline-flex items-center rounded-full border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-rose-600 dark:text-rose-200"
-              >
-                {`${t("dashboard.labels.missingPrefix") ?? "missing"}:${assetType}`}
-              </span>
-            ))}
-          </div>
+      {/* ── DETAILS ────────────────────────────────── */}
+      <div className="px-4 py-3 space-y-2 text-xs">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-slate-400 dark:text-slate-500">Owner</span>
+          <span className="truncate font-medium text-slate-700 dark:text-slate-200 max-w-[160px]" title={item.ownerRef}>{ownerDisplay}</span>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-slate-400 dark:text-slate-500">Next state</span>
+          <span className="font-medium text-slate-700 dark:text-slate-200">{t(`dashboard.state.${nextState}`) ?? nextState}</span>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-slate-400 dark:text-slate-500">Publish</span>
+          {publish.ready ? (
+            <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+              Eligible
+            </span>
+          ) : (
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+              {t(`dashboard.publishState.${publish.gateState}`) ?? publish.gateState}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="mx-4 border-t border-slate-100 dark:border-slate-800" />
+
+      {/* ── ASSETS ─────────────────────────────────── */}
+      <div className="px-4 py-3">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Required Assets</p>
+        <div className="flex flex-wrap gap-1.5">
+          {[...assets.present.map(a => ({ key: a, present: true })), ...assets.missing.map(a => ({ key: a, present: false }))].map(({ key, present }) => (
+            <AssetChip
+              key={key}
+              label={key}
+              present={present}
+              displayLabel={t(`dashboard.assetType.${key}`) ?? key.replace(/_/g, " ")}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ── FOOTER ─────────────────────────────────── */}
+      <div className="mt-auto flex items-center justify-between border-t border-slate-100 dark:border-slate-800 px-4 py-2.5">
+        <span className="text-[11px] text-slate-400 dark:text-slate-500">
+          → {t(`dashboard.state.${nextState}`) ?? nextState}
+        </span>
+        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+          {ownerInitial(item.ownerRef)}
         </div>
       </div>
     </div>
