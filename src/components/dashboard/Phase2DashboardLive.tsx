@@ -258,7 +258,7 @@ function PipelineCard({
             {requiredAssets.missing.map((assetType) => (
               <span
                 key={assetType}
-                className="inline-flex items-center rounded-full border border-rose-200 dark:border-rose-500/30 bg-rose-50 0/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-rose-600 dark:text-rose-200"
+                className="inline-flex items-center rounded-full border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-rose-600 dark:text-rose-200"
               >
                 {`${t("dashboard.labels.missingPrefix") ?? "missing"}:${assetType}`}
               </span>
@@ -936,7 +936,7 @@ export function Phase2Dashboard({
       {loadState === "blocked" ? (
         <div
           role="alert"
-          className="rounded-2xl border border-rose-200 dark:border-rose-500/30 bg-rose-50 0/10 px-5 py-4 text-rose-100"
+          className="rounded-2xl border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 px-5 py-4 text-rose-100"
         >
           <div className="text-sm font-semibold">
             {t("dashboard.live.blockedTitle") ?? "Live Supabase read blocked"}
@@ -973,7 +973,7 @@ export function Phase2Dashboard({
               }
             }}
             disabled={!liveData.page || liveData.page === 1}
-            className="rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white transition-colors hover:bg-slate-200 dark:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             ← Previous
           </button>
@@ -985,7 +985,7 @@ export function Phase2Dashboard({
               router.push(`?page=${(liveData.page || 1) + 1}`);
             }}
             disabled={!liveData.hasNextPage}
-            className="rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white transition-colors hover:bg-slate-200 dark:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next →
           </button>

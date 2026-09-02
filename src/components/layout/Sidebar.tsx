@@ -138,7 +138,7 @@ export function Sidebar() {
                     className={`flex min-w-max items-center gap-3 rounded-xl px-3 py-2 text-sm transition lg:min-w-0 ${
                       active
                         ? "bg-slate-100 dark:bg-slate-800/60 text-slate-900 dark:text-white font-semibold shadow-sm ring-1 ring-slate-200 dark:ring-slate-700/50"
-                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white dark:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white"
+                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white dark:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-900 dark:hover:text-white"
                     }`}
                   >
                     <Icon className="h-4 w-4" />

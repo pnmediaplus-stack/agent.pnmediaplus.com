@@ -140,7 +140,7 @@ export function Phase5CMOOffice() {
           <button 
             onClick={handleRunAnalysis}
             disabled={loading}
-            className="rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 transition-colors disabled:opacity-50"
+            className="rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 transition-colors disabled:opacity-50"
           >
             {loading ? "Đang phân tích..." : "🔍 Phân Tích Thủ Công"}
           </button>

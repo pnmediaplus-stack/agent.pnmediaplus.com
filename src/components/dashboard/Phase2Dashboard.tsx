@@ -113,7 +113,7 @@ function CampaignControlBar({
                   "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.12em] transition",
                   isActive
                     ? "border-cyan-400/40 bg-cyan-50 dark:bg-cyan-400/10 text-cyan-100"
-                    : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 text-slate-700 dark:text-slate-200 hover:border-slate-500 hover:bg-slate-100 dark:bg-slate-800"
+                    : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 text-slate-700 dark:text-slate-200 hover:border-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                 ].join(" ")}
               >
                 {tab.label}
@@ -212,7 +212,7 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
             {assets.missing.map((assetType) => (
               <span
                 key={assetType}
-              className="inline-flex items-center rounded-full border border-rose-200 dark:border-rose-500/30 bg-rose-50 0/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-rose-600 dark:text-rose-200"
+              className="inline-flex items-center rounded-full border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-rose-600 dark:text-rose-200"
               >
                 {`${t("dashboard.labels.missingPrefix") ?? "missing"}:${assetType}`}
               </span>
@@ -607,7 +607,7 @@ export function Phase2Dashboard({
         allowedActions={[]}
         forbiddenActions={[]}
       >
-        <div className="rounded-xl border border-rose-200 dark:border-rose-500/30 bg-rose-50 0/10 p-5 text-rose-600 dark:text-rose-200">
+        <div className="rounded-xl border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 p-5 text-rose-600 dark:text-rose-200">
           <h2 className="text-lg font-semibold">Failed to load Phase 2 Data</h2>
           <p className="mt-2 text-sm">{loadReason}</p>
         </div>

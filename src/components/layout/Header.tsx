@@ -20,9 +20,9 @@ export function Header() {
         <span
           className={`max-w-[18rem] truncate rounded-full border px-3 py-1 text-xs ${
             portalSession.state === "ready"
-              ? "border-cyan-200 dark:border-cyan-500/30 bg-cyan-50 0/10 text-cyan-700 dark:text-cyan-100"
+              ? "border-cyan-200 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-100"
               : portalSession.state === "blocked"
-                ? "border-rose-200 dark:border-rose-500/30 bg-rose-50 0/10 text-rose-700 dark:text-rose-100"
+                ? "border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-100"
                 : "border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300"
           }`}
           title={portalSession.state === "ready" ? `${portalSession.email} · ${portalSession.organizationName} · ${portalSession.role}` : portalSession.state === "blocked" ? portalSession.reason : undefined}
@@ -46,7 +46,7 @@ export function Header() {
           <button
             type="button"
             onClick={() => setLocale?.("en")}
-            className={`rounded-full px-2.5 py-1 font-semibold transition ${locale === "en" ? "bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-200" : "hover:bg-slate-200 dark:hover:bg-slate-100 dark:bg-slate-800 hover:text-slate-900 dark:text-white"}`}
+            className={`rounded-full px-2.5 py-1 font-semibold transition ${locale === "en" ? "bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-200" : "hover:bg-slate-200 dark:hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"}`}
             aria-pressed={locale === "en"}
           >
             {tShared("shared.locale.en") ?? "EN"}
@@ -54,7 +54,7 @@ export function Header() {
           <button
             type="button"
             onClick={() => setLocale?.("vi")}
-            className={`rounded-full px-2.5 py-1 font-semibold transition ${locale === "vi" ? "bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-200" : "hover:bg-slate-200 dark:hover:bg-slate-100 dark:bg-slate-800 hover:text-slate-900 dark:text-white"}`}
+            className={`rounded-full px-2.5 py-1 font-semibold transition ${locale === "vi" ? "bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-200" : "hover:bg-slate-200 dark:hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"}`}
             aria-pressed={locale === "vi"}
           >
             {tShared("shared.locale.vi") ?? "VI"}

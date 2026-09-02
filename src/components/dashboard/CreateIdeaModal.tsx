@@ -63,7 +63,7 @@ export function CreateIdeaModal({
         </p>
 
         {error ? (
-          <div className="mt-4 rounded-lg border border-rose-200 dark:border-rose-500/30 bg-rose-50 0/10 p-3 text-sm text-rose-600 dark:text-rose-200">
+          <div className="mt-4 rounded-lg border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 p-3 text-sm text-rose-600 dark:text-rose-200">
             <strong>BLOCKED:</strong> {error}
           </div>
         ) : null}
@@ -104,7 +104,7 @@ export function CreateIdeaModal({
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800"
+              className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               Cancel
             </button>
