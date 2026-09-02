@@ -259,7 +259,7 @@ function KnowledgeTab() {
         {uploadError && <p className="text-red-500 text-sm mt-4 whitespace-pre-line text-center">{uploadError}</p>}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col h-[800px]">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg font-medium text-gray-900">Tài liệu đã tải lên</h2>
           {selectedDocumentIds.length > 0 && (
@@ -279,7 +279,7 @@ function KnowledgeTab() {
         ) : !Array.isArray(documents) || documents.length === 0 ? (
           <div className="p-10 text-center text-gray-500">Chưa có tài liệu nào.</div>
         ) : (
-          <div className="overflow-auto h-[1200px] custom-scrollbar">
+          <div className="flex-1 overflow-auto custom-scrollbar">
             <table className="min-w-full divide-y divide-gray-200 relative">
               <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
                 <tr>
@@ -347,34 +347,34 @@ function KnowledgeTab() {
                 ))}
               </tbody>
             </table>
-            
-            {/* Pagination Controls */}
-            {documents && Math.ceil(documents.length / itemsPerPage) > 1 && (
-              <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 bg-white">
-                <div className="text-sm text-gray-700">
-                  Hiển thị <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> đến <span className="font-medium">{Math.min(currentPage * itemsPerPage, documents.length)}</span> trong số <span className="font-medium">{documents.length}</span> tài liệu
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button 
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Trước
-                  </button>
-                  <span className="text-sm font-medium text-gray-700">
-                    Trang {currentPage} / {Math.ceil(documents.length / itemsPerPage)}
-                  </span>
-                  <button 
-                    onClick={() => setCurrentPage(p => Math.min(Math.ceil(documents.length / itemsPerPage), p + 1))}
-                    disabled={currentPage === Math.ceil(documents.length / itemsPerPage)}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Sau
-                  </button>
-                </div>
-              </div>
-            )}
+          </div>
+        )}
+        
+        {/* Pagination Controls - Luôn ghim ở dưới cùng */}
+        {Array.isArray(documents) && documents.length > 0 && (
+          <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 bg-white mt-auto sticky bottom-0">
+            <div className="text-sm text-gray-700">
+              Hiển thị <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> đến <span className="font-medium">{Math.min(currentPage * itemsPerPage, documents.length)}</span> trong số <span className="font-medium">{documents.length}</span> tài liệu
+            </div>
+            <div className="flex items-center space-x-2">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Trước
+              </button>
+              <span className="text-sm font-medium text-gray-700">
+                Trang {currentPage} / {Math.max(1, Math.ceil(documents.length / itemsPerPage))}
+              </span>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(Math.ceil(documents.length / itemsPerPage), p + 1))}
+                disabled={currentPage === Math.ceil(documents.length / itemsPerPage) || documents.length === 0}
+                className="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Sau
+              </button>
+            </div>
           </div>
         )}
       </div>
