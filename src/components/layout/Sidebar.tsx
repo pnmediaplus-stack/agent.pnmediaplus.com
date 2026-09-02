@@ -179,7 +179,7 @@ export function Sidebar() {
         />
       )}
 
-      <div className="relative z-0 flex flex-col h-full w-full">
+      <div className="relative z-0 flex flex-col min-h-full w-full justify-between">
 
         {/* ── BRAND ─────────────────────────────────── */}
       <div className="mb-6 px-2">
@@ -227,18 +227,18 @@ export function Sidebar() {
       </nav>
 
       {/* ── USER CARD ─────────────────────────────── */}
-      <div className="mt-3 rounded-xl bg-black/5 dark:bg-white/5 p-3 text-xs lg:mt-auto shadow-sm backdrop-blur-sm">
-        <div className="flex items-start justify-between gap-3">
+      <div className="mt-4 shrink-0 rounded-xl bg-black/5 dark:bg-white/5 p-2.5 text-xs shadow-sm backdrop-blur-sm">
+        <div className="flex items-start justify-between gap-2.5">
           <div className="min-w-0">
             <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
               {portalSession.state === "ready"
                 ? (tLayout("layout.sidebar.userCard.titleReady") ?? "Signed in")
                 : (tLayout("layout.sidebar.userCard.titleBlocked") ?? "Portal blocked")}
             </div>
-            <div className="mt-1.5 truncate font-semibold text-slate-900 dark:text-white/90">
+            <div className="mt-1 truncate font-semibold text-slate-900 dark:text-white/90">
               {portalSession.state === "ready" ? portalSession.organizationName : (tShared("shared.portal.blocked") ?? "Portal blocked")}
             </div>
-            <div className="mt-0.5 truncate text-slate-600 dark:text-slate-400">
+            <div className="mt-0.5 truncate text-slate-600 dark:text-slate-400 text-[11px]">
               {portalSession.state === "ready"
                 ? `${portalSession.role}${portalSession.email ? ` · ${portalSession.email}` : ""}`
                 : (tLayout("layout.sidebar.userCard.subtitleBlocked") ?? "Login required to access the portal")}
@@ -248,14 +248,14 @@ export function Sidebar() {
             type="button"
             onClick={() => setAccountMenuOpen((current) => !current)}
             aria-expanded={accountMenuOpen}
-            className="rounded-lg bg-black/10 dark:bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-black/15 dark:hover:bg-white/20 hover:text-cyan-600 dark:hover:text-cyan-300"
+            className="rounded-lg bg-black/10 dark:bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-black/15 dark:hover:bg-white/20 hover:text-cyan-600 dark:hover:text-cyan-300 shrink-0"
           >
             {tLayout("layout.sidebar.accountMenu.action") ?? "Setting"}
           </button>
         </div>
 
         {accountMenuOpen ? (
-          <div className="sidebar-menu-protected mt-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 shadow-2xl flex flex-col gap-2">
+          <div className="sidebar-menu-protected mt-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-2 shadow-xl flex flex-col gap-1.5 w-full">
             <ThemeSettingsModal
               trigger={
                 <div className="flex w-full items-center justify-between px-2.5 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 cursor-pointer transition-colors group">
