@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useThemeStore, type BackgroundType } from "@/store/useThemeStore";
 import { useTheme } from "next-themes";
 import { Settings, X, Moon, Sun, Monitor, Image as ImageIcon, PaintBucket, Palette } from "lucide-react";
@@ -23,6 +24,7 @@ export function ThemeSettingsModal({ trigger }: { trigger?: React.ReactNode }) {
   const activeCustomGrad1 = targetArea === "main" ? store.customGrad1 : store.sidebarCustomGrad1;
   const activeCustomGrad2 = targetArea === "main" ? store.customGrad2 : store.sidebarCustomGrad2;
   const activeCustomGradAngle = targetArea === "main" ? store.customGradAngle : store.sidebarCustomGradAngle;
+  const activeTextColor = targetArea === "main" ? store.textColor : store.sidebarTextColor;
 
   const setActiveBgType = targetArea === "main" ? store.setBgType : store.setSidebarBgType;
   const setActiveBgColor = targetArea === "main" ? store.setBgColor : store.setSidebarBgColor;
@@ -32,6 +34,7 @@ export function ThemeSettingsModal({ trigger }: { trigger?: React.ReactNode }) {
   const setActiveCustomGrad1 = targetArea === "main" ? store.setCustomGrad1 : store.setSidebarCustomGrad1;
   const setActiveCustomGrad2 = targetArea === "main" ? store.setCustomGrad2 : store.setSidebarCustomGrad2;
   const setActiveCustomGradAngle = targetArea === "main" ? store.setCustomGradAngle : store.setSidebarCustomGradAngle;
+  const setActiveTextColor = targetArea === "main" ? store.setTextColor : store.setSidebarTextColor;
 
   useEffect(() => {
     setMounted(true);
@@ -55,7 +58,7 @@ export function ThemeSettingsModal({ trigger }: { trigger?: React.ReactNode }) {
         </button>
       )}
 
-      {isOpen && (
+      {isOpen && mounted ? createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
           <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 px-6 py-4">
@@ -288,6 +291,33 @@ export function ThemeSettingsModal({ trigger }: { trigger?: React.ReactNode }) {
                   )}
                 </div>
               </div>
+
+              {/* Text Color Setting */}
+              <div className="space-y-3 pt-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Màu chữ (Tùy chọn)</label>
+                <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <div className="flex flex-1 items-center gap-3">
+                    <input 
+                      type="color" 
+                      value={activeTextColor || "#ffffff"} 
+                      onChange={(e) => setActiveTextColor(e.target.value)} 
+                      className="h-10 w-16 cursor-pointer rounded bg-transparent p-0 border-0 outline-none"
+                    />
+                    <div className="flex-1 text-[13px] text-slate-600 dark:text-slate-300">
+                      Ghi đè màu chữ cơ bản (Hữu ích khi dùng hình nền tối).
+                    </div>
+                  </div>
+                  {activeTextColor && (
+                    <button 
+                      onClick={() => setActiveTextColor("")}
+                      className="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg dark:bg-rose-900/20 dark:text-rose-400 dark:hover:bg-rose-900/40 transition-colors"
+                    >
+                      Bỏ chọn
+                    </button>
+                  )}
+                </div>
+              </div>
+
             </div>
 
             <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-6 py-4 flex justify-between">
@@ -305,8 +335,9 @@ export function ThemeSettingsModal({ trigger }: { trigger?: React.ReactNode }) {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+        document.body
+      ) : null}
     </>
   );
 }
