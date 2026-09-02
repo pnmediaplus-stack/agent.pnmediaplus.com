@@ -109,10 +109,10 @@ export function Phase5CMOOffice() {
   };
 
   return (
-    <div className="rounded-2xl border border-red-500/30 bg-slate-50 dark:bg-slate-950/80 p-5 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+    <div className="rounded-2xl border border-red-200 dark:border-red-500/30 bg-white dark:bg-slate-900 p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="mb-4 flex items-center justify-between">
-        <div className="inline-flex rounded-lg border border-red-400/20 bg-red-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-red-300">
+        <div className="inline-flex rounded-lg border border-red-200 dark:border-red-400/20 bg-red-50 dark:bg-red-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-red-700 dark:text-red-300">
             👑 CMO AI Office (Phase 5)
           </div>
         </div>
@@ -165,7 +165,7 @@ export function Phase5CMOOffice() {
               <button 
                 onClick={() => handleApprovePivot(proposal.id || 'mock_id')} // mock for UI thin shell
                 disabled={loading}
-                className="ml-4 whitespace-nowrap rounded-lg bg-red-600 hover:bg-red-500 px-5 py-3 text-sm font-bold text-slate-900 dark:text-white shadow-lg shadow-red-500/20 transition-all disabled:opacity-50"
+                className="ml-4 whitespace-nowrap rounded-lg bg-red-600 hover:bg-red-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-red-500/20 transition-all disabled:opacity-50"
               >
                 🚨 DUYỆT BẺ LÁI
               </button>
@@ -182,3 +182,4 @@ export function Phase5CMOOffice() {
     </div>
   );
 }
+

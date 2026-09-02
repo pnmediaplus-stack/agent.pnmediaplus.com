@@ -81,10 +81,10 @@ export function Phase4CampaignBuilder() {
   };
 
   return (
-    <div className="rounded-2xl border border-violet-500/30 bg-slate-50 dark:bg-slate-950/80 p-5 shadow-[0_0_15px_rgba(139,92,246,0.1)]">
+    <div className="rounded-2xl border border-violet-200 dark:border-violet-500/30 bg-white dark:bg-slate-900 p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="mb-4 flex items-center justify-between">
-        <div className="inline-flex rounded-lg border border-violet-400/20 bg-violet-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-violet-300">
+        <div className="inline-flex rounded-lg border border-violet-200 dark:border-violet-400/20 bg-violet-50 dark:bg-violet-400/10 px-3 py-1.5">
+          <div className="text-sm font-semibold text-violet-700 dark:text-violet-300">
             🤖 AI Campaign Planner (Phase 4)
           </div>
         </div>
@@ -96,56 +96,56 @@ export function Phase4CampaignBuilder() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <label className="text-xs text-slate-500 dark:text-slate-400">Tên chiến dịch</label>
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Tên chiến dịch</label>
             <input 
               type="text" 
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="VD: Ra mắt tính năng Z..." 
-              className="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-600 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              className="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-slate-500 dark:text-slate-400">Tệp khách hàng (Target Audience)</label>
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Tệp khách hàng (Target Audience)</label>
             <input 
               type="text" 
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
               placeholder="VD: Dân văn phòng 25-35 tuổi..." 
-              className="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-600 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              className="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
             />
           </div>
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-slate-500 dark:text-slate-400">Mục tiêu chiến dịch (Goal)</label>
+          <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Mục tiêu chiến dịch (Goal)</label>
           <textarea 
             required
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
             placeholder="Bạn muốn đạt được điều gì? Kể chi tiết cho AI nghe..." 
             rows={2}
-            className="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-600 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            className="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
           />
         </div>
 
         <div className="flex items-center justify-between pt-2">
           <div className="flex items-center space-x-2">
-            <label className="text-xs text-slate-500 dark:text-slate-400">Số lượng bài (1-10):</label>
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Số lượng bài (1-10):</label>
             <input 
               type="number" 
               min={1} 
               max={10} 
               value={numIdeas}
               onChange={(e) => setNumIdeas(parseInt(e.target.value))}
-              className="w-16 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm text-slate-900 dark:text-white focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              className="w-16 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-1 text-sm text-slate-900 dark:text-white focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
             />
           </div>
           <button 
             type="submit" 
             disabled={loading}
-            className="rounded-md bg-violet-600 hover:bg-violet-500 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white transition-colors disabled:opacity-50"
+            className="rounded-lg bg-violet-600 hover:bg-violet-500 px-5 py-2 text-sm font-bold text-white shadow-sm transition-colors disabled:opacity-50"
           >
             {loading ? "Đang vắt óc suy nghĩ..." : "✨ Lên Chiến Dịch Ngay"}
           </button>
@@ -153,13 +153,13 @@ export function Phase4CampaignBuilder() {
       </form>
 
       {error && (
-        <div className="mt-4 rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+        <div className="mt-4 rounded-md border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
           Lỗi: {error}
         </div>
       )}
       
       {success && (
-        <div className="mt-4 rounded-md border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-400">
+        <div className="mt-4 rounded-md border border-green-200 dark:border-green-500/20 bg-green-50 dark:bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400">
           {success}
         </div>
       )}
