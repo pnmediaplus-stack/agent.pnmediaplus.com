@@ -35,6 +35,7 @@ export async function GET(req: Request) {
 
     let offset = parseInt(url.searchParams.get('offset') || '0', 10);
     if (isNaN(offset) || offset < 0) offset = 0;
+    offset = Math.min(offset, 10000);
 
     const res = await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents?organization_id=eq.${organizationId}&namespace=eq.${namespace}&order=created_at.desc&limit=${limit}&offset=${offset}`, {
       headers: {
