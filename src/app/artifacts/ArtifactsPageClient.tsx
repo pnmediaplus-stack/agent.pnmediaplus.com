@@ -32,7 +32,7 @@ export function ArtifactsPageClient() {
     >
       {isLoading ? (
         <div className="flex h-64 items-center justify-center">
-          <div className="text-white/50">Đang tải tài nguyên...</div>
+          <div className="text-slate-900 dark:text-white/50">Đang tải tài nguyên...</div>
         </div>
       ) : error ? (
         <div className="flex h-64 items-center justify-center">

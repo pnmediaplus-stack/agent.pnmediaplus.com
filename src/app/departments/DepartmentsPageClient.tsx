@@ -117,10 +117,10 @@ export function DepartmentsPageClient() {
       ]}
     >
       <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">{t("departments.title") ?? "Cấu trúc tổ chức"}</h2>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t("departments.title") ?? "Cấu trúc tổ chức"}</h2>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-400 border border-emerald-500/30 transition-all hover:bg-emerald-500/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+          className="flex items-center gap-2 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition-all hover:bg-emerald-500/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)]"
         >
           <Plus className="h-4 w-4" />
           {showForm ? (t("departments.form.cancel") ?? "Hủy bỏ") : (t("departments.form.add") ?? "Thêm phòng ban")}
@@ -128,8 +128,8 @@ export function DepartmentsPageClient() {
       </div>
 
       {!isLoading && chartData.length > 0 && chartData.some(d => d.agents > 0) && (
-        <div className="mb-8 h-[200px] rounded-2xl border border-slate-700/50 bg-slate-900/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">{t("departments.chart.title") ?? "Phân bổ đặc vụ"}</h3>
+        <div className="mb-8 h-[200px] rounded-2xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900/30 p-6 backdrop-blur-xl shadow-lg">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t("departments.chart.title") ?? "Phân bổ đặc vụ"}</h3>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
               <XAxis dataKey="name" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
@@ -150,11 +150,11 @@ export function DepartmentsPageClient() {
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-700/50 bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-6 text-lg font-bold text-slate-200">{t("departments.form.title") ?? "Tạo phòng ban mới"}</h3>
+        <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
+          <h3 className="mb-6 text-lg font-bold text-slate-700 dark:text-slate-200">{t("departments.form.title") ?? "Tạo phòng ban mới"}</h3>
           <div className="grid gap-6 md:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("departments.form.keyLabel") ?? "Mã phòng ban (ID duy nhất)"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("departments.form.keyLabel") ?? "Mã phòng ban (ID duy nhất)"}</label>
               <input
                 type="text"
                 required
@@ -162,29 +162,29 @@ export function DepartmentsPageClient() {
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
                 placeholder={t("departments.form.keyPlaceholder") ?? "vd: sales_team"}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
               />
               <p className="mt-1 text-xs text-slate-500">{t("departments.form.keyHint") ?? "Chỉ sử dụng chữ cái viết thường, số, và dấu gạch dưới."}</p>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("departments.form.nameLabel") ?? "Tên hiển thị"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("departments.form.nameLabel") ?? "Tên hiển thị"}</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("departments.form.namePlaceholder") ?? "vd: Khối Kinh doanh"}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("departments.form.descLabel") ?? "Mục đích / Mô tả"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("departments.form.descLabel") ?? "Mục đích / Mô tả"}</label>
               <textarea
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
                 placeholder={t("departments.form.descPlaceholder") ?? "Phòng ban này đảm nhận chức năng gì?"}
                 rows={2}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
               />
             </div>
           </div>
@@ -192,7 +192,7 @@ export function DepartmentsPageClient() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 rounded-lg bg-cyan-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-cyan-500 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-cyan-600 px-6 py-2.5 text-sm font-semibold text-slate-900 dark:text-white transition-all hover:bg-cyan-500 disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               {t("departments.form.submit") ?? "Tạo phòng ban"}
@@ -206,7 +206,7 @@ export function DepartmentsPageClient() {
           <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
         </div>
       ) : departments.length === 0 ? (
-        <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/50 text-slate-400">
+        <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400">
           <p>{t("departments.empty.title") ?? "Không tìm thấy phòng ban nào."}</p>
           <p className="text-sm">{t("departments.empty.hint") ?? "Nhấn \"Thêm phòng ban\" để tạo mới."}</p>
         </div>

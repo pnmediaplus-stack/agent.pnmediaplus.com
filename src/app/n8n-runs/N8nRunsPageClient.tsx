@@ -50,7 +50,7 @@ export function N8nRunsPageClient() {
       ]}
     >
       {isLoading ? (
-        <div className="flex h-32 items-center justify-center rounded-2xl border border-slate-700/50 bg-slate-900/30">
+        <div className="flex h-32 items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900/30">
           <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
         </div>
       ) : (

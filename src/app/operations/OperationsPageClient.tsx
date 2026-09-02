@@ -32,7 +32,7 @@ export function OperationsPageClient() {
     >
       {isLoading ? (
         <div className="flex h-64 items-center justify-center">
-          <div className="text-white/50">Loading operations execution...</div>
+          <div className="text-slate-900 dark:text-white/50">Loading operations execution...</div>
         </div>
       ) : error ? (
         <div className="flex h-64 items-center justify-center">

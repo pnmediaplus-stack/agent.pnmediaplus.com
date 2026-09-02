@@ -136,10 +136,10 @@ export function TasksPageClient() {
       ]}
     >
       <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">{t("tasks.board.title") ?? "Bảng tác vụ"}</h2>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t("tasks.board.title") ?? "Bảng tác vụ"}</h2>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-400 border border-indigo-500/30 transition-all hover:bg-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+          className="flex items-center gap-2 rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 transition-all hover:bg-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]"
         >
           <Plus className="h-4 w-4" />
           {showForm ? (t("tasks.form.cancel") ?? "Hủy") : (t("tasks.form.assign") ?? "Giao việc")}
@@ -147,11 +147,11 @@ export function TasksPageClient() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-700/50 bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-6 text-lg font-bold text-slate-200">{t("tasks.form.title") ?? "Giao tác vụ mới"}</h3>
+        <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
+          <h3 className="mb-6 text-lg font-bold text-slate-700 dark:text-slate-200">{t("tasks.form.title") ?? "Giao tác vụ mới"}</h3>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <div className="lg:col-span-1">
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.keyLabel") ?? "Mã tác vụ (định danh duy nhất)"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("tasks.form.keyLabel") ?? "Mã tác vụ (định danh duy nhất)"}</label>
               <input
                 type="text"
                 required
@@ -159,32 +159,32 @@ export function TasksPageClient() {
                 value={taskKey}
                 onChange={(e) => setTaskKey(e.target.value)}
                 placeholder={t("tasks.form.keyPlaceholder") ?? "vd: generate_report_1"}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div className="lg:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.titleLabel") ?? "Tiêu đề"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("tasks.form.titleLabel") ?? "Tiêu đề"}</label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={t("tasks.form.titlePlaceholder") ?? "vd: Tạo báo cáo tài chính Q3"}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div className="lg:col-span-3">
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.summaryLabel") ?? "Tóm tắt (tùy chọn)"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("tasks.form.summaryLabel") ?? "Tóm tắt (tùy chọn)"}</label>
               <textarea
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
                 placeholder={t("tasks.form.summaryPlaceholder") ?? "Chi tiết công việc cần làm..."}
                 rows={2}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.priorityLabel") ?? "Độ ưu tiên (1-100)"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("tasks.form.priorityLabel") ?? "Độ ưu tiên (1-100)"}</label>
               <input
                 type="number"
                 min="1"
@@ -192,11 +192,11 @@ export function TasksPageClient() {
                 required
                 value={priority}
                 onChange={(e) => setPriority(Number(e.target.value))}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.departmentLabel") ?? "Phòng ban"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("tasks.form.departmentLabel") ?? "Phòng ban"}</label>
               <select
                 required
                 value={deptId}
@@ -204,23 +204,23 @@ export function TasksPageClient() {
                   setDeptId(e.target.value);
                   setAgentId(""); // reset agent when dept changes
                 }}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
                 {departments.map(d => (
-                  <option key={d.id} value={d.id} className="bg-slate-900">{d.canonical_name}</option>
+                  <option key={d.id} value={d.id} className="bg-white dark:bg-slate-900">{d.canonical_name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("tasks.form.agentLabel") ?? "Giao cho Agent (tùy chọn)"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("tasks.form.agentLabel") ?? "Giao cho Agent (tùy chọn)"}</label>
               <select
                 value={agentId}
                 onChange={(e) => setAgentId(e.target.value)}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
-                <option value="" className="bg-slate-900">{t("tasks.form.agentUnassigned") ?? "-- Chưa giao --"}</option>
+                <option value="" className="bg-white dark:bg-slate-900">{t("tasks.form.agentUnassigned") ?? "-- Chưa giao --"}</option>
                 {availableAgents.map(a => (
-                  <option key={a.id} value={a.id} className="bg-slate-900">{a.canonical_name}</option>
+                  <option key={a.id} value={a.id} className="bg-white dark:bg-slate-900">{a.canonical_name}</option>
                 ))}
               </select>
             </div>
@@ -229,7 +229,7 @@ export function TasksPageClient() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-indigo-500 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-slate-900 dark:text-white transition-all hover:bg-indigo-500 disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               {t("tasks.form.submit") ?? "Gửi tác vụ"}

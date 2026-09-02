@@ -101,7 +101,7 @@ export default function SimulatorPage() {
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isBot ? 'bg-blue-100 text-blue-600 mr-2' : 'bg-gray-200 text-gray-600 ml-2'}`}>
                   {isBot ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
                 </div>
-                <div className={`px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap shadow-sm ${isBot ? 'bg-white border border-gray-200 text-gray-800 rounded-bl-none' : 'bg-blue-600 text-white rounded-br-none'}`}>
+                <div className={`px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap shadow-sm ${isBot ? 'bg-white border border-gray-200 text-gray-800 rounded-bl-none' : 'bg-blue-600 text-slate-900 dark:text-white rounded-br-none'}`}>
                   {msg.content}
                 </div>
               </div>
@@ -110,7 +110,7 @@ export default function SimulatorPage() {
         })}
         {isSending && (
           <div className="flex justify-end">
-            <div className="px-4 py-2 rounded-2xl text-sm bg-blue-600 text-white rounded-br-none opacity-50">
+            <div className="px-4 py-2 rounded-2xl text-sm bg-blue-600 text-slate-900 dark:text-white rounded-br-none opacity-50">
               Đang gửi...
             </div>
           </div>
@@ -130,7 +130,7 @@ export default function SimulatorPage() {
           <button 
             type="submit" 
             disabled={!message.trim() || isSending}
-            className="absolute right-2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="absolute right-2 p-2 bg-blue-600 text-slate-900 dark:text-white rounded-full hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-4 h-4" />
           </button>

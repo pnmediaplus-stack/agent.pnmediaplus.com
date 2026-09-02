@@ -32,7 +32,7 @@ export function QaReviewsPageClient() {
     >
       {isLoading ? (
         <div className="flex h-64 items-center justify-center">
-          <div className="text-white/50">{t("qa.loading") ?? "Đang tải dữ liệu QA..."}</div>
+          <div className="text-slate-900 dark:text-white/50">{t("qa.loading") ?? "Đang tải dữ liệu QA..."}</div>
         </div>
       ) : error ? (
         <div className="flex h-64 items-center justify-center">

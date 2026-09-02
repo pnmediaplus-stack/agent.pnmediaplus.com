@@ -228,7 +228,7 @@ function KnowledgeTab() {
         <p className="text-sm font-medium text-gray-700">Kéo thả file vào đây hoặc click để chọn file</p>
         <p className="text-xs text-gray-500 mt-1 mb-4">Hỗ trợ PDF, TXT, MD, DOC, DOCX. Tối đa 10MB.</p>
         
-        <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors relative">
+        <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors relative">
           Chọn file tải lên
           <input type="file" multiple className="hidden" accept=".pdf,.txt,.md,.doc,.docx" onChange={handleFileChange} disabled={isUploading}/>
         </label>
@@ -247,7 +247,7 @@ function KnowledgeTab() {
               ))}
             </ul>
             <div className="mt-4 flex justify-end">
-              <button onClick={handleUpload} disabled={isUploading} className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
+              <button onClick={handleUpload} disabled={isUploading} className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
                 {isUploading ? <Loader2 className="animate-spin h-4 w-4 mr-2"/> : <UploadCloud className="h-4 w-4 mr-2"/>}
                 {isUploading ? "Đang tải lên..." : "Xác nhận tải lên"}
               </button>
@@ -264,7 +264,7 @@ function KnowledgeTab() {
             <button 
               onClick={handleBulkDelete} 
               disabled={isDeleting}
-              className="bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center transition-colors"
+              className="bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-slate-900 dark:text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center transition-colors"
             >
               {isDeleting ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
               Xóa {selectedDocumentIds.length} mục đã chọn
@@ -426,7 +426,7 @@ function PersonaTab() {
       <button 
         onClick={handleSave} 
         disabled={isSaving}
-        className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center"
+        className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-slate-900 dark:text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center"
       >
         {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2"/> : <Settings className="h-4 w-4 mr-2"/>}
         {isSaving ? "Đang lưu..." : "Lưu cấu hình AI"}
@@ -610,7 +610,7 @@ function CampaignsTab() {
                   <label className="ml-2 text-sm text-gray-700">Kích hoạt ngay</label>
                 </div>
                 <div className="flex space-x-2 pt-2">
-                  <button onClick={handleSave} disabled={isSaving} className="flex-1 bg-blue-600 text-white py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                  <button onClick={handleSave} disabled={isSaving} className="flex-1 bg-blue-600 text-slate-900 dark:text-white py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
                     {isSaving ? 'Đang lưu...' : 'Lưu chiến dịch'}
                   </button>
                   {editingId && (
@@ -746,7 +746,7 @@ const [isAdding, setIsAdding] = useState(false);
             <label className="block text-xs font-medium text-gray-700 mb-1">Màu viền</label>
             <input type="color" value={tagBorderColor} onChange={e => setTagBorderColor(e.target.value)} className="h-9 w-12 cursor-pointer bg-white border border-gray-300 rounded-lg p-0.5" />
           </div>
-          <button type="submit" disabled={isAdding || !tagName.trim()} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center h-9">
+          <button type="submit" disabled={isAdding || !tagName.trim()} className="bg-blue-600 text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center h-9">
             {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> Thêm Thẻ</>}
           </button>
         </form>

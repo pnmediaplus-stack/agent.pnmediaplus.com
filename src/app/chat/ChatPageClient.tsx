@@ -106,11 +106,11 @@ export function ChatPageClient() {
         forbiddenActions={[]}
       >
         <div className="p-4 flex flex-col items-center justify-center space-y-4">
-          <div className="text-sm text-slate-400">Không tìm thấy luồng nào đang hoạt động.</div>
+          <div className="text-sm text-slate-500 dark:text-slate-400">Không tìm thấy luồng nào đang hoạt động.</div>
           <button
             onClick={handleNewChat}
             disabled={isCreating}
-            className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-sm transition-colors disabled:opacity-50"
+            className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white rounded-md text-sm transition-colors disabled:opacity-50"
           >
             <Plus className="w-4 h-4" />
             <span>{isCreating ? "Đang tạo..." : "Tạo phiên làm việc mới"}</span>
@@ -159,7 +159,7 @@ export function ChatPageClient() {
             </select>
             <button
               onClick={handleRenameChat}
-              className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded transition-colors"
+              className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white rounded transition-colors"
               title="Đổi tên phiên làm việc hiện tại"
             >
               <Pencil className="w-3.5 h-3.5" />

@@ -154,22 +154,22 @@ export function AgentsPageClient() {
       ]}
     >
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 p-1">
-          <Filter className="ml-2 h-4 w-4 text-slate-400" />
+        <div className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 p-1">
+          <Filter className="ml-2 h-4 w-4 text-slate-500 dark:text-slate-400" />
           <select 
             value={filterDept}
             onChange={(e) => setFilterDept(e.target.value)}
-            className="bg-transparent p-1.5 text-sm text-slate-200 outline-none"
+            className="bg-transparent p-1.5 text-sm text-slate-700 dark:text-slate-200 outline-none"
           >
-            <option value="ALL" className="bg-slate-900">{t("agents.filter.allDepartments") ?? "Tất cả phòng ban"}</option>
+            <option value="ALL" className="bg-white dark:bg-slate-900">{t("agents.filter.allDepartments") ?? "Tất cả phòng ban"}</option>
             {departments.map(d => (
-              <option key={d.id} value={d.id} className="bg-slate-900">{d.canonical_name}</option>
+              <option key={d.id} value={d.id} className="bg-white dark:bg-slate-900">{d.canonical_name}</option>
             ))}
           </select>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-400 border border-indigo-500/30 transition-all hover:bg-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+          className="flex items-center gap-2 rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 transition-all hover:bg-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]"
         >
           <Plus className="h-4 w-4" />
           {showForm ? (t("agents.form.cancel") ?? "Hủy bỏ") : (t("agents.form.assign") ?? "Phân công đặc vụ")}
@@ -177,11 +177,11 @@ export function AgentsPageClient() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-700/50 bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-6 text-lg font-bold text-slate-200">{t("agents.form.title") ?? "Phân công đặc vụ mới"}</h3>
+        <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
+          <h3 className="mb-6 text-lg font-bold text-slate-700 dark:text-slate-200">{t("agents.form.title") ?? "Phân công đặc vụ mới"}</h3>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <div className="lg:col-span-1">
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.keyLabel") ?? "Mã đặc vụ"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.keyLabel") ?? "Mã đặc vụ"}</label>
               <input
                 type="text"
                 required
@@ -189,56 +189,56 @@ export function AgentsPageClient() {
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
                 placeholder={t("agents.form.keyPlaceholder") ?? "e.g. content_bot_1"}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div className="lg:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.nameLabel") ?? "Tên hiển thị"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.nameLabel") ?? "Tên hiển thị"}</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("agents.form.namePlaceholder") ?? "e.g. Alpha Content Writer"}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.departmentLabel") ?? "Phòng ban"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.departmentLabel") ?? "Phòng ban"}</label>
               <select
                 required
                 value={deptId}
                 onChange={(e) => setDeptId(e.target.value)}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
                 {departments.map(d => (
-                  <option key={d.id} value={d.id} className="bg-slate-900">{d.canonical_name}</option>
+                  <option key={d.id} value={d.id} className="bg-white dark:bg-slate-900">{d.canonical_name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.roleLabel") ?? "Vai trò"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.roleLabel") ?? "Vai trò"}</label>
               <select
                 required
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
                 {ROLE_OPTIONS.map(r => (
-                  <option key={r.value} value={r.value} className="bg-slate-900">{r.label}</option>
+                  <option key={r.value} value={r.value} className="bg-white dark:bg-slate-900">{r.label}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-400">{t("agents.form.scopeLabel") ?? "Phạm vi quyền hạn"}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.scopeLabel") ?? "Phạm vi quyền hạn"}</label>
               <select
                 required
                 value={scope}
                 onChange={(e) => setScope(e.target.value)}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
                 {AUTHORITY_SCOPES.map(s => (
-                  <option key={s} value={s} className="bg-slate-900">{s}</option>
+                  <option key={s} value={s} className="bg-white dark:bg-slate-900">{s}</option>
                 ))}
               </select>
             </div>
@@ -247,7 +247,7 @@ export function AgentsPageClient() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-indigo-500 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-slate-900 dark:text-white transition-all hover:bg-indigo-500 disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               {t("agents.form.submit") ?? "Phân công đặc vụ"}
@@ -261,7 +261,7 @@ export function AgentsPageClient() {
           <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
         </div>
       ) : filteredAgents.length === 0 ? (
-        <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/50 text-slate-400">
+        <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400">
           <p>{t("agents.empty.title") ?? "Không tìm thấy đặc vụ nào."}</p>
           <p className="text-sm">{t("agents.empty.hint") ?? "Nhấn \"Phân công đặc vụ\" để thêm mới."}</p>
         </div>

@@ -32,7 +32,7 @@ export function GatesPageClient() {
     >
       {isLoading ? (
         <div className="flex h-64 items-center justify-center">
-          <div className="text-white/50">{t("gates.loading") ?? "Đang tải dữ liệu cổng..."}</div>
+          <div className="text-slate-900 dark:text-white/50">{t("gates.loading") ?? "Đang tải dữ liệu cổng..."}</div>
         </div>
       ) : error ? (
         <div className="flex h-64 items-center justify-center">

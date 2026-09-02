@@ -32,7 +32,7 @@ export function AuditLogsPageClient() {
     >
       {isLoading ? (
         <div className="flex h-64 items-center justify-center">
-          <div className="text-white/50">Đang tải nhật ký audit...</div>
+          <div className="text-slate-900 dark:text-white/50">Đang tải nhật ký audit...</div>
         </div>
       ) : error ? (
         <div className="flex h-64 items-center justify-center">
