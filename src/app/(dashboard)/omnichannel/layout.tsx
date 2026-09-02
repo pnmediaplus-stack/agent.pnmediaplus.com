@@ -5,20 +5,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Inbox, Library } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import type { Route } from "next";
 
 export default function OmnichannelLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const tabs = [
+  const tabs: { name: string; href: Route; icon: any; active: boolean }[] = [
     {
       name: "Inbox",
-      href: "/omnichannel",
+      href: "/omnichannel" as Route,
       icon: Inbox,
       active: pathname === "/omnichannel",
     },
     {
       name: "Kho Tri thức AI",
-      href: "/omnichannel/knowledge",
+      href: "/omnichannel/knowledge" as Route,
       icon: Library,
       active: pathname === "/omnichannel/knowledge",
     },
