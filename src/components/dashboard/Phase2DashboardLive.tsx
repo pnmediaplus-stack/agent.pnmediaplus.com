@@ -55,9 +55,9 @@ function SectionFrame({
 }) {
   return (
     <section
-      className={`overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80 shadow-md hover:shadow-lg transition-shadow duration-300 ${className ?? ""}`}
+      className={`overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950/80 shadow-sm shadow-md hover:shadow-lg transition-shadow duration-300 ${className ?? ""}`}
     >
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-5 py-4">
+      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-slate-50/50 dark:bg-slate-900/50 px-5 py-4">
         <div className="inline-flex max-w-full rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
           <div className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">{title}</div>
         </div>
@@ -156,7 +156,7 @@ function SummaryGrid({ cards }: { cards: SummaryCard[] }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => (
-        <div key={card.label} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80">
+        <div key={card.label} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950/80 shadow-sm">
           <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-4 py-3">
             <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-100">{card.label}</div>
           </div>
@@ -438,26 +438,26 @@ function LedgerShell({
               <col key={column.key} style={{ width: column.width }} />
             ))}
           </colgroup>
-          <thead className="text-xs uppercase tracking-[0.22em] text-slate-600 dark:text-slate-300">
+          <thead className="text-[10px] uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
             <tr>
               {columns.map((column) => (
-                <th key={column.key} className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/95 px-5 py-3 backdrop-blur">
+                <th key={column.key} className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 px-5 py-3 font-bold">
                   {column.label}
                 </th>
               ))}
             </tr>
           </thead>
         </table>
-        <div className={`${bodyMaxHeight} overflow-y-auto overflow-x-hidden`}>
+        <div className={`${bodyMaxHeight} overflow-y-auto overflow-x-hidden custom-scrollbar`}>
           <table className="w-full table-fixed border-separate border-spacing-0 text-left text-sm">
             <colgroup>
               {columns.map((column) => (
                 <col key={column.key} style={{ width: column.width }} />
               ))}
             </colgroup>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
               {rows.map((row, index) => (
-                <tr key={index} className="text-slate-600 dark:text-slate-300">
+                <tr key={index} className="group text-slate-600 dark:text-slate-300 transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
                   {renderRow(row).map((cell, cellIndex) => (
                     <td key={cellIndex} className="px-5 py-4 align-top">
                       {cell}
@@ -491,13 +491,13 @@ function TaskView({
 
   if (!tasks.length) {
     return (
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80 p-5">
-        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">
+      <div className="rounded-2xl border border-blue-100 dark:border-blue-900/50 bg-gradient-to-b from-blue-50/50 to-white dark:from-blue-950/20 dark:to-slate-900 shadow-sm p-5">
+        <div className="inline-flex items-center gap-2 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-100/50 dark:bg-blue-900/30 px-3 py-1.5">
+          <div className="text-sm font-bold tracking-tight text-blue-800 dark:text-blue-300">
             {t("dashboard.sections.taskLedgerTitle") ?? "Task ledger / agent_tasks"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <div className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
           {t("dashboard.sections.taskLedgerDescription") ?? "Campaign-style task rows with wide columns kept inside the panel."}
         </div>
         <div className="mt-4">
@@ -511,14 +511,14 @@ function TaskView({
   }
 
   return (
-    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-5 py-4">
-        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-blue-100 dark:border-blue-900/50 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="border-b border-blue-100 dark:border-blue-900/50 bg-gradient-to-r from-blue-50/50 to-white dark:from-blue-950/30 dark:to-slate-900 px-5 py-4">
+        <div className="inline-flex items-center gap-2 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-100/50 dark:bg-blue-900/30 px-3 py-1.5">
+          <div className="text-sm font-bold tracking-tight text-blue-800 dark:text-blue-300">
             {t("dashboard.sections.taskLedgerTitle") ?? "Task ledger / agent_tasks"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <div className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
           {t("dashboard.sections.taskLedgerDescription") ?? "Campaign-style task rows with wide columns kept inside the panel."}
         </div>
       </div>
@@ -568,13 +568,13 @@ function AssetView({
 
   if (!assets.length) {
     return (
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80 p-5">
-        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">
+      <div className="rounded-2xl border border-violet-100 dark:border-violet-900/50 bg-gradient-to-b from-violet-50/50 to-white dark:from-violet-950/20 dark:to-slate-900 shadow-sm p-5">
+        <div className="inline-flex items-center gap-2 rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-100/50 dark:bg-violet-900/30 px-3 py-1.5">
+          <div className="text-sm font-bold tracking-tight text-violet-800 dark:text-violet-300">
             {t("dashboard.sections.assetsTitle") ?? "Creative assets / assets"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <div className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
           {t("dashboard.sections.assetsDescription") ?? "Research, visual, and caption assets stay in a single horizontal ledger before QA_ready."}
         </div>
         <div className="mt-4">
@@ -588,14 +588,14 @@ function AssetView({
   }
 
   return (
-    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-5 py-4">
-        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-violet-100 dark:border-violet-900/50 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="border-b border-violet-100 dark:border-violet-900/50 bg-gradient-to-r from-violet-50/50 to-white dark:from-violet-950/30 dark:to-slate-900 px-5 py-4">
+        <div className="inline-flex items-center gap-2 rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-100/50 dark:bg-violet-900/30 px-3 py-1.5">
+          <div className="text-sm font-bold tracking-tight text-violet-800 dark:text-violet-300">
             {t("dashboard.sections.assetsTitle") ?? "Creative assets / assets"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <div className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
           {t("dashboard.sections.assetsDescription") ?? "Research, visual, and caption assets stay in a single horizontal ledger before QA_ready."}
         </div>
       </div>
@@ -646,25 +646,25 @@ function QAView({
 }) {
   const { t } = useI18n("dashboard");
   const columns: LedgerColumn[] = [
-    { key: "content", label: t("dashboard.columns.content") ?? "Content", width: "280px" },
-    { key: "score", label: t("dashboard.columns.score") ?? "Score", width: "110px" },
-    { key: "risk", label: t("dashboard.columns.risk") ?? "Risk", width: "110px" },
-    { key: "missing", label: t("dashboard.columns.missingAsset") ?? "Missing asset", width: "140px" },
-    { key: "verdict", label: t("dashboard.columns.verdict") ?? "Verdict", width: "140px" },
-    { key: "evidence", label: t("dashboard.columns.evidence") ?? "Evidence", width: "220px" },
-    { key: "publish", label: t("dashboard.columns.publish") ?? "Publish", width: "140px" }
+    { key: "content", label: t("dashboard.columns.content") ?? "Content", width: "340px" },
+    { key: "score", label: t("dashboard.columns.score") ?? "Score", width: "120px" },
+    { key: "risk", label: t("dashboard.columns.risk") ?? "Risk", width: "120px" },
+    { key: "missingAssets", label: t("dashboard.columns.missingAssets") ?? "Missing assets", width: "220px" },
+    { key: "verdict", label: t("dashboard.columns.verdict") ?? "Verdict", width: "160px" },
+    { key: "evidence", label: t("dashboard.columns.evidence") ?? "Evidence", width: "200px" },
+    { key: "publish", label: t("dashboard.columns.publish") ?? "Publish", width: "160px" }
   ];
 
   if (!contentItems.length) {
     return (
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80 p-5">
-        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">
+      <div className="rounded-2xl border border-emerald-100 dark:border-emerald-900/50 bg-gradient-to-b from-emerald-50/50 to-white dark:from-emerald-950/20 dark:to-slate-900 shadow-sm p-5">
+        <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-100/50 dark:bg-emerald-900/30 px-3 py-1.5">
+          <div className="text-sm font-bold tracking-tight text-emerald-800 dark:text-emerald-300">
             {t("dashboard.sections.qaTitle") ?? "QA gate / qa_reviews"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {t("dashboard.sections.qaDescription") ?? "Reviews are read as approval gates, with risk and publish eligibility visible at a glance."}
+        <div className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
+          {t("dashboard.sections.qaDescription") ?? "Evaluated as an approval gate, showing risk and publish eligibility."}
         </div>
         <div className="mt-4">
           <EmptyState
@@ -677,15 +677,15 @@ function QAView({
   }
 
   return (
-    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-5 py-4">
-        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-emerald-100 dark:border-emerald-900/50 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="border-b border-emerald-100 dark:border-emerald-900/50 bg-gradient-to-r from-emerald-50/50 to-white dark:from-emerald-950/30 dark:to-slate-900 px-5 py-4">
+        <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-100/50 dark:bg-emerald-900/30 px-3 py-1.5">
+          <div className="text-sm font-bold tracking-tight text-emerald-800 dark:text-emerald-300">
             {t("dashboard.sections.qaTitle") ?? "QA gate / qa_reviews"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {t("dashboard.sections.qaDescription") ?? "Reviews are read as approval gates, with risk and publish eligibility visible at a glance."}
+        <div className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
+          {t("dashboard.sections.qaDescription") ?? "Evaluated as an approval gate, showing risk and publish eligibility."}
         </div>
       </div>
       <div className="min-h-0 flex-1">
@@ -735,27 +735,25 @@ function PerformanceView({
 }) {
   const { t } = useI18n("dashboard");
   const columns: LedgerColumn[] = [
-    { key: "content", label: t("dashboard.columns.content") ?? "Content", width: "280px" },
-    { key: "owner", label: t("dashboard.columns.owner") ?? "Owner", width: "130px" },
-    ...PHASE2_PERFORMANCE_METRIC_FIELDS.map((metric) => ({
-      key: metric,
-      label: t(`dashboard.performanceMetric.${metric}`) ?? metric,
-      width: "120px"
-    })),
-    { key: "source", label: t("dashboard.columns.source") ?? "Source", width: "200px" },
-    { key: "captured", label: t("dashboard.columns.captured") ?? "Captured", width: "180px" }
+    { key: "content", label: t("dashboard.columns.content") ?? "Content", width: "340px" },
+    { key: "platform", label: t("dashboard.columns.platform") ?? "Platform", width: "160px" },
+    { key: "views", label: t("dashboard.columns.views") ?? "Views", width: "140px" },
+    { key: "engagements", label: t("dashboard.columns.engagements") ?? "Engagements", width: "140px" },
+    { key: "ctr", label: t("dashboard.columns.ctr") ?? "CTR", width: "140px" },
+    { key: "cost", label: t("dashboard.columns.cost") ?? "Cost", width: "140px" },
+    { key: "cpc", label: t("dashboard.columns.cpc") ?? "CPC", width: "140px" }
   ];
 
   if (!records.length) {
     return (
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80 p-5">
-        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">
+      <div className="rounded-2xl border border-amber-100 dark:border-amber-900/50 bg-gradient-to-b from-amber-50/50 to-white dark:from-amber-950/20 dark:to-slate-900 shadow-sm p-5">
+        <div className="inline-flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30 px-3 py-1.5">
+          <div className="text-sm font-bold tracking-tight text-amber-800 dark:text-amber-300">
             {t("dashboard.sections.performanceTitle") ?? "Performance ledger / performance_records"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {t("dashboard.sections.performanceDescription") ?? "Post-publish snapshots only. Missing metrics render as pending / incomplete."}
+        <div className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
+          {t("dashboard.sections.performanceDescription") ?? "Only snapshots after publish. Missing metrics stay pending / incomplete."}
         </div>
         <div className="mt-4">
           <EmptyState
@@ -768,15 +766,15 @@ function PerformanceView({
   }
 
   return (
-    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950/80">
-      <div className="border-b border-cyan-200 dark:border-cyan-400/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-5 py-4">
-        <div className="inline-flex rounded-lg border border-cyan-200 dark:border-cyan-400/20 bg-cyan-50 dark:bg-cyan-400/10 px-3 py-1.5">
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">
+    <div className="flex max-h-[24rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-amber-100 dark:border-amber-900/50 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="border-b border-amber-100 dark:border-amber-900/50 bg-gradient-to-r from-amber-50/50 to-white dark:from-amber-950/30 dark:to-slate-900 px-5 py-4">
+        <div className="inline-flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30 px-3 py-1.5">
+          <div className="text-sm font-bold tracking-tight text-amber-800 dark:text-amber-300">
             {t("dashboard.sections.performanceTitle") ?? "Performance ledger / performance_records"}
           </div>
         </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {t("dashboard.sections.performanceDescription") ?? "Post-publish snapshots only. Missing metrics render as pending / incomplete."}
+        <div className="mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
+          {t("dashboard.sections.performanceDescription") ?? "Only snapshots after publish. Missing metrics stay pending / incomplete."}
         </div>
       </div>
       <div className="min-h-0 flex-1">
@@ -1018,7 +1016,7 @@ export function Phase2Dashboard({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {liveData.lessonsLearned.map((lesson) => (
-                  <div key={lesson.id} className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 relative overflow-hidden group">
+                  <div key={lesson.id} className="relative overflow-hidden rounded-2xl border border-emerald-200/60 dark:border-emerald-800 bg-gradient-to-br from-white to-emerald-50/50 dark:from-slate-900 dark:to-emerald-950/20 p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
                     <div className="absolute top-0 right-0 p-2 opacity-50 text-emerald-600 dark:text-emerald-400 group-hover:opacity-100 transition-opacity">
                       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
