@@ -523,17 +523,18 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
   };
 
   return (
-    <div 
-      className={`rounded-2xl border transition-all duration-200 p-4 relative ${
-        isDragging 
-          ? "border-cyan-500 bg-cyan-50 dark:bg-cyan-950/20 shadow-[0_0_15px_rgba(6,182,212,0.3)] border-dashed" 
-          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/70 shadow-lg dark:shadow-none"
-      }`}
-      onDragOver={handleDragOver}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
+    <div className="flex flex-col gap-1.5 w-full">
+      <div 
+        className={`transition-all duration-200 relative ${
+          isDragging 
+            ? "rounded-2xl border-2 border-dashed border-cyan-500 bg-cyan-50 dark:bg-cyan-950/20 p-4 shadow-[0_0_15px_rgba(6,182,212,0.3)]" 
+            : ""
+        }`}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
       {isDragging && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm pointer-events-none border-2 border-dashed border-cyan-400">
           <div className="text-cyan-600 dark:text-cyan-400 flex flex-col items-center gap-2">
@@ -749,6 +750,7 @@ export function ChatComposer({ initialValue = "", onSubmit, onRequestCreateTask 
           {isUploading ? (t("chat.composer.uploading")) : (t("chat.composer.send"))}
         </button>
       </div>
+        </div>
     </div>
   );
 }
