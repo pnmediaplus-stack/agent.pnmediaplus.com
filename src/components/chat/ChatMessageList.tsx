@@ -102,7 +102,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
         const isHuman = message.sender === "human";
         const isAgent = message.sender !== "human" && message.sender !== "system";
         
-        const loopMatch = message.body?.match(/\(Lu?t\s+(\d+\/\d+|NaN\/\d+)\)/i);
+        const loopMatch = message.body?.match(/\(Lượt\s+(\d+\/\d+|NaN\/\d+)\)/i);
         const loopText = loopMatch ? `Lượt ${loopMatch[1]}` : null;
         
         let displayBody = message.body?.startsWith('/publish ')
