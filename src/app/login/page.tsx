@@ -106,10 +106,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.15),_transparent_34%),linear-gradient(135deg,_#f8fafc,_#f1f5f9_52%,_#e2e8f0)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_34%),linear-gradient(135deg,_#020617,_#0f172a_52%,_#111827)] px-5 py-10 text-slate-900 dark:text-slate-100">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.12),_transparent_34%),linear-gradient(135deg,_#f8fafc,_#f1f5f9_52%,_#e2e8f0)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.14),_transparent_34%),linear-gradient(135deg,_#020617,_#0f172a_52%,_#111827)] px-5 py-10 text-slate-900 dark:text-slate-100">
       <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-6xl items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="rounded-[2rem] border border-cyan-200 dark:border-cyan-400/20 bg-white dark:bg-slate-950/65 p-8 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-cyan-950/20">
-          <div className="text-xs font-semibold uppercase tracking-[0.34em] text-cyan-600 dark:text-cyan-200">
+        <section className="rounded-[2rem] border border-indigo-100 dark:border-indigo-900/30 bg-white dark:bg-slate-950/65 p-8 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-indigo-950/20">
+          <div className="text-xs font-bold uppercase tracking-[0.34em] text-indigo-600 dark:text-indigo-400">
             {t("login.kicker") ?? "PN OS Portal"}
           </div>
           <h1 className="mt-5 text-4xl font-semibold tracking-tight text-slate-900 dark:text-white">
@@ -142,27 +142,27 @@ export default function LoginPage() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 autoComplete="email"
-                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-slate-900 dark:text-slate-100 outline-none ring-cyan-500/30 dark:ring-cyan-400/30 transition placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-cyan-500/50 dark:focus:border-cyan-400/50 focus:ring-2"
+                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3.5 py-2.5 text-slate-900 dark:text-slate-100 outline-none ring-indigo-500/30 dark:ring-indigo-400/30 transition placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2"
                 placeholder={t("login.placeholder.email") ?? "you@example.com"}
               />
             </label>
 
             <label className="grid gap-2 text-sm" htmlFor="portal-password">
               <span className="font-semibold text-slate-700 dark:text-slate-200">{t("login.field.password") ?? "Password"}</span>
-              <div className="flex rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 ring-cyan-500/30 dark:ring-cyan-400/30 transition focus-within:border-cyan-500/50 dark:focus-within:border-cyan-400/50 focus-within:ring-2">
+              <div className="flex rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 ring-indigo-500/30 dark:ring-indigo-400/30 transition focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:ring-2">
                 <input
                   id="portal-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   autoComplete="current-password"
-                  className="min-w-0 flex-1 rounded-l-xl bg-transparent px-3 py-2 text-slate-900 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                  className="min-w-0 flex-1 rounded-l-xl bg-transparent px-3.5 py-2.5 text-slate-900 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
                   placeholder={t("login.placeholder.password") ?? "Password"}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
-                  className="grid w-11 place-items-center rounded-r-xl border-l border-slate-200 dark:border-slate-800 text-cyan-600 dark:text-cyan-100 transition hover:bg-cyan-50 dark:hover:bg-cyan-400/10"
+                  className="grid w-11 place-items-center rounded-r-xl border-l border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800"
                   aria-pressed={showPassword}
                   aria-label={passwordToggleLabel}
                   title={passwordToggleLabel}
@@ -178,7 +178,7 @@ export default function LoginPage() {
                 type="checkbox"
                 checked={rememberEmail}
                 onChange={(event) => setRememberEmail(event.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-cyan-600 dark:text-cyan-400"
+                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500"
               />
               <span>{t("login.rememberEmail") ?? "Remember email on this device"}</span>
             </label>
@@ -193,9 +193,9 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={state === "loading"}
-            className="mt-5 w-full rounded-xl border border-cyan-500/40 dark:border-cyan-400/40 bg-cyan-500/15 dark:bg-cyan-400/15 px-4 py-2.5 text-sm font-semibold text-cyan-700 dark:text-cyan-100 transition hover:bg-cyan-500/25 dark:hover:bg-cyan-400/25 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-6 w-full rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-extrabold text-sm px-4 py-3 shadow-md transition-all active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
-            {state === "loading" ? (t("login.action.loading") ?? "Signing in") : (t("login.action.submit") ?? "Sign in")}
+            {state === "loading" ? (t("login.action.loading") ?? "Signing in...") : (t("login.action.submit") ?? "Sign in")}
           </button>
         </form>
       </div>
