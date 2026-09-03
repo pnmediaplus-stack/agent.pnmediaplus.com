@@ -328,7 +328,12 @@ FOR SELECT USING (
   organization_id IN (SELECT public.get_auth_user_organizations()) 
 );
 
--- 8. Cấp quyền đọc 2 bảng tối thiểu cho duy nhất service_role (Tuyệt đối không cấp cho authenticated)
+-- 8. Cấp quyền thao tác trên các bảng tri thức cho authenticated (được bảo vệ 100% bởi RLS helper phía trên)
+GRANT SELECT, INSERT, UPDATE ON public.crm_knowledge_documents TO authenticated;
+GRANT SELECT ON public.crm_knowledge_chunks TO authenticated;
+GRANT SELECT ON public.crm_knowledge_audit_logs TO authenticated;
+
+-- 9. Cấp quyền đọc 2 bảng tối thiểu cho duy nhất service_role (Tuyệt đối không cấp cho authenticated)
 GRANT USAGE ON SCHEMA portal_auth TO service_role;
 GRANT SELECT ON portal_auth.organizations TO service_role;
 GRANT SELECT ON portal_auth.organization_memberships TO service_role;
