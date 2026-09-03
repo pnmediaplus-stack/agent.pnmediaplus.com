@@ -370,7 +370,8 @@ export async function revokeTenantIntegration(
 
 export async function issueReferenceToken(
   integrationKey: string,
-  providerCode: string
+  providerCode: string,
+  ttlMinutes: number = 5
 ): Promise<VaultActionResponse> {
   try {
     const authContext = await requireAuthContext();
@@ -406,14 +407,18 @@ export async function issueReferenceToken(
       return { ok: false, state: "blocked", reason: "CREDENTIAL_MAPPING_NOT_FOUND" };
     }
 
+    // Strict Zero-Trust TTL bounding: Default 5 minutes, Hard Cap at 10 minutes maximum
+    const safeTtlMinutes = Math.min(Math.max(1, Math.floor(ttlMinutes || 5)), 10);
+    const expiresAt = new Date(Date.now() + safeTtlMinutes * 60000).toISOString();
+
     const issueToken = async () =>
       supabase.rpc("byok_issue_reference_token", {
-      p_credential_ref: vaultCredentialRef,
-      p_scope: "n8n_dispatch",
-      p_requested_by_actor_type: "HUMAN",
-      p_requested_by_actor_ref: authContext.userId,
-      p_request_id: randomUUID(),
-      p_expires_at: new Date(Date.now() + 30 * 60000).toISOString() // 30 minutes
+        p_credential_ref: vaultCredentialRef,
+        p_scope: "n8n_dispatch",
+        p_requested_by_actor_type: "HUMAN",
+        p_requested_by_actor_ref: authContext.userId,
+        p_request_id: randomUUID(),
+        p_expires_at: expiresAt,
       });
 
     let { data, error } = await issueToken();
