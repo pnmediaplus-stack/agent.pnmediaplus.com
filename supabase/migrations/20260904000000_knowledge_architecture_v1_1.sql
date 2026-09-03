@@ -16,7 +16,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_crm_knowledge_idempotency
   WHERE idempotency_key IS NOT NULL;
 
 -- 3. Enforce supersedes_id belongs to the same organization_id
--- We use a trigger to check this before insert/update
 CREATE OR REPLACE FUNCTION public.check_supersedes_tenant()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -37,8 +36,7 @@ CREATE TRIGGER trg_check_supersedes_tenant
   BEFORE INSERT OR UPDATE ON public.crm_knowledge_documents
   FOR EACH ROW EXECUTE FUNCTION public.check_supersedes_tenant();
 
--- 4. Backfill Legacy Data (Carefully avoiding false human-approval claims)
--- We mark legacy docs as ACTIVE but specifically tag them as unverified/legacy provenance
+-- 4. Backfill Legacy Data
 UPDATE public.crm_knowledge_documents 
 SET 
   knowledge_status = CASE 
@@ -56,8 +54,8 @@ SET
 WHERE knowledge_metadata = '{}'::jsonb;
 
 -- 5. Harden Vector Search RPC (match_documents)
--- Requires explicit organization_id parameter, preventing accidental cross-tenant leaks.
--- LangChain allows passing custom parameters to RPC via `rpc()` args.
+-- N8N LangChain node strictly calls this with (vector, int, jsonb).
+-- We MUST extract organization_id from the JSON filter OR explicitly require it as a parameter if using custom Postgres queries.
 DROP FUNCTION IF EXISTS public.match_documents(vector, int, jsonb);
 
 CREATE OR REPLACE FUNCTION public.match_documents(
@@ -75,10 +73,14 @@ LANGUAGE plpgsql
 SECURITY INVOKER
 AS $$
 #variable_conflict use_column
+DECLARE
+  v_org_id UUID;
 BEGIN
-  -- Validate mandatory organization_id
-  IF p_organization_id IS NULL THEN
-    RAISE EXCEPTION 'TENANT_ISOLATION_VIOLATION: p_organization_id is strictly required.';
+  -- Extract organization_id either from param (for strict internal API) or from LangChain filter (for N8N compat)
+  v_org_id := COALESCE(p_organization_id, (filter->>'organization_id')::UUID);
+
+  IF v_org_id IS NULL THEN
+    RAISE EXCEPTION 'TENANT_ISOLATION_VIOLATION: organization_id is strictly required.';
   END IF;
 
   RETURN QUERY
@@ -90,8 +92,8 @@ BEGIN
   FROM public.crm_knowledge_chunks c
   JOIN public.crm_knowledge_documents d ON c.document_id = d.id
   WHERE 
-    c.organization_id = p_organization_id -- Strict Tenant Isolation
-    AND d.organization_id = p_organization_id
+    c.organization_id = v_org_id -- Strict Tenant Isolation
+    AND d.organization_id = v_org_id
     AND d.knowledge_status = 'ACTIVE' -- Only retrieve ACTIVE knowledge
     AND c.metadata @> filter -- Allow further Langchain metadata filtering (e.g. namespace)
   ORDER BY c.embedding <=> query_embedding

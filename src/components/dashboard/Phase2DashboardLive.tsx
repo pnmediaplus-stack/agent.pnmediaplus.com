@@ -220,6 +220,25 @@ function getStageCardTheme(state: string) {
   }
 }
 
+function cleanSystemText(text?: string | null): string {
+  if (!text) return "";
+  return text.replace(/--[\w-]+=[^\s]+\s*/g, "").replace(/--[\w-]+\s*/g, "").trim();
+}
+
+function extractActionBadge(rawText?: string | null): { label: string; bg: string } | null {
+  if (!rawText) return null;
+  if (rawText.includes('--image-action=use_provided')) {
+    return { label: '🖼️ Ảnh có sẵn', bg: 'bg-blue-100/90 dark:bg-blue-950/70 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800/60' };
+  }
+  if (rawText.includes('--image-action=generate_new')) {
+    return { label: '🎨 AI Tạo ảnh mới', bg: 'bg-purple-100/90 dark:bg-purple-950/70 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-800/60' };
+  }
+  if (rawText.includes('--video-action')) {
+    return { label: '🎥 Dựng Video', bg: 'bg-amber-100/90 dark:bg-amber-950/70 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800/60' };
+  }
+  return null;
+}
+
 function PipelineCard({
   item,
   assets,
@@ -239,6 +258,19 @@ function PipelineCard({
   const [isPublishing, setIsPublishing] = useState(false);
 
   const theme = getStageCardTheme(item.currentState);
+
+  const actionBadge = extractActionBadge(item.title) || extractActionBadge(item.brief);
+  const cleanTitleStr = cleanSystemText(item.title);
+  let cleanBriefStr = cleanSystemText(item.brief);
+
+  if (
+    !cleanBriefStr ||
+    cleanBriefStr === cleanTitleStr ||
+    cleanTitleStr.startsWith(cleanBriefStr) ||
+    cleanBriefStr.startsWith(cleanTitleStr)
+  ) {
+    cleanBriefStr = "";
+  }
 
   const handlePublish = async () => {
     try {
@@ -268,18 +300,25 @@ function PipelineCard({
   return (
     <div className={`flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-xl border hover:-translate-y-0.5 transition-all duration-300 ${theme.card}`}>
       <div className="px-4 pt-4 pb-3">
-        <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="flex items-start justify-between gap-2 mb-2">
           <StateBadge label={item.currentState} displayLabel={t(`dashboard.state.${item.currentState}`) ?? item.currentState} />
-          <div className="text-[10px] font-mono font-medium text-slate-400 dark:text-slate-500">{item.contentKey}</div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {actionBadge && (
+              <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border shadow-2xs ${actionBadge.bg}`}>
+                {actionBadge.label}
+              </span>
+            )}
+            <div className="text-[10px] font-mono font-medium text-slate-400 dark:text-slate-500">{item.contentKey}</div>
+          </div>
         </div>
         
         <div className="min-w-0">
-          <div className="break-words whitespace-normal text-sm font-bold leading-snug text-slate-900 dark:text-white">
-            {item.title}
+          <div className="break-words whitespace-normal text-sm font-extrabold leading-snug text-slate-900 dark:text-white">
+            {cleanTitleStr || item.title}
           </div>
-          {item.brief ? (
-            <div className="mt-1.5 max-h-12 overflow-hidden break-words whitespace-normal text-[13px] leading-relaxed text-slate-600 dark:text-slate-300 line-clamp-2">
-              {item.brief}
+          {cleanBriefStr ? (
+            <div className="mt-1.5 max-h-12 overflow-hidden break-words whitespace-normal text-[12px] leading-relaxed text-slate-600 dark:text-slate-300 line-clamp-2 italic border-l-2 border-slate-300 dark:border-slate-700 pl-2">
+              {cleanBriefStr}
             </div>
           ) : null}
         </div>

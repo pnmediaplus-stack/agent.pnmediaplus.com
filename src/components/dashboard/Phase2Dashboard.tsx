@@ -196,7 +196,8 @@ function getStateAccent(state: string): string {
 
 // Strip CLI-style prefixes like "--image-action=generate_new " from titles
 function cleanTitle(raw: string): string {
-  return raw.replace(/^--[\w-]+=[\w_]+\s+/g, "").trim();
+  if (!raw) return "";
+  return raw.replace(/--[\w-]+=[^\s]+\s*/g, "").replace(/--[\w-]+\s*/g, "").trim();
 }
 
 // Abbreviated owner: "pnmediaplus@gmail.com" → "pnmediaplus" or just first initial letter
