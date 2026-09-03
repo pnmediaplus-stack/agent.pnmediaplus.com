@@ -97,7 +97,7 @@ export function ConnectedAccountRow({
             <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight truncate">{pageName}</h3>
             <div className="flex flex-wrap items-center gap-2 mt-0.5">
               <span className="text-xs font-semibold text-cyan-700 dark:text-cyan-400">{provider.provider_name}</span>
-              <span className="text-slate-300 dark:text-slate-700">•</span>
+              <span className="text-slate-400 dark:text-slate-600">•</span>
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-[200px]">{integration.integration_key}</span>
             </div>
           </div>

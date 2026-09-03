@@ -132,181 +132,242 @@ export default function InboxSidebar() {
   });
 
   if (isLoadingThreads) {
-    return <div className="p-4 flex justify-center text-sm text-gray-500">Đang tải...</div>;
+    return <div className="p-4 flex justify-center text-sm text-slate-500 dark:text-slate-400">Đang tải...</div>;
   }
   if (threadsError) {
     return <div className="p-4 flex justify-center text-sm text-red-500">{threadsError}</div>;
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50/30">
+    <div className="flex flex-col h-full bg-slate-100/60 dark:bg-slate-950">
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="p-3 border-b border-gray-200 bg-white sticky top-0 z-20 flex flex-col gap-2">
+        {/* Header Search & Filter */}
+        <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-100/90 dark:bg-slate-900/90 backdrop-blur-md sticky top-0 z-20 flex flex-col gap-2.5 shadow-xs">
+          {/* Search Input */}
           <div className="relative flex items-center">
-            <svg className="w-4 h-4 absolute left-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 absolute left-3 text-slate-400 dark:text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Tìm tên, số điện thoại..." 
-              className="w-full text-sm border-none bg-gray-100 rounded-full pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-800 placeholder-gray-500"
+              placeholder="Tìm tên, SĐT, tag..."
+              className="w-full text-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl pl-9 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 shadow-xs transition-all font-medium"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1 pb-1 mt-1">
-            <button 
+
+          {/* Single-Line 3-Column Equal Filter Bar (Elevated Controls) */}
+          <div className="grid grid-cols-3 gap-1.5 pt-0.5 text-xs w-full">
+            {/* Unread Filter Button */}
+            <button
               onClick={() => setFilterUnread(!filterUnread)}
-              className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${filterUnread ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+              className={`w-full py-1.5 px-1.5 text-[11px] font-semibold rounded-lg border transition-all flex items-center justify-center gap-1.5 truncate shadow-xs ${
+                filterUnread
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/80'
+              }`}
+              title={filterUnread ? "Hiển thị tất cả" : "Chỉ xem chưa đọc"}
             >
-              Chưa đọc
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${filterUnread ? 'bg-white' : 'bg-blue-500'}`}></span>
+              <span className="truncate">Chưa đọc</span>
             </button>
-            <select 
-              value={filterTag} 
+
+            {/* Tag Select */}
+            <select
+              value={filterTag}
               onChange={e => setFilterTag(e.target.value)}
-              className="text-xs bg-gray-50 border border-gray-200 text-gray-600 rounded-full px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[120px] truncate"
+              className={`w-full text-[11px] font-semibold border rounded-lg px-1.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer truncate text-center shadow-xs ${
+                filterTag
+                  ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-600 dark:text-white dark:border-blue-600'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/80'
+              }`}
             >
-              <option value="">Tất cả Thẻ</option>
+              <option value="" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Thẻ</option>
               {availableTags.map(t => (
-                <option key={t.id || t.tag_name} value={t.tag_name}>{t.tag_name}</option>
+                <option key={t.id || t.tag_name} value={t.tag_name} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">{t.tag_name}</option>
               ))}
             </select>
-            <select 
-              value={filterChannel} 
+
+            {/* Channel Select */}
+            <select
+              value={filterChannel}
               onChange={e => setFilterChannel(e.target.value)}
-              className="text-xs bg-gray-50 border border-gray-200 text-gray-600 rounded-full px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[120px] truncate"
+              className={`w-full text-[11px] font-semibold border rounded-lg px-1.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer truncate text-center shadow-xs ${
+                filterChannel
+                  ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-600 dark:text-white dark:border-blue-600'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/80'
+              }`}
             >
-              <option value="">Tất cả Kênh</option>
+              <option value="" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Kênh</option>
               {uniqueChannels.map(c => (
-                <option key={String(c)} value={String(c)}>{String(c)}</option>
+                <option key={String(c)} value={String(c)} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">{String(c)}</option>
               ))}
             </select>
           </div>
         </div>
-        <div className="flex flex-col flex-1 bg-white overflow-y-auto custom-scrollbar">
+
+        {/* Thread List Area */}
+        <div className="flex flex-col flex-1 bg-slate-50/50 dark:bg-slate-900/50 overflow-y-auto custom-scrollbar py-2">
         {filteredThreads.length === 0 ? (
-          <div className="p-8 flex flex-col items-center justify-center text-center text-sm text-gray-500">
-            <svg className="w-12 h-12 text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
-            {threads.length === 0 ? 'Hộp thư trống' : 'Không tìm thấy kết quả'}
+          <div className="p-8 flex flex-col items-center justify-center text-center text-xs text-slate-500 dark:text-slate-400">
+            <div className="w-12 h-12 rounded-2xl bg-slate-200/60 dark:bg-slate-800/60 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-3">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+            </div>
+            {threads.length === 0 ? 'Hộp thư trống' : 'Không tìm thấy cuộc hội thoại nào'}
           </div>
         ) : (
-          filteredThreads.map(thread => (
-            <div 
-              key={thread.id} 
-              onClick={() => {
-                setActiveThreadId(thread.id);
-                if ((thread.unread_count || 0) > 0) {
-                  setThreads(threads.map(t => t.id === thread.id ? { ...t, unread_count: 0 } : t));
-                  fetch(`/api/crm/threads/${thread.id}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ unread_count: 0 })
-                  }).then(res => {
-                    if (!res.ok) throw new Error("Failed to mark as read");
-                  }).catch(e => {
-                    console.error("Auto-read failed, rolling back", e);
-                    const currentThreads = useCrmStore.getState().threads;
-                    setThreads(currentThreads.map(t => t.id === thread.id ? { ...t, unread_count: thread.unread_count } : t));
-                  });
-                }
-              }}
-              className={`group relative p-4 border-b border-gray-50 cursor-pointer transition-all duration-200 ${
-                activeThreadId === thread.id 
-                  ? 'bg-blue-50/60 border-l-4 border-l-blue-600' 
-                  : 'bg-white border-l-4 border-l-transparent hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex justify-between items-center mb-1.5">
-                <div className="absolute right-2 top-2 z-20" ref={openDropdownId === thread.id ? dropdownRef : null}>
-                  <div className="relative">
+          filteredThreads.map(thread => {
+            const isActive = activeThreadId === thread.id;
+            const isUnread = (thread.unread_count || 0) > 0;
+
+            return (
+              <div
+                key={thread.id}
+                onClick={() => {
+                  setActiveThreadId(thread.id);
+                  if (isUnread) {
+                    setThreads(threads.map(t => t.id === thread.id ? { ...t, unread_count: 0 } : t));
+                    fetch(`/api/crm/threads/${thread.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ unread_count: 0 })
+                    }).catch(e => {
+                      console.error("Auto-read failed", e);
+                    });
+                  }
+                }}
+                className={`group relative mx-2 my-1 p-3 rounded-xl border transition-all duration-150 cursor-pointer ${
+                  isActive
+                    ? 'bg-blue-50/90 dark:bg-blue-950/40 border-blue-500/40 dark:border-blue-500/50 shadow-md ring-1 ring-blue-500/30'
+                    : 'bg-white dark:bg-slate-800/80 border-slate-200/60 dark:border-slate-800/80 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
+                }`}
+              >
+                {/* Left Active Accent Pill */}
+                {isActive && (
+                  <span className="absolute left-0 top-3 bottom-3 w-1 bg-blue-600 dark:bg-blue-500 rounded-r-full"></span>
+                )}
+
+                <div className="flex items-start gap-2.5">
+                  {/* Avatar */}
+                  {thread.customer?.avatar_url ? (
+                    <img src={thread.customer.avatar_url} alt="Avatar" className="w-9 h-9 rounded-full object-cover border border-slate-200/80 dark:border-slate-700 shrink-0 shadow-sm" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm border border-white/20">
+                      {thread.customer?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                  )}
+
+                  {/* Main Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1 mb-0.5">
+                      <h4 className={`text-xs font-semibold truncate ${
+                        isUnread ? 'text-slate-900 dark:text-white font-bold' : (isActive ? 'text-blue-900 dark:text-blue-200' : 'text-slate-800 dark:text-slate-200')
+                      }`}>
+                        {thread.customer?.full_name || 'Khách hàng ẩn danh'}
+                      </h4>
+
+                      <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 shrink-0">
+                        {new Date(thread.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+
+                    {/* Subtitle & Badges */}
+                    <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                      {/* Bot/Human Status Pill */}
+                      <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md font-semibold border ${
+                        thread.status === 'bot_handling'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${thread.status === 'bot_handling' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                        {thread.status === 'bot_handling' ? 'Bot' : 'Human'}
+                      </span>
+
+                      {/* Channel Name */}
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200/60 dark:border-slate-700/60 truncate max-w-[120px]">
+                        {thread.channel?.channel_name || 'Kênh hệ thống'}
+                      </span>
+
+                      {/* Unread Badge */}
+                      {isUnread && (
+                        <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded-full shadow-sm">
+                          {thread.unread_count}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Customer Tag Badges */}
+                    {thread.customer?.tags && thread.customer.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {thread.customer.tags.slice(0, 3).map(tag => (
+                          <span key={tag} style={{ backgroundColor: getTagColor(tag).bg, color: getTagColor(tag).text, border: `1px solid ${getTagColor(tag).border}` }} className="px-1.5 py-0.5 text-[9px] rounded font-semibold shadow-2xs">
+                            {tag}
+                          </span>
+                        ))}
+                        {thread.customer.tags.length > 3 && (
+                          <span className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 text-[9px] rounded font-semibold">
+                            +{thread.customer.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Dropdown Menu Trigger */}
+                  <div className="relative shrink-0" ref={openDropdownId === thread.id ? dropdownRef : null}>
                     <button 
                       onClick={(e) => { 
                         e.stopPropagation(); 
                         setOpenDropdownId(openDropdownId === thread.id ? null : thread.id); 
                       }} 
-                      className={`p-1 rounded text-gray-500 ${openDropdownId === thread.id ? 'bg-gray-200 block' : 'hover:bg-gray-200 hidden group-hover:block'}`}
+                      className={`p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors ${
+                        openDropdownId === thread.id ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200' : 'opacity-0 group-hover:opacity-100'
+                      }`}
                     >
-                      <MoreHorizontal className="w-4 h-4" />
+                      <MoreHorizontal className="w-3.5 h-3.5" />
                     </button>
                     {openDropdownId === thread.id && (
-                      <div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-50">
+                      <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
                         {thread.customer_id && (
                           <>
-                            <button onClick={(e) => handleAction('rename', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
-                              <Edit2 className="w-3.5 h-3.5 mr-2 text-gray-400" /> Đổi tên
+                            <button onClick={(e) => handleAction('rename', thread, e)} className="w-full text-left px-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2">
+                              <Edit2 className="w-3.5 h-3.5 text-slate-400" /> Đổi tên
                             </button>
-                            <button onClick={(e) => handleAction('tag', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
-                              <Tag className="w-3.5 h-3.5 mr-2 text-gray-400" /> Gắn thẻ
+                            <button onClick={(e) => handleAction('tag', thread, e)} className="w-full text-left px-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2">
+                              <Tag className="w-3.5 h-3.5 text-slate-400" /> Gắn thẻ
                             </button>
                           </>
                         )}
-                        {(thread.unread_count || 0) > 0 ? (
-                          <button onClick={(e) => handleAction('read', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
-                            <MailOpen className="w-3.5 h-3.5 mr-2 text-gray-400" /> Đánh dấu đã đọc
+                        {isUnread ? (
+                          <button onClick={(e) => handleAction('read', thread, e)} className="w-full text-left px-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2">
+                            <MailOpen className="w-3.5 h-3.5 text-slate-400" /> Đánh dấu đã đọc
                           </button>
                         ) : (
-                          <button onClick={(e) => handleAction('unread', thread, e)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
-                            <Mail className="w-3.5 h-3.5 mr-2 text-gray-400" /> Đánh dấu chưa đọc
+                          <button onClick={(e) => handleAction('unread', thread, e)} className="w-full text-left px-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2">
+                            <Mail className="w-3.5 h-3.5 text-slate-400" /> Đánh dấu chưa đọc
                           </button>
                         )}
-                        <button onClick={(e) => handleAction('delete', thread, e)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center">
-                          <Trash2 className="w-3.5 h-3.5 mr-2 text-red-400" /> Xóa
+                        <button onClick={(e) => handleAction('delete', thread, e)} className="w-full text-left px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2">
+                          <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Xóa cuộc chat
                         </button>
                       </div>
                     )}
                   </div>
                 </div>
-                <span className={`font-semibold text-sm truncate pr-2 flex items-center gap-2 ${
-                  (thread.unread_count || 0) > 0 ? 'font-bold text-gray-900' : (activeThreadId === thread.id ? 'text-blue-900' : 'text-gray-800')
-                }`}>
-                  {thread.customer?.avatar_url ? (
-                    <img src={thread.customer.avatar_url} alt="Avatar" className="w-5 h-5 rounded-full object-cover border border-gray-200" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-[10px] font-bold">
-                      {thread.customer?.full_name?.charAt(0) || '?'}
-                    </div>
-                  )}
-                  {thread.customer?.full_name || 'Khách hàng ẩn danh'}
-                  {(thread.unread_count || 0) > 0 && (
-                    <span className="flex h-2 w-2 rounded-full bg-red-500"></span>
-                  )}
-                </span>
-                <span className="text-[11px] font-medium text-gray-400 whitespace-nowrap">
-                  {new Date(thread.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
               </div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm font-medium border ${
-                  thread.status === 'bot_handling' 
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                    : 'bg-amber-50 text-amber-700 border-amber-100'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${thread.status === 'bot_handling' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
-                  {thread.status === 'bot_handling' ? 'Bot' : 'Human'}
-                </span>
-                <span className="text-xs text-gray-500 truncate">
-                  {thread.channel?.channel_name || 'Kênh hệ thống'}
-                </span>
-              </div>
-              
-              {thread.customer?.tags && thread.customer.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {thread.customer.tags.slice(0, 3).map(tag => (
-                    <span key={tag} style={{ backgroundColor: getTagColor(tag).bg, color: getTagColor(tag).text, border: `1px solid ${getTagColor(tag).border}` }} className="px-1.5 py-0.5 border text-[10px] rounded-md font-medium">
-                      {tag}
-                    </span>
-                  ))}
-                  {thread.customer.tags.length > 3 && (
-                    <span className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 text-gray-500 text-[10px] rounded-md font-medium">
-                      +{thread.customer.tags.length - 3}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          ))
+            );
+          })
         )}
       </div>
       </div>
@@ -314,20 +375,20 @@ export default function InboxSidebar() {
       {/* Tag Modal */}
       {isTagModalOpen && tagModalThread && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
-            <div className="flex justify-between items-center p-4 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-800">Gắn thẻ khách hàng</h3>
-              <button onClick={() => setIsTagModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="flex justify-between items-center p-4 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="font-semibold text-slate-800 dark:text-white">Gắn thẻ khách hàng</h3>
+              <button onClick={() => setIsTagModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-4 overflow-y-auto flex-1">
               {availableTags.length === 0 ? (
-                <div className="text-sm text-gray-500 text-center py-4">Chưa có thẻ nào được cấu hình trên Dashboard.</div>
+                <div className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Chưa có thẻ nào được cấu hình trên Dashboard.</div>
               ) : (
                 <div className="space-y-2">
                   {availableTags.map(tag => (
-                    <label key={tag.id || tag.tag_name} className="flex items-center p-3 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors">
+                    <label key={tag.id || tag.tag_name} className="flex items-center p-3 rounded-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
                       <input 
                         type="checkbox" 
                         className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
@@ -348,15 +409,15 @@ export default function InboxSidebar() {
                           return <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.bg, border: `1px solid ${c.border}` }}></span>;
                         })()}
 
-                        <span className="text-sm font-medium text-gray-700">{tag.tag_name}</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{tag.tag_name}</span>
                       </div>
                     </label>
                   ))}
                 </div>
               )}
             </div>
-            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
-              <button onClick={() => setIsTagModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+            <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-2">
+              <button onClick={() => setIsTagModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700">
                 Hủy
               </button>
               <button 
@@ -389,4 +450,3 @@ export default function InboxSidebar() {
     </div>
   );
 }
-

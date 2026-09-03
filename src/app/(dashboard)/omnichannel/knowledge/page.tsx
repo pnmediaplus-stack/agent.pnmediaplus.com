@@ -16,36 +16,36 @@ export default function AIControlCenterPage() {
   const [activeTab, setActiveTab] = useState("knowledge");
   
   return (
-    <div className="flex-1 bg-gray-50 h-full flex flex-col overflow-hidden">
+    <div className="flex-1 bg-slate-50 dark:bg-slate-900 h-full flex flex-col overflow-hidden">
       <div className="px-6 pt-6 pb-2 shrink-0">
-        <h1 className="text-2xl font-semibold text-gray-900">Trung Tâm Điều Khiển AI</h1>
-        <p className="text-sm text-gray-500 mt-1">Cấu hình tri thức, tính cách và chiến dịch chủ động cho trợ lý ảo của bạn.</p>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Trung Tâm Điều Khiển AI</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Cấu hình tri thức, tính cách và chiến dịch chủ động cho trợ lý ảo của bạn.</p>
       </div>
 
-      <div className="px-6 border-b border-gray-200 shrink-0">
+      <div className="px-6 border-b border-slate-200 dark:border-slate-700 shrink-0">
         <nav className="-mb-px flex space-x-8">
           <button 
             onClick={() => setActiveTab("knowledge")}
-            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'knowledge' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'knowledge' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-500'}`}
           >
             <div className="flex items-center"><FileText className="w-4 h-4 mr-2"/> Kho Tri Thức</div>
           </button>
           <button 
             onClick={() => setActiveTab("persona")}
-            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'persona' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'persona' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-500'}`}
           >
             <div className="flex items-center"><Bot className="w-4 h-4 mr-2"/> Lệnh Chỉ Đạo (Prompt)</div>
           </button>
           <button 
             onClick={() => setActiveTab("campaigns")}
-            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'campaigns' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'campaigns' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-500'}`}
           >
             <div className="flex items-center"><MessageSquare className="w-4 h-4 mr-2"/> Chiến Dịch Chủ Động</div>
           </button>
         
           <button 
             onClick={() => setActiveTab("tags")}
-            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'tags' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'tags' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-500'}`}
           >
             <div className="flex items-center"><Tag className="w-4 h-4 mr-2"/> Quản Lý Thẻ (Tags)</div>
           </button>
@@ -203,13 +203,13 @@ function KnowledgeTab() {
     <div className="flex flex-col h-full min-h-0 space-y-6">
       
       {/* Upload Box */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center border-dashed shrink-0">
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center border-dashed shrink-0">
         
         <div className="w-full max-w-lg mb-4 flex gap-4">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phân vùng (Namespace)</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Phân vùng (Namespace)</label>
             <select 
-              className="w-full bg-white text-gray-900 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
+              className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
               value={selectedNamespace}
               onChange={(e) => setSelectedNamespace(e.target.value)}
             >
@@ -218,10 +218,10 @@ function KnowledgeTab() {
             </select>
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phạm vi tài liệu (Scope)</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Phạm vi tài liệu (Scope)</label>
 
           <select 
-            className="w-full bg-white text-gray-900 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
+            className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
             value={selectedChannelId || ""}
             onChange={(e) => setSelectedChannelId(e.target.value || null)}
           >
@@ -233,58 +233,57 @@ function KnowledgeTab() {
           </div>
         </div>
 
-        <UploadCloud className="h-10 w-10 text-gray-400 mb-3" />
-        <p className="text-sm font-medium text-gray-700">Kéo thả file vào đây hoặc click để chọn file</p>
-        <p className="text-xs text-gray-500 mt-1 mb-4">Hỗ trợ PDF, TXT, MD, DOC, DOCX. Tối đa 10MB.</p>
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Kéo thả file vào đây hoặc click để chọn file</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4">Hỗ trợ PDF, TXT, MD, DOC, DOCX. Tối đa 10MB.</p>
         
-        <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors relative">
+        <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors relative shadow-sm">
           Chọn file tải lên
           <input type="file" multiple className="hidden" accept=".pdf,.txt,.md,.doc,.docx" onChange={handleFileChange} disabled={isUploading}/>
         </label>
         
         {selectedFiles.length > 0 && (
-          <div className="w-full max-w-lg mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Đã chọn ({selectedFiles.length} file)</h3>
+          <div className="w-full max-w-lg mt-6 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Đã chọn ({selectedFiles.length} file)</h3>
             <ul className="space-y-2 max-h-48 overflow-y-auto pr-1">
               {selectedFiles.map((f, i) => (
-                <li key={i} className="flex justify-between items-center text-sm text-gray-600 bg-white p-2.5 rounded border border-gray-200">
+                <li key={i} className="flex justify-between items-center text-sm text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 p-2.5 rounded border border-slate-200 dark:border-slate-600">
                   <span className="truncate flex-1 pr-4">{f.name}</span>
-                  <button onClick={() => removeSelectedFile(i)} className="text-red-500 hover:text-red-700" disabled={isUploading}>
+                  <button onClick={() => removeSelectedFile(i)} className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-300" disabled={isUploading}>
                     <XCircle className="h-4 w-4" />
                   </button>
                 </li>
               ))}
             </ul>
             <div className="mt-4 flex justify-end">
-              <button onClick={handleUpload} disabled={isUploading} className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
+              <button onClick={handleUpload} disabled={isUploading} className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center shadow-sm">
                 {isUploading ? <Loader2 className="animate-spin h-4 w-4 mr-2"/> : <UploadCloud className="h-4 w-4 mr-2"/>}
                 {isUploading ? "Đang tải lên..." : "Xác nhận tải lên"}
               </button>
             </div>
           </div>
         )}
-        {uploadError && <p className="text-red-500 text-sm mt-4 whitespace-pre-line text-center">{uploadError}</p>}
+        {uploadError && <p className="text-rose-500 dark:text-rose-400 text-sm mt-4 whitespace-pre-line text-center">{uploadError}</p>}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-lg font-medium text-gray-900">Tài liệu đã tải lên</h2>
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+          <h2 className="text-lg font-medium text-slate-900 dark:text-white">Tài liệu đã tải lên</h2>
           {selectedDocumentIds.length > 0 && (
             <button 
               onClick={handleBulkDelete} 
               disabled={isDeleting}
-              className="bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-slate-900 dark:text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center transition-colors"
+              className="bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center transition-colors shadow-sm"
             >
               {isDeleting ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
               Xóa {selectedDocumentIds.length} mục đã chọn
             </button>
           )}
         </div>
-        {docsError && <div className="p-6 text-red-500">Lỗi tải danh sách: {docsError.message}</div>}
+        {docsError && <div className="p-6 text-rose-500 dark:text-rose-400">Lỗi tải danh sách: {docsError.message}</div>}
         {!documents ? (
-          <div className="p-10 flex justify-center"><Loader2 className="animate-spin text-gray-400 h-6 w-6"/></div>
+          <div className="p-10 flex justify-center"><Loader2 className="animate-spin text-slate-400 h-6 w-6"/></div>
         ) : !Array.isArray(documents) || documents.length === 0 ? (
-          <div className="p-10 text-center text-gray-500">Chưa có tài liệu nào.</div>
+          <div className="p-10 text-center text-slate-500 dark:text-slate-400">Chưa có tài liệu nào.</div>
         ) : (
           <div 
             className="flex-1 overflow-auto custom-scrollbar"
@@ -295,8 +294,8 @@ function KnowledgeTab() {
               }
             }}
           >
-            <table className="min-w-full divide-y divide-gray-200 relative">
-              <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 relative">
+              <thead className="bg-slate-50 dark:bg-slate-900 sticky top-0 z-10 shadow-sm">
                 <tr>
                   <th className="px-6 py-3 text-left w-12">
                     <input 
@@ -306,16 +305,16 @@ function KnowledgeTab() {
                       onChange={toggleSelectAll}
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên tài liệu</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phạm vi</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tải lên</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tên tài liệu</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Trạng thái</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Phạm vi</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Ngày tải lên</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                 {documents.map((doc: any) => (
-                  <tr key={doc.id} className="hover:bg-gray-50">
+                  <tr key={doc.id} className="hover:bg-slate-50 dark:hover:bg-slate-700">
                     <td className="px-6 py-4">
                       <input 
                         type="checkbox" 
@@ -330,42 +329,42 @@ function KnowledgeTab() {
                         onClick={() => handleDownload(doc.id, doc.title)}
                         title="Tải xuống tài liệu"
                       >
-                        <FileText className="h-5 w-5 text-gray-400 hover:text-blue-500 mr-3" />
-                        <span className="text-sm font-medium text-gray-900 hover:text-blue-600">{doc.title}</span>
+                        <FileText className="h-5 w-5 text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 mr-3" />
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400">{doc.title}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center whitespace-nowrap">
-                        {doc.status === "ready" || !doc.status ? <><CheckCircle2 className="h-4 w-4 text-green-500 mr-1.5" /><span className="text-sm text-green-700">Đã xử lý xong</span></> : null}
-                        {doc.status === "processing" && <><Loader2 className="animate-spin h-4 w-4 text-blue-500 mr-1.5" /><span className="text-sm text-blue-700">Đang học (Chunking)</span></>}
-                        {doc.status === "pending" && <span className="text-sm text-gray-500 px-2 py-1 bg-gray-100 rounded-full">Chờ xử lý</span>}
-                        {doc.status === "failed" && <><XCircle className="h-4 w-4 text-red-500 mr-1.5" /><span className="text-sm text-red-700">Lỗi xử lý</span></>}
+                        {doc.status === "ready" || !doc.status ? <><CheckCircle2 className="h-4 w-4 text-emerald-500 mr-1.5" /><span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Đã xử lý xong</span></> : null}
+                        {doc.status === "processing" && <><Loader2 className="animate-spin h-4 w-4 text-blue-500 mr-1.5" /><span className="text-sm font-medium text-blue-700 dark:text-blue-400">Đang học (Chunking)</span></>}
+                        {doc.status === "pending" && <span className="text-sm text-slate-500 dark:text-slate-400 px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-full">Chờ xử lý</span>}
+                        {doc.status === "failed" && <><XCircle className="h-4 w-4 text-rose-500 mr-1.5" /><span className="text-sm font-medium text-rose-700 dark:text-rose-400">Lỗi xử lý</span></>}
                       </div>
-                      {doc.error_message && <p className="text-xs text-red-500 mt-2 break-words whitespace-normal max-w-md">{doc.error_message}</p>}
+                      {doc.error_message && <p className="text-xs text-rose-500 dark:text-rose-400 mt-2 break-words whitespace-normal max-w-md">{doc.error_message}</p>}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                       {doc.channel_id ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-transparent dark:border-blue-800/60">
                           Tài liệu riêng biệt
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
                           Tài liệu dùng chung
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(doc.created_at).toLocaleString("vi-VN")}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{new Date(doc.created_at).toLocaleString("vi-VN")}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button onClick={() => handleDelete(doc.id)} className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-2 rounded-md transition-colors"><Trash2 className="h-4 w-4" /></button>
+                      <button onClick={() => handleDelete(doc.id)} className="text-rose-600 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-950/50 p-2 rounded-md transition-colors"><Trash2 className="h-4 w-4" /></button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
             {isValidating && documents.length > 0 && (
-              <div className="p-4 flex justify-center border-t border-gray-100">
+              <div className="p-4 flex justify-center border-t border-slate-100 dark:border-slate-700">
                 <Loader2 className="animate-spin text-blue-500 h-5 w-5" />
-                <span className="ml-2 text-sm text-gray-500">Đang tải thêm...</span>
+                <span className="ml-2 text-sm text-slate-500 dark:text-slate-400">Đang tải thêm...</span>
               </div>
             )}
           </div>
@@ -412,16 +411,16 @@ function PersonaTab() {
     setIsSaving(false);
   };
 
-  if (error) return <div className="p-4 text-red-500">Lỗi tải dữ liệu kênh: {error.message}</div>;
-  if (!channels) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-gray-400 h-6 w-6"/></div>;
-  if (channels.length === 0) return <div className="p-6 text-gray-500">Chưa có kênh nào được kết nối.</div>;
+  if (error) return <div className="p-4 text-rose-500 dark:text-rose-400">Lỗi tải dữ liệu kênh: {error.message}</div>;
+  if (!channels) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-slate-400 h-6 w-6"/></div>;
+  if (channels.length === 0) return <div className="p-6 text-slate-500 dark:text-slate-400">Chưa có kênh nào được kết nối.</div>;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-6">
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Chọn kênh để cấu hình</label>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Chọn kênh để cấu hình</label>
         <select 
-          className="w-full max-w-md border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full max-w-md border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={selectedChannel?.id || ""}
           onChange={(e) => {
             const ch = channels.find((c: any) => c.id === e.target.value);
@@ -436,12 +435,12 @@ function PersonaTab() {
       </div>
 
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Bản thiết kế nhân cách (Master System Prompt)</label>
-        <p className="text-xs text-gray-500 mb-3">Nhập các chỉ thị cứng cho AI (Ví dụ: Tone giọng, cách tư vấn, quy tắc trả lời). Prompt này sẽ tự động được gửi kèm cho n8n mỗi khi khách hàng nhắn tin.</p>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Bản thiết kế nhân cách (Master System Prompt)</label>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Nhập các chỉ thị cứng cho AI (Ví dụ: Tone giọng, cách tư vấn, quy tắc trả lời). Prompt này sẽ tự động được gửi kèm cho n8n mỗi khi khách hàng nhắn tin.</p>
         <textarea 
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          className="w-full h-96 border border-gray-300 rounded-lg p-4 text-sm text-gray-900 bg-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full h-96 border border-slate-300 dark:border-slate-600 rounded-lg p-4 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Nhập prompt tại đây..."
         />
       </div>
@@ -449,7 +448,7 @@ function PersonaTab() {
       <button 
         onClick={handleSave} 
         disabled={isSaving}
-        className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-slate-900 dark:text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center"
+        className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center shadow-sm"
       >
         {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2"/> : <Settings className="h-4 w-4 mr-2"/>}
         {isSaving ? "Đang lưu..." : "Lưu cấu hình AI"}
@@ -587,12 +586,12 @@ function CampaignsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Quản lý Chiến Dịch Chủ Động</h3>
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-6">
+        <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Quản lý Chiến Dịch Chủ Động</h3>
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Chọn kênh áp dụng</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Chọn kênh áp dụng</label>
           <select 
-            className="w-full bg-white text-gray-900 border border-gray-300 px-3 py-2 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 px-3 py-2 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             value={selectedChannel}
             onChange={(e) => {
               setSelectedChannel(e.target.value);
@@ -609,35 +608,35 @@ function CampaignsTab() {
         {selectedChannel && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Form */}
-            <div className="lg:col-span-1 bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h4 className="font-medium text-gray-900 mb-4">{editingId ? 'Sửa chiến dịch' : 'Tạo chiến dịch mới'}</h4>
+            <div className="lg:col-span-1 bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+              <h4 className="font-medium text-slate-900 dark:text-white mb-4">{editingId ? 'Sửa chiến dịch' : 'Tạo chiến dịch mới'}</h4>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Tên chiến dịch</label>
-                  <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-white text-gray-900 px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500" placeholder="VD: Hỏi thăm sau 24h" />
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Tên chiến dịch</label>
+                  <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md focus:border-blue-500 focus:ring-blue-500" placeholder="VD: Hỏi thăm sau 24h" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Thời gian chờ (Giờ)</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Thời gian chờ (Giờ)</label>
                   <div className="flex items-center space-x-2">
                     <input type="range" min="1" max="168" value={hours} onChange={e => setHours(parseInt(e.target.value))} className="w-full accent-blue-600 bg-white" />
-                    <span className="text-sm font-medium text-gray-900 w-12 text-right">{hours}h</span>
+                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100 w-12 text-right">{hours}h</span>
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-1">Gửi tin nếu khách không chat sau {hours} giờ.</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Gửi tin nếu khách không chat sau {hours} giờ.</p>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">System Prompt</label>
-                  <textarea rows={4} value={prompt} onChange={e => setPrompt(e.target.value)} className="w-full bg-white text-gray-900 px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500" placeholder="Ép AI nói gì? VD: Bạn hãy tặng khách mã giảm giá 10%..." />
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">System Prompt</label>
+                  <textarea rows={4} value={prompt} onChange={e => setPrompt(e.target.value)} className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md focus:border-blue-500 focus:ring-blue-500" placeholder="Ép AI nói gì? VD: Bạn hãy tặng khách mã giảm giá 10%..." />
                 </div>
                 <div className="flex items-center">
                   <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="w-4 h-4 cursor-pointer accent-blue-600 appearance-auto bg-white border-gray-300 rounded" />
-                  <label className="ml-2 text-sm text-gray-700">Kích hoạt ngay</label>
+                  <label className="ml-2 text-sm text-slate-700 dark:text-slate-300">Kích hoạt ngay</label>
                 </div>
                 <div className="flex space-x-2 pt-2">
-                  <button onClick={handleSave} disabled={isSaving} className="flex-1 bg-blue-600 text-slate-900 dark:text-white py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                  <button onClick={handleSave} disabled={isSaving} className="flex-1 bg-blue-600 text-white py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 shadow-sm">
                     {isSaving ? 'Đang lưu...' : 'Lưu chiến dịch'}
                   </button>
                   {editingId && (
-                    <button onClick={handleCancelEdit} className="px-3 bg-gray-200 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-300">
+                    <button onClick={handleCancelEdit} className="px-3 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-md text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600">
                       Hủy
                     </button>
                   )}
@@ -648,33 +647,33 @@ function CampaignsTab() {
             {/* List */}
             <div className="lg:col-span-2">
               {isLoading ? (
-                <div className="flex justify-center p-10"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
+                <div className="flex justify-center p-10"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
               ) : campaigns.length === 0 ? (
-                <div className="text-center p-10 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-gray-500 text-sm">
+                <div className="text-center p-10 bg-slate-50 dark:bg-slate-900 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 text-sm">
                   Chưa có chiến dịch nào cho kênh này.
                 </div>
               ) : (
                 <div className="space-y-3">
                   {campaigns.map(c => (
-                    <div key={c.id} className={`p-4 border rounded-lg flex items-start justify-between ${c.is_active ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'}`}>
+                    <div key={c.id} className={`p-4 border rounded-lg flex items-start justify-between ${c.is_active ? 'border-emerald-300 dark:border-emerald-700/80 bg-emerald-50 dark:bg-emerald-950/30' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'}`}>
                       <div>
                         <div className="flex items-center space-x-2 mb-1">
-                          <h5 className="font-medium text-gray-900">{c.name}</h5>
+                          <h5 className="font-medium text-slate-900 dark:text-white">{c.name}</h5>
                           {c.is_active ? (
-                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">Đang chạy</span>
+                            <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs rounded-full font-medium border border-transparent dark:border-emerald-800/60">Đang chạy</span>
                           ) : (
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">Tạm dừng</span>
+                            <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 text-xs rounded-full font-medium">Tạm dừng</span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-600 mb-2">Chờ: <span className="font-semibold">{c.condition_hours_inactive} giờ</span></p>
-                        <p className="text-xs text-gray-500 line-clamp-2 italic border-l-2 border-gray-300 pl-2">{c.system_prompt_override}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">Chờ: <span className="font-semibold">{c.condition_hours_inactive} giờ</span></p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 italic border-l-2 border-slate-300 dark:border-slate-600 pl-2">{c.system_prompt_override}</p>
                       </div>
                       <div className="flex flex-col space-y-2 ml-4">
-                        <button onClick={() => toggleActive(c.id, c.is_active)} className={`px-3 py-1 rounded text-xs font-medium border ${c.is_active ? 'border-orange-300 text-orange-600 hover:bg-orange-50' : 'border-green-300 text-green-600 hover:bg-green-50'}`}>
+                        <button onClick={() => toggleActive(c.id, c.is_active)} className={`px-3 py-1 rounded text-xs font-medium border ${c.is_active ? 'border-amber-300 dark:border-amber-700/80 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30' : 'border-emerald-300 dark:border-emerald-700/80 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'}`}>
                           {c.is_active ? 'Tạm dừng' : 'Kích hoạt'}
                         </button>
-                        <button onClick={() => handleEdit(c)} className="px-3 py-1 rounded text-xs font-medium border border-blue-300 text-blue-600 hover:bg-blue-50">Sửa</button>
-                        <button onClick={() => handleDelete(c.id)} className="px-3 py-1 rounded text-xs font-medium border border-red-300 text-red-600 hover:bg-red-50">Xóa</button>
+                        <button onClick={() => handleEdit(c)} className="px-3 py-1 rounded text-xs font-medium border border-blue-300 dark:border-blue-700/80 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30">Sửa</button>
+                        <button onClick={() => handleDelete(c.id)} className="px-3 py-1 rounded text-xs font-medium border border-rose-300 dark:border-rose-700/80 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30">Xóa</button>
                       </div>
                     </div>
                   ))}
@@ -687,8 +686,6 @@ function CampaignsTab() {
     </div>
   );
 }
-
-
 
 // ----------------------------------------------------
 // TAB 4: TAGS
@@ -743,46 +740,46 @@ const [isAdding, setIsAdding] = useState(false);
     }
   };
 
-  if (error) return <div className="text-red-500">Lỗi tải danh sách thẻ</div>;
-  if (!tags) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-gray-400" /></div>;
+  if (error) return <div className="text-rose-500 dark:text-rose-400">Lỗi tải danh sách thẻ</div>;
+  if (!tags) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-slate-400 dark:text-slate-500" /></div>;
 
   return (
     <div className="space-y-6">
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Danh Sách Thẻ Của AI</h3>
-        <p className="text-sm text-gray-500 mb-6">Đây là các thẻ (Tags) hợp lệ mà Trợ lý AI có thể tự động gán cho khách hàng trong quá trình trò chuyện (VD: VIP, Spam, Khách sỉ...).</p>
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-6">
+        <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Danh Sách Thẻ Của AI</h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Đây là các thẻ (Tags) hợp lệ mà Trợ lý AI có thể tự động gán cho khách hàng trong quá trình trò chuyện (VD: VIP, Spam, Khách sỉ...).</p>
         
-        <form onSubmit={handleAdd} className="flex gap-4 items-end mb-8 bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <form onSubmit={handleAdd} className="flex gap-4 items-end mb-8 bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-700 flex-wrap">
           <div className="flex-1">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Tên Thẻ (Tag Name)</label>
-            <input type="text" value={tagName} onChange={e => setTagName(e.target.value)} placeholder="VD: Khách sỉ" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 bg-white" required />
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Tên Thẻ (Tag Name)</label>
+            <input type="text" value={tagName} onChange={e => setTagName(e.target.value)} placeholder="VD: Khách sỉ" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-slate-800" required />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Màu nền</label>
-            <input type="color" value={tagBgColor} onChange={e => setTagBgColor(e.target.value)} className="h-9 w-12 cursor-pointer bg-white border border-gray-300 rounded-lg p-0.5" />
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Màu nền</label>
+            <input type="color" value={tagBgColor} onChange={e => setTagBgColor(e.target.value)} className="h-9 w-12 cursor-pointer bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-0.5" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Màu chữ</label>
-            <input type="color" value={tagTextColor} onChange={e => setTagTextColor(e.target.value)} className="h-9 w-12 cursor-pointer bg-white border border-gray-300 rounded-lg p-0.5" />
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Màu chữ</label>
+            <input type="color" value={tagTextColor} onChange={e => setTagTextColor(e.target.value)} className="h-9 w-12 cursor-pointer bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-0.5" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Màu viền</label>
-            <input type="color" value={tagBorderColor} onChange={e => setTagBorderColor(e.target.value)} className="h-9 w-12 cursor-pointer bg-white border border-gray-300 rounded-lg p-0.5" />
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Màu viền</label>
+            <input type="color" value={tagBorderColor} onChange={e => setTagBorderColor(e.target.value)} className="h-9 w-12 cursor-pointer bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-0.5" />
           </div>
-          <button type="submit" disabled={isAdding || !tagName.trim()} className="bg-blue-600 text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center h-9">
+          <button type="submit" disabled={isAdding || !tagName.trim()} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center h-9 shadow-sm">
             {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> Thêm Thẻ</>}
           </button>
         </form>
 
         <div className="flex flex-wrap gap-3">
           {tags.length === 0 ? (
-            <div className="text-gray-500 text-sm italic w-full text-center py-6">Chưa có thẻ nào được tạo.</div>
+            <div className="text-slate-500 dark:text-slate-400 text-sm italic w-full text-center py-6">Chưa có thẻ nào được tạo.</div>
           ) : (
             tags.map((tag: any) => (
-              <div key={tag.id} className="group flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium shadow-sm transition-all bg-white hover:bg-gray-50" style={{ backgroundColor: parseColor(tag.color).bg, color: parseColor(tag.color).text, borderColor: parseColor(tag.color).border }}>
+              <div key={tag.id} className="group flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium shadow-sm transition-all bg-white hover:bg-slate-50 dark:hover:bg-slate-700" style={{ backgroundColor: parseColor(tag.color).bg, color: parseColor(tag.color).text, borderColor: parseColor(tag.color).border }}>
                 
                 {tag.tag_name}
-                <button onClick={() => handleDelete(tag.id)} className="ml-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => handleDelete(tag.id)} className="ml-1 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>

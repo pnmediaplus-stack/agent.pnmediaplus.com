@@ -60,11 +60,31 @@ table {
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
+    background-color: #94a3b8;
     border-radius: 20px;
+  }
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #334155;
   }
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 transparent;
+    scrollbar-color: #94a3b8 transparent;
+  }
+  .dark .custom-scrollbar {
+    scrollbar-color: #334155 transparent;
+  }
+  .custom-scrollbar-thin::-webkit-scrollbar {
+    height: 4px;
+    width: 4px;
+  }
+  .custom-scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+  }
+  .dark .custom-scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #334155;
   }
 }

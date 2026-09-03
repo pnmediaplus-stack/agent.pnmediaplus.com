@@ -130,23 +130,24 @@ export default function ChatArea() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#F9FAFB]">
-      <div className="h-16 border-b border-gray-200 px-6 flex items-center justify-between bg-white shadow-sm z-10 sticky top-0">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-950">
+      {/* Header (Gray background) */}
+      <div className="h-16 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between bg-slate-100 dark:bg-slate-900 shadow-xs z-10 sticky top-0">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
             {activeThread?.customer?.full_name?.charAt(0) || '?'}
           </div>
           <div>
-            <div className="font-semibold text-gray-900 leading-tight">{activeThread?.customer?.full_name || 'Đang tải...'}</div>
-            <div className="text-[11px] text-gray-500">{activeThread?.channel?.channel_name || 'Livechat Simulator'}</div>
+            <div className="font-semibold text-slate-900 dark:text-white leading-tight">{activeThread?.customer?.full_name || 'Đang tải...'}</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">{activeThread?.channel?.channel_name || 'Livechat Simulator'}</div>
           </div>
         </div>
         <button 
           onClick={toggleHandoff}
-          className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-full border transition-all shadow-sm ${
+          className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-full border transition-all shadow-xs ${
             activeThread?.status === 'bot_handling' 
-              ? 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50' 
-              : 'border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100'
+              ? 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700'
+              : 'border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/60'
           }`}
         >
           {activeThread?.status === 'bot_handling' ? (
@@ -167,22 +168,24 @@ export default function ChatArea() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col space-y-6 custom-scrollbar">
+      {/* Messages Area (Pure White background) */}
+      <div className="flex-1 overflow-y-auto p-6 flex flex-col space-y-6 custom-scrollbar bg-white dark:bg-slate-950">
         {threadMessages.map(msg => {
           const isCustomer = msg.sender_type === 'customer';
           const isBot = msg.sender_type === 'bot';
           return (
             <div key={msg.id} className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`}>
               <div className="max-w-[75%] flex flex-col group">
-                <div className={`px-5 py-3 text-[14px] leading-relaxed shadow-sm ${
-                  isCustomer ? 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm' :
-                  isBot ? 'bg-indigo-50 border border-indigo-100 text-indigo-900 rounded-2xl rounded-tr-sm' :
-                  'bg-blue-600 text-white rounded-2xl rounded-tr-sm'
+                <div className={`px-5 py-3 text-[14px] leading-relaxed shadow-2xs ${
+                  isCustomer
+                    ? 'bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-slate-900 dark:text-slate-100 rounded-2xl rounded-tl-sm'
+                    : isBot
+                    ? 'bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-700 text-indigo-900 dark:text-indigo-200 rounded-2xl rounded-tr-sm'
+                    : 'bg-blue-600 dark:bg-blue-700 text-white rounded-2xl rounded-tr-sm'
                 }`}>
                   {msg.content.split('\n').map((line, i) => {
                     if (line.startsWith('[File đính kèm]:')) {
                       const url = line.replace('[File đính kèm]:', '').trim();
-                      // Simple check for image extension
                       const isImg = url.match(/\.(jpeg|jpg|gif|png)(\?|$)/i);
                       return (
                         <React.Fragment key={i}>
@@ -191,7 +194,7 @@ export default function ChatArea() {
                               <img src={url} alt="Attachment" className="max-w-full h-auto rounded-lg mt-1 mb-2 max-h-48 object-cover border border-black/10" />
                             </a>
                           ) : (
-                            <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-black/5 rounded-lg text-blue-600 hover:underline mt-1 mb-1">
+                            <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-black/5 dark:bg-white/10 rounded-lg text-blue-600 dark:text-blue-300 hover:underline mt-1 mb-1">
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
                               Xem tệp đính kèm
                             </a>
@@ -208,7 +211,7 @@ export default function ChatArea() {
                     );
                   })}
                 </div>
-                <div className={`text-[11px] mt-1.5 px-1 font-medium ${isCustomer ? 'text-gray-400 text-left' : 'text-gray-400 text-right'}`}>
+                <div className={`text-[11px] mt-1.5 px-1 font-medium text-slate-400 dark:text-slate-500 ${isCustomer ? 'text-left' : 'text-right'}`}>
                   {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   {!isCustomer && (
                     <span className="ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -224,9 +227,10 @@ export default function ChatArea() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] z-10 sticky bottom-0">
+      {/* Composer (Gray background) */}
+      <div className="p-4 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-10 sticky bottom-0">
         {errorMessage && (
-          <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 flex items-center gap-2">
+          <div className="mb-3 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-2.5 text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -235,15 +239,15 @@ export default function ChatArea() {
         )}
         
         {activeThread?.status === 'bot_handling' ? (
-          <div className="w-full text-center py-4 bg-gray-50 border border-gray-200 border-dashed rounded-xl flex flex-col items-center justify-center">
-             <svg className="w-6 h-6 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-full text-center py-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 border-dashed rounded-xl flex flex-col items-center justify-center">
+             <svg className="w-6 h-6 text-slate-400 dark:text-slate-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
              </svg>
-             <p className="text-sm text-gray-500 font-medium">AI đang tự động chăm sóc hội thoại này.</p>
-             <p className="text-xs text-gray-400 mt-1">Bấm "Giành quyền Chat" nếu bạn muốn xen vào.</p>
+             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">AI đang tự động chăm sóc hội thoại này.</p>
+             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Bấm "Giành quyền Chat" nếu bạn muốn xen vào.</p>
           </div>
         ) : (
-          <form onSubmit={handleSend} className="relative flex items-end gap-2 bg-white border border-gray-300 rounded-3xl pl-3 pr-2 py-2 focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all shadow-sm">
+          <form onSubmit={handleSend} className="relative flex items-end gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-2xl pl-3 pr-2 py-2 focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 dark:focus-within:border-blue-500 transition-all shadow-sm">
             <input 
               type="file" 
               className="hidden" 
@@ -254,7 +258,7 @@ export default function ChatArea() {
             />
             <button 
               type="button"
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
               title="Đính kèm tệp"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingFile}
@@ -281,7 +285,7 @@ export default function ChatArea() {
                 }
               }}
               placeholder="Nhập tin nhắn..." 
-              className="flex-1 bg-transparent resize-none max-h-32 min-h-[24px] outline-none py-2 text-[14px] text-gray-900 leading-relaxed [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+              className="flex-1 bg-transparent resize-none max-h-32 min-h-[24px] outline-none py-2 text-[14px] text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 leading-relaxed [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-600 [&::-webkit-scrollbar-thumb]:rounded-full"
               disabled={isSending || isUploadingFile}
               rows={1}
               style={{ height: inputText.split('\n').length > 1 ? `${Math.min(inputText.split('\n').length * 24 + 16, 128)}px` : '40px' }}
@@ -290,7 +294,7 @@ export default function ChatArea() {
             <div className="flex items-center gap-1 flex-shrink-0 relative">
               <button 
                 type="button"
-                className="p-2 text-gray-400 hover:text-amber-500 rounded-full hover:bg-amber-50 transition-colors"
+                className="p-2 text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 rounded-full hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
                 title="Chọn Emoji"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               >
@@ -300,8 +304,8 @@ export default function ChatArea() {
               </button>
 
               {showEmojiPicker && (
-                <div className="absolute bottom-14 right-12 z-50 shadow-2xl rounded-2xl overflow-hidden border border-gray-100">
-                  <Picker data={data} onEmojiSelect={addEmoji} theme="light" locale="vi" />
+                <div className="absolute bottom-14 right-12 z-50 shadow-2xl rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                  <Picker data={data} onEmojiSelect={addEmoji} theme="auto" locale="vi" />
                 </div>
               )}
               
