@@ -1,12 +1,12 @@
 -- Migration: 20260904000002_marketing_cskh_handoff_atomic.sql
--- Description: Marketing to CSKH Knowledge Handoff: Strict Metadata Validation Trigger & Atomic Superseding RPC
+-- Description: Marketing to CSKH Knowledge Handoff: Comprehensive Metadata Validation Trigger & Atomic Superseding RPC with Fail-Fast Guards
 -- Target: DB Clone & Staging (Restricted to service_role and authenticated department owners)
 
 BEGIN;
 
 -- -----------------------------------------------------------------------------
 -- 1. TRIGGER FUNCTION: validate_crm_knowledge_metadata
--- Enforces strict metadata validation when transitioning to 'APPROVED'
+-- Enforces strict canonical metadata validation when transitioning to 'APPROVED'
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.validate_crm_knowledge_metadata()
 RETURNS TRIGGER
@@ -19,6 +19,7 @@ DECLARE
   v_ts TIMESTAMPTZ;
   v_hash TEXT;
   v_version TEXT;
+  v_app JSONB;
 BEGIN
   -- We only enforce strict canonical validation when transitioning to or remaining in APPROVED state
   IF NEW.knowledge_status = 'APPROVED' THEN
@@ -28,33 +29,59 @@ BEGIN
       RAISE EXCEPTION 'VALIDATION_ERROR: knowledge_metadata must be a non-null JSON object when APPROVED';
     END IF;
 
-    -- 1. semantic_type enum validation
+    -- 1. object_class validation
+    IF NOT (v_meta ? 'object_class') OR v_meta->>'object_class' NOT IN ('knowledge', 'governance') THEN
+      RAISE EXCEPTION 'VALIDATION_ERROR: Invalid or missing object_class (must be knowledge or governance)';
+    END IF;
+
+    -- 2. semantic_type enum validation
     IF NOT (v_meta ? 'semantic_type') OR v_meta->>'semantic_type' NOT IN (
       'fact', 'pattern', 'hypothesis', 'research_finding', 'learning', 'recommendation'
     ) THEN
       RAISE EXCEPTION 'VALIDATION_ERROR: Invalid or missing semantic_type';
     END IF;
 
-    -- 2. usage_authority enum validation
+    -- 3. governance_type enum validation
+    IF NOT (v_meta ? 'governance_type') OR v_meta->>'governance_type' NOT IN (
+      'none', 'rule', 'policy', 'permission'
+    ) THEN
+      RAISE EXCEPTION 'VALIDATION_ERROR: Invalid or missing governance_type';
+    END IF;
+
+    -- 4. usage_authority enum validation
     IF NOT (v_meta ? 'usage_authority') OR v_meta->>'usage_authority' NOT IN (
       'internal_reasoning_only', 'cross_department', 'public_facing'
     ) THEN
       RAISE EXCEPTION 'VALIDATION_ERROR: Invalid or missing usage_authority';
     END IF;
 
-    -- 3. sensitivity enum validation
+    -- 5. sensitivity enum validation
     IF NOT (v_meta ? 'sensitivity') OR v_meta->>'sensitivity' NOT IN (
       'public', 'internal', 'confidential', 'restricted'
     ) THEN
       RAISE EXCEPTION 'VALIDATION_ERROR: Invalid or missing sensitivity';
     END IF;
 
-    -- 4. allowed_purposes array validation
+    -- 6. allowed_purposes array validation
     IF NOT (v_meta ? 'allowed_purposes') OR jsonb_typeof(v_meta->'allowed_purposes') <> 'array' THEN
       RAISE EXCEPTION 'VALIDATION_ERROR: allowed_purposes must be a JSON array';
     END IF;
 
-    -- 5. Redaction Enforcement: If sensitivity is public and used for customer_response, redaction is mandatory
+    -- 7. evidence_basis array validation
+    IF NOT (v_meta ? 'evidence_basis') OR jsonb_typeof(v_meta->'evidence_basis') <> 'array' THEN
+      RAISE EXCEPTION 'VALIDATION_ERROR: evidence_basis must be a JSON array';
+    END IF;
+
+    -- 8. applicability object validation
+    IF NOT (v_meta ? 'applicability') OR jsonb_typeof(v_meta->'applicability') <> 'object' THEN
+      RAISE EXCEPTION 'VALIDATION_ERROR: applicability must be a JSON object';
+    END IF;
+    v_app := v_meta->'applicability';
+    IF NOT (v_app ? 'departments') OR jsonb_typeof(v_app->'departments') <> 'array' THEN
+      RAISE EXCEPTION 'VALIDATION_ERROR: applicability.departments must be a JSON array';
+    END IF;
+
+    -- 9. Redaction Enforcement: If sensitivity is public and used for customer_response, redaction is mandatory
     IF v_meta->>'sensitivity' = 'public' AND v_meta->'allowed_purposes' ? 'customer_response' THEN
       IF NOT (v_meta ? 'redaction') OR jsonb_typeof(v_meta->'redaction') <> 'object' THEN
         RAISE EXCEPTION 'VALIDATION_ERROR: redaction object is mandatory for public customer_response knowledge';
@@ -71,7 +98,7 @@ BEGIN
       END IF;
     END IF;
 
-    -- 6. Provenance Validation (Ensures approved_by matches auth.uid() and timestamp is valid)
+    -- 10. Provenance Validation (approved_by matches auth.uid() and timestamp is valid)
     IF NOT (v_meta ? 'provenance') OR jsonb_typeof(v_meta->'provenance') <> 'object' THEN
       RAISE EXCEPTION 'VALIDATION_ERROR: provenance object is mandatory for APPROVED knowledge';
     END IF;
@@ -103,8 +130,7 @@ CREATE TRIGGER trg_validate_crm_knowledge_metadata
   EXECUTE FUNCTION public.validate_crm_knowledge_metadata();
 
 -- -----------------------------------------------------------------------------
--- 2. ENHANCED RPC: apply_knowledge_ingestion_callback with ATOMIC SUPERSEDING
--- Transitions new document APPROVED -> ACTIVE and atomically deprecates old document
+-- 2. ENHANCED RPC: apply_knowledge_ingestion_callback with ATOMIC SUPERSEDING & FAIL-FAST
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.apply_knowledge_ingestion_callback(
   p_document_id UUID,
@@ -183,7 +209,7 @@ BEGIN
     IF v_existing_audit.payload_hash <> p_payload_hash THEN
       RETURN jsonb_build_object(
         'success', false,
-        'status', 'SEMANTIC_CONFLICT',
+        'status', 'IDEMPOTENCY_CONFLICT',
         'code', 409,
         'message', 'Correlation ID exists with differing payload_hash. Semantic conflict detected.'
       );
@@ -191,7 +217,7 @@ BEGIN
       -- Identical idempotent retry: return success without duplicate processing
       RETURN jsonb_build_object(
         'success', true,
-        'status', 'IDEMPOTENT_REPLAY',
+        'status', 'IDEMPOTENT_ACK',
         'document_id', p_document_id,
         'knowledge_status', v_doc_k_status,
         'ingestion_status', v_doc_i_status
@@ -218,6 +244,11 @@ BEGIN
     IF v_old_doc.organization_id <> p_organization_id THEN
       RAISE EXCEPTION 'SUPERSEDING_VIOLATION: Cross-tenant superseding is strictly prohibited';
     END IF;
+
+    -- Fail-fast if old document is not in APPROVED or ACTIVE state
+    IF v_old_doc.knowledge_status NOT IN ('APPROVED', 'ACTIVE') THEN
+      RAISE EXCEPTION 'SUPERSEDING_VIOLATION: Superseded document (%) is in state %, expected APPROVED or ACTIVE', v_supersedes_id, v_old_doc.knowledge_status;
+    END IF;
   END IF;
 
   -- Set transaction context GUCs for audit log trigger
@@ -237,14 +268,16 @@ BEGIN
         knowledge_status = 'ACTIVE',
         error_message = NULL,
         updated_at = clock_timestamp()
-    WHERE id = p_document_id;
+    WHERE id = p_document_id
+      AND organization_id = p_organization_id;
 
     -- ATOMIC SUPERSEDING: Transition superseded document to DEPRECATED in the SAME transaction
-    IF v_supersedes_id IS NOT NULL AND v_old_doc.knowledge_status IN ('APPROVED', 'ACTIVE') THEN
+    IF v_supersedes_id IS NOT NULL THEN
       UPDATE public.crm_knowledge_documents
       SET knowledge_status = 'DEPRECATED',
           updated_at = clock_timestamp()
-      WHERE id = v_supersedes_id;
+      WHERE id = v_supersedes_id
+        AND organization_id = p_organization_id;
     END IF;
 
     RETURN jsonb_build_object(
@@ -259,7 +292,8 @@ BEGIN
     SET ingestion_status = 'FAILED',
         error_message = p_error_message,
         updated_at = clock_timestamp()
-    WHERE id = p_document_id;
+    WHERE id = p_document_id
+      AND organization_id = p_organization_id;
 
     RETURN jsonb_build_object(
       'success', false,
