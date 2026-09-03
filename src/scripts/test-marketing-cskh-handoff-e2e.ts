@@ -104,22 +104,25 @@ export function executeDeterministicRedaction(rawContent: string): {
 }
 
 // -----------------------------------------------------------------------------
-// SAFE STATE-MACHINE COMPLIANT ARCHIVE HELPER
+// SAFE STATE-MACHINE COMPLIANT ARCHIVE HELPER (FAIL-FAST)
 // Graph: DRAFT -> REVIEWED -> APPROVED -> DEPRECATED -> ARCHIVED
 // -----------------------------------------------------------------------------
 async function safeArchiveDocument(admin: any, ownerClient: any, docId: string, ownerUserId: string) {
-  const { data: doc } = await admin
+  const { data: doc, error: getErr } = await admin
     .from('crm_knowledge_documents')
     .select('knowledge_status')
     .eq('id', docId)
     .single();
 
-  if (!doc) return;
+  if (getErr || !doc) {
+    throw new Error(`Cleanup failed to get doc ${docId}: ${getErr?.message}`);
+  }
   let status = doc.knowledge_status;
   if (status === 'ARCHIVED') return;
 
   if (status === 'DRAFT') {
-    await admin.from('crm_knowledge_documents').update({ knowledge_status: 'REVIEWED' }).eq('id', docId);
+    const { error: revErr } = await admin.from('crm_knowledge_documents').update({ knowledge_status: 'REVIEWED' }).eq('id', docId);
+    if (revErr) throw new Error(`Cleanup failed DRAFT->REVIEWED for doc ${docId}: ${revErr.message}`);
     status = 'REVIEWED';
   }
 
@@ -141,23 +144,31 @@ async function safeArchiveDocument(admin: any, ownerClient: any, docId: string, 
       },
     };
 
-    await ownerClient
+    const { error: appErr } = await ownerClient
       .from('crm_knowledge_documents')
       .update({
         knowledge_status: 'APPROVED',
         knowledge_metadata: minApprovedMetadata,
       })
       .eq('id', docId);
+    if (appErr) throw new Error(`Cleanup failed REVIEWED->APPROVED for doc ${docId}: ${appErr.message}`);
     status = 'APPROVED';
   }
 
   if (status === 'APPROVED' || status === 'ACTIVE') {
-    await admin.from('crm_knowledge_documents').update({ knowledge_status: 'DEPRECATED' }).eq('id', docId);
+    const { error: depErr } = await admin.from('crm_knowledge_documents').update({ knowledge_status: 'DEPRECATED' }).eq('id', docId);
+    if (depErr) throw new Error(`Cleanup failed APPROVED/ACTIVE->DEPRECATED for doc ${docId}: ${depErr.message}`);
     status = 'DEPRECATED';
   }
 
   if (status === 'DEPRECATED' || status === 'SUPERSEDED') {
-    await admin.from('crm_knowledge_documents').update({ knowledge_status: 'ARCHIVED' }).eq('id', docId);
+    const { error: arcErr } = await admin.from('crm_knowledge_documents').update({ knowledge_status: 'ARCHIVED' }).eq('id', docId);
+    if (arcErr) throw new Error(`Cleanup failed DEPRECATED->ARCHIVED for doc ${docId}: ${arcErr.message}`);
+  }
+
+  const { data: finalDoc } = await admin.from('crm_knowledge_documents').select('knowledge_status').eq('id', docId).single();
+  if (finalDoc?.knowledge_status !== 'ARCHIVED') {
+    throw new Error(`Cleanup verification failed: Document ${docId} ended in state ${finalDoc?.knowledge_status}, expected ARCHIVED`);
   }
 }
 
@@ -194,7 +205,7 @@ async function runE2ETest() {
   console.log('MARKETING-TO-CSKH KNOWLEDGE HANDOFF E2E VERIFICATION SUITE');
   console.log('Target Environment: AUTHORIZED DB CLONE');
   console.log('Target Supabase URL:', supabaseUrl);
-  console.log('Scope: State Machine Compliance + Metadata Contract + HTTP 409 + Rollback + Namespace Isolation');
+  console.log('Scope: Fail-Fast Cleanup + Fresh Replay Audit + HTTP 409 + Atomic Rollback + Chunk Hash Proof');
   console.log('================================================================\n');
 
   let orgId = '';
@@ -382,9 +393,9 @@ designer_notes: Use pastel orange theme
     console.log('  -> PASS: Valid metadata & provenance successfully transitioned to APPROVED!\n');
 
     // -------------------------------------------------------------------------
-    // STAGE 3: Atomic Ingestion Callback & Activation of Document 1
+    // STAGE 3: Atomic Ingestion Callback & Actual Chunk Hash Proof
     // -------------------------------------------------------------------------
-    console.log('--- STAGE 3: ATOMIC INGESTION CALLBACK & ACTIVATION ---');
+    console.log('--- STAGE 3: INGESTION CALLBACK & REAL CHUNK CONTENT HASH PROOF ---');
     const corrIdDoc1 = `handoff-corr-${Date.now()}-1`;
     const payloadHashDoc1 = crypto.createHash('sha256').update(`event-payload-1-${corrIdDoc1}`).digest('hex');
 
@@ -416,10 +427,30 @@ designer_notes: Use pastel orange theme
       });
 
     if (chunk1Err) throw new Error(`Failed to insert chunk for Doc 1: ${chunk1Err.message}`);
-    console.log('  -> PASS: Chunk for Document 1 indexed in namespace cskh.\n');
+
+    // Fetch the inserted chunk from database and compute hash directly from stored content
+    const { data: insertedChunk, error: fetchChunkErr } = await adminClient
+      .from('crm_knowledge_chunks')
+      .select('content')
+      .eq('document_id', doc1.id)
+      .single();
+
+    if (fetchChunkErr || !insertedChunk) throw new Error('Failed to fetch inserted chunk from database');
+
+    const computedChunkHash = crypto
+      .createHash('sha256')
+      .update(insertedChunk.content.trim().normalize('NFKC'), 'utf8')
+      .digest('hex');
+
+    console.log('  -> Stored Chunk Content Hash:', computedChunkHash);
+    console.log('  -> Metadata redaction_hash:   ', redactionHash);
+    if (computedChunkHash !== redactionHash) {
+      throw new Error(`CRITICAL INTEGRITY FAILURE: Stored chunk hash does not match metadata redaction_hash!`);
+    }
+    console.log('  -> PASS: Stored chunk content in vector store matches metadata redaction_hash 100%!\n');
 
     // -------------------------------------------------------------------------
-    // STAGE 4: Atomic Superseding & Rollback Guard Verification
+    // STAGE 4: Atomic Superseding & Mid-Transaction Rollback Guards
     // -------------------------------------------------------------------------
     console.log('--- STAGE 4: ATOMIC SUPERSEDING & ROLLBACK GUARDS ---');
 
@@ -441,7 +472,8 @@ designer_notes: Use pastel orange theme
     if (doc2Err || !doc2?.id) throw new Error(`Failed to insert Doc 2: ${doc2Err?.message}`);
     createdDocIds.push(doc2.id);
 
-    await adminClient.from('crm_knowledge_documents').update({ knowledge_status: 'REVIEWED' }).eq('id', doc2.id);
+    const { error: rev2Err } = await adminClient.from('crm_knowledge_documents').update({ knowledge_status: 'REVIEWED' }).eq('id', doc2.id);
+    if (rev2Err) throw new Error(`Failed to transition Doc 2 to REVIEWED: ${rev2Err.message}`);
 
     const validMetadataDoc2 = {
       ...validMetadataDoc1,
@@ -464,10 +496,26 @@ designer_notes: Use pastel orange theme
     if (app2Err) throw new Error(`Failed to approve Doc 2: ${app2Err.message}`);
     console.log(`  -> Document 2 APPROVED with supersedes_id = ${doc1.id}`);
 
-    // 4.2 Test Rollback Guard: Attempt superseding a non-existent document
-    console.log('  [Rollback Test 4.2] Testing atomic rollback when supersedes_id is invalid:');
-    const fakeDocId = '00000000-0000-0000-0000-000000000999';
-    await adminClient.from('crm_knowledge_documents').update({ supersedes_id: fakeDocId }).eq('id', doc2.id);
+    // 4.2 Test Atomic Rollback: Point supersedes_id to a document NOT in APPROVED/ACTIVE
+    console.log('  [Rollback Test 4.2] Testing atomic rollback when superseded document is not APPROVED/ACTIVE:');
+    const { data: unapprovedOldDoc, error: unappErr } = await adminClient
+      .from('crm_knowledge_documents')
+      .insert({
+        organization_id: orgId,
+        title: '[UNAPPROVED DOC] Draft to test superseding fail-fast',
+        namespace: 'cskh',
+        knowledge_status: 'DRAFT',
+        ingestion_status: 'PENDING',
+        knowledge_metadata: { note: 'draft' },
+      })
+      .select('id')
+      .single();
+
+    if (unappErr || !unapprovedOldDoc?.id) throw new Error(`Failed to insert unapproved doc: ${unappErr?.message}`);
+    createdDocIds.push(unapprovedOldDoc.id);
+
+    // Point Doc 2 to unapproved doc
+    await adminClient.from('crm_knowledge_documents').update({ supersedes_id: unapprovedOldDoc.id }).eq('id', doc2.id);
 
     const { error: rollbackErr } = await adminClient.rpc('apply_knowledge_ingestion_callback', {
       p_document_id: doc2.id,
@@ -479,14 +527,13 @@ designer_notes: Use pastel orange theme
 
     console.log('  Superseding violation error:', rollbackErr?.message || 'None');
     if (rollbackErr && rollbackErr.message.includes('SUPERSEDING_VIOLATION')) {
-      // Verify Document 2 remained APPROVED (did NOT activate) and Doc 1 remained ACTIVE
       const { data: rbDoc2 } = await adminClient.from('crm_knowledge_documents').select('knowledge_status').eq('id', doc2.id).single();
-      const { data: rbDoc1 } = await adminClient.from('crm_knowledge_documents').select('knowledge_status').eq('id', doc1.id).single();
+      const { data: rbDocOld } = await adminClient.from('crm_knowledge_documents').select('knowledge_status').eq('id', unapprovedOldDoc.id).single();
 
-      if (rbDoc2?.knowledge_status === 'APPROVED' && rbDoc1?.knowledge_status === 'ACTIVE') {
-        console.log('  -> PASS: Atomic rollback verified! Neither document mutated on superseding error.\n');
+      if (rbDoc2?.knowledge_status === 'APPROVED' && rbDocOld?.knowledge_status === 'DRAFT') {
+        console.log('  -> PASS: Atomic rollback verified! Neither document mutated when superseding condition failed.\n');
       } else {
-        throw new Error(`Rollback verification FAILED: Doc 2=${rbDoc2?.knowledge_status}, Doc 1=${rbDoc1?.knowledge_status}`);
+        throw new Error(`Rollback verification FAILED: Doc 2=${rbDoc2?.knowledge_status}, Old Doc=${rbDocOld?.knowledge_status}`);
       }
     } else {
       throw new Error(`Expected SUPERSEDING_VIOLATION exception, got: ${JSON.stringify(rollbackErr)}`);
@@ -529,7 +576,7 @@ designer_notes: Use pastel orange theme
     // -------------------------------------------------------------------------
     console.log('--- STAGE 5: STATE-MACHINE COMPLIANT FIXTURE & NAMESPACE ISOLATION ---');
 
-    // 5.1 Create and activate real marketing fixture through FULL STATE MACHINE
+    // 5.1 Create and activate real marketing fixture through FULL STATE MACHINE with zero bypass
     const { data: docMkt, error: docMktErr } = await adminClient
       .from('crm_knowledge_documents')
       .insert({
@@ -546,7 +593,8 @@ designer_notes: Use pastel orange theme
     if (docMktErr || !docMkt?.id) throw new Error(`Failed to create marketing doc: ${docMktErr?.message}`);
     createdDocIds.push(docMkt.id);
 
-    await adminClient.from('crm_knowledge_documents').update({ knowledge_status: 'REVIEWED' }).eq('id', docMkt.id);
+    const { error: mktRevErr } = await adminClient.from('crm_knowledge_documents').update({ knowledge_status: 'REVIEWED' }).eq('id', docMkt.id);
+    if (mktRevErr) throw new Error(`Marketing doc transition to REVIEWED failed: ${mktRevErr.message}`);
 
     const mktApprovedMeta = {
       object_class: 'knowledge',
@@ -565,21 +613,25 @@ designer_notes: Use pastel orange theme
       },
     };
 
-    await ownerClient.from('crm_knowledge_documents').update({
+    const { error: mktAppErr } = await ownerClient.from('crm_knowledge_documents').update({
       knowledge_status: 'APPROVED',
       knowledge_metadata: mktApprovedMeta,
     }).eq('id', docMkt.id);
 
+    if (mktAppErr) throw new Error(`Marketing doc transition to APPROVED failed: ${mktAppErr.message}`);
+
     // Legally activate via callback RPC
     const mktCorrId = `mkt-fixture-${Date.now()}`;
     const mktHash = crypto.createHash('sha256').update(mktCorrId).digest('hex');
-    await adminClient.rpc('apply_knowledge_ingestion_callback', {
+    const { data: mktCbRes, error: mktCbErr } = await adminClient.rpc('apply_knowledge_ingestion_callback', {
       p_document_id: docMkt.id,
       p_organization_id: orgId,
       p_status: 'SUCCESS',
       p_correlation_id: mktCorrId,
       p_payload_hash: mktHash,
     });
+
+    if (mktCbErr || !mktCbRes?.success) throw new Error(`Marketing doc legal activation callback failed: ${mktCbErr?.message}`);
 
     const { error: chunkMktErr } = await adminClient
       .from('crm_knowledge_chunks')
@@ -614,13 +666,40 @@ designer_notes: Use pastel orange theme
     console.log('  -> PASS: CSKH query with namespace cskh completely excluded 100% of marketing chunks.\n');
 
     // -------------------------------------------------------------------------
-    // STAGE 6: Real API Route HTTP 409 & Replay Verification
+    // STAGE 6: Real API Route HTTP 409 & Replay with Fresh Document Fixture
     // -------------------------------------------------------------------------
-    console.log('--- STAGE 6: REAL API ROUTE HTTP 409 & REPLAY VERIFICATION ---');
+    console.log('--- STAGE 6: FRESH FIXTURE AUDIT, HTTP 409 & REPLAY VIA REAL API ROUTE ---');
+
+    // 6.1 Create a FRESH document in APPROVED state with PENDING ingestion
+    const { data: docApiTest, error: apiDocErr } = await adminClient
+      .from('crm_knowledge_documents')
+      .insert({
+        organization_id: orgId,
+        title: '[API TEST] Fresh Doc For Real Callback Test',
+        namespace: 'cskh',
+        knowledge_status: 'DRAFT',
+        ingestion_status: 'PENDING',
+        knowledge_metadata: { draft: 'api test' },
+      })
+      .select('id')
+      .single();
+
+    if (apiDocErr || !docApiTest?.id) throw new Error(`Failed to create API test doc: ${apiDocErr?.message}`);
+    createdDocIds.push(docApiTest.id);
+
+    await adminClient.from('crm_knowledge_documents').update({ knowledge_status: 'REVIEWED' }).eq('id', docApiTest.id);
+
+    const { error: apiAppErr } = await ownerClient.from('crm_knowledge_documents').update({
+      knowledge_status: 'APPROVED',
+      knowledge_metadata: validMetadataDoc1,
+    }).eq('id', docApiTest.id);
+
+    if (apiAppErr) throw new Error(`Failed to approve API test doc: ${apiAppErr.message}`);
+    console.log(`  -> Fresh Document created in APPROVED state (ingestion PENDING): ${docApiTest.id}`);
 
     const apiCorrId = `api-test-corr-${Date.now()}`;
     const apiPayloadInitial = {
-      document_id: doc2.id,
+      document_id: docApiTest.id,
       organization_id: orgId,
       status: 'SUCCESS',
       correlation_id: apiCorrId,
@@ -628,8 +707,8 @@ designer_notes: Use pastel orange theme
       error_message: null,
     };
 
-    // 6.1 Call API route first time -> Expect HTTP 200
-    console.log('  [API Test 6.1] Invoking /api/crm/knowledge/callback initial call:');
+    // 6.2 Call API route first time -> Expect HTTP 200 PROCESSED
+    console.log('  [API Test 6.2] Invoking /api/crm/knowledge/callback initial call:');
     const res1 = await callNextJsCallbackApi(apiPayloadInitial);
     const json1 = await res1.json();
     console.log(`  -> Initial Call HTTP Status: ${res1.status} | Body:`, json1);
@@ -637,8 +716,20 @@ designer_notes: Use pastel orange theme
       throw new Error(`Expected HTTP 200 on initial callback, got: ${res1.status}`);
     }
 
-    // 6.2 Identical Replay via API route -> Expect HTTP 200 (duplicate: true, IDEMPOTENT_ACK)
-    console.log('  [API Test 6.2] Invoking identical replay with same correlation_id and payload:');
+    // 6.3 Explicit Audit Record Assertion: Verify audit row was actually created with correlation_id
+    const { data: auditRow, error: auditFetchErr } = await adminClient
+      .from('crm_knowledge_audit_logs')
+      .select('id, correlation_id, payload_hash')
+      .eq('correlation_id', apiCorrId)
+      .limit(1);
+
+    if (auditFetchErr || !auditRow || auditRow.length === 0) {
+      throw new Error(`IDEMPOTENCY FAILURE: Audit log record was NOT created for correlation_id ${apiCorrId}`);
+    }
+    console.log('  -> Verified Audit Log Record exists in database: ID =', auditRow[0].id);
+
+    // 6.4 Identical Replay via API route -> Expect HTTP 200 (duplicate: true, IDEMPOTENT_ACK)
+    console.log('  [API Test 6.4] Invoking identical replay with same correlation_id and payload:');
     const res2 = await callNextJsCallbackApi(apiPayloadInitial);
     const json2 = await res2.json();
     console.log(`  -> Replay Call HTTP Status: ${res2.status} | Body:`, json2);
@@ -647,11 +738,11 @@ designer_notes: Use pastel orange theme
     }
     console.log('  -> PASS: Real API Route returned HTTP 200 IDEMPOTENT_ACK on identical replay!\n');
 
-    // 6.3 Semantic Conflict via API route: Same correlation_id but DIFFERENT payload (e.g. status: 'FAILED')
-    console.log('  [API Test 6.3] Invoking conflicting call with same correlation_id but different status:');
+    // 6.5 Semantic Conflict via API route: Same correlation_id but DIFFERENT payload (e.g. status: 'FAILED')
+    console.log('  [API Test 6.5] Invoking conflicting call with same correlation_id but different status:');
     const apiPayloadConflicting = {
       ...apiPayloadInitial,
-      status: 'FAILED', // Tampered field creates differing payload_hash
+      status: 'FAILED', // Tampered status creates differing payload_hash
       error_message: 'tampered failure',
     };
 
@@ -667,21 +758,27 @@ designer_notes: Use pastel orange theme
     console.log('ALL 6 E2E TEST STAGES PASSED 100% ON DB CLONE:');
     console.log('  1. Canonical Handoff Serialization & Negative Revision Rejection: PASS');
     console.log('  2. Comprehensive Metadata Contract Barrier at REVIEWED -> APPROVED: PASS');
-    console.log('  3. Ingestion Callback & Document Activation: PASS');
+    console.log('  3. Ingestion Callback & Real Chunk Content Hash Proof: PASS');
     console.log('  4. Atomic Superseding & Fail-Fast Rollback Guards: PASS');
     console.log('  5. State-Machine Compliant Fixture & Two-Layer Namespace Isolation: PASS');
     console.log('  6. Real Next.js API Route HTTP 409 Conflict & Idempotent Replay: PASS');
     console.log('================================================================');
   } finally {
-    console.log('\n--- CLEANUP FIXTURE INVENTORY VIA STRICT STATE MACHINE ---');
+    console.log('\n--- CLEANUP FIXTURE INVENTORY VIA STRICT STATE MACHINE (FAIL-FAST) ---');
+    let cleanupErrors = 0;
     for (const docId of createdDocIds) {
       try {
         await safeArchiveDocument(adminClient, ownerClient, docId, ownerUserId);
+        console.log(`  -> Document ${docId} successfully ARCHIVED.`);
       } catch (err: any) {
-        console.warn(`  Warning during safe archiving doc ${docId}:`, err.message);
+        console.error(`  CRITICAL: Cleanup failed for doc ${docId}:`, err.message);
+        cleanupErrors++;
       }
     }
-    console.log(`  -> Successfully transitioned ${createdDocIds.length} test documents to ARCHIVED without any state machine violations.`);
+    if (cleanupErrors > 0) {
+      throw new Error(`CLEANUP_FAILURE: ${cleanupErrors} test fixtures failed to transition to ARCHIVED!`);
+    }
+    console.log(`  -> Cleaned up 100% of ${createdDocIds.length} test documents safely into ARCHIVED state.`);
   }
 }
 
