@@ -275,9 +275,6 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
             <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 dark:text-white">
               {title || item.title}
             </h3>
-            <p className="mt-0.5 truncate font-mono text-[10px] text-slate-400 dark:text-slate-500">
-              {item.contentKey}
-            </p>
           </div>
           <StateBadge label={item.currentState} />
         </div>

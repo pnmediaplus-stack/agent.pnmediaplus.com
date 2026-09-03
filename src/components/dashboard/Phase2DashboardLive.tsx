@@ -298,147 +298,149 @@ function PipelineCard({
   const riskIsHigh = review ? (review.overclaimRisk > 3 || review.averageScore < 7) : false;
 
   return (
-    <div className={`flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-xl border hover:-translate-y-0.5 transition-all duration-300 ${theme.card}`}>
-      <div className="px-4 pt-4 pb-3">
-        <div className="flex items-start justify-between gap-2 mb-2">
+    <div className={`flex h-[29.5rem] min-h-[29.5rem] w-[22rem] flex-none flex-col overflow-hidden rounded-xl border hover:-translate-y-0.5 transition-all duration-300 ${theme.card}`}>
+      {/* Header */}
+      <div className="px-4 pt-3.5 pb-2.5 flex-none h-[5.5rem] border-b border-slate-200/40 dark:border-slate-800/40 flex flex-col justify-between">
+        <div className="flex items-center justify-between gap-2">
           <StateBadge label={item.currentState} displayLabel={t(`dashboard.state.${item.currentState}`) ?? item.currentState} />
-          <div className="flex items-center gap-1.5 shrink-0">
-            {actionBadge && (
-              <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border shadow-2xs ${actionBadge.bg}`}>
-                {actionBadge.label}
-              </span>
-            )}
-            <div className="text-[10px] font-mono font-medium text-slate-400 dark:text-slate-500">{item.contentKey}</div>
-          </div>
+          {actionBadge && (
+            <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-2xs shrink-0 ${actionBadge.bg}`}>
+              {actionBadge.label}
+            </span>
+          )}
         </div>
         
         <div className="min-w-0">
-          <div className="break-words whitespace-normal text-sm font-extrabold leading-snug text-slate-900 dark:text-white">
+          <div className="break-words whitespace-normal text-sm font-extrabold leading-tight text-slate-900 dark:text-white line-clamp-2">
             {cleanTitleStr || item.title}
           </div>
-          {cleanBriefStr ? (
-            <div className="mt-1.5 max-h-12 overflow-hidden break-words whitespace-normal text-[12px] leading-relaxed text-slate-600 dark:text-slate-300 line-clamp-2 italic border-l-2 border-slate-300 dark:border-slate-700 pl-2">
-              {cleanBriefStr}
-            </div>
-          ) : null}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-        {/* 4 Distinct Sub-Cards Grid */}
-        <div className="grid grid-cols-2 gap-2.5 mb-4">
-          {/* Sub-Card 1: Owner */}
-          <div className={`rounded-xl p-2.5 border transition-all ${theme.inner}`}>
-            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-1 flex items-center justify-between">
-              <span>Owner</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+      {/* Body */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 flex flex-col justify-between space-y-3 custom-scrollbar-thin">
+        <div>
+          {cleanBriefStr ? (
+            <div className="mb-3 max-h-12 overflow-hidden break-words whitespace-normal text-[12px] leading-relaxed text-slate-600 dark:text-slate-300 line-clamp-2 italic border-l-2 border-slate-300 dark:border-slate-700 pl-2">
+              {cleanBriefStr}
             </div>
-            <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200 truncate" title={item.ownerRef}>
-              {item.ownerRef.split('@')[0]}
+          ) : null}
+
+          {/* 4 Distinct Sub-Cards Grid (Synchronized Height) */}
+          <div className="grid grid-cols-2 gap-2.5 mb-3 h-[6.75rem] flex-none">
+            {/* Sub-Card 1: Owner */}
+            <div className={`rounded-xl p-2.5 border transition-all flex flex-col justify-between ${theme.inner}`}>
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between">
+                <span>Owner</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+              </div>
+              <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200 truncate" title={item.ownerRef}>
+                {item.ownerRef.split('@')[0]}
+              </div>
+            </div>
+
+            {/* Sub-Card 2: Next Phase */}
+            <div className={`rounded-xl p-2.5 border transition-all flex flex-col justify-between ${theme.inner}`}>
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between">
+                <span>Next Phase</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+              </div>
+              <div className="text-xs font-bold text-cyan-900 dark:text-cyan-200 truncate">
+                {t(`dashboard.state.${nextState}`) ?? nextState}
+              </div>
+            </div>
+
+            {/* Sub-Card 3: Assets Progress */}
+            <div className={`rounded-xl p-2.5 border transition-all flex flex-col justify-between ${theme.inner}`}>
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between">
+                <span>Assets</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${requiredAssets.present.length === requiredAssets.totalRequired ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+              </div>
+              <div className={`text-xs font-bold ${requiredAssets.present.length === requiredAssets.totalRequired ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>
+                {assetCompletionText} <span className="text-[10px] font-normal opacity-80">ready</span>
+              </div>
+            </div>
+
+            {/* Sub-Card 4: QA Status */}
+            <div className={`rounded-xl p-2.5 border transition-all flex flex-col justify-between ${theme.inner}`}>
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between">
+                <span>QA Status</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${review ? (riskIsHigh ? 'bg-rose-500' : 'bg-emerald-500') : 'bg-slate-400'}`}></span>
+              </div>
+              <div className={`text-xs font-bold truncate ${review ? (riskIsHigh ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300') : 'text-slate-600 dark:text-slate-400'}`}>
+                {qaGateText}
+              </div>
             </div>
           </div>
 
-          {/* Sub-Card 2: Next Phase */}
-          <div className={`rounded-xl p-2.5 border transition-all ${theme.inner}`}>
-            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-1 flex items-center justify-between">
-              <span>Next Phase</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
-            </div>
-            <div className="text-xs font-bold text-cyan-900 dark:text-cyan-200 truncate">
-              {t(`dashboard.state.${nextState}`) ?? nextState}
-            </div>
-          </div>
-
-          {/* Sub-Card 3: Assets Progress */}
-          <div className={`rounded-xl p-2.5 border transition-all ${theme.inner}`}>
-            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-1 flex items-center justify-between">
-              <span>Assets</span>
-              <span className={`w-1.5 h-1.5 rounded-full ${requiredAssets.present.length === requiredAssets.totalRequired ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
-            </div>
-            <div className={`text-xs font-bold ${requiredAssets.present.length === requiredAssets.totalRequired ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>
-              {assetCompletionText} <span className="text-[10px] font-normal opacity-80">ready</span>
-            </div>
-          </div>
-
-          {/* Sub-Card 4: QA Status */}
-          <div className={`rounded-xl p-2.5 border transition-all ${theme.inner}`}>
-            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-1 flex items-center justify-between">
-              <span>QA Status</span>
-              <span className={`w-1.5 h-1.5 rounded-full ${review ? (riskIsHigh ? 'bg-rose-500' : 'bg-emerald-500') : 'bg-slate-400'}`}></span>
-            </div>
-            <div className={`text-xs font-bold truncate ${review ? (riskIsHigh ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300') : 'text-slate-600 dark:text-slate-400'}`}>
-              {qaGateText}
+          {/* Required Assets Sub-cards */}
+          <div className="space-y-1.5 min-h-[3.5rem] flex flex-col justify-start">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Required Assets</div>
+            <div className="flex flex-wrap gap-1.5">
+              {requiredAssets.present.map((assetType) => (
+                <span key={assetType} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800/60 shadow-2xs">
+                  <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {t(`dashboard.assetType.${assetType}`) ?? assetType}
+                </span>
+              ))}
+              {requiredAssets.missing.map((assetType) => (
+                <span key={assetType} className="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 text-[11px] font-semibold text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 shadow-2xs">
+                  <svg className="w-3 h-3 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {t(`dashboard.assetType.${assetType}`) ?? assetType}
+                </span>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Required Assets Sub-cards */}
-        <div className="space-y-2">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Required Assets</div>
-          <div className="flex flex-wrap gap-1.5">
-            {requiredAssets.present.map((assetType) => (
-              <span key={assetType} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800/60 shadow-2xs">
-                <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                </svg>
-                {t(`dashboard.assetType.${assetType}`) ?? assetType}
-              </span>
-            ))}
-            {requiredAssets.missing.map((assetType) => (
-              <span key={assetType} className="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 text-[11px] font-semibold text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 shadow-2xs">
-                <svg className="w-3 h-3 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {t(`dashboard.assetType.${assetType}`) ?? assetType}
-              </span>
-            ))}
-          </div>
-        </div>
+        {/* Footer Actions */}
+        <div className="mt-auto pt-2 border-t border-slate-200/40 dark:border-slate-800/40 flex-none">
+          {item.currentState === 'QA_passed' && (
+            <div>
+              <button
+                onClick={handlePublish}
+                disabled={isPublishing || !publish.ready}
+                className={`w-full rounded-lg px-4 py-2 text-xs font-bold text-white shadow-sm transition-all ${
+                  isPublishing || !publish.ready
+                    ? "cursor-not-allowed bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500"
+                    : "bg-blue-600 hover:bg-blue-500 hover:shadow"
+                }`}
+              >
+                {isPublishing ? "Publishing..." : "Approve & Publish"}
+              </button>
+              {!publish.ready && (
+                <p className="mt-1 text-center text-[10px] text-rose-500 font-medium">
+                  Not eligible for publish
+                </p>
+              )}
+            </div>
+          )}
 
-        {item.currentState === 'QA_passed' && (
-          <div className="mt-5">
-            <button
-              onClick={handlePublish}
-              disabled={isPublishing || !publish.ready}
-              className={`w-full rounded-lg px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all ${
-                isPublishing || !publish.ready
-                  ? "cursor-not-allowed bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500"
-                  : "bg-blue-600 hover:bg-blue-500 hover:shadow"
-              }`}
-            >
-              {isPublishing ? "Publishing..." : "Approve & Publish"}
-            </button>
-            {!publish.ready && (
-              <p className="mt-2 text-center text-[10px] text-rose-500 font-medium">
-                Not eligible for publish
-              </p>
-            )}
-          </div>
-        )}
-
-        {item.currentState === 'published' && performanceRecords && performanceRecords.some(p => p.contentItemId === item.id) && (
-          <div className="mt-4 border-t border-slate-200/60 dark:border-slate-800/80 pt-3">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Metrics</div>
-            <div className="grid grid-cols-2 gap-2">
+          {item.currentState === 'published' && performanceRecords && performanceRecords.some(p => p.contentItemId === item.id) && (
+            <div className="grid grid-cols-3 gap-1.5 text-center">
               {performanceRecords.filter(p => p.contentItemId === item.id).slice(0, 1).map((perf, idx) => (
                 <React.Fragment key={idx}>
-                  <div className={`rounded-xl p-2.5 text-center border ${theme.inner}`}>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Views</div>
-                    <div className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">{perf.views?.toLocaleString() || 0}</div>
+                  <div className={`rounded-lg p-1.5 border ${theme.inner}`}>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Views</div>
+                    <div className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">{perf.views?.toLocaleString() || 0}</div>
                   </div>
-                  <div className={`rounded-xl p-2.5 text-center border ${theme.inner}`}>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Likes</div>
-                    <div className="text-sm font-extrabold text-rose-600 dark:text-rose-400 mt-0.5">{perf.likes?.toLocaleString() || 0}</div>
+                  <div className={`rounded-lg p-1.5 border ${theme.inner}`}>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">Likes</div>
+                    <div className="text-xs font-extrabold text-rose-600 dark:text-rose-400 mt-0.5">{perf.likes?.toLocaleString() || 0}</div>
                   </div>
-                  <div className={`rounded-xl p-2.5 text-center border col-span-2 ${theme.inner}`}>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">CTR</div>
-                    <div className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">{perf.CTR ? perf.CTR.toFixed(2) + '%' : '0%'}</div>
+                  <div className={`rounded-lg p-1.5 border ${theme.inner}`}>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">CTR</div>
+                    <div className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">{perf.CTR ? perf.CTR.toFixed(2) + '%' : '0%'}</div>
                   </div>
                 </React.Fragment>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1087,32 +1089,6 @@ export function Phase2Dashboard({
             reviews={liveData.qaReviews}
             performanceRecords={liveData.performanceRecords}
           />
-        
-        <div className="mt-4 flex items-center justify-between border-t border-slate-200 dark:border-slate-700/50 pt-4 px-2">
-          <button
-            onClick={() => {
-              if (liveData.page && liveData.page > 1) {
-                router.push(`?page=${liveData.page - 1}`);
-              }
-            }}
-            disabled={!liveData.page || liveData.page === 1}
-            className="rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            ← Previous
-          </button>
-          <div className="text-sm font-medium text-cyan-600 dark:text-cyan-400">
-            Page {liveData.page || 1}
-          </div>
-          <button
-            onClick={() => {
-              router.push(`?page=${(liveData.page || 1) + 1}`);
-            }}
-            disabled={!liveData.hasNextPage}
-            className="rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next →
-          </button>
-        </div>
       </SectionFrame>
 
       <div className="space-y-6">
