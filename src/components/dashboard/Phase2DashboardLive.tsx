@@ -521,23 +521,13 @@ function PipelineBoard({
 
             return (
               <div key={item.id} className="min-h-0 snap-start">
-                      <PipelineCard
-                        key={item.id}
-                        item={item}
-                        assets={assets}
-                        reviews={reviews}
-                        performanceRecords={performanceRecords}
-                      />
-                <div className="mt-2 flex items-center justify-between px-1 text-xs text-slate-500">
-                  <span>{requiredLabel}</span>
-                  <span>
-                    {review
-                      ? publish.ready
-                        ? (t("dashboard.labels.publishReady") ?? "publish ready")
-                        : (t("dashboard.labels.gatePending") ?? "gate pending")
-                      : (t("dashboard.labels.pendingQa") ?? "pending qa")}
-                  </span>
-                </div>
+                <PipelineCard
+                  key={item.id}
+                  item={item}
+                  assets={assets}
+                  reviews={reviews}
+                  performanceRecords={performanceRecords}
+                />
               </div>
             );
           })}
