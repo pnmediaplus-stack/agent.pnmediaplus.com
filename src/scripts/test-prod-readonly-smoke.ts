@@ -12,14 +12,16 @@ if (!supabaseUrl || !anonKey || !serviceRoleKey) {
   process.exit(1);
 }
 
-const targetOrgBId = '00000000-0000-0000-0000-000000000002';
+// Canonical Test Org B UUID from security test suite
+const targetOrgBId = 'aaaaaaaa-cccc-cccc-cccc-000000000002';
 
 async function runProdReadonlySmokeTest() {
   console.log('================================================================');
-  console.log('PRODUCTION ZERO-MUTATION VERIFICATION & FULL AUDIT PROBE');
+  console.log('PRODUCTION ZERO-MUTATION VERIFICATION & STRICT RLS AUDIT PROBE');
   console.log('Target Environment: PRODUCTION');
   console.log('Target Supabase URL:', supabaseUrl);
-  console.log('Mode: Strictly Read-Only / Zero Data Mutation / No Fixtures');
+  console.log('Target Org B UUID:', targetOrgBId);
+  console.log('Mode: Strictly Read-Only / Zero Data Mutation / Hard Failure on Any Query Error');
   console.log('================================================================\n');
 
   const zeroVector = Array(1536).fill(0.0);
@@ -31,12 +33,12 @@ async function runProdReadonlySmokeTest() {
   });
 
   // -------------------------------------------------------------------------
-  // SECTION 1: Production Preflight Data Integrity Check
+  // SECTION 1: Production Preflight Data Integrity & All Distinct Tenants Existence
   // -------------------------------------------------------------------------
   console.log('--- SECTION 1: PRODUCTION PREFLIGHT DATA INTEGRITY & TENANT EXISTENCE ---');
 
   // 1.1 Document Tenant Validity & Distribution
-  console.log('[Preflight 1] Verifying Production Document Distribution & Organization Existence:');
+  console.log('[Preflight 1] Verifying Production Documents & Distinct Organization IDs:');
   const { data: docs, error: docErr } = await adminClient
     .from('crm_knowledge_documents')
     .select('id, organization_id, knowledge_status, ingestion_status');
@@ -59,39 +61,48 @@ async function runProdReadonlySmokeTest() {
     throw new Error(`Preflight 1 FAILED: Zero-Trust violation: Found ${activeDocs.length} ACTIVE documents without approved ingestion!`);
   }
 
-  // 1.2 Verify organization_id exists in portal_organization_memberships
-  const firstOrgId = docs?.[0]?.organization_id;
-  const { data: orgCheck, error: orgErr } = await adminClient
-    .from('portal_organization_memberships')
-    .select('organization_id')
-    .eq('organization_id', firstOrgId)
-    .limit(1);
+  // 1.2 Verify ALL distinct organization_ids exist and are active in portal_organization_memberships
+  const distinctDocOrgs = Array.from(new Set(docs?.map(d => d.organization_id) || []));
+  console.log(`  Distinct document organizations found: ${JSON.stringify(distinctDocOrgs)}`);
 
-  if (orgErr) throw new Error(`Preflight 1 FAILED: Error checking organization membership: ${orgErr.message}`);
-  if (!orgCheck || orgCheck.length === 0) {
-    throw new Error(`Preflight 1 FAILED: Document organization_id ${firstOrgId} does NOT exist in portal_organization_memberships!`);
+  const { data: allMemberships, error: memErr } = await adminClient
+    .from('portal_organization_memberships')
+    .select('organization_id, status');
+
+  if (memErr) throw new Error(`Preflight 1 FAILED: Could not query portal_organization_memberships: ${memErr.message}`);
+
+  const activeOrgSet = new Set(allMemberships?.filter(m => m.status === 'active').map(m => m.organization_id) || []);
+  for (const orgId of distinctDocOrgs) {
+    if (!activeOrgSet.has(orgId)) {
+      throw new Error(`Preflight 1 FAILED: Document organization_id ${orgId} is NOT an active organization in portal_auth!`);
+    }
   }
-  console.log(`  Verified Organization ${firstOrgId} exists in portal_auth membership system.`);
-  console.log('  -> PASS: All documents have valid existing organization_id; 0 ACTIVE documents (Zero-Trust boundary preserved)\n');
+  console.log('  -> PASS: 100% of distinct document organizations exist and are active in portal_auth.\n');
 
   // 1.3 Audit Log Anomalies & Tenant Mismatch JOIN
-  console.log('[Preflight 2] Verifying Audit Log Anomalies & Tenant Mismatch JOIN:');
+  console.log('[Preflight 2] Verifying Audit Log Anomalies & Strict Tenant Mismatch JOIN:');
   const { data: audits, error: auditErr } = await adminClient
     .from('crm_knowledge_audit_logs')
-    .select('id, document_id, organization_id, action, correlation_id, retry_attempt, document:crm_knowledge_documents(id, organization_id)');
+    .select('id, document_id, organization_id, action, correlation_id, retry_attempt');
 
   if (auditErr) throw new Error(`Preflight 2 FAILED: Could not query crm_knowledge_audit_logs: ${auditErr.message}`);
 
   const totalAudits = audits?.length || 0;
-  const orphanAudits = audits?.filter(a => !a.document_id || !a.organization_id) || [];
+  const docIdToOrgMap = new Map(docs?.map(d => [d.id, d.organization_id]) || []);
+
+  // Strict check: if document_id does not exist in crm_knowledge_documents, it is an orphan!
+  const orphanAudits = audits?.filter(a => !a.document_id || !a.organization_id || !docIdToOrgMap.has(a.document_id)) || [];
   const missingCorrAudits = audits?.filter(a => a.action?.startsWith('INGESTION_') && !a.correlation_id) || [];
   const negRetryAudits = audits?.filter(a => a.retry_attempt < 0) || [];
   
-  // Explicit JOIN check: audit.organization_id !== document.organization_id
-  const tenantMismatchAudits = audits?.filter(a => a.document && (a.document as any).organization_id !== a.organization_id) || [];
+  // Strict JOIN check: compare audit.organization_id with the real document.organization_id
+  const tenantMismatchAudits = audits?.filter(a => {
+    const realDocOrg = docIdToOrgMap.get(a.document_id);
+    return realDocOrg && realDocOrg !== a.organization_id;
+  }) || [];
 
   console.log(`  Total Audit Rows: ${totalAudits}`);
-  console.log(`  Orphan Audits: ${orphanAudits.length}`);
+  console.log(`  Orphan Audits (missing doc or null): ${orphanAudits.length}`);
   console.log(`  Missing Correlation on Ingestion: ${missingCorrAudits.length}`);
   console.log(`  Negative retry_attempt: ${negRetryAudits.length}`);
   console.log(`  Tenant Mismatch (JOIN audit to document): ${tenantMismatchAudits.length}`);
@@ -153,7 +164,7 @@ async function runProdReadonlySmokeTest() {
   const { error: sErr } = await adminClient.rpc('match_documents', {
     query_embedding: zeroVector,
     match_count: 1,
-    filter: { organization_id: firstOrgId, namespace: 'cskh' },
+    filter: { organization_id: distinctDocOrgs[0], namespace: 'cskh' },
   });
 
   if (sErr) {
@@ -189,49 +200,60 @@ async function runProdReadonlySmokeTest() {
     auth: { persistSession: false },
   });
 
-  // Verify get_auth_user_organizations strictly returns user authorized tenant
+  // 3.1 Verify get_auth_user_organizations strictly returns user authorized tenant
   const { data: userOrgs, error: uHelperErr } = await userClient.rpc('get_auth_user_organizations');
   if (uHelperErr) throw new Error(`RLS 1 FAILED: User could not call get_auth_user_organizations: ${uHelperErr.message}`);
 
   console.log('  User Authorized Organizations returned:', userOrgs);
-  if (!userOrgs || userOrgs.includes(targetOrgBId) || !userOrgs.includes(firstOrgId)) {
+  if (!userOrgs || userOrgs.includes(targetOrgBId) || !userOrgs.includes(distinctDocOrgs[0])) {
     throw new Error(`RLS 1 CRITICAL FAIL: Helper did not return user tenant or leaked Org B!`);
   }
   console.log('  -> PASS: Helper strictly returned user authorized tenant (Zero Tenant Leakage)\n');
 
-  // Verify RLS multi-tenant isolation on crm_knowledge_documents
+  // 3.2 Verify RLS multi-tenant isolation on crm_knowledge_documents
   console.log('[RLS 2] Verifying crm_knowledge_documents Multi-Tenant Isolation:');
   const { data: ownDocs, error: ownDocsErr } = await userClient.from('crm_knowledge_documents').select('id');
   if (ownDocsErr) {
-    console.log('  Notice: Table grant for authenticated pending apply. Error:', ownDocsErr.message);
-  } else {
-    console.log(`  Own Documents Read by User: ${ownDocs?.length} (Expected: ${totalDocs})`);
+    throw new Error(`RLS 2 HARD FAIL: Authenticated user cannot read own documents under RLS: ${ownDocsErr.message} (Hint: Ensure GRANT SELECT ON public.crm_knowledge_documents TO authenticated is applied)`);
+  }
+  console.log(`  Own Documents Read by User: ${ownDocs?.length} (Expected: ${totalDocs})`);
+  if (ownDocs?.length !== totalDocs) {
+    throw new Error(`RLS 2 FAILED: Expected ${totalDocs} documents readable by tenant owner, got ${ownDocs?.length}`);
   }
 
-  const { data: foreignDocs } = await userClient.from('crm_knowledge_documents').select('id').eq('organization_id', targetOrgBId);
-  console.log(`  Foreign (Org B) Documents Read by User: ${foreignDocs?.length ?? 0} (Expected: 0)`);
-  if ((foreignDocs?.length ?? 0) > 0) {
+  const { data: foreignDocs, error: foreignDocsErr } = await userClient.from('crm_knowledge_documents').select('id').eq('organization_id', targetOrgBId);
+  if (foreignDocsErr) {
+    throw new Error(`RLS 2 HARD FAIL: Foreign documents query errored unexpectedly: ${foreignDocsErr.message}`);
+  }
+  console.log(`  Foreign (Org B: ${targetOrgBId}) Documents Read: ${foreignDocs?.length} (Expected: exactly 0)`);
+  if ((foreignDocs?.length || 0) > 0) {
     throw new Error('RLS 2 CRITICAL FAIL: Authenticated user leaked documents from foreign Org B!');
   }
-  console.log('  -> PASS: crm_knowledge_documents RLS blocked 100% of foreign Org B documents\n');
+  console.log('  -> PASS: crm_knowledge_documents RLS strictly blocked foreign Org B documents with zero error\n');
 
-  // Verify RLS multi-tenant isolation on crm_knowledge_chunks
+  // 3.3 Verify RLS multi-tenant isolation on crm_knowledge_chunks
   console.log('[RLS 3] Verifying crm_knowledge_chunks Multi-Tenant Isolation:');
-  const { data: foreignChunks } = await userClient.from('crm_knowledge_chunks').select('id').eq('organization_id', targetOrgBId);
-  console.log(`  Foreign (Org B) Chunks Read by User: ${foreignChunks?.length ?? 0} (Expected: 0)`);
-  if ((foreignChunks?.length ?? 0) > 0) {
+  const { data: foreignChunks, error: foreignChunksErr } = await userClient.from('crm_knowledge_chunks').select('id').eq('organization_id', targetOrgBId);
+  if (foreignChunksErr) {
+    throw new Error(`RLS 3 HARD FAIL: Foreign chunks query errored unexpectedly: ${foreignChunksErr.message}`);
+  }
+  console.log(`  Foreign (Org B: ${targetOrgBId}) Chunks Read: ${foreignChunks?.length} (Expected: exactly 0)`);
+  if ((foreignChunks?.length || 0) > 0) {
     throw new Error('RLS 3 CRITICAL FAIL: Authenticated user leaked chunks from foreign Org B!');
   }
-  console.log('  -> PASS: crm_knowledge_chunks RLS blocked 100% of foreign Org B chunks\n');
+  console.log('  -> PASS: crm_knowledge_chunks RLS strictly blocked foreign Org B chunks with zero error\n');
 
-  // Verify RLS multi-tenant isolation on crm_knowledge_audit_logs
+  // 3.4 Verify RLS multi-tenant isolation on crm_knowledge_audit_logs
   console.log('[RLS 4] Verifying crm_knowledge_audit_logs Multi-Tenant Isolation:');
-  const { data: foreignAudits } = await userClient.from('crm_knowledge_audit_logs').select('id').eq('organization_id', targetOrgBId);
-  console.log(`  Foreign (Org B) Audit Logs Read by User: ${foreignAudits?.length ?? 0} (Expected: 0)`);
-  if ((foreignAudits?.length ?? 0) > 0) {
+  const { data: foreignAudits, error: foreignAuditsErr } = await userClient.from('crm_knowledge_audit_logs').select('id').eq('organization_id', targetOrgBId);
+  if (foreignAuditsErr) {
+    throw new Error(`RLS 4 HARD FAIL: Foreign audit logs query errored unexpectedly: ${foreignAuditsErr.message}`);
+  }
+  console.log(`  Foreign (Org B: ${targetOrgBId}) Audit Logs Read: ${foreignAudits?.length} (Expected: exactly 0)`);
+  if ((foreignAudits?.length || 0) > 0) {
     throw new Error('RLS 4 CRITICAL FAIL: Authenticated user leaked audit logs from foreign Org B!');
   }
-  console.log('  -> PASS: crm_knowledge_audit_logs RLS blocked 100% of foreign Org B audit logs\n');
+  console.log('  -> PASS: crm_knowledge_audit_logs RLS strictly blocked foreign Org B audit logs with zero error\n');
 
   // -------------------------------------------------------------------------
   // SECTION 4: Migration Schema & Column Integrity
@@ -259,7 +281,7 @@ async function runProdReadonlySmokeTest() {
   console.log('  -> PASS: All migration 1 & 2 schema columns verified (knowledge_status, ingestion_status, idempotency_key, payload_hash)\n');
 
   console.log('================================================================');
-  console.log('ALL PRODUCTION PREFLIGHT, RLS, AND SMOKE TESTS PASSED 100%!');
+  console.log('ALL PRODUCTION PREFLIGHT, STRICT RLS, AND SMOKE TESTS PASSED 100%!');
   console.log('Production Environment Confirmed Fully Compliant with Zero-Trust.');
   console.log('================================================================');
 }

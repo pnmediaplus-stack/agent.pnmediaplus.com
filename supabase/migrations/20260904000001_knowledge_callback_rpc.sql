@@ -328,8 +328,8 @@ FOR SELECT USING (
   organization_id IN (SELECT public.get_auth_user_organizations()) 
 );
 
--- 8. Cấp quyền thao tác trên các bảng tri thức cho authenticated (được bảo vệ 100% bởi RLS helper phía trên)
-GRANT SELECT, INSERT, UPDATE ON public.crm_knowledge_documents TO authenticated;
+-- 8. Cấp quyền SELECT tối thiểu trên các bảng tri thức cho authenticated (được bảo vệ 100% bởi RLS helper phía trên)
+GRANT SELECT ON public.crm_knowledge_documents TO authenticated;
 GRANT SELECT ON public.crm_knowledge_chunks TO authenticated;
 GRANT SELECT ON public.crm_knowledge_audit_logs TO authenticated;
 
