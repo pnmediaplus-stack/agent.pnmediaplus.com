@@ -305,6 +305,7 @@ designer_notes: Use pastel orange theme
       .insert({
         organization_id: orgId,
         title: '[HANDOFF v1] Chien Dich Viral 15 Ngay',
+        file_url: `${orgId}/${crypto.randomUUID()}.md`,
         namespace: 'cskh',
         knowledge_status: 'DRAFT',
         ingestion_status: 'PENDING',
@@ -473,6 +474,7 @@ designer_notes: Use pastel orange theme
       .insert({
         organization_id: orgId,
         title: '[HANDOFF v2] Chien Dich Viral 15 Ngay - Cap Nhat Uu Dai',
+        file_url: `${orgId}/${crypto.randomUUID()}.md`,
         namespace: 'cskh',
         knowledge_status: 'DRAFT',
         ingestion_status: 'PENDING',
@@ -516,6 +518,7 @@ designer_notes: Use pastel orange theme
       .insert({
         organization_id: orgId,
         title: '[UNAPPROVED DOC] Draft to test superseding fail-fast',
+        file_url: `${orgId}/${crypto.randomUUID()}.md`,
         namespace: 'cskh',
         knowledge_status: 'DRAFT',
         ingestion_status: 'PENDING',
@@ -595,6 +598,7 @@ designer_notes: Use pastel orange theme
       .insert({
         organization_id: orgId,
         title: '[MARKETING INTERNAL] Chien Luoc Gia & Media Budget',
+        file_url: `${orgId}/${crypto.randomUUID()}.md`,
         namespace: 'marketing',
         knowledge_status: 'DRAFT',
         ingestion_status: 'PENDING',
@@ -689,6 +693,7 @@ designer_notes: Use pastel orange theme
       .insert({
         organization_id: orgId,
         title: '[API TEST] Fresh Doc For Real Callback Test',
+        file_url: `${orgId}/${crypto.randomUUID()}.md`,
         namespace: 'cskh',
         knowledge_status: 'DRAFT',
         ingestion_status: 'PENDING',
