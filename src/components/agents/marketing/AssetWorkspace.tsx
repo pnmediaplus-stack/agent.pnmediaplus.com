@@ -6,7 +6,25 @@ import { ApprovalActionBar } from "./ApprovalActionBar";
 import { Code, Eye, FileText, Layers } from "lucide-react";
 import { useI18n } from "@/lib/i18n/useI18n";
 
-const mockMarkdown = `
+const mockMarkdownVi = `
+# Webinar SaaS Q4: Mở rộng Đội ngũ Kỹ thuật Hiệu quả
+
+**Đối tượng mục tiêu:** CTOs, Giám đốc Kỹ thuật (VP of Engineering), Trưởng nhóm Lập trình.
+**Mục tiêu:** Thu hút 500+ lượt đăng ký cho buổi Webinar Q4 sắp tới.
+
+## Email 1: Thư mời tham gia
+**Tiêu đề:** Mở rộng quy mô đội ngũ kỹ thuật mà không làm giảm tốc độ phát triển
+**Nội dung:**
+Xin chào {{first_name}},
+
+Mở rộng quy mô đội ngũ kỹ thuật là một thách thức lớn. Bạn muốn tăng tốc độ ra mắt sản phẩm, nhưng việc bổ sung thêm lập trình viên thường làm chậm tiến độ ban đầu.
+
+Hãy tham gia buổi Webinar của chúng tôi vào ngày 15/10 tới, nơi chúng tôi sẽ chia sẻ chính xác các mô hình khung (frameworks) được sử dụng bởi các công ty SaaS hàng đầu để duy trì tốc độ phát triển cao trong khi quy mô nhân sự tăng gấp đôi.
+
+[Đăng ký ngay]
+`;
+
+const mockMarkdownEn = `
 # Q4 SaaS Webinar: Scaling Engineering Teams
 
 **Target Audience:** CTOs, VPs of Engineering, Lead Developers.
@@ -24,7 +42,23 @@ Join our webinar on Oct 15th where we'll discuss the exact frameworks used by to
 [Register Now]
 `;
 
-const mockJSON = {
+const mockJSONVi = {
+  ten_chien_dich: "Webinar_SaaS_Q4",
+  doi_tuong_muc_tieu: ["CTO", "Giám đốc Kỹ thuật", "Trưởng nhóm Lập trình"],
+  phan_bo_ngan_sach: {
+    quang_cao_linkedin: 5000,
+    quang_cao_twitter: 2000,
+    tai_tro_email: 3000
+  },
+  roi_du_kien: "250%",
+  kpi_muc_tieu: {
+    luot_dang_ky: 500,
+    nguoi_tham_gia: 200,
+    mql_leads: 50
+  }
+};
+
+const mockJSONEn = {
   campaign_name: "Q4_SaaS_Webinar",
   target_audience: ["CTO", "VP Engineering", "Lead Developer"],
   budget_allocation: {
@@ -41,8 +75,10 @@ const mockJSON = {
 };
 
 export function AssetWorkspace() {
-  const { t } = useI18n("agents");
+  const { t, locale } = useI18n("agents");
   const [activeTab, setActiveTab] = useState<"preview" | "content" | "data">("content");
+  const mockMarkdown = locale === "vi" ? mockMarkdownVi : mockMarkdownEn;
+  const mockJSON = locale === "vi" ? mockJSONVi : mockJSONEn;
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50/70 dark:bg-slate-950/70 relative">
