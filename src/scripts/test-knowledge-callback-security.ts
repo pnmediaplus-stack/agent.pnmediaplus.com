@@ -14,6 +14,13 @@ if (!supabaseUrl || !serviceRoleKey || !anonKey) {
   process.exit(1);
 }
 
+const prodHost = 'jrgkpbjsqefvnhbiiutz.supabase.co';
+if (supabaseUrl.includes(prodHost)) {
+  console.error('⛔ HARD BLOCKED: test-knowledge-callback-security.ts is a mutation test suite and is STRICTLY PROHIBITED from running on PRODUCTION (jrgkpbjsqefvnhbiiutz.supabase.co)!');
+  console.error('Please configure .env.local to point to the DB Clone or Staging database.');
+  process.exit(1);
+}
+
 const adminClient = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false },
 });

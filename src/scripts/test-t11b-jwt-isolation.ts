@@ -12,6 +12,20 @@ if (!supabaseUrl || !anonKey || !serviceRoleKey) {
   process.exit(1);
 }
 
+// -----------------------------------------------------------------------------
+// ENVIRONMENT GUARD: Strictly block running on Production
+// -----------------------------------------------------------------------------
+const prodHost = 'jrgkpbjsqefvnhbiiutz.supabase.co';
+if (supabaseUrl.includes(prodHost)) {
+  console.error('================================================================');
+  console.error('⛔ HARD BLOCKED: test-t11b-jwt-isolation.ts contains behavioral');
+  console.error('mutation fixtures and is STRICTLY PROHIBITED from running on');
+  console.error('PRODUCTION (jrgkpbjsqefvnhbiiutz.supabase.co)!');
+  console.error('Please configure .env.local with DB Clone or Staging credentials.');
+  console.error('================================================================');
+  process.exit(1);
+}
+
 const adminClient = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false },
 });
@@ -22,7 +36,8 @@ const publicClient = createClient(supabaseUrl, anonKey, {
 async function testT11bJwtIsolation() {
   console.log('================================================================');
   console.log('T11b: RPC ACCESS-CONTROL & FULL MULTI-TENANT RLS REGRESSION TEST');
-  console.log('Target Supabase:', supabaseUrl);
+  console.log('Target Environment: DB CLONE / STAGING ONLY');
+  console.log('Target Supabase URL:', supabaseUrl);
   console.log('Scope: RPC Access Boundary + Real Foreign Tenant Data RLS Isolation + Append-Only Immutability');
   console.log('================================================================\n');
 
@@ -30,7 +45,7 @@ async function testT11bJwtIsolation() {
   const targetOrgBId = 'aaaaaaaa-cccc-cccc-cccc-000000000002'; // Target foreign Org B
 
   // 1. Authenticate real user session dynamically via OTP verification (pnmediaplus@gmail.com)
-  console.log('[Setup] Authenticating real user session via OTP exchange (pnmediaplus@gmail.com)...');
+  console.log('[Setup 1] Authenticating real user session via OTP exchange (pnmediaplus@gmail.com)...');
   const linkRes = await adminClient.auth.admin.generateLink({
     type: 'magiclink',
     email: 'pnmediaplus@gmail.com',
@@ -53,17 +68,34 @@ async function testT11bJwtIsolation() {
   const realUserJwt = authData.session.access_token;
   const verifiedUserId = authData.user.id;
 
-  // Retrieve user organization membership
-  const { data: memberRows } = await adminClient
+  // 2. Retrieve user organization membership (Strict: ZERO Fallback)
+  console.log('[Setup 2] Verifying User Active Membership in portal_organization_memberships:');
+  const { data: memberRows, error: memErr } = await adminClient
     .from('portal_organization_memberships')
     .select('organization_id, role')
     .eq('user_id', verifiedUserId)
     .eq('status', 'active');
 
-  const userOrgId = memberRows?.[0]?.organization_id || '8289488a-b255-4cb6-9bff-c9d2e71af160';
+  if (memErr || !memberRows || memberRows.length === 0) {
+    throw new Error(`T11b Setup FAILED: User ${verifiedUserId} has no active memberships in portal_organization_memberships! Fallback UUID is strictly prohibited.`);
+  }
 
+  const userOrgId = memberRows[0].organization_id;
   console.log(`  -> User verified: id=${verifiedUserId} | Active Member of Org A: ${userOrgId}`);
   console.log('  -> Real User Access Token (JWT) acquired successfully.\n');
+
+  // 3. Verify that Target Org B exists and is active in root table portal_organizations
+  console.log('[Setup 3] Verifying Target Org B exists in root table portal_organizations:');
+  const { data: rootOrgB, error: rootBErr } = await adminClient
+    .from('portal_organizations')
+    .select('organization_id, status')
+    .eq('organization_id', targetOrgBId)
+    .single();
+
+  if (rootBErr || !rootOrgB || rootOrgB.status !== 'active') {
+    throw new Error(`T11b Setup FAILED: Target Org B (${targetOrgBId}) does NOT exist or is NOT active in root table portal_organizations! Please seed Org B in DB Clone.`);
+  }
+  console.log(`  -> PASS: Foreign Org B confirmed active in root table portal_organizations.\n`);
 
   // =========================================================================
   // SECTION 1: RPC Access Control Execution Boundary
@@ -149,7 +181,7 @@ async function testT11bJwtIsolation() {
   // =========================================================================
   console.log('--- SECTION 2: MULTI-TENANT RLS REGRESSION (REAL ORG B DATA PROBE) ---');
 
-  // 2.0 Ensure Real Foreign Org B Exists with Real Data in crm_knowledge_documents
+  // Ensure Real Foreign Org B Exists with Real Data in crm_knowledge_documents
   const { data: orgBDocs, error: orgBErr } = await adminClient
     .from('crm_knowledge_documents')
     .select('id, organization_id')
@@ -157,10 +189,10 @@ async function testT11bJwtIsolation() {
 
   if (orgBErr) throw new Error(`T11b Setup FAILED: Could not check Org B documents: ${orgBErr.message}`);
 
-  let realOrgBDocId: string | null = null;
+  let realOrgBDocId: string;
   let isSeededDoc = false;
   if (!orgBDocs || orgBDocs.length === 0) {
-    console.log('  [Setup] Seeding Real Org B test document via admin...');
+    console.log('  [Setup] Seeding Real Org B test document in DB Clone...');
     const { data: newOrgBDoc, error: seedDocErr } = await adminClient
       .from('crm_knowledge_documents')
       .insert({
@@ -187,7 +219,7 @@ async function testT11bJwtIsolation() {
     .select('*', { count: 'exact', head: true })
     .eq('organization_id', targetOrgBId);
 
-  console.log(`  -> Admin Verified: Foreign Org B (${targetOrgBId}) has REAL data in DB: ${adminOrgBCount} document(s).`);
+  console.log(`  -> Admin Verified: Foreign Org B (${targetOrgBId}) has REAL data in DB Clone: ${adminOrgBCount} document(s).`);
 
   // 2.1 Call get_auth_user_organizations() helper: Must return ONLY Org A, NEVER Org B
   console.log('[Test T11b.5] Calling get_auth_user_organizations() as Authenticated User:');
@@ -289,6 +321,15 @@ async function testT11bJwtIsolation() {
     console.log('  -> PASS: DELETE on audit log was HARD BLOCKED by prevent_audit_mutation trigger!\n');
   } else {
     throw new Error(`T11b.11 FAILED: Expected trigger to block DELETE on audit log, got: ${JSON.stringify(deleteErr)}`);
+  }
+
+  // Cleanup: Transition seeded doc to ARCHIVED via state machine
+  if (isSeededDoc && realOrgBDocId) {
+    await adminClient
+      .from('crm_knowledge_documents')
+      .update({ knowledge_status: 'ARCHIVED' })
+      .eq('id', realOrgBDocId);
+    console.log('  [Cleanup] Seeded test document safely transitioned to ARCHIVED.');
   }
 
   console.log('================================================================');
