@@ -170,6 +170,56 @@ function SummaryGrid({ cards }: { cards: SummaryCard[] }) {
   );
 }
 
+function getStageCardTheme(state: string) {
+  switch (state) {
+    case "idea":
+      return {
+        card: "bg-slate-100/90 dark:bg-slate-900/90 border-slate-300/80 dark:border-slate-700/80 border-l-4 border-l-slate-400 dark:border-l-slate-500 shadow-sm hover:shadow-md",
+        inner: "bg-white/90 dark:bg-slate-800/70 border-slate-200/80 dark:border-slate-700/60 shadow-2xs"
+      };
+    case "research_ready":
+      return {
+        card: "bg-cyan-50/80 dark:bg-cyan-950/40 border-cyan-200/90 dark:border-cyan-800/60 border-l-4 border-l-cyan-500 dark:border-l-cyan-400 shadow-sm hover:shadow-md",
+        inner: "bg-white/90 dark:bg-slate-900/80 border-cyan-100 dark:border-cyan-900/50 shadow-2xs"
+      };
+    case "visual_ready":
+      return {
+        card: "bg-purple-50/80 dark:bg-purple-950/40 border-purple-200/90 dark:border-purple-800/60 border-l-4 border-l-purple-500 dark:border-l-purple-400 shadow-sm hover:shadow-md",
+        inner: "bg-white/90 dark:bg-slate-900/80 border-purple-100 dark:border-purple-900/50 shadow-2xs"
+      };
+    case "caption_ready":
+      return {
+        card: "bg-amber-50/80 dark:bg-amber-950/40 border-amber-200/90 dark:border-amber-800/60 border-l-4 border-l-amber-500 dark:border-l-amber-400 shadow-sm hover:shadow-md",
+        inner: "bg-white/90 dark:bg-slate-900/80 border-amber-100 dark:border-amber-900/50 shadow-2xs"
+      };
+    case "QA_ready":
+      return {
+        card: "bg-blue-50/80 dark:bg-blue-950/40 border-blue-200/90 dark:border-blue-800/60 border-l-4 border-l-blue-500 dark:border-l-blue-400 shadow-sm hover:shadow-md",
+        inner: "bg-white/90 dark:bg-slate-900/80 border-blue-100 dark:border-blue-900/50 shadow-2xs"
+      };
+    case "QA_passed":
+      return {
+        card: "bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200/90 dark:border-emerald-800/60 border-l-4 border-l-emerald-500 dark:border-l-emerald-400 shadow-sm hover:shadow-md",
+        inner: "bg-white/90 dark:bg-slate-900/80 border-emerald-100 dark:border-emerald-900/50 shadow-2xs"
+      };
+    case "scheduled":
+      return {
+        card: "bg-sky-50/80 dark:bg-sky-950/40 border-sky-200/90 dark:border-sky-800/60 border-l-4 border-l-sky-500 dark:border-l-sky-400 shadow-sm hover:shadow-md",
+        inner: "bg-white/90 dark:bg-slate-900/80 border-sky-100 dark:border-sky-900/50 shadow-2xs"
+      };
+    case "published":
+      return {
+        card: "bg-teal-50/80 dark:bg-teal-950/40 border-teal-200/90 dark:border-teal-800/60 border-l-4 border-l-teal-500 dark:border-l-teal-400 shadow-sm hover:shadow-md",
+        inner: "bg-white/90 dark:bg-slate-900/80 border-teal-100 dark:border-teal-900/50 shadow-2xs"
+      };
+    default:
+      return {
+        card: "bg-slate-50/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-700/80 border-l-4 border-l-slate-400 shadow-sm hover:shadow-md",
+        inner: "bg-white/90 dark:bg-slate-800/70 border-slate-200/80 dark:border-slate-700/60 shadow-2xs"
+      };
+  }
+}
+
 function PipelineCard({
   item,
   assets,
@@ -187,6 +237,8 @@ function PipelineCard({
   const publish = getPhase2PublishEligibility(item.id, assets, reviews);
   const nextState = getPhase2NextState(item.currentState);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  const theme = getStageCardTheme(item.currentState);
 
   const handlePublish = async () => {
     try {
@@ -214,19 +266,19 @@ function PipelineCard({
   const riskIsHigh = review ? (review.overclaimRisk > 3 || review.averageScore < 7) : false;
 
   return (
-    <div className="flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+    <div className={`flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-xl border hover:-translate-y-0.5 transition-all duration-300 ${theme.card}`}>
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-start justify-between gap-3 mb-2">
           <StateBadge label={item.currentState} displayLabel={t(`dashboard.state.${item.currentState}`) ?? item.currentState} />
-          <div className="text-[10px] font-medium text-slate-400 dark:text-slate-500">{item.contentKey}</div>
+          <div className="text-[10px] font-mono font-medium text-slate-400 dark:text-slate-500">{item.contentKey}</div>
         </div>
         
         <div className="min-w-0">
-          <div className="break-words whitespace-normal text-sm font-bold leading-snug text-slate-800 dark:text-white">
+          <div className="break-words whitespace-normal text-sm font-bold leading-snug text-slate-900 dark:text-white">
             {item.title}
           </div>
           {item.brief ? (
-            <div className="mt-1.5 max-h-12 overflow-hidden break-words whitespace-normal text-[13px] leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-2">
+            <div className="mt-1.5 max-h-12 overflow-hidden break-words whitespace-normal text-[13px] leading-relaxed text-slate-600 dark:text-slate-300 line-clamp-2">
               {item.brief}
             </div>
           ) : null}
@@ -235,28 +287,28 @@ function PipelineCard({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         {/* Compact Metadata */}
-        <div className="grid grid-cols-2 gap-3 mb-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3 border border-slate-100 dark:border-slate-700/50">
+        <div className={`grid grid-cols-2 gap-3 mb-4 rounded-xl p-3 border ${theme.inner}`}>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Owner</div>
-            <div className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate" title={item.ownerRef}>
+            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate" title={item.ownerRef}>
               {item.ownerRef.split('@')[0]}
             </div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Next Phase</div>
-            <div className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
+            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
               {t(`dashboard.state.${nextState}`) ?? nextState}
             </div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Assets</div>
-            <div className="text-xs font-medium text-slate-700 dark:text-slate-300">
+            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
               {assetCompletionText}
             </div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">QA Status</div>
-            <div className={`text-xs font-medium truncate ${review ? (riskIsHigh ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400') : 'text-slate-500'}`}>
+            <div className={`text-xs font-semibold truncate ${review ? (riskIsHigh ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400') : 'text-slate-500'}`}>
               {qaGateText}
             </div>
           </div>
@@ -267,12 +319,12 @@ function PipelineCard({
           <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Assets</div>
           <div className="flex flex-wrap gap-1.5">
             {requiredAssets.present.map((assetType) => (
-              <span key={assetType} className="inline-flex items-center rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300">
+              <span key={assetType} className="inline-flex items-center rounded-md bg-white/90 dark:bg-slate-800/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
                 ✓ {t(`dashboard.assetType.${assetType}`) ?? assetType}
               </span>
             ))}
             {requiredAssets.missing.map((assetType) => (
-              <span key={assetType} className="inline-flex items-center rounded bg-rose-50 dark:bg-rose-900/20 px-2 py-0.5 text-[10px] font-medium text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800/50">
+              <span key={assetType} className="inline-flex items-center rounded-md bg-rose-50/90 dark:bg-rose-950/40 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 shadow-2xs">
                 ○ {t(`dashboard.assetType.${assetType}`) ?? assetType}
               </span>
             ))}
@@ -306,14 +358,14 @@ function PipelineCard({
             <div className="grid grid-cols-2 gap-2">
               {performanceRecords.filter(p => p.contentItemId === item.id).slice(0, 1).map((perf, idx) => (
                 <React.Fragment key={idx}>
-                  <div className="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-2 text-center border border-slate-100 dark:border-slate-700/50">
+                  <div className={`rounded-lg p-2 text-center border ${theme.inner}`}>
                     <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">Views</div>
                     <div className="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{perf.views?.toLocaleString() || 0}</div>
                   </div>
-                  <div className="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-2 text-center border border-slate-100 dark:border-slate-700/50">
+                  <div className={`rounded-lg p-2 text-center border ${theme.inner}`}>
                     <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">Likes</div><div className="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{perf.likes?.toLocaleString() || 0}</div>
                   </div>
-                  <div className="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-2 text-center border border-slate-100 dark:border-slate-700/50 col-span-2">
+                  <div className={`rounded-lg p-2 text-center border col-span-2 ${theme.inner}`}>
                     <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">CTR</div>
                     <div className="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{perf.CTR ? perf.CTR.toFixed(2) + '%' : '0%'}</div>
                   </div>

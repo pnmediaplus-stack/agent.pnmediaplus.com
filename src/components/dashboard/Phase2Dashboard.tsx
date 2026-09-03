@@ -156,6 +156,29 @@ function SummaryGrid({ cards }: { cards: SummaryCard[] }) {
   );
 }
 
+function getStageCardTheme(state: string) {
+  switch (state) {
+    case "idea":
+      return "bg-slate-100/90 dark:bg-slate-900/90 border-slate-300/80 dark:border-slate-700/80 border-l-4 border-l-slate-400 dark:border-l-slate-500 shadow-sm hover:shadow-md";
+    case "research_ready":
+      return "bg-cyan-50/80 dark:bg-cyan-950/40 border-cyan-200/90 dark:border-cyan-800/60 border-l-4 border-l-cyan-500 dark:border-l-cyan-400 shadow-sm hover:shadow-md";
+    case "visual_ready":
+      return "bg-purple-50/80 dark:bg-purple-950/40 border-purple-200/90 dark:border-purple-800/60 border-l-4 border-l-purple-500 dark:border-l-purple-400 shadow-sm hover:shadow-md";
+    case "caption_ready":
+      return "bg-amber-50/80 dark:bg-amber-950/40 border-amber-200/90 dark:border-amber-800/60 border-l-4 border-l-amber-500 dark:border-l-amber-400 shadow-sm hover:shadow-md";
+    case "QA_ready":
+      return "bg-blue-50/80 dark:bg-blue-950/40 border-blue-200/90 dark:border-blue-800/60 border-l-4 border-l-blue-500 dark:border-l-blue-400 shadow-sm hover:shadow-md";
+    case "QA_passed":
+      return "bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200/90 dark:border-emerald-800/60 border-l-4 border-l-emerald-500 dark:border-l-emerald-400 shadow-sm hover:shadow-md";
+    case "scheduled":
+      return "bg-sky-50/80 dark:bg-sky-950/40 border-sky-200/90 dark:border-sky-800/60 border-l-4 border-l-sky-500 dark:border-l-sky-400 shadow-sm hover:shadow-md";
+    case "published":
+      return "bg-teal-50/80 dark:bg-teal-950/40 border-teal-200/90 dark:border-teal-800/60 border-l-4 border-l-teal-500 dark:border-l-teal-400 shadow-sm hover:shadow-md";
+    default:
+      return "bg-slate-50/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-700/80 border-l-4 border-l-slate-400 shadow-sm hover:shadow-md";
+  }
+}
+
 // Map pipeline state to a left-border accent color class
 function getStateAccent(state: string): string {
   switch (state) {
@@ -239,8 +262,10 @@ function PipelineCard({ contentItemId }: { contentItemId: string }) {
     ? item.ownerRef.split("@")[0]
     : item.ownerRef;
 
+  const theme = getStageCardTheme(item.currentState);
+
   return (
-    <div className={`flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border-l-4 ${accent} border border-violet-100 dark:border-slate-700/60 bg-gradient-to-br from-white to-violet-50/60 dark:from-slate-800 dark:to-slate-900 shadow-md transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 hover:border-violet-200 dark:hover:border-slate-600`}>
+    <div className={`flex h-full min-h-0 w-[22rem] flex-none flex-col overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 ${theme}`}>
 
       {/* ── HEADER ─────────────────────────────────── */}
       <div className="px-4 pt-4 pb-3">
