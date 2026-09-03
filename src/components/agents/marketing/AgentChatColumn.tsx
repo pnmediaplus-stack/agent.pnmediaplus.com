@@ -32,7 +32,7 @@ export function AgentChatColumn() {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 relative z-10 w-[340px] xl:w-[380px] flex-shrink-0 overflow-hidden">
+    <div className="flex flex-col w-full lg:w-[340px] xl:w-[380px] h-[340px] lg:h-full shrink-0 bg-white dark:bg-slate-900 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 relative z-10 overflow-hidden">
       {/* Chat Header */}
       <div className="px-4 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shrink-0">
         <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t("agents.marketing.chat.title") ?? "Marketing Agent"}</h2>

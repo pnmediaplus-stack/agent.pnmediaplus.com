@@ -81,7 +81,7 @@ export function AssetWorkspace() {
   const mockJSON = locale === "vi" ? mockJSONVi : mockJSONEn;
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50/70 dark:bg-slate-950/70 relative">
+    <div className="flex-1 flex flex-col h-[500px] lg:h-full overflow-hidden bg-slate-50/70 dark:bg-slate-950/70 relative">
       {/* Top Header & Tabs Bar - Pinned at top */}
       <div className="p-5 pb-3 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shrink-0 flex flex-col gap-4">
         <ApprovalActionBar />

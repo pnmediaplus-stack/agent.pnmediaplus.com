@@ -189,7 +189,7 @@ export function AgentsPageClient() {
           }`}
         >
           <Megaphone className="h-4 w-4" />
-          Marketing Agent Workspace
+          {t("agents.tab.marketing") ?? "Marketing Agent Workspace"}
         </button>
       </div>
 
