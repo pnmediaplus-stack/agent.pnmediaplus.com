@@ -4,6 +4,7 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { ApprovalActionBar } from "./ApprovalActionBar";
 import { Code, Eye, FileText, Layers } from "lucide-react";
+import { useI18n } from "@/lib/i18n/useI18n";
 
 const mockMarkdown = `
 # Q4 SaaS Webinar: Scaling Engineering Teams
@@ -40,6 +41,7 @@ const mockJSON = {
 };
 
 export function AssetWorkspace() {
+  const { t } = useI18n("agents");
   const [activeTab, setActiveTab] = useState<"preview" | "content" | "data">("content");
 
   return (
@@ -56,7 +58,7 @@ export function AssetWorkspace() {
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === "content" ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"}`}
           >
             <FileText className="w-3.5 h-3.5" />
-            Draft Content
+            {t("agents.marketing.workspace.tabContent") ?? "Draft Content"}
           </button>
           <button
             type="button"
@@ -64,7 +66,7 @@ export function AssetWorkspace() {
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === "data" ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"}`}
           >
             <Code className="w-3.5 h-3.5" />
-            Campaign Data
+            {t("agents.marketing.workspace.tabData") ?? "Campaign Data"}
           </button>
           <button
             type="button"
@@ -72,7 +74,7 @@ export function AssetWorkspace() {
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === "preview" ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"}`}
           >
             <Eye className="w-3.5 h-3.5" />
-            Visual Preview
+            {t("agents.marketing.workspace.tabPreview") ?? "Visual Preview"}
           </button>
         </div>
       </div>
@@ -90,7 +92,7 @@ export function AssetWorkspace() {
             <div className="space-y-6">
               <div className="flex items-center gap-2 mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
                 <Layers className="w-5 h-5 text-slate-500" />
-                <h3 className="font-semibold text-slate-900 dark:text-slate-100">Campaign Proposal Data</h3>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t("agents.marketing.workspace.dataTitle") ?? "Campaign Proposal Data"}</h3>
               </div>
               <pre className="bg-slate-50 dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800 overflow-x-auto text-sm text-slate-800 dark:text-slate-300 font-mono">
                 {JSON.stringify(mockJSON, null, 2)}
@@ -102,7 +104,7 @@ export function AssetWorkspace() {
             <div className="flex items-center justify-center h-[350px] border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950/50 text-slate-500">
               <div className="text-center">
                 <Eye className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                <p className="text-sm font-medium">Visual preview not available for this asset type yet.</p>
+                <p className="text-sm font-medium">{t("agents.marketing.workspace.previewNotAvailable") ?? "Visual preview not available for this asset type yet."}</p>
               </div>
             </div>
           )}
