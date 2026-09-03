@@ -413,7 +413,7 @@ export async function issueReferenceToken(
       p_requested_by_actor_type: "HUMAN",
       p_requested_by_actor_ref: authContext.userId,
       p_request_id: randomUUID(),
-      p_expires_at: new Date(Date.now() + 5 * 60000).toISOString() // 5 minutes
+      p_expires_at: new Date(Date.now() + 30 * 60000).toISOString() // 30 minutes
       });
 
     let { data, error } = await issueToken();
