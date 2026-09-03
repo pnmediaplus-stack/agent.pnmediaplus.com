@@ -290,23 +290,51 @@ async function runProdReadonlySmokeTest() {
   const { data: catReport, error: catErr } = await adminClient.rpc('verify_knowledge_security_catalog');
 
   if (catErr) {
-    console.log('  Notice: verify_knowledge_security_catalog RPC not yet applied on Production.');
-    console.log('  Falling back to direct column inspection.');
-  } else {
-    console.log('  Catalog Inspection Report:');
-    console.log('    RLS Enabled on Tables:', catReport?.rls_enabled);
-    console.log('    Idempotency Unique Index Exists:', catReport?.idempotency_index_exists);
-    console.log('    Functions Verified:', catReport?.functions?.map((f: any) => `${f.name} (secdef: ${f.secdef})`));
-    console.log('    Triggers Verified:', catReport?.triggers);
-
-    if (!catReport?.idempotency_index_exists) {
-      throw new Error('Catalog 1 FAILED: Unique index idx_crm_knowledge_audit_idemp is missing!');
-    }
-    if (catReport?.rls_enabled?.crm_knowledge_documents !== true || catReport?.rls_enabled?.crm_knowledge_chunks !== true || catReport?.rls_enabled?.crm_knowledge_audit_logs !== true) {
-      throw new Error('Catalog 1 FAILED: RLS is not enabled on all 3 tables!');
-    }
-    console.log('  -> PASS: All PostgreSQL catalog security controls verified.\n');
+    throw new Error(`Catalog 1 HARD FAIL: verify_knowledge_security_catalog failed or missing on Production: ${catErr.message}`);
   }
+  if (!catReport) {
+    throw new Error('Catalog 1 HARD FAIL: Catalog verifier returned null report!');
+  }
+
+  console.log('  Catalog Inspection Report:');
+  console.log('    RLS Enabled on Tables:', catReport.rls_enabled);
+  console.log('    Idempotency Unique Index Exists:', catReport.idempotency_index_exists);
+  console.log('    Functions Verified:', catReport.functions?.map((f: any) => `${f.name} (secdef: ${f.secdef}, config: ${f.config})`));
+  console.log('    Triggers Verified:', catReport.triggers);
+
+  // 4.1 Strict assertion: RLS enabled on all 3 tables in schema public
+  if (catReport.rls_enabled?.crm_knowledge_documents !== true || catReport.rls_enabled?.crm_knowledge_chunks !== true || catReport.rls_enabled?.crm_knowledge_audit_logs !== true) {
+    throw new Error(`Catalog 1 FAILED: RLS is not enabled on all 3 tables: ${JSON.stringify(catReport.rls_enabled)}`);
+  }
+  console.log('  -> PASS: relrowsecurity = true on all 3 knowledge tables in public schema.');
+
+  // 4.2 Strict assertion: Idempotency unique index exists in schema public
+  if (!catReport.idempotency_index_exists) {
+    throw new Error('Catalog 1 FAILED: Unique index idx_crm_knowledge_audit_idemp is missing in public schema!');
+  }
+  console.log('  -> PASS: Unique index idx_crm_knowledge_audit_idemp confirmed in public schema.');
+
+  // 4.3 Strict assertion: SECURITY DEFINER and fixed search_path on all 3 critical functions
+  const fnMap = new Map((catReport.functions || []).map((f: any) => [f.name, f]));
+  for (const requiredFn of ['get_auth_user_organizations', 'crm_knowledge_state_machine', 'apply_knowledge_ingestion_callback']) {
+    const fnObj: any = fnMap.get(requiredFn);
+    if (!fnObj) throw new Error(`Catalog 1 FAILED: Function ${requiredFn} is missing in public schema!`);
+    if (fnObj.secdef !== true) throw new Error(`Catalog 1 FAILED: Function ${requiredFn} is NOT SECURITY DEFINER!`);
+    if (!fnObj.config || !fnObj.config.includes('search_path=pg_catalog, public')) {
+      throw new Error(`Catalog 1 FAILED: Function ${requiredFn} does NOT have fixed search_path=pg_catalog, public! Got: ${fnObj.config}`);
+    }
+  }
+  console.log('  -> PASS: All 3 security-critical functions verified with prosecdef = true and fixed search_path = pg_catalog, public.');
+
+  // 4.4 Strict assertion: Triggers exist in schema public
+  const trigList = catReport.triggers || [];
+  if (!trigList.includes('trg_crm_knowledge_state_machine')) {
+    throw new Error('Catalog 1 FAILED: Trigger trg_crm_knowledge_state_machine is missing in public schema!');
+  }
+  if (!trigList.includes('trg_crm_knowledge_audit_insert')) {
+    throw new Error('Catalog 1 FAILED: Trigger trg_crm_knowledge_audit_insert is missing in public schema!');
+  }
+  console.log('  -> PASS: State machine and audit append-only triggers confirmed in public schema.\n');
 
   // Verify Schema Columns
   console.log('[Smoke 5] Verifying Schema Columns for Migration 1 (v1.1) and Migration 2 (callback RPC):');

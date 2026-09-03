@@ -361,30 +361,40 @@ BEGIN
 
   SELECT jsonb_build_object(
     'rls_enabled', (
-      SELECT jsonb_object_agg(relname, relrowsecurity)
-      FROM pg_class
-      WHERE relname IN ('crm_knowledge_documents', 'crm_knowledge_chunks', 'crm_knowledge_audit_logs')
+      SELECT jsonb_object_agg(c.relname, c.relrowsecurity)
+      FROM pg_class c
+      JOIN pg_namespace n ON c.relnamespace = n.oid
+      WHERE n.nspname = 'public' 
+        AND c.relname IN ('crm_knowledge_documents', 'crm_knowledge_chunks', 'crm_knowledge_audit_logs')
     ),
     'policies', (
-      SELECT jsonb_agg(jsonb_build_object('table', tablename, 'policy', policyname, 'cmd', cmd))
-      FROM pg_policies
-      WHERE tablename IN ('crm_knowledge_documents', 'crm_knowledge_chunks', 'crm_knowledge_audit_logs')
+      SELECT jsonb_agg(jsonb_build_object('table', p.tablename, 'policy', p.policyname, 'cmd', p.cmd))
+      FROM pg_policies p
+      WHERE p.schemaname = 'public'
+        AND p.tablename IN ('crm_knowledge_documents', 'crm_knowledge_chunks', 'crm_knowledge_audit_logs')
     ),
     'functions', (
-      SELECT jsonb_agg(jsonb_build_object('name', proname, 'secdef', prosecdef, 'config', proconfig))
-      FROM pg_proc
-      WHERE proname IN ('get_auth_user_organizations', 'crm_knowledge_state_machine', 'apply_knowledge_ingestion_callback')
+      SELECT jsonb_agg(jsonb_build_object(
+        'name', p.proname, 
+        'secdef', p.prosecdef, 
+        'config', array_to_string(p.proconfig, ', ')
+      ))
+      FROM pg_proc p
+      JOIN pg_namespace n ON p.pronamespace = n.oid
+      WHERE n.nspname = 'public'
+        AND p.proname IN ('get_auth_user_organizations', 'crm_knowledge_state_machine', 'apply_knowledge_ingestion_callback')
     ),
     'idempotency_index_exists', (
       SELECT EXISTS (
         SELECT 1 FROM pg_indexes 
-        WHERE indexname = 'idx_crm_knowledge_audit_idemp'
+        WHERE schemaname = 'public' AND indexname = 'idx_crm_knowledge_audit_idemp'
       )
     ),
     'triggers', (
-      SELECT jsonb_agg(trigger_name)
-      FROM information_schema.triggers
-      WHERE event_object_table IN ('crm_knowledge_documents', 'crm_knowledge_audit_logs')
+      SELECT jsonb_agg(t.trigger_name)
+      FROM information_schema.triggers t
+      WHERE t.trigger_schema = 'public'
+        AND t.event_object_table IN ('crm_knowledge_documents', 'crm_knowledge_audit_logs')
     )
   ) INTO v_report;
 
