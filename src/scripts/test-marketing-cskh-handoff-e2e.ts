@@ -393,25 +393,12 @@ designer_notes: Use pastel orange theme
     console.log('  -> PASS: Valid metadata & provenance successfully transitioned to APPROVED!\n');
 
     // -------------------------------------------------------------------------
-    // STAGE 3: Atomic Ingestion Callback & Actual Chunk Hash Proof
+    // STAGE 3: Production-Authentic Lifecycle: Vector Chunking First, then Callback Activation
+    // Order: APPROVED -> Chunking/Embedding Complete -> Callback SUCCESS -> ACTIVE
     // -------------------------------------------------------------------------
-    console.log('--- STAGE 3: INGESTION CALLBACK & REAL CHUNK CONTENT HASH PROOF ---');
-    const corrIdDoc1 = `handoff-corr-${Date.now()}-1`;
-    const payloadHashDoc1 = crypto.createHash('sha256').update(`event-payload-1-${corrIdDoc1}`).digest('hex');
+    console.log('--- STAGE 3: VECTOR CHUNKING COMPLETE -> CALLBACK SUCCESS -> ACTIVATION ---');
 
-    const { data: cb1Res, error: cb1Err } = await adminClient.rpc('apply_knowledge_ingestion_callback', {
-      p_document_id: doc1.id,
-      p_organization_id: orgId,
-      p_status: 'SUCCESS',
-      p_correlation_id: corrIdDoc1,
-      p_payload_hash: payloadHashDoc1,
-      p_retry_attempt: 0,
-    });
-
-    if (cb1Err || !cb1Res?.success) throw new Error(`Callback for Document 1 FAILED: ${cb1Err?.message || JSON.stringify(cb1Res)}`);
-    console.log('  -> Callback Result Doc 1:', cb1Res);
-
-    // Insert real chunk for Document 1 in namespace 'cskh'
+    // 3.1 Insert real chunk for Document 1 in namespace 'cskh' BEFORE activation
     const dummyEmbedding = Array(1536).fill(0.01);
     const { error: chunk1Err } = await adminClient
       .from('crm_knowledge_chunks')
@@ -428,7 +415,9 @@ designer_notes: Use pastel orange theme
 
     if (chunk1Err) throw new Error(`Failed to insert chunk for Doc 1: ${chunk1Err.message}`);
 
-    // Fetch the inserted chunk from database and compute hash directly from stored content
+    // 3.2 Fetch stored chunk and verify:
+    // (a) Redaction Hash matches stored content 100%
+    // (b) Zero blacklist patterns exist in stored chunk
     const { data: insertedChunk, error: fetchChunkErr } = await adminClient
       .from('crm_knowledge_chunks')
       .select('content')
@@ -447,7 +436,31 @@ designer_notes: Use pastel orange theme
     if (computedChunkHash !== redactionHash) {
       throw new Error(`CRITICAL INTEGRITY FAILURE: Stored chunk hash does not match metadata redaction_hash!`);
     }
-    console.log('  -> PASS: Stored chunk content in vector store matches metadata redaction_hash 100%!\n');
+
+    // Assert absence of ALL blacklisted internal patterns
+    const forbiddenKeywords = ['system_prompt', 'media_budget', 'cpm', 'cpl', 'designer_notes'];
+    for (const kw of forbiddenKeywords) {
+      if (insertedChunk.content.toLowerCase().includes(kw)) {
+        throw new Error(`REDACTION LEAK: Forbidden internal keyword "${kw}" was found in stored chunk content!`);
+      }
+    }
+    console.log('  -> PASS: Stored chunk content contains ZERO blacklisted internal keywords and matches redaction_hash 100%!');
+
+    // 3.3 Now call ingestion callback with SUCCESS -> Transitions APPROVED -> ACTIVE
+    const corrIdDoc1 = `handoff-corr-${Date.now()}-1`;
+    const payloadHashDoc1 = crypto.createHash('sha256').update(`event-payload-1-${corrIdDoc1}`).digest('hex');
+
+    const { data: cb1Res, error: cb1Err } = await adminClient.rpc('apply_knowledge_ingestion_callback', {
+      p_document_id: doc1.id,
+      p_organization_id: orgId,
+      p_status: 'SUCCESS',
+      p_correlation_id: corrIdDoc1,
+      p_payload_hash: payloadHashDoc1,
+      p_retry_attempt: 0,
+    });
+
+    if (cb1Err || !cb1Res?.success) throw new Error(`Callback for Document 1 FAILED: ${cb1Err?.message || JSON.stringify(cb1Res)}`);
+    console.log('  -> Callback Result Doc 1 (Transitioned to ACTIVE):', cb1Res, '\n');
 
     // -------------------------------------------------------------------------
     // STAGE 4: Atomic Superseding & Mid-Transaction Rollback Guards
