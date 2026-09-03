@@ -286,46 +286,71 @@ function PipelineCard({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-        {/* Compact Metadata */}
-        <div className={`grid grid-cols-2 gap-3 mb-4 rounded-xl p-3 border ${theme.inner}`}>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Owner</div>
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate" title={item.ownerRef}>
+        {/* 4 Distinct Sub-Cards Grid */}
+        <div className="grid grid-cols-2 gap-2.5 mb-4">
+          {/* Sub-Card 1: Owner */}
+          <div className={`rounded-xl p-2.5 border transition-all ${theme.inner}`}>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-1 flex items-center justify-between">
+              <span>Owner</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+            </div>
+            <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200 truncate" title={item.ownerRef}>
               {item.ownerRef.split('@')[0]}
             </div>
           </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Next Phase</div>
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+
+          {/* Sub-Card 2: Next Phase */}
+          <div className={`rounded-xl p-2.5 border transition-all ${theme.inner}`}>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-1 flex items-center justify-between">
+              <span>Next Phase</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+            </div>
+            <div className="text-xs font-bold text-cyan-900 dark:text-cyan-200 truncate">
               {t(`dashboard.state.${nextState}`) ?? nextState}
             </div>
           </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Assets</div>
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-              {assetCompletionText}
+
+          {/* Sub-Card 3: Assets Progress */}
+          <div className={`rounded-xl p-2.5 border transition-all ${theme.inner}`}>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-1 flex items-center justify-between">
+              <span>Assets</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${requiredAssets.present.length === requiredAssets.totalRequired ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+            </div>
+            <div className={`text-xs font-bold ${requiredAssets.present.length === requiredAssets.totalRequired ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>
+              {assetCompletionText} <span className="text-[10px] font-normal opacity-80">ready</span>
             </div>
           </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">QA Status</div>
-            <div className={`text-xs font-semibold truncate ${review ? (riskIsHigh ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400') : 'text-slate-500'}`}>
+
+          {/* Sub-Card 4: QA Status */}
+          <div className={`rounded-xl p-2.5 border transition-all ${theme.inner}`}>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-1 flex items-center justify-between">
+              <span>QA Status</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${review ? (riskIsHigh ? 'bg-rose-500' : 'bg-emerald-500') : 'bg-slate-400'}`}></span>
+            </div>
+            <div className={`text-xs font-bold truncate ${review ? (riskIsHigh ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300') : 'text-slate-600 dark:text-slate-400'}`}>
               {qaGateText}
             </div>
           </div>
         </div>
 
-        {/* Required Assets */}
+        {/* Required Assets Sub-cards */}
         <div className="space-y-2">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Assets</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Required Assets</div>
           <div className="flex flex-wrap gap-1.5">
             {requiredAssets.present.map((assetType) => (
-              <span key={assetType} className="inline-flex items-center rounded-md bg-white/90 dark:bg-slate-800/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
-                ✓ {t(`dashboard.assetType.${assetType}`) ?? assetType}
+              <span key={assetType} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800/60 shadow-2xs">
+                <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                {t(`dashboard.assetType.${assetType}`) ?? assetType}
               </span>
             ))}
             {requiredAssets.missing.map((assetType) => (
-              <span key={assetType} className="inline-flex items-center rounded-md bg-rose-50/90 dark:bg-rose-950/40 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 shadow-2xs">
-                ○ {t(`dashboard.assetType.${assetType}`) ?? assetType}
+              <span key={assetType} className="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 text-[11px] font-semibold text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 shadow-2xs">
+                <svg className="w-3 h-3 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {t(`dashboard.assetType.${assetType}`) ?? assetType}
               </span>
             ))}
           </div>
@@ -353,21 +378,22 @@ function PipelineCard({
         )}
 
         {item.currentState === 'published' && performanceRecords && performanceRecords.some(p => p.contentItemId === item.id) && (
-          <div className="mt-5 border-t border-slate-100 dark:border-slate-800 pt-4">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Metrics</div>
+          <div className="mt-4 border-t border-slate-200/60 dark:border-slate-800/80 pt-3">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Metrics</div>
             <div className="grid grid-cols-2 gap-2">
               {performanceRecords.filter(p => p.contentItemId === item.id).slice(0, 1).map((perf, idx) => (
                 <React.Fragment key={idx}>
-                  <div className={`rounded-lg p-2 text-center border ${theme.inner}`}>
-                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">Views</div>
-                    <div className="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{perf.views?.toLocaleString() || 0}</div>
+                  <div className={`rounded-xl p-2.5 text-center border ${theme.inner}`}>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Views</div>
+                    <div className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">{perf.views?.toLocaleString() || 0}</div>
                   </div>
-                  <div className={`rounded-lg p-2 text-center border ${theme.inner}`}>
-                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">Likes</div><div className="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{perf.likes?.toLocaleString() || 0}</div>
+                  <div className={`rounded-xl p-2.5 text-center border ${theme.inner}`}>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Likes</div>
+                    <div className="text-sm font-extrabold text-rose-600 dark:text-rose-400 mt-0.5">{perf.likes?.toLocaleString() || 0}</div>
                   </div>
-                  <div className={`rounded-lg p-2 text-center border col-span-2 ${theme.inner}`}>
-                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">CTR</div>
-                    <div className="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{perf.CTR ? perf.CTR.toFixed(2) + '%' : '0%'}</div>
+                  <div className={`rounded-xl p-2.5 text-center border col-span-2 ${theme.inner}`}>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">CTR</div>
+                    <div className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">{perf.CTR ? perf.CTR.toFixed(2) + '%' : '0%'}</div>
                   </div>
                 </React.Fragment>
               ))}
