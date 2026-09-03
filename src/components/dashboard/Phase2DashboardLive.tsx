@@ -312,8 +312,7 @@ function PipelineCard({
 
   return (
     <div
-      tabIndex={0}
-      className={`flex h-[29.5rem] min-h-[29.5rem] w-full max-w-[22rem] sm:w-[22rem] flex-none flex-col overflow-hidden rounded-xl border hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-cyan-500 transition-all duration-300 ${theme.card}`}
+      className={`flex h-[29.5rem] min-h-[29.5rem] w-full max-w-[22rem] sm:w-[22rem] flex-none flex-col overflow-hidden rounded-xl border hover:-translate-y-0.5 transition-all duration-300 ${theme.card}`}
     >
       {/* Header */}
       <div className="px-4 pt-3.5 pb-2.5 flex-none h-[5.5rem] border-b border-slate-200/40 dark:border-slate-800/40 flex flex-col justify-between">
@@ -777,6 +776,48 @@ function AssetView({
   );
 }
 
+function getEvidenceBadge(evidenceStr?: string, reviewVerdict?: string, t?: (key: string) => string | undefined) {
+  if (!evidenceStr || !evidenceStr.trim()) {
+    return (
+      <span className="text-xs text-slate-400">
+        {t?.("dashboard.labels.systemPending") ?? "Chờ đối soát"}
+      </span>
+    );
+  }
+
+  const trimmed = evidenceStr.trim();
+  let isVerified = false;
+
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.verdict === 'pass' || parsed.status === 'verified' || (parsed.missingAsset === false && parsed.averageScore >= 7)) {
+          isVerified = true;
+        }
+      }
+    } catch (e) {
+      // Not valid JSON
+    }
+  } else if (reviewVerdict === 'pass' || reviewVerdict === 'pass_with_conditions') {
+    isVerified = true;
+  }
+
+  if (isVerified) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+        ✓ {t?.("dashboard.labels.systemVerified") ?? "Đã đối soát hệ thống"}
+      </span>
+    );
+  }
+
+  return (
+    <span className="text-xs text-slate-600 dark:text-slate-300">
+      {cleanSystemText(evidenceStr)}
+    </span>
+  );
+}
+
 function QAView({
   contentItems,
   assets,
@@ -840,8 +881,6 @@ function QAView({
             const review = getPhase2LatestReview(currentContent.id, reviews);
             const publish = getPhase2PublishEligibility(currentContent.id, assets, reviews);
             const cleanContentTitle = cleanSystemText(currentContent.title);
-            const evidenceStr = review?.evidenceRef || "";
-            const isJsonEvidence = evidenceStr.trim().startsWith('{') || evidenceStr.includes('missingAsset');
 
             return [
               <>
@@ -860,13 +899,7 @@ function QAView({
                 displayLabel={review ? (t(`dashboard.verdict.${review.verdict}`) ?? review.verdict) : (t("dashboard.labels.pending") ?? "Chờ duyệt")}
               />,
               <div className="text-xs text-slate-600 dark:text-slate-300 break-all max-w-[200px] max-h-20 overflow-y-auto">
-                {isJsonEvidence ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                    ✓ Đã đối soát hệ thống
-                  </span>
-                ) : (
-                  evidenceStr ? cleanSystemText(evidenceStr) : (t("dashboard.labels.pending") ?? "Chờ đối soát")
-                )}
+                {getEvidenceBadge(review?.evidenceRef, review?.verdict, t)}
               </div>,
               <StateBadge
                 label={publish.ready ? "ELIGIBLE" : publish.gateState}
