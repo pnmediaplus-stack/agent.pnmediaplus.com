@@ -338,4 +338,61 @@ GRANT USAGE ON SCHEMA portal_auth TO service_role;
 GRANT SELECT ON portal_auth.organizations TO service_role;
 GRANT SELECT ON portal_auth.organization_memberships TO service_role;
 
+-- 10. Catalog Inspection Verification Function (Chỉ dành cho service_role kiểm định hệ thống)
+CREATE OR REPLACE FUNCTION public.verify_knowledge_security_catalog()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  v_caller_role TEXT;
+  v_report JSONB;
+BEGIN
+  v_caller_role := COALESCE(
+    NULLIF(current_setting('request.jwt.claim.role', true), ''),
+    (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'),
+    NULLIF(auth.role(), '')
+  );
+
+  IF v_caller_role != 'service_role' THEN
+    RAISE EXCEPTION '42501 permission denied for function verify_knowledge_security_catalog';
+  END IF;
+
+  SELECT jsonb_build_object(
+    'rls_enabled', (
+      SELECT jsonb_object_agg(relname, relrowsecurity)
+      FROM pg_class
+      WHERE relname IN ('crm_knowledge_documents', 'crm_knowledge_chunks', 'crm_knowledge_audit_logs')
+    ),
+    'policies', (
+      SELECT jsonb_agg(jsonb_build_object('table', tablename, 'policy', policyname, 'cmd', cmd))
+      FROM pg_policies
+      WHERE tablename IN ('crm_knowledge_documents', 'crm_knowledge_chunks', 'crm_knowledge_audit_logs')
+    ),
+    'functions', (
+      SELECT jsonb_agg(jsonb_build_object('name', proname, 'secdef', prosecdef, 'config', proconfig))
+      FROM pg_proc
+      WHERE proname IN ('get_auth_user_organizations', 'crm_knowledge_state_machine', 'apply_knowledge_ingestion_callback')
+    ),
+    'idempotency_index_exists', (
+      SELECT EXISTS (
+        SELECT 1 FROM pg_indexes 
+        WHERE indexname = 'idx_crm_knowledge_audit_idemp'
+      )
+    ),
+    'triggers', (
+      SELECT jsonb_agg(trigger_name)
+      FROM information_schema.triggers
+      WHERE event_object_table IN ('crm_knowledge_documents', 'crm_knowledge_audit_logs')
+    )
+  ) INTO v_report;
+
+  RETURN v_report;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.verify_knowledge_security_catalog() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.verify_knowledge_security_catalog() TO service_role;
+
 COMMIT;
