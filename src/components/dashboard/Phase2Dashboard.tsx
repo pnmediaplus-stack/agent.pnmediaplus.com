@@ -36,6 +36,7 @@ function useDashboardData() {
 }
 
 type SummaryCard = {
+  key?: string;
   label: string;
   value: string | number;
   note: string;
@@ -138,47 +139,47 @@ function CampaignControlBar({
   );
 }
 
-function getSummaryCardTheme(index: number) {
-  switch (index % 4) {
-    case 0:
-      return {
-        card: "bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-200/80 dark:border-indigo-800/60",
-        header: "border-b border-indigo-200/80 dark:border-indigo-800/60 bg-indigo-100/70 dark:bg-indigo-900/40",
-        title: "text-indigo-900 dark:text-indigo-200 font-extrabold",
-        value: "text-indigo-950 dark:text-white"
-      };
-    case 1:
-      return {
-        card: "bg-cyan-50/70 dark:bg-cyan-950/30 border-cyan-200/80 dark:border-cyan-800/60",
-        header: "border-b border-cyan-200/80 dark:border-cyan-800/60 bg-cyan-100/70 dark:bg-cyan-900/40",
-        title: "text-cyan-900 dark:text-cyan-200 font-extrabold",
-        value: "text-cyan-950 dark:text-white"
-      };
-    case 2:
-      return {
-        card: "bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-800/60",
-        header: "border-b border-emerald-200/80 dark:border-emerald-800/60 bg-emerald-100/70 dark:bg-emerald-900/40",
-        title: "text-emerald-900 dark:text-emerald-200 font-extrabold",
-        value: "text-emerald-950 dark:text-white"
-      };
-    case 3:
-    default:
-      return {
-        card: "bg-purple-50/70 dark:bg-purple-950/30 border-purple-200/80 dark:border-purple-800/60",
-        header: "border-b border-purple-200/80 dark:border-purple-800/60 bg-purple-100/70 dark:bg-purple-900/40",
-        title: "text-purple-900 dark:text-purple-200 font-extrabold",
-        value: "text-purple-950 dark:text-white"
-      };
+function getSummaryCardTheme(card: SummaryCard) {
+  const k = (card.key || card.label).toLowerCase();
+  if (k.includes("content_items") || k.includes("content items") || k.includes("số content item")) {
+    return {
+      card: "bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-200/80 dark:border-indigo-800/60",
+      header: "border-b border-indigo-200/80 dark:border-indigo-800/60 bg-indigo-100/70 dark:bg-indigo-900/40",
+      title: "text-indigo-900 dark:text-indigo-200 font-extrabold",
+      value: "text-indigo-950 dark:text-white"
+    };
   }
+  if (k.includes("qa_ready") || k.includes("qa ready") || k.includes("sẵn sàng qa")) {
+    return {
+      card: "bg-cyan-50/70 dark:bg-cyan-950/30 border-cyan-200/80 dark:border-cyan-800/60",
+      header: "border-b border-cyan-200/80 dark:border-cyan-800/60 bg-cyan-100/70 dark:bg-cyan-900/40",
+      title: "text-cyan-900 dark:text-cyan-200 font-extrabold",
+      value: "text-cyan-950 dark:text-white"
+    };
+  }
+  if (k.includes("publish_eligible") || k.includes("publish eligible") || k.includes("đủ điều kiện")) {
+    return {
+      card: "bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-800/60",
+      header: "border-b border-emerald-200/80 dark:border-emerald-800/60 bg-emerald-100/70 dark:bg-emerald-900/40",
+      title: "text-emerald-900 dark:text-emerald-200 font-extrabold",
+      value: "text-emerald-950 dark:text-white"
+    };
+  }
+  return {
+    card: "bg-purple-50/70 dark:bg-purple-950/30 border-purple-200/80 dark:border-purple-800/60",
+    header: "border-b border-purple-200/80 dark:border-purple-800/60 bg-purple-100/70 dark:bg-purple-900/40",
+    title: "text-purple-900 dark:text-purple-200 font-extrabold",
+    value: "text-purple-950 dark:text-white"
+  };
 }
 
 function SummaryGrid({ cards }: { cards: SummaryCard[] }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {cards.map((card, idx) => {
-        const theme = getSummaryCardTheme(idx);
+      {cards.map((card) => {
+        const theme = getSummaryCardTheme(card);
         return (
-          <div key={card.label} className={`min-w-0 overflow-hidden rounded-2xl border shadow-sm transition-all ${theme.card}`}>
+          <div key={card.key || card.label} className={`min-w-0 overflow-hidden rounded-2xl border shadow-sm transition-all ${theme.card}`}>
             <div className={`px-4 py-3 ${theme.header}`}>
               <div className={`text-xs uppercase tracking-wider ${theme.title}`}>{card.label}</div>
             </div>
@@ -771,21 +772,25 @@ export function Phase2Dashboard({
 
   const summaryCards: SummaryCard[] = [
     {
+      key: "content_items",
       label: t("dashboard.metrics.contentItems.label") ?? "Content items",
       value: data.contentItems.length,
       note: t("dashboard.metrics.contentItems.note") ?? "Canonical Phase 2 pipeline root objects."
     },
     {
+      key: "qa_ready",
       label: t("dashboard.metrics.qaReady.label") ?? "QA ready",
       value: qaReadyCount,
       note: t("dashboard.metrics.qaReady.note") ?? "Only items with all 3 required assets reach QA_ready."
     },
     {
+      key: "publish_eligible",
       label: t("dashboard.metrics.publishEligible.label") ?? "Publish eligible",
       value: eligibleCount,
       note: t("dashboard.metrics.publishEligible.note") ?? "QA passed and thresholds met."
     },
     {
+      key: "published",
       label: t("dashboard.metrics.published.label") ?? "Published",
       value: publishedCount,
       note: t("dashboard.metrics.published.note") ?? "Performance snapshots are post-publish only."
