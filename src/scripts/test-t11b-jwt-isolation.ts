@@ -157,7 +157,8 @@ async function testT11bJwtIsolation() {
 
   if (orgBErr) throw new Error(`T11b Setup FAILED: Could not check Org B documents: ${orgBErr.message}`);
 
-  let realOrgBDocId: string;
+  let realOrgBDocId: string | null = null;
+  let isSeededDoc = false;
   if (!orgBDocs || orgBDocs.length === 0) {
     console.log('  [Setup] Seeding Real Org B test document via admin...');
     const { data: newOrgBDoc, error: seedDocErr } = await adminClient
@@ -167,7 +168,6 @@ async function testT11bJwtIsolation() {
         title: 'Confidential Org B Test Document',
         knowledge_status: 'REVIEWED',
         ingestion_status: 'SUCCESS',
-        metadata: { confidential: true },
       })
       .select('id')
       .single();
@@ -176,6 +176,7 @@ async function testT11bJwtIsolation() {
       throw new Error(`T11b Setup FAILED: Could not seed Org B document: ${seedDocErr?.message}`);
     }
     realOrgBDocId = newOrgBDoc.id;
+    isSeededDoc = true;
   } else {
     realOrgBDocId = orgBDocs[0].id;
   }
