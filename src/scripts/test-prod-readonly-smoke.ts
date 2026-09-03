@@ -17,10 +17,9 @@ const targetOrgBId = 'aaaaaaaa-cccc-cccc-cccc-000000000002';
 
 async function runProdReadonlySmokeTest() {
   console.log('================================================================');
-  console.log('PRODUCTION ZERO-MUTATION VERIFICATION & STRICT RLS AUDIT PROBE');
+  console.log('PRODUCTION VERIFICATION & COMPREHENSIVE MULTI-TENANT RLS PROBE');
   console.log('Target Environment: PRODUCTION');
   console.log('Target Supabase URL:', supabaseUrl);
-  console.log('Target Org B UUID:', targetOrgBId);
   console.log('Mode: Strictly Read-Only / Zero Data Mutation / Hard Failure on Any Query Error');
   console.log('================================================================\n');
 
@@ -33,7 +32,7 @@ async function runProdReadonlySmokeTest() {
   });
 
   // -------------------------------------------------------------------------
-  // SECTION 1: Production Preflight Data Integrity & All Distinct Tenants Existence
+  // SECTION 1: Production Preflight Data Integrity & Distinct Tenants Existence
   // -------------------------------------------------------------------------
   console.log('--- SECTION 1: PRODUCTION PREFLIGHT DATA INTEGRITY & TENANT EXISTENCE ---');
 
@@ -79,7 +78,7 @@ async function runProdReadonlySmokeTest() {
   }
   console.log('  -> PASS: 100% of distinct document organizations exist and are active in portal_auth.\n');
 
-  // 1.3 Audit Log Anomalies & Tenant Mismatch JOIN
+  // 1.3 Audit Log Anomalies & Strict Tenant Mismatch JOIN
   console.log('[Preflight 2] Verifying Audit Log Anomalies & Strict Tenant Mismatch JOIN:');
   const { data: audits, error: auditErr } = await adminClient
     .from('crm_knowledge_audit_logs')
@@ -176,7 +175,7 @@ async function runProdReadonlySmokeTest() {
   // SECTION 3: Authenticated User JWT Multi-Tenant RLS Read-Only Probe
   // -------------------------------------------------------------------------
   console.log('--- SECTION 3: AUTHENTICATED USER JWT MULTI-TENANT RLS READ-ONLY PROBE ---');
-  console.log('[RLS 1] Authenticating Owner Session Server-Side (Zero Email / Zero Mutation):');
+  console.log('[RLS 1] Authenticating Owner Session Server-Side (Zero Email / Read-Only Probe):');
   const { data: link, error: linkErr } = await adminClient.auth.admin.generateLink({
     type: 'magiclink',
     email: 'pnmediaplus@gmail.com',
@@ -210,50 +209,60 @@ async function runProdReadonlySmokeTest() {
   }
   console.log('  -> PASS: Helper strictly returned user authorized tenant (Zero Tenant Leakage)\n');
 
-  // 3.2 Verify RLS multi-tenant isolation on crm_knowledge_documents
+  // 3.2 Determine expected own documents count vs unauthorized tenants
+  const userTenantDocs = docs?.filter(d => userOrgs.includes(d.organization_id)) || [];
   console.log('[RLS 2] Verifying crm_knowledge_documents Multi-Tenant Isolation:');
   const { data: ownDocs, error: ownDocsErr } = await userClient.from('crm_knowledge_documents').select('id');
   if (ownDocsErr) {
-    throw new Error(`RLS 2 HARD FAIL: Authenticated user cannot read own documents under RLS: ${ownDocsErr.message} (Hint: Ensure GRANT SELECT ON public.crm_knowledge_documents TO authenticated is applied)`);
+    throw new Error(`RLS 2 HARD FAIL: Authenticated user cannot read own documents under RLS: ${ownDocsErr.message} (Hint: Apply updated migration 20260904000001 with GRANT SELECT TO authenticated)`);
   }
-  console.log(`  Own Documents Read by User: ${ownDocs?.length} (Expected: ${totalDocs})`);
-  if (ownDocs?.length !== totalDocs) {
-    throw new Error(`RLS 2 FAILED: Expected ${totalDocs} documents readable by tenant owner, got ${ownDocs?.length}`);
+  console.log(`  Own Documents Read by User: ${ownDocs?.length} (Expected: ${userTenantDocs.length} matching user tenants)`);
+  if (ownDocs?.length !== userTenantDocs.length) {
+    throw new Error(`RLS 2 FAILED: Expected ${userTenantDocs.length} documents matching user tenants, got ${ownDocs?.length}`);
   }
+  console.log('  -> PASS: User read exactly all documents belonging to their authorized tenant(s).\n');
 
-  const { data: foreignDocs, error: foreignDocsErr } = await userClient.from('crm_knowledge_documents').select('id').eq('organization_id', targetOrgBId);
-  if (foreignDocsErr) {
-    throw new Error(`RLS 2 HARD FAIL: Foreign documents query errored unexpectedly: ${foreignDocsErr.message}`);
-  }
-  console.log(`  Foreign (Org B: ${targetOrgBId}) Documents Read: ${foreignDocs?.length} (Expected: exactly 0)`);
-  if ((foreignDocs?.length || 0) > 0) {
-    throw new Error('RLS 2 CRITICAL FAIL: Authenticated user leaked documents from foreign Org B!');
-  }
-  console.log('  -> PASS: crm_knowledge_documents RLS strictly blocked foreign Org B documents with zero error\n');
+  // 3.3 Verify RLS isolation against ALL unauthorized tenants across documents, chunks, and audit logs
+  const allKnownOrgs = Array.from(new Set([
+    ...distinctDocOrgs,
+    ...allMemberships?.map(m => m.organization_id) || [],
+    targetOrgBId
+  ]));
+  const unauthorizedOrgs = allKnownOrgs.filter(orgId => !userOrgs.includes(orgId));
+  console.log(`[RLS 3] Probing ALL Unauthorized Tenants (${unauthorizedOrgs.length} tenant(s)):`, unauthorizedOrgs);
 
-  // 3.3 Verify RLS multi-tenant isolation on crm_knowledge_chunks
-  console.log('[RLS 3] Verifying crm_knowledge_chunks Multi-Tenant Isolation:');
-  const { data: foreignChunks, error: foreignChunksErr } = await userClient.from('crm_knowledge_chunks').select('id').eq('organization_id', targetOrgBId);
-  if (foreignChunksErr) {
-    throw new Error(`RLS 3 HARD FAIL: Foreign chunks query errored unexpectedly: ${foreignChunksErr.message}`);
-  }
-  console.log(`  Foreign (Org B: ${targetOrgBId}) Chunks Read: ${foreignChunks?.length} (Expected: exactly 0)`);
-  if ((foreignChunks?.length || 0) > 0) {
-    throw new Error('RLS 3 CRITICAL FAIL: Authenticated user leaked chunks from foreign Org B!');
-  }
-  console.log('  -> PASS: crm_knowledge_chunks RLS strictly blocked foreign Org B chunks with zero error\n');
+  for (const unauthOrgId of unauthorizedOrgs) {
+    // Documents probe
+    const { data: foreignDocs, error: foreignDocsErr } = await userClient.from('crm_knowledge_documents').select('id').eq('organization_id', unauthOrgId);
+    if (foreignDocsErr) {
+      throw new Error(`RLS 3 HARD FAIL: Query for documents of tenant ${unauthOrgId} returned error: ${foreignDocsErr.message}`);
+    }
+    console.log(`  Tenant ${unauthOrgId} -> Documents Read: ${foreignDocs?.length} (Expected: 0, error: null)`);
+    if ((foreignDocs?.length || 0) > 0) {
+      throw new Error(`RLS 3 CRITICAL FAIL: Leaked documents from unauthorized tenant ${unauthOrgId}!`);
+    }
 
-  // 3.4 Verify RLS multi-tenant isolation on crm_knowledge_audit_logs
-  console.log('[RLS 4] Verifying crm_knowledge_audit_logs Multi-Tenant Isolation:');
-  const { data: foreignAudits, error: foreignAuditsErr } = await userClient.from('crm_knowledge_audit_logs').select('id').eq('organization_id', targetOrgBId);
-  if (foreignAuditsErr) {
-    throw new Error(`RLS 4 HARD FAIL: Foreign audit logs query errored unexpectedly: ${foreignAuditsErr.message}`);
+    // Chunks probe
+    const { data: foreignChunks, error: foreignChunksErr } = await userClient.from('crm_knowledge_chunks').select('id').eq('organization_id', unauthOrgId);
+    if (foreignChunksErr) {
+      throw new Error(`RLS 3 HARD FAIL: Query for chunks of tenant ${unauthOrgId} returned error: ${foreignChunksErr.message}`);
+    }
+    console.log(`  Tenant ${unauthOrgId} -> Chunks Read: ${foreignChunks?.length} (Expected: 0, error: null)`);
+    if ((foreignChunks?.length || 0) > 0) {
+      throw new Error(`RLS 3 CRITICAL FAIL: Leaked chunks from unauthorized tenant ${unauthOrgId}!`);
+    }
+
+    // Audit logs probe
+    const { data: foreignAudits, error: foreignAuditsErr } = await userClient.from('crm_knowledge_audit_logs').select('id').eq('organization_id', unauthOrgId);
+    if (foreignAuditsErr) {
+      throw new Error(`RLS 3 HARD FAIL: Query for audit logs of tenant ${unauthOrgId} returned error: ${foreignAuditsErr.message}`);
+    }
+    console.log(`  Tenant ${unauthOrgId} -> Audit Logs Read: ${foreignAudits?.length} (Expected: 0, error: null)`);
+    if ((foreignAudits?.length || 0) > 0) {
+      throw new Error(`RLS 3 CRITICAL FAIL: Leaked audit logs from unauthorized tenant ${unauthOrgId}!`);
+    }
   }
-  console.log(`  Foreign (Org B: ${targetOrgBId}) Audit Logs Read: ${foreignAudits?.length} (Expected: exactly 0)`);
-  if ((foreignAudits?.length || 0) > 0) {
-    throw new Error('RLS 4 CRITICAL FAIL: Authenticated user leaked audit logs from foreign Org B!');
-  }
-  console.log('  -> PASS: crm_knowledge_audit_logs RLS strictly blocked foreign Org B audit logs with zero error\n');
+  console.log('  -> PASS: All unauthorized tenants blocked with 0 rows and zero query errors across documents, chunks, and audit logs.\n');
 
   // -------------------------------------------------------------------------
   // SECTION 4: Migration Schema & Column Integrity
