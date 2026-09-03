@@ -327,7 +327,7 @@ console.log('--- SCENARIO 5: SEPARATED ERROR DELIVERY (SYSTEM ERROR VS CLARIFY S
 }
 
 // -----------------------------------------------------------------------------
-// SCENARIO 6: Strict Fail-Closed Validation on Invalid/Missing Attempt (Blocker 1 & 2)
+// SCENARIO 6: Strict Fail-Closed Validation on Invalid/Missing Attempt (Blocker 1, 2, 3)
 // -----------------------------------------------------------------------------
 console.log('--- SCENARIO 6: STRICT FAIL-CLOSED ON INVALID/MISSING ATTEMPT (ZERO GUESSING) ---');
 {
@@ -338,21 +338,22 @@ console.log('--- SCENARIO 6: STRICT FAIL-CLOSED ON INVALID/MISSING ATTEMPT (ZERO
   const invalidAttempts = [undefined, null, '1', 1.5, -1, 0, 4, Infinity, NaN];
 
   for (const invalidAttempt of invalidAttempts) {
-    // 6.1 Validate Agent 1 Output must fail-closed
-    assert.throws(
-      () => validateFn({ item: { json: { attempt: invalidAttempt, output: '{}' } } }, {}),
-      /FAIL_CLOSED_SYSTEM_ERROR/,
-      `Validate Agent 1 Output failed to reject attempt: ${invalidAttempt}`
-    );
+    // 6.1 Validate Agent 1 Output handles invalid attempt safely inside try/catch:
+    // Routes to SYSTEM_VALIDATION_ERROR (NOT unhandled crash, NOT user clarification)
+    const valResult = validateFn({ item: { json: { attempt: invalidAttempt, output: '{}' } } }, {});
+    assert.strictEqual(valResult.json.validation_status, 'SYSTEM_VALIDATION_ERROR');
+    assert.strictEqual(valResult.json.needs_clarification, false);
+    assert.strictEqual(valResult.json.is_valid, false);
+    assert(valResult.json.validation_error.includes('FAIL_CLOSED_SYSTEM_ERROR'));
 
-    // 6.2 Check Attempt Limit must fail-closed
+    // 6.2 Check Attempt Limit throws FAIL_CLOSED_SYSTEM_ERROR on invalid attempt
     assert.throws(
       () => checkAttemptFn({ item: { json: { attempt: invalidAttempt } } }, {}),
       /FAIL_CLOSED_SYSTEM_ERROR/,
       `Check Attempt Limit failed to reject attempt: ${invalidAttempt}`
     );
 
-    // 6.3 QA Verdict Parser must fail-closed
+    // 6.3 QA Verdict Parser throws FAIL_CLOSED_SYSTEM_ERROR on invalid attempt
     assert.throws(
       () => qaParserFn({ item: { json: { attempt: invalidAttempt, choices: [{ message: { content: '{"passed":true}' } }] } } }, {}),
       /FAIL_CLOSED_SYSTEM_ERROR/,
@@ -360,8 +361,14 @@ console.log('--- SCENARIO 6: STRICT FAIL-CLOSED ON INVALID/MISSING ATTEMPT (ZERO
     );
   }
 
-  console.log('  Tested invalid values:', invalidAttempts.map(v => String(v)).join(', '));
-  console.log('  -> PASS: 100% of invalid attempts (null, float, string, out-of-bounds) threw FAIL_CLOSED_SYSTEM_ERROR with zero fallback!\n');
+  // 6.4 Static AST / Text assertion: Zero .first() and Zero .all() across entire workflow JSON
+  const rawWorkflowText = JSON.stringify(workflow);
+  assert(!rawWorkflowText.includes('.first()'), 'CRITICAL: Workflow still contains .first()!');
+  assert(!rawWorkflowText.includes('.all()'), 'CRITICAL: Workflow still contains .all()!');
+
+  console.log('  Tested invalid attempt values:', invalidAttempts.map(v => String(v)).join(', '));
+  console.log('  Verified: Zero .first() and Zero .all() in entire 075 workflow JSON!');
+  console.log('  -> PASS: 100% of invalid attempts fail-closed gracefully into SYSTEM_VALIDATION_ERROR with zero fallback!\n');
 }
 
 console.log('================================================================');
