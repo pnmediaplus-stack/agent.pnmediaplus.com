@@ -138,20 +138,57 @@ function CampaignControlBar({
   );
 }
 
+function getSummaryCardTheme(index: number) {
+  switch (index % 4) {
+    case 0:
+      return {
+        card: "bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-200/80 dark:border-indigo-800/60",
+        header: "border-b border-indigo-200/80 dark:border-indigo-800/60 bg-indigo-100/70 dark:bg-indigo-900/40",
+        title: "text-indigo-900 dark:text-indigo-200 font-extrabold",
+        value: "text-indigo-950 dark:text-white"
+      };
+    case 1:
+      return {
+        card: "bg-cyan-50/70 dark:bg-cyan-950/30 border-cyan-200/80 dark:border-cyan-800/60",
+        header: "border-b border-cyan-200/80 dark:border-cyan-800/60 bg-cyan-100/70 dark:bg-cyan-900/40",
+        title: "text-cyan-900 dark:text-cyan-200 font-extrabold",
+        value: "text-cyan-950 dark:text-white"
+      };
+    case 2:
+      return {
+        card: "bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-800/60",
+        header: "border-b border-emerald-200/80 dark:border-emerald-800/60 bg-emerald-100/70 dark:bg-emerald-900/40",
+        title: "text-emerald-900 dark:text-emerald-200 font-extrabold",
+        value: "text-emerald-950 dark:text-white"
+      };
+    case 3:
+    default:
+      return {
+        card: "bg-purple-50/70 dark:bg-purple-950/30 border-purple-200/80 dark:border-purple-800/60",
+        header: "border-b border-purple-200/80 dark:border-purple-800/60 bg-purple-100/70 dark:bg-purple-900/40",
+        title: "text-purple-900 dark:text-purple-200 font-extrabold",
+        value: "text-purple-950 dark:text-white"
+      };
+  }
+}
+
 function SummaryGrid({ cards }: { cards: SummaryCard[] }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {cards.map((card) => (
-        <div key={card.label} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950/80">
-          <div className="border-b border-violet-200 dark:border-violet-400/20 bg-violet-50 dark:bg-slate-900/90 px-4 py-3">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-violet-700 dark:text-violet-300">{card.label}</div>
+      {cards.map((card, idx) => {
+        const theme = getSummaryCardTheme(idx);
+        return (
+          <div key={card.label} className={`min-w-0 overflow-hidden rounded-2xl border shadow-sm transition-all ${theme.card}`}>
+            <div className={`px-4 py-3 ${theme.header}`}>
+              <div className={`text-xs uppercase tracking-wider ${theme.title}`}>{card.label}</div>
+            </div>
+            <div className="p-4">
+              <div className={`text-3xl font-extrabold ${theme.value}`}>{card.value}</div>
+              <div className="mt-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400 font-medium">{card.note}</div>
+            </div>
           </div>
-          <div className="p-4">
-            <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{card.value}</div>
-            <div className="mt-1.5 text-sm leading-6 text-slate-500 dark:text-slate-400">{card.note}</div>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
