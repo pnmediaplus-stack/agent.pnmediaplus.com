@@ -232,22 +232,22 @@ function getStageCardTheme(state: string) {
       };
     case "QA_ready":
       return {
-        card: "bg-blue-50/80 dark:bg-blue-950/40 border-blue-200/90 dark:border-blue-800/60 border-l-4 border-l-blue-500 dark:border-l-blue-400 shadow-sm hover:shadow-md",
-        inner: "bg-white/90 dark:bg-slate-900/80 border-blue-100 dark:border-blue-900/50 shadow-2xs"
+        card: "bg-rose-50/90 dark:bg-rose-950/40 border-rose-200/90 dark:border-rose-800/60 border-l-4 border-l-rose-500 dark:border-l-rose-400 shadow-sm hover:shadow-md",
+        inner: "bg-white/90 dark:bg-slate-900/80 border-rose-100 dark:border-rose-900/50 shadow-2xs"
       };
     case "QA_passed":
       return {
-        card: "bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200/90 dark:border-emerald-800/60 border-l-4 border-l-emerald-500 dark:border-l-emerald-400 shadow-sm hover:shadow-md",
+        card: "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-200/90 dark:border-emerald-800/60 border-l-4 border-l-emerald-500 dark:border-l-emerald-400 shadow-sm hover:shadow-md",
         inner: "bg-white/90 dark:bg-slate-900/80 border-emerald-100 dark:border-emerald-900/50 shadow-2xs"
       };
     case "scheduled":
       return {
-        card: "bg-sky-50/80 dark:bg-sky-950/40 border-sky-200/90 dark:border-sky-800/60 border-l-4 border-l-sky-500 dark:border-l-sky-400 shadow-sm hover:shadow-md",
-        inner: "bg-white/90 dark:bg-slate-900/80 border-sky-100 dark:border-sky-900/50 shadow-2xs"
+        card: "bg-indigo-50/90 dark:bg-indigo-950/40 border-indigo-200/90 dark:border-indigo-800/60 border-l-4 border-l-indigo-500 dark:border-l-indigo-400 shadow-sm hover:shadow-md",
+        inner: "bg-white/90 dark:bg-slate-900/80 border-indigo-100 dark:border-indigo-900/50 shadow-2xs"
       };
     case "published":
       return {
-        card: "bg-teal-50/80 dark:bg-teal-950/40 border-teal-200/90 dark:border-teal-800/60 border-l-4 border-l-teal-500 dark:border-l-teal-400 shadow-sm hover:shadow-md",
+        card: "bg-teal-50/90 dark:bg-teal-950/40 border-teal-200/90 dark:border-teal-800/60 border-l-4 border-l-teal-500 dark:border-l-teal-400 shadow-sm hover:shadow-md",
         inner: "bg-white/90 dark:bg-slate-900/80 border-teal-100 dark:border-teal-900/50 shadow-2xs"
       };
     default:
