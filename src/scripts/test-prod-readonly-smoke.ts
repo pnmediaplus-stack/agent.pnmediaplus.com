@@ -14,7 +14,7 @@ if (!supabaseUrl || !anonKey || !serviceRoleKey) {
 
 async function runProdReadonlySmokeTest() {
   console.log('================================================================');
-  console.log('PRODUCTION READ-ONLY ZERO-MUTATION SMOKE TEST');
+  console.log('PRODUCTION ZERO-MUTATION PREFLIGHT & READ-ONLY VERIFICATION');
   console.log('Target Supabase:', supabaseUrl);
   console.log('Mode: Strictly Read-Only / Zero Data Mutation / No User OTPs');
   console.log('================================================================\n');
@@ -27,7 +27,65 @@ async function runProdReadonlySmokeTest() {
     auth: { persistSession: false },
   });
 
-  // 1. Verify Public/Anon Execution Boundary on match_documents (Must be EXACT 42501)
+  // -------------------------------------------------------------------------
+  // SECTION 1: Production Preflight Data Integrity Check
+  // -------------------------------------------------------------------------
+  console.log('--- SECTION 1: PRODUCTION PREFLIGHT DATA INTEGRITY ---');
+
+  // 1.1 Document Tenant Validity & Distribution
+  console.log('[Preflight 1] Verifying Production Document Distribution & Organization IDs:');
+  const { data: docs, error: docErr } = await adminClient
+    .from('crm_knowledge_documents')
+    .select('id, organization_id, knowledge_status, ingestion_status');
+
+  if (docErr) throw new Error(`Preflight 1 FAILED: Could not query crm_knowledge_documents: ${docErr.message}`);
+
+  const totalDocs = docs?.length || 0;
+  const invalidOrgs = docs?.filter(d => !d.organization_id) || [];
+  const activeDocs = docs?.filter(d => d.knowledge_status === 'ACTIVE') || [];
+  const reviewedDocs = docs?.filter(d => d.knowledge_status === 'REVIEWED') || [];
+
+  console.log(`  Total Documents on Production: ${totalDocs}`);
+  console.log(`  Invalid organization_id count: ${invalidOrgs.length}`);
+  console.log(`  Distribution: REVIEWED=${reviewedDocs.length}, ACTIVE=${activeDocs.length}`);
+
+  if (invalidOrgs.length > 0) {
+    throw new Error(`Preflight 1 FAILED: Found ${invalidOrgs.length} documents with missing organization_id!`);
+  }
+  if (activeDocs.length > 0) {
+    throw new Error(`Preflight 1 FAILED: Zero-Trust violation: Found ${activeDocs.length} ACTIVE documents without approved ingestion!`);
+  }
+  console.log('  -> PASS: All documents have valid organization_id; 0 ACTIVE documents (Zero-Trust boundary preserved)\n');
+
+  // 1.2 Audit Log Anomalies (Orphans, Missing Correlation, Negative Retries)
+  console.log('[Preflight 2] Verifying Audit Log Anomalies (Orphans, Correlations, Retries):');
+  const { data: audits, error: auditErr } = await adminClient
+    .from('crm_knowledge_audit_logs')
+    .select('id, document_id, organization_id, action, correlation_id, retry_attempt');
+
+  if (auditErr) throw new Error(`Preflight 2 FAILED: Could not query crm_knowledge_audit_logs: ${auditErr.message}`);
+
+  const totalAudits = audits?.length || 0;
+  const orphanAudits = audits?.filter(a => !a.document_id || !a.organization_id) || [];
+  const missingCorrAudits = audits?.filter(a => a.action?.startsWith('INGESTION_') && !a.correlation_id) || [];
+  const negRetryAudits = audits?.filter(a => a.retry_attempt < 0) || [];
+
+  console.log(`  Total Audit Rows: ${totalAudits}`);
+  console.log(`  Orphan Audits: ${orphanAudits.length}`);
+  console.log(`  Missing Correlation on Ingestion: ${missingCorrAudits.length}`);
+  console.log(`  Negative retry_attempt: ${negRetryAudits.length}`);
+
+  if (orphanAudits.length > 0 || missingCorrAudits.length > 0 || negRetryAudits.length > 0) {
+    throw new Error('Preflight 2 FAILED: Audit log anomalies detected on Production!');
+  }
+  console.log('  -> PASS: Zero audit anomalies detected (0 orphans, 0 missing correlation, 0 negative retries)\n');
+
+  // -------------------------------------------------------------------------
+  // SECTION 2: RPC Access-Control Execution Boundary (Zero Mutation)
+  // -------------------------------------------------------------------------
+  console.log('--- SECTION 2: RPC ACCESS-CONTROL EXECUTION BOUNDARY ---');
+
+  // 2.1 match_documents RPC Execution Boundary (Exact 42501 for Anon)
   console.log('[Smoke 1] Verifying Public/Anon caller is hard-blocked from match_documents (Exact 42501):');
   const { error: anonErr } = await publicClient.rpc('match_documents', {
     query_embedding: zeroVector,
@@ -39,10 +97,10 @@ async function runProdReadonlySmokeTest() {
   if (anonErr && anonErr.code === '42501') {
     console.log('  -> PASS: Public/Anon caller is HARD BLOCKED from match_documents with exact 42501\n');
   } else {
-    throw new Error(`Smoke 1 FAILED: Expected exact code 42501 permission denied for anon caller, got ${JSON.stringify(anonErr)}`);
+    throw new Error(`Smoke 1 FAILED: Expected exact code 42501 for anon caller, got ${JSON.stringify(anonErr)}`);
   }
 
-  // 2. Verify Public/Anon Execution Boundary on apply_knowledge_ingestion_callback (Must be EXACT 42501 - proves migration 2 applied)
+  // 2.2 apply_knowledge_ingestion_callback Execution Boundary (Exact 42501 for Anon)
   console.log('[Smoke 2] Verifying Public/Anon caller is hard-blocked from apply_knowledge_ingestion_callback (Exact 42501):');
   const { error: cbAnonErr } = await publicClient.rpc('apply_knowledge_ingestion_callback', {
     p_document_id: '00000000-0000-0000-0000-000000000000',
@@ -59,7 +117,7 @@ async function runProdReadonlySmokeTest() {
     throw new Error(`Smoke 2 FAILED: Expected exact code 42501 for anon callback RPC, got ${JSON.stringify(cbAnonErr)}`);
   }
 
-  // 3. Verify get_auth_user_organizations helper returns zero organizations for unauthenticated caller
+  // 2.3 get_auth_user_organizations Execution Boundary (Exact 42501 or Zero Leakage for Anon)
   console.log('[Smoke 3] Verifying get_auth_user_organizations helper (Zero Leakage for Unauthenticated):');
   const { data: anonOrgs, error: helperAnonErr } = await publicClient.rpc('get_auth_user_organizations');
   console.log('  Anon Authorized Orgs:', anonOrgs, 'Error:', helperAnonErr?.message || 'None');
@@ -69,12 +127,12 @@ async function runProdReadonlySmokeTest() {
     throw new Error(`Smoke 3 FAILED: Unexpected organizations leaked to unauthenticated caller: ${JSON.stringify(anonOrgs)}`);
   }
 
-  // 4. Verify Service Role Execution on match_documents (Must SUCCEED)
+  // 2.4 Service Role Vector Search Execution (Must Succeed)
   console.log('[Smoke 4] Verifying Service Role caller can execute match_documents:');
-  const { data: sData, error: sErr } = await adminClient.rpc('match_documents', {
+  const { error: sErr } = await adminClient.rpc('match_documents', {
     query_embedding: zeroVector,
     match_count: 1,
-    filter: { organization_id: '00000000-0000-0000-0000-000000000000', namespace: 'cskh' },
+    filter: { organization_id: '8289488a-b255-4cb6-9bff-c9d2e71af160', namespace: 'cskh' },
   });
 
   if (sErr) {
@@ -82,31 +140,34 @@ async function runProdReadonlySmokeTest() {
   }
   console.log('  -> PASS: Service role successfully executed match_documents (zero-mutation read)\n');
 
-  // 5. Verify Read-Only Schema Integrity & Column Existence (Proves Migration 1 & 2 applied)
-  console.log('[Smoke 5] Verifying Read-Only Schema Integrity & Column Structure for Knowledge Tables:');
-  const { data: docCols, error: docErr } = await adminClient
+  // -------------------------------------------------------------------------
+  // SECTION 3: Migration Schema & Column Integrity
+  // -------------------------------------------------------------------------
+  console.log('--- SECTION 3: MIGRATION 1 & 2 SCHEMA VERIFICATION ---');
+  console.log('[Smoke 5] Verifying Schema Columns for Migration 1 (v1.1) and Migration 2 (callback RPC):');
+  const { data: docCols, error: docColErr } = await adminClient
     .from('crm_knowledge_documents')
     .select('id, knowledge_status, ingestion_status, idempotency_key')
     .limit(1);
-  if (docErr) throw new Error(`Smoke 5 FAILED: crm_knowledge_documents missing migration 1 columns: ${docErr.message}`);
+  if (docColErr) throw new Error(`Smoke 5 FAILED: crm_knowledge_documents missing migration 1 columns: ${docColErr.message}`);
 
-  const { data: auditCols, error: auditErr } = await adminClient
+  const { data: auditCols, error: auditColErr } = await adminClient
     .from('crm_knowledge_audit_logs')
     .select('id, payload_hash, correlation_id, action')
     .limit(1);
-  if (auditErr) throw new Error(`Smoke 5 FAILED: crm_knowledge_audit_logs missing migration 2 columns: ${auditErr.message}`);
+  if (auditColErr) throw new Error(`Smoke 5 FAILED: crm_knowledge_audit_logs missing migration 2 columns: ${auditColErr.message}`);
 
-  const { data: chunkCols, error: chunkErr } = await adminClient
+  const { data: chunkCols, error: chunkColErr } = await adminClient
     .from('crm_knowledge_chunks')
     .select('id, organization_id, document_id')
     .limit(1);
-  if (chunkErr) throw new Error(`Smoke 5 FAILED: crm_knowledge_chunks query failed: ${chunkErr.message}`);
+  if (chunkColErr) throw new Error(`Smoke 5 FAILED: crm_knowledge_chunks query failed: ${chunkColErr.message}`);
 
   console.log('  -> PASS: All migration 1 & 2 schema columns verified (knowledge_status, ingestion_status, idempotency_key, payload_hash)\n');
 
   console.log('================================================================');
-  console.log('PRODUCTION READ-ONLY SMOKE TEST PASSED 100%!');
-  console.log('Zero mutations performed. Production schema verified clean.');
+  console.log('ALL PRODUCTION PREFLIGHT CHECKS AND SMOKE TESTS PASSED 100%!');
+  console.log('Production Environment Confirmed Fully Compliant with Zero-Trust.');
   console.log('================================================================');
 }
 
