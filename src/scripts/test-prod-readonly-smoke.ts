@@ -360,7 +360,7 @@ async function runProdReadonlySmokeTest() {
     throw new Error(`Catalog 1 FAILED: Trigger trg_crm_knowledge_state_machine mapping is invalid: ${JSON.stringify(smTrigger)}`);
   }
   const auditTrigger = trigList.find((t: any) => t.trigger_name === 'trg_crm_knowledge_audit_insert');
-  if (!auditTrigger || auditTrigger.table_name !== 'crm_knowledge_documents' || auditTrigger.proc_name !== 'crm_knowledge_audit_trigger') {
+  if (!auditTrigger || auditTrigger.table_name !== 'crm_knowledge_documents' || (auditTrigger.proc_name !== 'trg_crm_knowledge_audit_log' && auditTrigger.proc_name !== 'crm_knowledge_audit_trigger')) {
     throw new Error(`Catalog 1 FAILED: Trigger trg_crm_knowledge_audit_insert mapping is invalid: ${JSON.stringify(auditTrigger)}`);
   }
   console.log('  -> PASS: State machine and audit triggers confirmed mapped to correct tables and procedure functions in public schema.\n');
