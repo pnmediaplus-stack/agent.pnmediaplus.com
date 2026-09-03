@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { PageFrame } from "@/components/shared/PageFrame";
 import { AgentCard } from "@/components/agents/AgentCard";
 import { useI18n } from "@/lib/i18n/useI18n";
 import type { Agent } from "@/types/agent";
 import type { Department } from "@/types/department";
-import { Plus, Loader2, Filter } from "lucide-react";
+import { Plus, Loader2, Filter, Bot, Megaphone } from "lucide-react";
 import { toast } from "sonner";
+import { MarketingAgentLayout } from "@/components/agents/marketing/MarketingAgentLayout";
+import { AssetWorkspace } from "@/components/agents/marketing/AssetWorkspace";
 
 const ROLE_OPTIONS = [
   { value: "content_writer", label: "Content Writer" },
@@ -28,12 +31,21 @@ const AUTHORITY_SCOPES = [
 
 export function AgentsPageClient() {
   const { t } = useI18n("agents");
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<"directory" | "marketing">("directory");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [filterDept, setFilterDept] = useState("ALL");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "marketing") {
+      setActiveTab("marketing");
+    }
+  }, [searchParams]);
 
   // Form states
   const [key, setKey] = useState("");
@@ -153,124 +165,160 @@ export function AgentsPageClient() {
         t("agents.page.forbidden.publishArtifacts") ?? "Xuất bản tài nguyên"
       ]}
     >
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 p-1">
-          <Filter className="ml-2 h-4 w-4 text-slate-500 dark:text-slate-400" />
-          <select 
-            value={filterDept}
-            onChange={(e) => setFilterDept(e.target.value)}
-            className="bg-transparent p-1.5 text-sm text-slate-700 dark:text-slate-200 outline-none"
-          >
-            <option value="ALL" className="bg-white dark:bg-slate-900">{t("agents.filter.allDepartments") ?? "Tất cả phòng ban"}</option>
-            {departments.map(d => (
-              <option key={d.id} value={d.id} className="bg-white dark:bg-slate-900">{d.canonical_name}</option>
-            ))}
-          </select>
-        </div>
+      <div className="mb-6 flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
         <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 transition-all hover:bg-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+          type="button"
+          onClick={() => setActiveTab("directory")}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
+            activeTab === "directory"
+              ? "bg-indigo-600 text-white shadow-md"
+              : "bg-slate-100 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+          }`}
         >
-          <Plus className="h-4 w-4" />
-          {showForm ? (t("agents.form.cancel") ?? "Hủy bỏ") : (t("agents.form.assign") ?? "Phân công đặc vụ")}
+          <Bot className="h-4 w-4" />
+          {t("agents.tab.directory") ?? "Danh bạ Đặc vụ"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("marketing")}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
+            activeTab === "marketing"
+              ? "bg-indigo-600 text-white shadow-md"
+              : "bg-slate-100 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+          }`}
+        >
+          <Megaphone className="h-4 w-4" />
+          Marketing Agent Workspace
         </button>
       </div>
 
-      {showForm && (
-        <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
-          <h3 className="mb-6 text-lg font-bold text-slate-700 dark:text-slate-200">{t("agents.form.title") ?? "Phân công đặc vụ mới"}</h3>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <div className="lg:col-span-1">
-              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.keyLabel") ?? "Mã đặc vụ"}</label>
-              <input
-                type="text"
-                required
-                pattern="[a-z0-9_]+"
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                placeholder={t("agents.form.keyPlaceholder") ?? "e.g. content_bot_1"}
-                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-            <div className="lg:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.nameLabel") ?? "Tên hiển thị"}</label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t("agents.form.namePlaceholder") ?? "e.g. Alpha Content Writer"}
-                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.departmentLabel") ?? "Phòng ban"}</label>
+      {activeTab === "marketing" ? (
+        <MarketingAgentLayout>
+          <AssetWorkspace />
+        </MarketingAgentLayout>
+      ) : (
+        <>
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 p-1">
+              <Filter className="ml-2 h-4 w-4 text-slate-500 dark:text-slate-400" />
               <select
-                required
-                value={deptId}
-                onChange={(e) => setDeptId(e.target.value)}
-                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                value={filterDept}
+                onChange={(e) => setFilterDept(e.target.value)}
+                className="bg-transparent p-1.5 text-sm text-slate-700 dark:text-slate-200 outline-none"
               >
+                <option value="ALL" className="bg-white dark:bg-slate-900">{t("agents.filter.allDepartments") ?? "Tất cả phòng ban"}</option>
                 {departments.map(d => (
                   <option key={d.id} value={d.id} className="bg-white dark:bg-slate-900">{d.canonical_name}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.roleLabel") ?? "Vai trò"}</label>
-              <select
-                required
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-              >
-                {ROLE_OPTIONS.map(r => (
-                  <option key={r.value} value={r.value} className="bg-white dark:bg-slate-900">{r.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.scopeLabel") ?? "Phạm vi quyền hạn"}</label>
-              <select
-                required
-                value={scope}
-                onChange={(e) => setScope(e.target.value)}
-                className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-              >
-                {AUTHORITY_SCOPES.map(s => (
-                  <option key={s} value={s} className="bg-white dark:bg-slate-900">{s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="mt-6 flex justify-end">
             <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-slate-900 dark:text-white transition-all hover:bg-indigo-500 disabled:opacity-50"
+              onClick={() => setShowForm(!showForm)}
+              className="flex items-center gap-2 rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 transition-all hover:bg-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]"
             >
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              {t("agents.form.submit") ?? "Phân công đặc vụ"}
+              <Plus className="h-4 w-4" />
+              {showForm ? (t("agents.form.cancel") ?? "Hủy bỏ") : (t("agents.form.assign") ?? "Phân công đặc vụ")}
             </button>
           </div>
-        </form>
-      )}
 
-      {isLoading ? (
-        <div className="flex h-32 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
-        </div>
-      ) : filteredAgents.length === 0 ? (
-        <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400">
-          <p>{t("agents.empty.title") ?? "Không tìm thấy đặc vụ nào."}</p>
-          <p className="text-sm">{t("agents.empty.hint") ?? "Nhấn \"Phân công đặc vụ\" để thêm mới."}</p>
-        </div>
-      ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {filteredAgents.map((agent) => (
-            <AgentCard key={agent.id} agent={agent} href={agent.id === 'mkt-agent-001' ? '/agents/marketing' : undefined} />
-          ))}
-        </div>
+          {showForm && (
+            <form onSubmit={handleCreate} className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/30 p-6 backdrop-blur-xl shadow-lg">
+              <h3 className="mb-6 text-lg font-bold text-slate-700 dark:text-slate-200">{t("agents.form.title") ?? "Phân công đặc vụ mới"}</h3>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="lg:col-span-1">
+                  <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.keyLabel") ?? "Mã đặc vụ"}</label>
+                  <input
+                    type="text"
+                    required
+                    pattern="[a-z0-9_]+"
+                    value={key}
+                    onChange={(e) => setKey(e.target.value)}
+                    placeholder={t("agents.form.keyPlaceholder") ?? "e.g. content_bot_1"}
+                    className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+                <div className="lg:col-span-2">
+                  <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.nameLabel") ?? "Tên hiển thị"}</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={t("agents.form.namePlaceholder") ?? "e.g. Alpha Content Writer"}
+                    className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.departmentLabel") ?? "Phòng ban"}</label>
+                  <select
+                    required
+                    value={deptId}
+                    onChange={(e) => setDeptId(e.target.value)}
+                    className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  >
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id} className="bg-white dark:bg-slate-900">{d.canonical_name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.roleLabel") ?? "Vai trò"}</label>
+                  <select
+                    required
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  >
+                    {ROLE_OPTIONS.map(r => (
+                      <option key={r.value} value={r.value} className="bg-white dark:bg-slate-900">{r.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-slate-400">{t("agents.form.scopeLabel") ?? "Phạm vi quyền hạn"}</label>
+                  <select
+                    required
+                    value={scope}
+                    onChange={(e) => setScope(e.target.value)}
+                    className="w-full rounded-lg border border-slate-600 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  >
+                    {AUTHORITY_SCOPES.map(s => (
+                      <option key={s} value={s} className="bg-white dark:bg-slate-900">{s}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-slate-900 dark:text-white transition-all hover:bg-indigo-500 disabled:opacity-50"
+                >
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  {t("agents.form.submit") ?? "Phân công đặc vụ"}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {isLoading ? (
+            <div className="flex h-32 items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
+            </div>
+          ) : filteredAgents.length === 0 ? (
+            <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400">
+              <p>{t("agents.empty.title") ?? "Không tìm thấy đặc vụ nào."}</p>
+              <p className="text-sm">{t("agents.empty.hint") ?? "Nhấn \"Phân công đặc vụ\" để thêm mới."}</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {filteredAgents.map((agent) => (
+                <AgentCard key={agent.id} agent={agent} href={agent.id === 'mkt-agent-001' ? '?tab=marketing' : undefined} />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </PageFrame>
   );

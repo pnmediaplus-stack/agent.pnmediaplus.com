@@ -59,7 +59,6 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/departments", labelKey: "nav.departments", fallbackLabel: "Departments", icon: Building2 },
       { href: "/agents", labelKey: "nav.agents", fallbackLabel: "Agents", icon: Bot },
-        { href: "/agents/marketing", labelKey: "nav.marketingAgent", fallbackLabel: "Marketing Agent", icon: Megaphone } as any,
       { href: "/tenant-integrations", labelKey: "nav.tenantIntegrations", fallbackLabel: "API Integrations", icon: PlugZap }
     ]
   },
