@@ -225,16 +225,28 @@ function cleanSystemText(text?: string | null): string {
   return text.replace(/--[\w-]+=[^\s]+\s*/g, "").replace(/--[\w-]+\s*/g, "").trim();
 }
 
-function extractActionBadge(rawText?: string | null): { label: string; bg: string } | null {
+function cleanOwnerRef(ownerRef?: string | null, fallback = "AI Agent"): string {
+  if (!ownerRef) return fallback;
+  const trimmed = ownerRef.trim();
+  if (trimmed.includes('@')) {
+    return trimmed.split('@')[0];
+  }
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
+    return fallback;
+  }
+  return trimmed;
+}
+
+function extractActionBadge(rawText?: string | null, t?: (key: string) => string | undefined): { label: string; bg: string } | null {
   if (!rawText) return null;
   if (rawText.includes('--image-action=use_provided')) {
-    return { label: '🖼️ Ảnh có sẵn', bg: 'bg-blue-100/90 dark:bg-blue-950/70 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800/60' };
+    return { label: t?.("dashboard.action.useProvidedImage") ?? "🖼️ Ảnh có sẵn", bg: 'bg-blue-100/90 dark:bg-blue-950/70 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800/60' };
   }
   if (rawText.includes('--image-action=generate_new')) {
-    return { label: '🎨 AI Tạo ảnh mới', bg: 'bg-purple-100/90 dark:bg-purple-950/70 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-800/60' };
+    return { label: t?.("dashboard.action.generateNewImage") ?? "🎨 AI Tạo ảnh mới", bg: 'bg-purple-100/90 dark:bg-purple-950/70 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-800/60' };
   }
   if (rawText.includes('--video-action')) {
-    return { label: '🎥 Dựng Video', bg: 'bg-amber-100/90 dark:bg-amber-950/70 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800/60' };
+    return { label: t?.("dashboard.action.video") ?? "🎥 Dựng Video", bg: 'bg-amber-100/90 dark:bg-amber-950/70 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800/60' };
   }
   return null;
 }
@@ -259,7 +271,7 @@ function PipelineCard({
 
   const theme = getStageCardTheme(item.currentState);
 
-  const actionBadge = extractActionBadge(item.title) || extractActionBadge(item.brief);
+  const actionBadge = extractActionBadge(item.title, t) || extractActionBadge(item.brief, t);
   const cleanTitleStr = cleanSystemText(item.title);
   let cleanBriefStr = cleanSystemText(item.brief);
 
@@ -294,11 +306,15 @@ function PipelineCard({
   const assetCompletionText = `${requiredAssets.present.length}/${requiredAssets.totalRequired}`;
   const qaGateText = review
     ? (t(`dashboard.verdict.${review.verdict}`) ?? review.verdict)
-    : "PENDING";
+    : (t("dashboard.labels.pendingUpper") ?? "PENDING");
   const riskIsHigh = review ? (review.overclaimRisk > 3 || review.averageScore < 7) : false;
+  const displayOwner = cleanOwnerRef(item.ownerRef, t("dashboard.labels.aiAgent") ?? "AI Agent");
 
   return (
-    <div className={`flex h-[29.5rem] min-h-[29.5rem] w-[22rem] flex-none flex-col overflow-hidden rounded-xl border hover:-translate-y-0.5 transition-all duration-300 ${theme.card}`}>
+    <div
+      tabIndex={0}
+      className={`flex h-[29.5rem] min-h-[29.5rem] w-full max-w-[22rem] sm:w-[22rem] flex-none flex-col overflow-hidden rounded-xl border hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-cyan-500 transition-all duration-300 ${theme.card}`}
+    >
       {/* Header */}
       <div className="px-4 pt-3.5 pb-2.5 flex-none h-[5.5rem] border-b border-slate-200/40 dark:border-slate-800/40 flex flex-col justify-between">
         <div className="flex items-center justify-between gap-2">
@@ -309,7 +325,7 @@ function PipelineCard({
             </span>
           )}
         </div>
-        
+
         <div className="min-w-0">
           <div className="break-words whitespace-normal text-sm font-extrabold leading-tight text-slate-900 dark:text-white line-clamp-2">
             {cleanTitleStr || item.title}
@@ -331,18 +347,18 @@ function PipelineCard({
             {/* Sub-Card 1: Owner */}
             <div className={`rounded-xl p-2.5 border transition-all flex flex-col justify-between ${theme.inner}`}>
               <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between">
-                <span>Owner</span>
+                <span>{t("dashboard.labels.cardOwner") ?? "Owner"}</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
               </div>
               <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200 truncate" title={item.ownerRef}>
-                {item.ownerRef.split('@')[0]}
+                {displayOwner}
               </div>
             </div>
 
             {/* Sub-Card 2: Next Phase */}
             <div className={`rounded-xl p-2.5 border transition-all flex flex-col justify-between ${theme.inner}`}>
               <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between">
-                <span>Next Phase</span>
+                <span>{t("dashboard.labels.nextPhase") ?? "Next Phase"}</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
               </div>
               <div className="text-xs font-bold text-cyan-900 dark:text-cyan-200 truncate">
@@ -353,18 +369,18 @@ function PipelineCard({
             {/* Sub-Card 3: Assets Progress */}
             <div className={`rounded-xl p-2.5 border transition-all flex flex-col justify-between ${theme.inner}`}>
               <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between">
-                <span>Assets</span>
+                <span>{t("dashboard.labels.assetsCount") ?? "Assets"}</span>
                 <span className={`w-1.5 h-1.5 rounded-full ${requiredAssets.present.length === requiredAssets.totalRequired ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
               </div>
               <div className={`text-xs font-bold ${requiredAssets.present.length === requiredAssets.totalRequired ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>
-                {assetCompletionText} <span className="text-[10px] font-normal opacity-80">ready</span>
+                {assetCompletionText} <span className="text-[10px] font-normal opacity-80">{t("dashboard.labels.readyCount") ?? "ready"}</span>
               </div>
             </div>
 
             {/* Sub-Card 4: QA Status */}
             <div className={`rounded-xl p-2.5 border transition-all flex flex-col justify-between ${theme.inner}`}>
               <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between">
-                <span>QA Status</span>
+                <span>{t("dashboard.labels.qaStatus") ?? "QA Status"}</span>
                 <span className={`w-1.5 h-1.5 rounded-full ${review ? (riskIsHigh ? 'bg-rose-500' : 'bg-emerald-500') : 'bg-slate-400'}`}></span>
               </div>
               <div className={`text-xs font-bold truncate ${review ? (riskIsHigh ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300') : 'text-slate-600 dark:text-slate-400'}`}>
@@ -375,7 +391,9 @@ function PipelineCard({
 
           {/* Required Assets Sub-cards */}
           <div className="space-y-1.5 min-h-[3.5rem] flex flex-col justify-start">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Required Assets</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              {t("dashboard.labels.requiredAssets") ?? "Required Assets"}
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {requiredAssets.present.map((assetType) => (
                 <span key={assetType} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800/60 shadow-2xs">
@@ -404,17 +422,18 @@ function PipelineCard({
               <button
                 onClick={handlePublish}
                 disabled={isPublishing || !publish.ready}
-                className={`w-full rounded-lg px-4 py-2 text-xs font-bold text-white shadow-sm transition-all ${
+                aria-label={isPublishing ? (t("dashboard.labels.publishing") ?? "Publishing...") : (t("dashboard.labels.approvePublish") ?? "Approve & Publish")}
+                className={`w-full rounded-lg px-4 py-2 text-xs font-bold text-white shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-blue-400 ${
                   isPublishing || !publish.ready
                     ? "cursor-not-allowed bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500"
                     : "bg-blue-600 hover:bg-blue-500 hover:shadow"
                 }`}
               >
-                {isPublishing ? "Publishing..." : "Approve & Publish"}
+                {isPublishing ? (t("dashboard.labels.publishing") ?? "Publishing...") : (t("dashboard.labels.approvePublish") ?? "Approve & Publish")}
               </button>
               {!publish.ready && (
                 <p className="mt-1 text-center text-[10px] text-rose-500 font-medium">
-                  Not eligible for publish
+                  {t("dashboard.labels.notEligible") ?? "Not eligible for publish"}
                 </p>
               )}
             </div>
@@ -425,15 +444,15 @@ function PipelineCard({
               {performanceRecords.filter(p => p.contentItemId === item.id).slice(0, 1).map((perf, idx) => (
                 <React.Fragment key={idx}>
                   <div className={`rounded-lg p-1.5 border ${theme.inner}`}>
-                    <div className="text-[9px] font-bold text-slate-400 uppercase">Views</div>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">{t("dashboard.performanceMetric.views") ?? "Views"}</div>
                     <div className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">{perf.views?.toLocaleString() || 0}</div>
                   </div>
                   <div className={`rounded-lg p-1.5 border ${theme.inner}`}>
-                    <div className="text-[9px] font-bold text-slate-400 uppercase">Likes</div>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">{t("dashboard.performanceMetric.likes") ?? "Likes"}</div>
                     <div className="text-xs font-extrabold text-rose-600 dark:text-rose-400 mt-0.5">{perf.likes?.toLocaleString() || 0}</div>
                   </div>
                   <div className={`rounded-lg p-1.5 border ${theme.inner}`}>
-                    <div className="text-[9px] font-bold text-slate-400 uppercase">CTR</div>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">{t("dashboard.performanceMetric.CTR") ?? "CTR"}</div>
                     <div className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">{perf.CTR ? perf.CTR.toFixed(2) + '%' : '0%'}</div>
                   </div>
                 </React.Fragment>
@@ -503,11 +522,11 @@ function PipelineBoard({
 
             return (
               <div key={item.id} className="min-h-0 snap-start">
-                      <PipelineCard 
-                        key={item.id} 
-                        item={item} 
-                        assets={assets} 
-                        reviews={reviews} 
+                      <PipelineCard
+                        key={item.id}
+                        item={item}
+                        assets={assets}
+                        reviews={reviews}
                         performanceRecords={performanceRecords}
                       />
                 <div className="mt-2 flex items-center justify-between px-1 text-xs text-slate-500">
@@ -985,7 +1004,7 @@ export function Phase2Dashboard({
         if (!res.ok) return;
 
         const result = await res.json();
-        
+
         if (result.needsFullRefresh) {
           router.refresh();
           return;
@@ -995,7 +1014,7 @@ export function Phase2Dashboard({
           setLastSyncAt(new Date().toISOString());
           setLiveData(prev => {
             const next = { ...prev };
-            
+
             const mergeArray = (prevArr: any[], deltaArr: any[]) => {
               if (!deltaArr || !deltaArr.length) return prevArr;
               const merged = prevArr.map(item => {
@@ -1013,7 +1032,7 @@ export function Phase2Dashboard({
             next.performanceRecords = mergeArray(prev.performanceRecords, result.deltas.performance);
             next.publishRecords = mergeArray(prev.publishRecords, result.deltas.publishRecords);
             next.lessonsLearned = mergeArray(prev.lessonsLearned, result.deltas.lessons);
-            
+
             return next;
           });
         }
@@ -1105,6 +1124,36 @@ export function Phase2Dashboard({
             reviews={liveData.qaReviews}
             performanceRecords={liveData.performanceRecords}
           />
+
+        {(liveData.hasNextPage || (liveData.page && liveData.page > 1)) && (
+          <div className="mt-3 flex items-center justify-between border-t border-slate-200/60 dark:border-slate-800/60 pt-3 px-2">
+            <button
+              onClick={() => {
+                if (liveData.page && liveData.page > 1) {
+                  router.push(`?page=${liveData.page - 1}`);
+                }
+              }}
+              disabled={!liveData.page || liveData.page === 1}
+              aria-label={t("dashboard.pagination.previous") ?? "Trang trước"}
+              className="rounded-lg bg-slate-100 dark:bg-slate-800 px-3.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-cyan-500"
+            >
+              ← {t("dashboard.pagination.previous") ?? "Trang trước"}
+            </button>
+            <div className="text-xs font-bold text-cyan-600 dark:text-cyan-400">
+              {t("dashboard.pagination.page") ?? "Trang"} {liveData.page || 1}
+            </div>
+            <button
+              onClick={() => {
+                router.push(`?page=${(liveData.page || 1) + 1}`);
+              }}
+              disabled={!liveData.hasNextPage}
+              aria-label={t("dashboard.pagination.next") ?? "Trang tiếp"}
+              className="rounded-lg bg-slate-100 dark:bg-slate-800 px-3.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-cyan-500"
+            >
+              {t("dashboard.pagination.next") ?? "Trang tiếp"} →
+            </button>
+          </div>
+        )}
       </SectionFrame>
 
       <div className="space-y-6">
@@ -1112,7 +1161,7 @@ export function Phase2Dashboard({
         <AssetView assets={liveData.assets} contentItems={liveData.contentItems} />
         <QAView contentItems={liveData.contentItems} assets={liveData.assets} reviews={liveData.qaReviews} />
         <PerformanceView contentItems={liveData.contentItems} records={liveData.performanceRecords} />
-        
+
         <SectionFrame
           title="🧠 AI Knowledge Base (Lessons Learned)"
           description="Những đúc kết thành công được AI tự động phân tích từ dữ liệu thật"
