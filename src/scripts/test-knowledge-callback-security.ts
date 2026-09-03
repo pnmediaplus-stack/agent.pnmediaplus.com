@@ -15,11 +15,11 @@ if (!supabaseUrl || !serviceRoleKey || !anonKey) {
 }
 
 // Strict Environment Allowlist: ONLY permitted on explicit DB Clone / Local environments
-const ALLOWED_CLONE_HOSTS = [
+const ALLOWED_CLONE_HOSTS = new Set([
   'ldhjrdihrcjsjfmrqtbi.supabase.co', // Authorized DB Clone
   '127.0.0.1',
   'localhost',
-];
+]);
 
 let targetHost = '';
 try {
@@ -28,7 +28,7 @@ try {
   targetHost = supabaseUrl;
 }
 
-const isAllowedHost = ALLOWED_CLONE_HOSTS.some(allowed => targetHost.includes(allowed));
+const isAllowedHost = ALLOWED_CLONE_HOSTS.has(targetHost);
 
 if (!isAllowedHost) {
   console.error('================================================================');

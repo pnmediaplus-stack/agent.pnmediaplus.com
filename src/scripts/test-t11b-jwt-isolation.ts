@@ -15,11 +15,11 @@ if (!supabaseUrl || !anonKey || !serviceRoleKey) {
 // -----------------------------------------------------------------------------
 // STRICT ENVIRONMENT ALLOWLIST GUARD: ONLY permitted on DB Clone / Local
 // -----------------------------------------------------------------------------
-const ALLOWED_CLONE_HOSTS = [
+const ALLOWED_CLONE_HOSTS = new Set([
   'ldhjrdihrcjsjfmrqtbi.supabase.co', // Authorized DB Clone
   '127.0.0.1',
   'localhost',
-];
+]);
 
 let targetHost = '';
 try {
@@ -28,7 +28,7 @@ try {
   targetHost = supabaseUrl;
 }
 
-const isAllowedHost = ALLOWED_CLONE_HOSTS.some(allowed => targetHost.includes(allowed));
+const isAllowedHost = ALLOWED_CLONE_HOSTS.has(targetHost);
 
 if (!isAllowedHost) {
   console.error('================================================================');
@@ -350,28 +350,32 @@ async function testT11bJwtIsolation() {
     console.log('================================================================');
   } finally {
     // -----------------------------------------------------------------------
-    // STRICT CLEANUP IN FINALLY BLOCK WITH ERROR VALIDATION
+    // STRICT CLEANUP IN FINALLY BLOCK WITH EXPLICIT RETENTION ACCOUNTING
     // -----------------------------------------------------------------------
     console.log('\n--- SECTION 4: TEST FIXTURE CLEANUP & AUDIT IMMUTABILITY ACCOUNTING ---');
     if (testAuditId) {
-      console.log(`  [Audit Immutability Note] Test audit record (${testAuditId}) is permanently preserved as append-only immutable proof on DB Clone.`);
+      console.log(`  [Append-Only Retention Note] DB Clone retains intentional test audit record (${testAuditId}) as immutable proof under trigger prevent_audit_mutation.`);
     }
 
     if (isSeededDoc && realOrgBDocId) {
-      console.log(`  [Cleanup] Transitioning seeded test document ${realOrgBDocId} to ARCHIVED via state machine...`);
-      const { data: updatedDoc, error: cleanErr } = await adminClient
-        .from('crm_knowledge_documents')
-        .update({ knowledge_status: 'ARCHIVED' })
-        .eq('id', realOrgBDocId)
-        .select('id, knowledge_status');
+      try {
+        console.log(`  [Cleanup] Transitioning seeded test document ${realOrgBDocId} to ARCHIVED via state machine...`);
+        const { data: updatedDoc, error: cleanErr } = await adminClient
+          .from('crm_knowledge_documents')
+          .update({ knowledge_status: 'ARCHIVED' })
+          .eq('id', realOrgBDocId)
+          .select('id, knowledge_status');
 
-      if (cleanErr) {
-        throw new Error(`[Cleanup Failure] Could not transition seeded document to ARCHIVED: ${cleanErr.message}`);
+        if (cleanErr) {
+          console.error(`  [Cleanup Warning] Could not transition seeded document to ARCHIVED: ${cleanErr.message}`);
+        } else if (!updatedDoc || updatedDoc.length === 0 || updatedDoc[0].knowledge_status !== 'ARCHIVED') {
+          console.error(`  [Cleanup Warning] Seeded document was not updated to ARCHIVED: ${JSON.stringify(updatedDoc)}`);
+        } else {
+          console.log(`  -> PASS: Seeded test document ${realOrgBDocId} safely transitioned to ARCHIVED state.`);
+        }
+      } catch (cleanupEx: any) {
+        console.error(`  [Cleanup Exception] Unexpected error during cleanup:`, cleanupEx?.message);
       }
-      if (!updatedDoc || updatedDoc.length === 0 || updatedDoc[0].knowledge_status !== 'ARCHIVED') {
-        throw new Error(`[Cleanup Failure] Seeded document was not updated to ARCHIVED: ${JSON.stringify(updatedDoc)}`);
-      }
-      console.log(`  -> PASS: Seeded test document ${realOrgBDocId} safely transitioned to ARCHIVED state.`);
     }
   }
 }
