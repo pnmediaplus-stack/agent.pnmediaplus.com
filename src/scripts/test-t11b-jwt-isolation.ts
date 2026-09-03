@@ -60,6 +60,7 @@ async function testT11bJwtIsolation() {
   let realOrgBDocId: string | null = null;
   let isSeededDoc = false;
   let testAuditId: string | null = null;
+  let testError: Error | null = null;
 
   try {
     // 1. Authenticate real user session dynamically via OTP verification (pnmediaplus@gmail.com)
@@ -348,34 +349,54 @@ async function testT11bJwtIsolation() {
     console.log('  5. crm_knowledge_audit_logs RLS: Zero-Leakage against real Org B data');
     console.log('  6. Append-Only Trigger: UPDATE and DELETE HARD BLOCKED (P0001)');
     console.log('================================================================');
+  } catch (err: any) {
+    testError = err;
   } finally {
     // -----------------------------------------------------------------------
-    // STRICT CLEANUP IN FINALLY BLOCK WITH EXPLICIT RETENTION ACCOUNTING
+    // STRICT FIXTURE INVENTORY & AUDIT RETENTION ACCOUNTING
     // -----------------------------------------------------------------------
-    console.log('\n--- SECTION 4: TEST FIXTURE CLEANUP & AUDIT IMMUTABILITY ACCOUNTING ---');
+    console.log('\n--- SECTION 4: TEST FIXTURE INVENTORY & AUDIT RETENTION LEDGER ---');
+    let cleanupHardFailError: Error | null = null;
+
     if (testAuditId) {
-      console.log(`  [Append-Only Retention Note] DB Clone retains intentional test audit record (${testAuditId}) as immutable proof under trigger prevent_audit_mutation.`);
+      // Confirm audit row existence in DB Clone
+      const { data: auditCheck, error: aChkErr } = await adminClient
+        .from('crm_knowledge_audit_logs')
+        .select('id, action, correlation_id')
+        .eq('id', testAuditId);
+
+      if (aChkErr || !auditCheck || auditCheck.length !== 1) {
+        cleanupHardFailError = new Error(`Audit Inventory Failure: Expected exactly 1 immutable audit row for ID ${testAuditId}, got ${auditCheck?.length} (error: ${aChkErr?.message})`);
+      } else {
+        console.log(`  [Audit Retention Ledger] Audit Row (${testAuditId}) verified in DB Clone: Action=${auditCheck[0].action}, Correlation=${auditCheck[0].correlation_id}.`);
+        console.log('  -> RETENTION POLICY: Permanently preserved as append-only immutable proof on DB Clone under trigger prevent_audit_mutation.');
+      }
     }
 
     if (isSeededDoc && realOrgBDocId) {
-      try {
-        console.log(`  [Cleanup] Transitioning seeded test document ${realOrgBDocId} to ARCHIVED via state machine...`);
-        const { data: updatedDoc, error: cleanErr } = await adminClient
-          .from('crm_knowledge_documents')
-          .update({ knowledge_status: 'ARCHIVED' })
-          .eq('id', realOrgBDocId)
-          .select('id, knowledge_status');
+      console.log(`  [Cleanup] Transitioning seeded test document ${realOrgBDocId} to ARCHIVED via state machine...`);
+      const { data: updatedDoc, error: cleanErr } = await adminClient
+        .from('crm_knowledge_documents')
+        .update({ knowledge_status: 'ARCHIVED' })
+        .eq('id', realOrgBDocId)
+        .select('id, knowledge_status');
 
-        if (cleanErr) {
-          console.error(`  [Cleanup Warning] Could not transition seeded document to ARCHIVED: ${cleanErr.message}`);
-        } else if (!updatedDoc || updatedDoc.length === 0 || updatedDoc[0].knowledge_status !== 'ARCHIVED') {
-          console.error(`  [Cleanup Warning] Seeded document was not updated to ARCHIVED: ${JSON.stringify(updatedDoc)}`);
-        } else {
-          console.log(`  -> PASS: Seeded test document ${realOrgBDocId} safely transitioned to ARCHIVED state.`);
-        }
-      } catch (cleanupEx: any) {
-        console.error(`  [Cleanup Exception] Unexpected error during cleanup:`, cleanupEx?.message);
+      if (cleanErr) {
+        cleanupHardFailError = new Error(`Cleanup HARD FAIL: Could not transition seeded document to ARCHIVED: ${cleanErr.message}`);
+      } else if (!updatedDoc || updatedDoc.length === 0 || updatedDoc[0].knowledge_status !== 'ARCHIVED') {
+        cleanupHardFailError = new Error(`Cleanup HARD FAIL: Seeded document was not updated to ARCHIVED: ${JSON.stringify(updatedDoc)}`);
+      } else {
+        console.log(`  -> PASS: Seeded test document ${realOrgBDocId} safely transitioned to ARCHIVED state.`);
       }
+    }
+
+    if (testError) {
+      console.error('\nT11b Execution Encountered Test Failure:', testError.message);
+      throw testError;
+    }
+    if (cleanupHardFailError) {
+      console.error('\nT11b Execution Encountered Cleanup Hard Fail:', cleanupHardFailError.message);
+      throw cleanupHardFailError;
     }
   }
 }
