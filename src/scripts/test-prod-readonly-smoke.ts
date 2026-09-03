@@ -298,9 +298,10 @@ async function runProdReadonlySmokeTest() {
 
   console.log('  Catalog Inspection Report:');
   console.log('    RLS Enabled on Tables:', catReport.rls_enabled);
-  console.log('    Idempotency Unique Index Exists:', catReport.idempotency_index_exists);
-  console.log('    Functions Verified:', catReport.functions?.map((f: any) => `${f.name} (secdef: ${f.secdef}, config: ${f.config})`));
+  console.log('    Idempotency Unique Index Details:', catReport.idempotency_index);
+  console.log('    Functions Verified:', catReport.functions?.map((f: any) => `${f.name}(${f.args}) [secdef: ${f.secdef}, config: ${f.config}]`));
   console.log('    Triggers Verified:', catReport.triggers);
+  console.log('    Policies Verified Count:', catReport.policies?.length);
 
   // 4.1 Strict assertion: RLS enabled on all 3 tables in schema public
   if (catReport.rls_enabled?.crm_knowledge_documents !== true || catReport.rls_enabled?.crm_knowledge_chunks !== true || catReport.rls_enabled?.crm_knowledge_audit_logs !== true) {
@@ -308,33 +309,61 @@ async function runProdReadonlySmokeTest() {
   }
   console.log('  -> PASS: relrowsecurity = true on all 3 knowledge tables in public schema.');
 
-  // 4.2 Strict assertion: Idempotency unique index exists in schema public
-  if (!catReport.idempotency_index_exists) {
-    throw new Error('Catalog 1 FAILED: Unique index idx_crm_knowledge_audit_idemp is missing in public schema!');
+  // 4.2 Strict assertion: RLS Policies exist and enforce get_auth_user_organizations() on all 3 tables
+  const policyList = catReport.policies || [];
+  for (const targetTbl of ['crm_knowledge_documents', 'crm_knowledge_chunks', 'crm_knowledge_audit_logs']) {
+    const tblPolicies = policyList.filter((p: any) => p.table === targetTbl);
+    if (tblPolicies.length === 0) {
+      throw new Error(`Catalog 1 FAILED: No RLS policies found for table ${targetTbl}!`);
+    }
+    const hasTenantHelperQual = tblPolicies.some((p: any) => p.qual && p.qual.includes('get_auth_user_organizations()'));
+    if (!hasTenantHelperQual) {
+      throw new Error(`Catalog 1 FAILED: Table ${targetTbl} policies do NOT contain get_auth_user_organizations() qualifier! Got: ${JSON.stringify(tblPolicies)}`);
+    }
   }
-  console.log('  -> PASS: Unique index idx_crm_knowledge_audit_idemp confirmed in public schema.');
+  console.log('  -> PASS: RLS policies verified on all 3 tables with strict get_auth_user_organizations() tenant-safe qualifiers.');
 
-  // 4.3 Strict assertion: SECURITY DEFINER and fixed search_path on all 3 critical functions
-  const fnMap = new Map((catReport.functions || []).map((f: any) => [f.name, f]));
+  // 4.3 Strict assertion: Idempotency unique index exists, is unique, and has correct key columns
+  if (!catReport.idempotency_index?.exists || !catReport.idempotency_index?.is_unique) {
+    throw new Error(`Catalog 1 FAILED: Unique index idx_crm_knowledge_audit_idemp is missing or not unique! Report: ${JSON.stringify(catReport.idempotency_index)}`);
+  }
+  const indexDef: string = catReport.idempotency_index?.indexdef || '';
+  if (!indexDef.includes('(document_id, action, correlation_id)')) {
+    throw new Error(`Catalog 1 FAILED: Index definition does not match (document_id, action, correlation_id)! Got: ${indexDef}`);
+  }
+  console.log('  -> PASS: Unique index idx_crm_knowledge_audit_idemp confirmed UNIQUE ON (document_id, action, correlation_id).');
+
+  // 4.4 Strict assertion: Exactly 1 function per name, prosecdef = true, search_path fixed
+  const fnList = catReport.functions || [];
   for (const requiredFn of ['get_auth_user_organizations', 'crm_knowledge_state_machine', 'apply_knowledge_ingestion_callback']) {
-    const fnObj: any = fnMap.get(requiredFn);
-    if (!fnObj) throw new Error(`Catalog 1 FAILED: Function ${requiredFn} is missing in public schema!`);
-    if (fnObj.secdef !== true) throw new Error(`Catalog 1 FAILED: Function ${requiredFn} is NOT SECURITY DEFINER!`);
+    const matchingFns = fnList.filter((f: any) => f.name === requiredFn);
+    if (matchingFns.length === 0) {
+      throw new Error(`Catalog 1 FAILED: Function ${requiredFn} is missing in public schema!`);
+    }
+    if (matchingFns.length > 1) {
+      throw new Error(`Catalog 1 FAILED: Ambiguous overload detected for function ${requiredFn} (${matchingFns.length} overloads found)!`);
+    }
+    const fnObj = matchingFns[0];
+    if (fnObj.secdef !== true) {
+      throw new Error(`Catalog 1 FAILED: Function ${requiredFn} is NOT SECURITY DEFINER!`);
+    }
     if (!fnObj.config || !fnObj.config.includes('search_path=pg_catalog, public')) {
       throw new Error(`Catalog 1 FAILED: Function ${requiredFn} does NOT have fixed search_path=pg_catalog, public! Got: ${fnObj.config}`);
     }
   }
-  console.log('  -> PASS: All 3 security-critical functions verified with prosecdef = true and fixed search_path = pg_catalog, public.');
+  console.log('  -> PASS: All 3 security-critical functions verified with zero overloads, prosecdef = true, and fixed search_path = pg_catalog, public.');
 
-  // 4.4 Strict assertion: Triggers exist in schema public
+  // 4.5 Strict assertion: Triggers mapped correctly to tables and functions
   const trigList = catReport.triggers || [];
-  if (!trigList.includes('trg_crm_knowledge_state_machine')) {
-    throw new Error('Catalog 1 FAILED: Trigger trg_crm_knowledge_state_machine is missing in public schema!');
+  const smTrigger = trigList.find((t: any) => t.trigger_name === 'trg_crm_knowledge_state_machine');
+  if (!smTrigger || smTrigger.table_name !== 'crm_knowledge_documents' || smTrigger.proc_name !== 'crm_knowledge_state_machine') {
+    throw new Error(`Catalog 1 FAILED: Trigger trg_crm_knowledge_state_machine mapping is invalid: ${JSON.stringify(smTrigger)}`);
   }
-  if (!trigList.includes('trg_crm_knowledge_audit_insert')) {
-    throw new Error('Catalog 1 FAILED: Trigger trg_crm_knowledge_audit_insert is missing in public schema!');
+  const auditTrigger = trigList.find((t: any) => t.trigger_name === 'trg_crm_knowledge_audit_insert');
+  if (!auditTrigger || auditTrigger.table_name !== 'crm_knowledge_documents' || auditTrigger.proc_name !== 'crm_knowledge_audit_trigger') {
+    throw new Error(`Catalog 1 FAILED: Trigger trg_crm_knowledge_audit_insert mapping is invalid: ${JSON.stringify(auditTrigger)}`);
   }
-  console.log('  -> PASS: State machine and audit append-only triggers confirmed in public schema.\n');
+  console.log('  -> PASS: State machine and audit triggers confirmed mapped to correct tables and procedure functions in public schema.\n');
 
   // Verify Schema Columns
   console.log('[Smoke 5] Verifying Schema Columns for Migration 1 (v1.1) and Migration 2 (callback RPC):');

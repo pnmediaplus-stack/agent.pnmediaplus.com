@@ -368,14 +368,21 @@ BEGIN
         AND c.relname IN ('crm_knowledge_documents', 'crm_knowledge_chunks', 'crm_knowledge_audit_logs')
     ),
     'policies', (
-      SELECT jsonb_agg(jsonb_build_object('table', p.tablename, 'policy', p.policyname, 'cmd', p.cmd))
+      SELECT jsonb_agg(jsonb_build_object(
+        'table', p.tablename, 
+        'policy', p.policyname, 
+        'cmd', p.cmd,
+        'roles', p.roles,
+        'qual', p.qual
+      ))
       FROM pg_policies p
       WHERE p.schemaname = 'public'
         AND p.tablename IN ('crm_knowledge_documents', 'crm_knowledge_chunks', 'crm_knowledge_audit_logs')
     ),
     'functions', (
       SELECT jsonb_agg(jsonb_build_object(
-        'name', p.proname, 
+        'name', p.proname,
+        'args', pg_get_function_identity_arguments(p.oid),
         'secdef', p.prosecdef, 
         'config', array_to_string(p.proconfig, ', ')
       ))
@@ -384,17 +391,41 @@ BEGIN
       WHERE n.nspname = 'public'
         AND p.proname IN ('get_auth_user_organizations', 'crm_knowledge_state_machine', 'apply_knowledge_ingestion_callback')
     ),
-    'idempotency_index_exists', (
-      SELECT EXISTS (
-        SELECT 1 FROM pg_indexes 
-        WHERE schemaname = 'public' AND indexname = 'idx_crm_knowledge_audit_idemp'
+    'idempotency_index', (
+      SELECT jsonb_build_object(
+        'exists', EXISTS (
+          SELECT 1 FROM pg_indexes 
+          WHERE schemaname = 'public' AND indexname = 'idx_crm_knowledge_audit_idemp'
+        ),
+        'is_unique', COALESCE((
+          SELECT i.indisunique
+          FROM pg_index i
+          JOIN pg_class c ON i.indexrelid = c.oid
+          JOIN pg_namespace n ON c.relnamespace = n.oid
+          WHERE n.nspname = 'public' AND c.relname = 'idx_crm_knowledge_audit_idemp'
+        ), false),
+        'indexdef', (
+          SELECT pg_get_indexdef(i.indexrelid)
+          FROM pg_index i
+          JOIN pg_class c ON i.indexrelid = c.oid
+          JOIN pg_namespace n ON c.relnamespace = n.oid
+          WHERE n.nspname = 'public' AND c.relname = 'idx_crm_knowledge_audit_idemp'
+        )
       )
     ),
     'triggers', (
-      SELECT jsonb_agg(t.trigger_name)
-      FROM information_schema.triggers t
-      WHERE t.trigger_schema = 'public'
-        AND t.event_object_table IN ('crm_knowledge_documents', 'crm_knowledge_audit_logs')
+      SELECT jsonb_agg(jsonb_build_object(
+        'trigger_name', tg.tgname,
+        'table_name', cl.relname,
+        'proc_name', pr.proname
+      ))
+      FROM pg_trigger tg
+      JOIN pg_class cl ON tg.tgrelid = cl.oid
+      JOIN pg_namespace n ON cl.relnamespace = n.oid
+      JOIN pg_proc pr ON tg.tgfoid = pr.oid
+      WHERE n.nspname = 'public'
+        AND cl.relname IN ('crm_knowledge_documents', 'crm_knowledge_audit_logs')
+        AND NOT tg.tgisinternal
     )
   ) INTO v_report;
 
