@@ -649,13 +649,15 @@ function TaskView({
           renderRow={(task) => {
             const currentTask = task as Phase2AgentTask;
             const content = contentItems.find((row) => row.id === currentTask.contentItemId);
+            const cleanContentTitle = cleanSystemText(content?.title);
+            const cleanOwner = currentTask.ownerRef ? currentTask.ownerRef.split('@')[0].split('-')[0] : "AI Agent";
             return [
               <>
-                <div className="font-medium text-slate-900 dark:text-white">{content?.title ?? (t("dashboard.labels.pending") ?? "pending")}</div>
-                <div className="text-xs text-slate-500">{content?.contentKey ?? currentTask.contentItemId}</div>
+                <div className="font-semibold text-slate-900 dark:text-white">{cleanContentTitle || (t("dashboard.labels.pending") ?? "Chờ xử lý")}</div>
+                <div className="text-xs text-slate-500">{content ? (t(`dashboard.state.${content.currentState}`) ?? content.currentState) : "Chờ xử lý"}</div>
               </>,
               t(`dashboard.taskKind.${currentTask.taskKind}`) ?? currentTask.taskKind,
-              currentTask.ownerRef,
+              cleanOwner,
               <StateBadge label={currentTask.state} displayLabel={t(`dashboard.taskState.${currentTask.state}`) ?? currentTask.state} />,
               <span className="text-slate-900 dark:text-white">
                 {content
@@ -726,24 +728,26 @@ function AssetView({
           renderRow={(asset) => {
             const currentAsset = asset as Phase2Asset;
             const content = contentItems.find((row) => row.id === currentAsset.contentItemId);
+            const cleanContentTitle = cleanSystemText(content?.title);
+            const cleanOwner = currentAsset.ownerRef ? currentAsset.ownerRef.split('@')[0].split('-')[0] : "System";
             return [
               <>
-                <div className="font-medium text-slate-900 dark:text-white">{content?.title ?? (t("dashboard.labels.pending") ?? "pending")}</div>
+                <div className="font-semibold text-slate-900 dark:text-white">{cleanContentTitle || (t("dashboard.labels.pending") ?? "Chờ xử lý")}</div>
                 <div className="text-xs text-slate-500">
-                  {content ? (t(`dashboard.state.${content.currentState}`) ?? content.currentState) : (t("dashboard.labels.pending") ?? "pending")}
+                  {content ? (t(`dashboard.state.${content.currentState}`) ?? content.currentState) : (t("dashboard.labels.pending") ?? "Chờ xử lý")}
                 </div>
               </>,
               <StateBadge label={currentAsset.assetType} displayLabel={t(`dashboard.assetType.${currentAsset.assetType}`) ?? currentAsset.assetType} />,
-              <span className="text-xs font-mono text-slate-500 dark:text-slate-400" title={currentAsset.ownerRef}>
-                {currentAsset.ownerRef.split('-')[0]}...
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {cleanOwner}
               </span>,
               <div className="max-w-[300px] overflow-hidden text-ellipsis whitespace-nowrap text-xs text-slate-600 dark:text-slate-300" title={currentAsset.assetUri}>
                 {currentAsset.assetUri && currentAsset.assetUri.startsWith('http') ? (
-                  <a href={currentAsset.assetUri} target="_blank" rel="noreferrer" className="text-cyan-600 dark:text-cyan-400 hover:underline">
-                    [Link Hình Ảnh]
+                  <a href={currentAsset.assetUri} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-semibold hover:underline">
+                    🔗 Xem tài nguyên
                   </a>
                 ) : (
-                  currentAsset.assetUri ? currentAsset.assetUri : (t("dashboard.labels.pending") ?? "pending")
+                  currentAsset.assetUri ? cleanSystemText(currentAsset.assetUri) : (t("dashboard.labels.pending") ?? "Chờ xử lý")
                 )}
               </div>
             ];
@@ -816,23 +820,35 @@ function QAView({
             const currentContent = content as Phase2ContentItem;
             const review = getPhase2LatestReview(currentContent.id, reviews);
             const publish = getPhase2PublishEligibility(currentContent.id, assets, reviews);
+            const cleanContentTitle = cleanSystemText(currentContent.title);
+            const evidenceStr = review?.evidenceRef || "";
+            const isJsonEvidence = evidenceStr.trim().startsWith('{') || evidenceStr.includes('missingAsset');
+
             return [
               <>
-                <div className="font-medium text-slate-900 dark:text-white">{currentContent.title}</div>
+                <div className="font-semibold text-slate-900 dark:text-white">{cleanContentTitle || currentContent.title}</div>
                 <div className="text-xs text-slate-500">{t(`dashboard.state.${currentContent.currentState}`) ?? currentContent.currentState}</div>
               </>,
-              review ? review.averageScore.toFixed(1) : (t("dashboard.labels.pending") ?? "pending"),
-              review ? review.overclaimRisk : (t("dashboard.labels.pending") ?? "pending"),
+              review ? review.averageScore.toFixed(1) : (t("dashboard.labels.pending") ?? "Chờ duyệt"),
+              review ? review.overclaimRisk : (t("dashboard.labels.pending") ?? "Chờ duyệt"),
               review
                 ? review.missingAsset
-                  ? (t("dashboard.boolean.yes") ?? "Yes")
-                  : (t("dashboard.boolean.no") ?? "No")
-                : (t("dashboard.labels.pending") ?? "pending"),
+                  ? (t("dashboard.boolean.yes") ?? "Có")
+                  : (t("dashboard.boolean.no") ?? "Không")
+                : (t("dashboard.labels.pending") ?? "Chờ duyệt"),
               <StateBadge
                 label={review ? review.verdict : (t("dashboard.labels.pending") ?? "pending")}
-                displayLabel={review ? (t(`dashboard.verdict.${review.verdict}`) ?? review.verdict) : (t("dashboard.labels.pending") ?? "pending")}
+                displayLabel={review ? (t(`dashboard.verdict.${review.verdict}`) ?? review.verdict) : (t("dashboard.labels.pending") ?? "Chờ duyệt")}
               />,
-              <div className="text-xs text-slate-500 dark:text-slate-400 break-all max-w-[200px] max-h-20 overflow-y-auto">{review?.evidenceRef ?? (t("dashboard.labels.pending") ?? "pending")}</div>,
+              <div className="text-xs text-slate-600 dark:text-slate-300 break-all max-w-[200px] max-h-20 overflow-y-auto">
+                {isJsonEvidence ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                    ✓ Đã đối soát hệ thống
+                  </span>
+                ) : (
+                  evidenceStr ? cleanSystemText(evidenceStr) : (t("dashboard.labels.pending") ?? "Chờ đối soát")
+                )}
+              </div>,
               <StateBadge
                 label={publish.ready ? "ELIGIBLE" : publish.gateState}
                 displayLabel={publish.ready ? (t("dashboard.labels.eligible") ?? "ELIGIBLE") : (t(`dashboard.publishState.${publish.gateState}`) ?? publish.gateState)}

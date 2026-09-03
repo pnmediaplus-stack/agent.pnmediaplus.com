@@ -1,7 +1,9 @@
-BEGIN;
+import os
+
+sql = """BEGIN;
 
 -- 1. Extend crm_knowledge_documents
-ALTER TABLE public.crm_knowledge_documents
+ALTER TABLE public.crm_knowledge_documents 
   ADD COLUMN IF NOT EXISTS knowledge_metadata JSONB DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS knowledge_status VARCHAR(20) DEFAULT 'DRAFT' CHECK (knowledge_status IN ('DRAFT', 'REVIEWED', 'APPROVED', 'ACTIVE', 'SUPERSEDED', 'DEPRECATED', 'ARCHIVED')),
   ADD COLUMN IF NOT EXISTS ingestion_status VARCHAR(20) DEFAULT 'NOT_REQUIRED' CHECK (ingestion_status IN ('NOT_REQUIRED', 'PENDING', 'PROCESSING', 'SUCCESS', 'FAILED')),
@@ -91,7 +93,7 @@ DROP TRIGGER IF EXISTS trg_crm_knowledge_audit_insert ON public.crm_knowledge_do
 CREATE TRIGGER trg_crm_knowledge_audit_insert AFTER UPDATE ON public.crm_knowledge_documents FOR EACH ROW EXECUTE FUNCTION public.trg_crm_knowledge_audit_log();
 
 -- 6. Safe Backfill
-UPDATE public.crm_knowledge_documents SET
+UPDATE public.crm_knowledge_documents SET 
   knowledge_status = CASE WHEN status = 'ready' THEN 'REVIEWED' ELSE 'DRAFT' END,
   ingestion_status = 'NOT_REQUIRED',
   knowledge_metadata = jsonb_build_object('evidence', jsonb_build_object('epistemic_status', 'observed'))
@@ -117,3 +119,7 @@ BEGIN
 END;
 $$;
 COMMIT;
+"""
+with open("D:/Projects/agent.pnmediaplus.com/supabase/migrations/20260904000000_knowledge_architecture_v1_1.sql", "w", encoding="utf-8") as f:
+    f.write(sql)
+print("Migration updated successfully")
