@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "rimraf .next && next build",
+    "build": "next build",
     "test:auth-smoke": "node --experimental-strip-types --test src/__tests__/auth-smoke.test.ts",
     "start": "next start"
   },
