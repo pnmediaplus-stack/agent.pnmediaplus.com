@@ -9,6 +9,7 @@
     "test:callback-security": "tsx src/scripts/test-knowledge-callback-security.ts",
     "test:t11b-jwt": "tsx src/scripts/test-t11b-jwt-isolation.ts",
     "test:prod-smoke": "tsx src/scripts/test-prod-readonly-smoke.ts",
+    "test:handoff-e2e": "tsx src/scripts/test-marketing-cskh-handoff-e2e.ts",
     "start": "next start"
   },
   "dependencies": {
