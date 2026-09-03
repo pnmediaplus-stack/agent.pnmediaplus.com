@@ -23,7 +23,7 @@ async function testT11bJwtIsolation() {
   console.log('================================================================');
   console.log('T11b: RPC ACCESS-CONTROL & FULL MULTI-TENANT RLS REGRESSION TEST');
   console.log('Target Supabase:', supabaseUrl);
-  console.log('Scope: RPC Access Boundary + Comprehensive RLS Multi-Tenant Isolation');
+  console.log('Scope: RPC Access Boundary + Real Foreign Tenant Data RLS Isolation + Append-Only Immutability');
   console.log('================================================================\n');
 
   const zeroVector = Array(1536).fill(0.0);
@@ -57,11 +57,12 @@ async function testT11bJwtIsolation() {
   const { data: memberRows } = await adminClient
     .from('portal_organization_memberships')
     .select('organization_id, role')
-    .eq('user_id', verifiedUserId);
+    .eq('user_id', verifiedUserId)
+    .eq('status', 'active');
 
-  const userOrgId = memberRows?.[0]?.organization_id || 'aaaaaaaa-cccc-cccc-cccc-000000000001';
+  const userOrgId = memberRows?.[0]?.organization_id || '8289488a-b255-4cb6-9bff-c9d2e71af160';
 
-  console.log(`  -> User verified: id=${verifiedUserId} | Member of Org A: ${userOrgId}`);
+  console.log(`  -> User verified: id=${verifiedUserId} | Active Member of Org A: ${userOrgId}`);
   console.log('  -> Real User Access Token (JWT) acquired successfully.\n');
 
   // =========================================================================
@@ -84,8 +85,7 @@ async function testT11bJwtIsolation() {
 
   // 1.2 Public / Anon Key Caller Probe (Expected: Hard Blocked)
   console.log('[Test T11b.2] Public/Anon Client attempting to execute match_documents:');
-  const anonClient = createClient(supabaseUrl, anonKey);
-  const { error: anonErr } = await anonClient.rpc('match_documents', {
+  const { error: anonErr } = await publicClient.rpc('match_documents', {
     query_embedding: zeroVector,
     match_count: 5,
     filter: { organization_id: targetOrgBId, namespace: 'cskh' },
@@ -102,6 +102,7 @@ async function testT11bJwtIsolation() {
   console.log('[Test T11b.3] Authenticated User JWT Client attempting to execute match_documents:');
   const userClient = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: `Bearer ${realUserJwt}` } },
+    auth: { persistSession: false },
   });
 
   const { error: userErr } = await userClient.rpc('match_documents', {
@@ -133,20 +134,59 @@ async function testT11bJwtIsolation() {
     }),
   });
 
+  const restBody = await restRes.text();
   console.log('  HTTP Response Status:', restRes.status);
-  const restText = await restRes.text();
-  console.log('  HTTP Response Body:', restText);
+  console.log('  HTTP Response Body:', restBody);
 
-  if (restRes.status === 401 || restRes.status === 403 || restText.includes('permission denied') || restText.includes('42501')) {
+  if (restRes.status === 401 || restRes.status === 403 || restBody.includes('42501') || restBody.includes('permission denied')) {
     console.log('  -> PASS: Direct PostgREST HTTP probe with Real Bearer JWT is HARD BLOCKED! (HTTP 401/403 Permission Denied)\n');
   } else {
-    throw new Error(`T11b.4 FAILED: Expected HTTP 401/403 Permission Denied, got HTTP ${restRes.status}`);
+    throw new Error(`T11b.4 FAILED: Expected 401/403 for direct PostgREST HTTP call with Bearer token, got status ${restRes.status}: ${restBody}`);
   }
 
   // =========================================================================
-  // SECTION 2: Comprehensive Multi-Tenant RLS Policy Regression Test
+  // SECTION 2: Comprehensive Multi-Tenant RLS Policy Regression Test with Real Org B Data
   // =========================================================================
-  console.log('--- SECTION 2: MULTI-TENANT RLS REGRESSION VERIFICATION ---');
+  console.log('--- SECTION 2: MULTI-TENANT RLS REGRESSION (REAL ORG B DATA PROBE) ---');
+
+  // 2.0 Ensure Real Foreign Org B Exists with Real Data in crm_knowledge_documents
+  const { data: orgBDocs, error: orgBErr } = await adminClient
+    .from('crm_knowledge_documents')
+    .select('id, organization_id')
+    .eq('organization_id', targetOrgBId);
+
+  if (orgBErr) throw new Error(`T11b Setup FAILED: Could not check Org B documents: ${orgBErr.message}`);
+
+  let realOrgBDocId: string;
+  if (!orgBDocs || orgBDocs.length === 0) {
+    console.log('  [Setup] Seeding Real Org B test document via admin...');
+    const { data: newOrgBDoc, error: seedDocErr } = await adminClient
+      .from('crm_knowledge_documents')
+      .insert({
+        organization_id: targetOrgBId,
+        title: 'Confidential Org B Test Document',
+        knowledge_status: 'REVIEWED',
+        ingestion_status: 'SUCCESS',
+        metadata: { confidential: true },
+      })
+      .select('id')
+      .single();
+
+    if (seedDocErr || !newOrgBDoc?.id) {
+      throw new Error(`T11b Setup FAILED: Could not seed Org B document: ${seedDocErr?.message}`);
+    }
+    realOrgBDocId = newOrgBDoc.id;
+  } else {
+    realOrgBDocId = orgBDocs[0].id;
+  }
+
+  // Verify that Admin sees Real Org B document(s)
+  const { count: adminOrgBCount } = await adminClient
+    .from('crm_knowledge_documents')
+    .select('*', { count: 'exact', head: true })
+    .eq('organization_id', targetOrgBId);
+
+  console.log(`  -> Admin Verified: Foreign Org B (${targetOrgBId}) has REAL data in DB: ${adminOrgBCount} document(s).`);
 
   // 2.1 Call get_auth_user_organizations() helper: Must return ONLY Org A, NEVER Org B
   console.log('[Test T11b.5] Calling get_auth_user_organizations() as Authenticated User:');
@@ -160,10 +200,14 @@ async function testT11bJwtIsolation() {
   }
   console.log('  -> PASS: Helper strictly returned user authorized tenants, zero cross-tenant leakage!\n');
 
-  // 2.2 Table 1: crm_knowledge_documents RLS isolation
-  console.log('[Test T11b.6] Verifying crm_knowledge_documents RLS isolation:');
-  const { data: ownDocs } = await userClient.from('crm_knowledge_documents').select('id').eq('organization_id', userOrgId);
-  const { data: foreignDocs } = await userClient.from('crm_knowledge_documents').select('id').eq('organization_id', targetOrgBId);
+  // 2.2 Table 1: crm_knowledge_documents RLS isolation against real Org B data
+  console.log('[Test T11b.6] Verifying crm_knowledge_documents RLS isolation against REAL Org B data:');
+  const { data: ownDocs, error: ownDocsErr } = await userClient.from('crm_knowledge_documents').select('id').eq('organization_id', userOrgId);
+  if (ownDocsErr) throw new Error(`T11b.6 FAILED: User could not read own docs: ${ownDocsErr.message}`);
+
+  const { data: foreignDocs, error: foreignDocsErr } = await userClient.from('crm_knowledge_documents').select('id').eq('organization_id', targetOrgBId);
+  if (foreignDocsErr) throw new Error(`T11b.6 FAILED: Foreign doc query errored: ${foreignDocsErr.message}`);
+
   console.log(`  -> Own documents read: ${ownDocs?.length ?? 0} | Foreign (Org B) documents read: ${foreignDocs?.length ?? 0} (Expected: 0)`);
   if ((foreignDocs?.length ?? 0) > 0) {
     throw new Error(`T11b.6 CRITICAL FAIL: User of Org A was able to read ${foreignDocs?.length} documents from Org B!`);
@@ -172,7 +216,9 @@ async function testT11bJwtIsolation() {
 
   // 2.3 Table 2: crm_knowledge_chunks RLS isolation
   console.log('[Test T11b.7] Verifying crm_knowledge_chunks RLS isolation:');
-  const { data: foreignChunks } = await userClient.from('crm_knowledge_chunks').select('id').eq('organization_id', targetOrgBId);
+  const { data: foreignChunks, error: foreignChunksErr } = await userClient.from('crm_knowledge_chunks').select('id').eq('organization_id', targetOrgBId);
+  if (foreignChunksErr) throw new Error(`T11b.7 FAILED: Foreign chunks query errored: ${foreignChunksErr.message}`);
+
   console.log(`  -> Foreign (Org B) chunks read: ${foreignChunks?.length ?? 0} (Expected: 0)`);
   if ((foreignChunks?.length ?? 0) > 0) {
     throw new Error(`T11b.7 CRITICAL FAIL: User of Org A was able to read ${foreignChunks?.length} chunks from Org B!`);
@@ -181,20 +227,77 @@ async function testT11bJwtIsolation() {
 
   // 2.4 Table 3: crm_knowledge_audit_logs RLS isolation
   console.log('[Test T11b.8] Verifying crm_knowledge_audit_logs RLS isolation:');
-  const { data: foreignAudits } = await userClient.from('crm_knowledge_audit_logs').select('id').eq('organization_id', targetOrgBId);
+  const { data: foreignAudits, error: foreignAuditsErr } = await userClient.from('crm_knowledge_audit_logs').select('id').eq('organization_id', targetOrgBId);
+  if (foreignAuditsErr) throw new Error(`T11b.8 FAILED: Foreign audit logs query errored: ${foreignAuditsErr.message}`);
+
   console.log(`  -> Foreign (Org B) audit logs read: ${foreignAudits?.length ?? 0} (Expected: 0)`);
   if ((foreignAudits?.length ?? 0) > 0) {
     throw new Error(`T11b.8 CRITICAL FAIL: User of Org A was able to read ${foreignAudits?.length} audit logs from Org B!`);
   }
   console.log('  -> PASS: crm_knowledge_audit_logs RLS blocked 100% of Org B audit logs.\n');
 
+  // =========================================================================
+  // SECTION 3: Append-Only Audit Log Behavioral Mutation Test (Trigger Enforcement)
+  // =========================================================================
+  console.log('--- SECTION 3: APPEND-ONLY IMMUTABILITY BEHAVIORAL MUTATION TEST ---');
+
+  // 3.1 Insert a test audit record via admin
+  console.log('[Test T11b.9] Inserting test audit record to verify immutability:');
+  const testCorrId = `immutability-probe-${Date.now()}`;
+  const { data: newAudit, error: insertAuditErr } = await adminClient
+    .from('crm_knowledge_audit_logs')
+    .insert({
+      document_id: realOrgBDocId,
+      organization_id: targetOrgBId,
+      action: 'INGESTION_SUCCESS',
+      correlation_id: testCorrId,
+      actor_type: 'service_role',
+    })
+    .select('id')
+    .single();
+
+  if (insertAuditErr || !newAudit?.id) {
+    throw new Error(`T11b.9 FAILED: Could not insert test audit row: ${insertAuditErr?.message}`);
+  }
+  const testAuditId = newAudit.id;
+  console.log(`  -> Test audit record inserted successfully: ${testAuditId}`);
+
+  // 3.2 Attempt UPDATE on audit record (Must be blocked by trg_prevent_audit_mutation)
+  console.log('[Test T11b.10] Attempting UPDATE on audit log (Must be HARD BLOCKED by trigger):');
+  const { error: updateErr } = await adminClient
+    .from('crm_knowledge_audit_logs')
+    .update({ action: 'INGESTION_TAMPERED' })
+    .eq('id', testAuditId);
+
+  console.log('  Update Error returned:', updateErr?.message || 'None', `(Code: ${updateErr?.code})`);
+  if (updateErr && (updateErr.message?.includes('immutable') || updateErr.code === 'P0001')) {
+    console.log('  -> PASS: UPDATE on audit log was HARD BLOCKED by prevent_audit_mutation trigger!\n');
+  } else {
+    throw new Error(`T11b.10 FAILED: Expected trigger to block UPDATE on audit log, got: ${JSON.stringify(updateErr)}`);
+  }
+
+  // 3.3 Attempt DELETE on audit record (Must be blocked by trg_prevent_audit_mutation)
+  console.log('[Test T11b.11] Attempting DELETE on audit log (Must be HARD BLOCKED by trigger):');
+  const { error: deleteErr } = await adminClient
+    .from('crm_knowledge_audit_logs')
+    .delete()
+    .eq('id', testAuditId);
+
+  console.log('  Delete Error returned:', deleteErr?.message || 'None', `(Code: ${deleteErr?.code})`);
+  if (deleteErr && (deleteErr.message?.includes('immutable') || deleteErr.code === 'P0001')) {
+    console.log('  -> PASS: DELETE on audit log was HARD BLOCKED by prevent_audit_mutation trigger!\n');
+  } else {
+    throw new Error(`T11b.11 FAILED: Expected trigger to block DELETE on audit log, got: ${JSON.stringify(deleteErr)}`);
+  }
+
   console.log('================================================================');
-  console.log('T11b COMPLETE VERIFICATION PASSED 100%:');
+  console.log('T11b COMPLETE ZERO-TRUST VERIFICATION PASSED 100%:');
   console.log('  1. RPC Execution Access Boundary: Protected (42501)');
   console.log('  2. Multi-Tenant Helper get_auth_user_organizations: Isolated');
-  console.log('  3. crm_knowledge_documents RLS: Zero-Leakage (0 rows from Org B)');
-  console.log('  4. crm_knowledge_chunks RLS: Zero-Leakage (0 rows from Org B)');
-  console.log('  5. crm_knowledge_audit_logs RLS: Zero-Leakage (0 rows from Org B)');
+  console.log('  3. crm_knowledge_documents RLS: Zero-Leakage against real Org B data');
+  console.log('  4. crm_knowledge_chunks RLS: Zero-Leakage against real Org B data');
+  console.log('  5. crm_knowledge_audit_logs RLS: Zero-Leakage against real Org B data');
+  console.log('  6. Append-Only Trigger: UPDATE and DELETE HARD BLOCKED (P0001)');
   console.log('================================================================');
 }
 
