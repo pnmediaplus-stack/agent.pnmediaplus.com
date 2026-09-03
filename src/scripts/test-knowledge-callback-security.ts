@@ -14,10 +14,28 @@ if (!supabaseUrl || !serviceRoleKey || !anonKey) {
   process.exit(1);
 }
 
-const prodHost = 'jrgkpbjsqefvnhbiiutz.supabase.co';
-if (supabaseUrl.includes(prodHost)) {
-  console.error('⛔ HARD BLOCKED: test-knowledge-callback-security.ts is a mutation test suite and is STRICTLY PROHIBITED from running on PRODUCTION (jrgkpbjsqefvnhbiiutz.supabase.co)!');
-  console.error('Please configure .env.local to point to the DB Clone or Staging database.');
+// Strict Environment Allowlist: ONLY permitted on explicit DB Clone / Local environments
+const ALLOWED_CLONE_HOSTS = [
+  'ldhjrdihrcjsjfmrqtbi.supabase.co', // Authorized DB Clone
+  '127.0.0.1',
+  'localhost',
+];
+
+let targetHost = '';
+try {
+  targetHost = new URL(supabaseUrl).hostname;
+} catch {
+  targetHost = supabaseUrl;
+}
+
+const isAllowedHost = ALLOWED_CLONE_HOSTS.some(allowed => targetHost.includes(allowed));
+
+if (!isAllowedHost) {
+  console.error('================================================================');
+  console.error(`⛔ HARD BLOCKED: Target environment (${targetHost}) is NOT on the`);
+  console.error('allowed clone list! This mutation test suite is STRICTLY RESTRICTED to');
+  console.error('authorized DB Clone (ldhjrdihrcjsjfmrqtbi.supabase.co) or Local.');
+  console.error('================================================================');
   process.exit(1);
 }
 
