@@ -353,17 +353,30 @@ async function runProdReadonlySmokeTest() {
   }
   console.log('  -> PASS: All 3 security-critical functions verified with zero overloads, prosecdef = true, and fixed search_path = pg_catalog, public.');
 
-  // 4.5 Strict assertion: Triggers mapped correctly to tables and functions
+  // 4.5 Strict assertion: Triggers mapped correctly to tables and procedure functions
   const trigList = catReport.triggers || [];
   const smTrigger = trigList.find((t: any) => t.trigger_name === 'trg_crm_knowledge_state_machine');
   if (!smTrigger || smTrigger.table_name !== 'crm_knowledge_documents' || smTrigger.proc_name !== 'crm_knowledge_state_machine') {
     throw new Error(`Catalog 1 FAILED: Trigger trg_crm_knowledge_state_machine mapping is invalid: ${JSON.stringify(smTrigger)}`);
   }
+
   const auditTrigger = trigList.find((t: any) => t.trigger_name === 'trg_crm_knowledge_audit_insert');
-  if (!auditTrigger || auditTrigger.table_name !== 'crm_knowledge_documents' || (auditTrigger.proc_name !== 'trg_crm_knowledge_audit_log' && auditTrigger.proc_name !== 'crm_knowledge_audit_trigger')) {
-    throw new Error(`Catalog 1 FAILED: Trigger trg_crm_knowledge_audit_insert mapping is invalid: ${JSON.stringify(auditTrigger)}`);
+  if (!auditTrigger || auditTrigger.table_name !== 'crm_knowledge_documents' || auditTrigger.proc_name !== 'trg_crm_knowledge_audit_log') {
+    throw new Error(`Catalog 1 FAILED: Trigger trg_crm_knowledge_audit_insert mapping is invalid (must strictly map to trg_crm_knowledge_audit_log): ${JSON.stringify(auditTrigger)}`);
   }
-  console.log('  -> PASS: State machine and audit triggers confirmed mapped to correct tables and procedure functions in public schema.\n');
+
+  // 4.6 Strict assertion: Append-Only Immutable Triggers on crm_knowledge_audit_logs
+  const mutTrigger = trigList.find((t: any) => t.trigger_name === 'trg_prevent_audit_mutation');
+  if (!mutTrigger || mutTrigger.table_name !== 'crm_knowledge_audit_logs' || mutTrigger.proc_name !== 'prevent_audit_mutation') {
+    throw new Error(`Catalog 1 FAILED: Append-only trigger trg_prevent_audit_mutation is missing or invalid on crm_knowledge_audit_logs: ${JSON.stringify(mutTrigger)}`);
+  }
+
+  const truncTrigger = trigList.find((t: any) => t.trigger_name === 'trg_prevent_audit_truncate');
+  if (!truncTrigger || truncTrigger.table_name !== 'crm_knowledge_audit_logs' || truncTrigger.proc_name !== 'prevent_audit_mutation') {
+    throw new Error(`Catalog 1 FAILED: Append-only trigger trg_prevent_audit_truncate is missing or invalid on crm_knowledge_audit_logs: ${JSON.stringify(truncTrigger)}`);
+  }
+
+  console.log('  -> PASS: State machine, audit insert, and append-only immutability triggers (mutation/truncate block) strictly confirmed in public schema.\n');
 
   // Verify Schema Columns
   console.log('[Smoke 5] Verifying Schema Columns for Migration 1 (v1.1) and Migration 2 (callback RPC):');
