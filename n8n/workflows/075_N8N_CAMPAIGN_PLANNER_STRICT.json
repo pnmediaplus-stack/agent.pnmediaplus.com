@@ -691,6 +691,64 @@
         1200
       ],
       "id": "c77fd948-e018-419c-9e64-7d97de095ea4"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.item;"
+      },
+      "name": "Pre-Agent Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        41500,
+        848
+      ],
+      "id": "7b891234-5678-4321-9abc-def012345678"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "name": "Merge Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        41700,
+        848
+      ],
+      "id": "8c901234-5678-4321-9abc-def012345679"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "name": "Merge QA Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        42600,
+        848
+      ],
+      "id": "9d011234-5678-4321-9abc-def012345680"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "name": "Merge Packaging Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        43200,
+        832
+      ],
+      "id": "ae121234-5678-4321-9abc-def012345681"
     }
   ],
   "pinData": {},
@@ -777,9 +835,9 @@
       "main": [
         [
           {
-            "node": "QA Verdict Parser",
+            "node": "Merge QA Context",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -802,6 +860,11 @@
             "node": "Agent 7 - Packaging",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge Packaging Context",
+            "type": "main",
+            "index": 0
           }
         ],
         [
@@ -817,9 +880,9 @@
       "main": [
         [
           {
-            "node": "Delivery (chat_append)",
+            "node": "Merge Packaging Context",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -862,9 +925,9 @@
       "main": [
         [
           {
-            "node": "Validate Agent 1 Output",
+            "node": "Merge Context",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -873,7 +936,7 @@
       "main": [
         [
           {
-            "node": "AI Agent 1",
+            "node": "Pre-Agent Context",
             "type": "main",
             "index": 0
           }
@@ -902,7 +965,7 @@
         ],
         [
           {
-            "node": "AI Agent 1",
+            "node": "Pre-Agent Context",
             "type": "main",
             "index": 0
           }
@@ -925,6 +988,11 @@
         [
           {
             "node": "Agent 4 - QA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge QA Context",
             "type": "main",
             "index": 0
           }
@@ -997,6 +1065,55 @@
         [
           {
             "node": "Fail-Closed Drop Sink",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pre-Agent Context": {
+      "main": [
+        [
+          {
+            "node": "AI Agent 1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Context": {
+      "main": [
+        [
+          {
+            "node": "Validate Agent 1 Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge QA Context": {
+      "main": [
+        [
+          {
+            "node": "QA Verdict Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Packaging Context": {
+      "main": [
+        [
+          {
+            "node": "Delivery (chat_append)",
             "type": "main",
             "index": 0
           }
