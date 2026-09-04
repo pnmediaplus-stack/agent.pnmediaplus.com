@@ -383,6 +383,13 @@ console.log('--- SCENARIO 6: BLOCKER P0 VERIFICATION - ZERO FALLBACK & ZERO EXTE
   assert.strictEqual(hasContextConnections[1][0].node, 'Fail-Closed Drop Sink', 'Has Valid Context? [False] must terminate at Fail-Closed Drop Sink');
   assert.strictEqual(hasContextConnections[0][0].node, 'Is System Error?', 'Has Valid Context? [True] must route to Is System Error?');
 
+  // 8. Human Clarification Wiring Assertion (Gatekeeper Standard):
+  assert.strictEqual(
+    workflow.connections['Needs Clarification?'].main[0][0].node,
+    'Clarify Scope (chat_append)',
+    'Needs Clarification? [True] must connect directly to Clarify Scope (chat_append)'
+  );
+
   console.log('  Tested invalid attempt values:', invalidAttempts.map(v => String(v)).join(', '));
   console.log('  Verified: ZERO $( calls in the entire workflow JSON!');
   console.log('  Verified: ZERO $node references in the entire workflow JSON!');
