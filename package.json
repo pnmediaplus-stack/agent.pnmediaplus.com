@@ -13,6 +13,7 @@
     "test:workflow-075": "tsx src/scripts/test-075-n8n-workflow-runtime.ts",
     "test:portal-auth-isolation": "tsx src/scripts/test-portal-auth-tenant-isolation.ts",
     "test:marketing-pack-adapter": "tsx src/scripts/test-marketing-department-pack-adapter.ts",
+    "test:marketing-integration": "tsx src/scripts/test-marketing-knowledge-integration-e2e.ts",
     "start": "next start"
   },
   "dependencies": {
