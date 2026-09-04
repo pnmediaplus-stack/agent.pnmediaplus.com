@@ -460,7 +460,17 @@ console.log('--- SCENARIO 7: BLOCKER 4 VERIFICATION - STRICT TYPES & SUB-SCHEMAS
     console.log('  [7.6 Non-string array (clarification_questions=[123])] -> Correctly caught:', res.json.validation_error);
   }
 
-  console.log('  -> PASS: All 25 fields strictly enforce their required types and sub-schemas!\n');
+  // Case 7.7: day_3_gate uses synonyms (review, actions) -> MUST REJECT WITH SYSTEM_VALIDATION_ERROR (No silent mapping!)
+  {
+    const badJson = generateValidAgent1Json(10);
+    badJson.day_3_gate = { review: 'Kiểm tra CTR', actions: 'Tối ưu quảng cáo' };
+    const res = validateFn({ item: { json: { attempt: 1, output: JSON.stringify(badJson) } } }, scopeMock);
+    assert.strictEqual(res.json.validation_status, 'SYSTEM_VALIDATION_ERROR');
+    assert(res.json.validation_error.includes('`day_3_gate` must contain non-empty `metric` and `action` strings'));
+    console.log('  [7.7 Synonym violation (day_3_gate={review, actions})] -> Strictly rejected with SYSTEM_VALIDATION_ERROR (Zero silent normalization)!');
+  }
+
+  console.log('  -> PASS: All 25 fields strictly enforce their required types and sub-schemas without silent mutation!\n');
 }
 
 console.log('================================================================');
