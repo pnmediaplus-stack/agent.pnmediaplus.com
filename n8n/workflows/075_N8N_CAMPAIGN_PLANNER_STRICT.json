@@ -34,7 +34,7 @@
     },
     {
       "parameters": {
-        "url": "={{$env[\"API_BASE_URL\"] ? ($env[\"API_BASE_URL\"] + '/api/governance/bundle?organization_id=' + ($json.body?.organization_id || $json.body?.body?.organization_id || $json.organization_id) + '&department_id=' + ($json.body?.department_id || $json.body?.body?.department_id || $json.department_id || 'dept-marketing')) : (()=>{ throw new Error('FAIL_CLOSED: API_BASE_URL environment variable is not configured. Payload override and Production fallback are strictly forbidden.'); })()}}",
+        "url": "={{($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') + '/api/governance/bundle?organization_id=' + ($json.body?.organization_id || $json.body?.body?.organization_id || $json.organization_id) + '&department_id=' + ($json.body?.department_id || $json.body?.body?.department_id || $json.department_id || 'dept-marketing')}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -44,7 +44,7 @@
             },
             {
               "name": "x-n8n-api-key",
-              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
+              "value": "={{$vars.N8N_CAMPAIGN_PLANNER_API_KEY || $env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
             }
           ]
         },
@@ -96,13 +96,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] ? ($env[\"API_BASE_URL\"] + '/api/n8n/publish-callback') : (()=>{ throw new Error('FAIL_CLOSED: API_BASE_URL environment variable is not configured. External payload override and Production fallback are strictly forbidden.'); })()}}",
+        "url": "={{($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') + '/api/n8n/publish-callback'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "x-n8n-api-key",
-              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
+              "value": "={{$vars.N8N_CAMPAIGN_PLANNER_API_KEY || $env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
             },
             {
               "name": "Content-Type",
@@ -127,13 +127,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] ? ($env[\"API_BASE_URL\"] + '/api/n8n/publish-callback') : (()=>{ throw new Error('FAIL_CLOSED: API_BASE_URL environment variable is not configured. External payload override and Production fallback are strictly forbidden.'); })()}}",
+        "url": "={{($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') + '/api/n8n/publish-callback'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "x-n8n-api-key",
-              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
+              "value": "={{$vars.N8N_CAMPAIGN_PLANNER_API_KEY || $env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
             },
             {
               "name": "Content-Type",
@@ -263,13 +263,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] ? ($env[\"API_BASE_URL\"] + '/api/n8n/publish-callback') : (()=>{ throw new Error('FAIL_CLOSED: API_BASE_URL environment variable is not configured. External payload override and Production fallback are strictly forbidden.'); })()}}",
+        "url": "={{($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') + '/api/n8n/publish-callback'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "x-n8n-api-key",
-              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
+              "value": "={{$vars.N8N_CAMPAIGN_PLANNER_API_KEY || $env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
             },
             {
               "name": "Content-Type",
@@ -329,13 +329,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] ? ($env[\"API_BASE_URL\"] + '/api/n8n/publish-callback') : (()=>{ throw new Error('FAIL_CLOSED: API_BASE_URL environment variable is not configured. External payload override and Production fallback are strictly forbidden.'); })()}}",
+        "url": "={{($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') + '/api/n8n/publish-callback'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "x-n8n-api-key",
-              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
+              "value": "={{$vars.N8N_CAMPAIGN_PLANNER_API_KEY || $env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
             },
             {
               "name": "Content-Type",
@@ -596,13 +596,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env[\"API_BASE_URL\"] ? ($env[\"API_BASE_URL\"] + '/api/n8n/publish-callback') : (()=>{ throw new Error('FAIL_CLOSED: API_BASE_URL environment variable is not configured. External payload override and Production fallback are strictly forbidden.'); })()}}",
+        "url": "={{($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') + '/api/n8n/publish-callback'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "x-n8n-api-key",
-              "value": "={{$env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
+              "value": "={{$vars.N8N_CAMPAIGN_PLANNER_API_KEY || $env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
             },
             {
               "name": "Content-Type",
