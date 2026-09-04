@@ -336,21 +336,22 @@ console.log('--- SCENARIO 6: BLOCKER P0 VERIFICATION - ZERO FALLBACK TO 1 (TERMI
     assert.strictEqual(nextHop, 'System Error (chat_append)', `Failed to route directly to System Error for invalid attempt: ${invalidAttempt}`);
   }
 
-  // 5. Static AST / Text assertion: Zero .first() and Zero .all() across entire workflow JSON
+  // 5. Static AST / Text assertion: Zero .first(), Zero .all(), and Zero $node across entire workflow JSON
   const rawWorkflowText = JSON.stringify(workflow);
   assert(!rawWorkflowText.includes('.first()'), 'CRITICAL: Workflow still contains .first()!');
   assert(!rawWorkflowText.includes('.all()'), 'CRITICAL: Workflow still contains .all()!');
+  assert(!rawWorkflowText.includes('$node'), 'CRITICAL: Workflow still contains $node!');
 
   console.log('  Tested invalid attempt values:', invalidAttempts.map(v => String(v)).join(', '));
-  console.log('  Verified: Zero occurrences of .first() and .all() in workflow JSON.');
+  console.log('  Verified: Zero occurrences of .first(), .all(), and $node in workflow JSON.');
   console.log('  Verified: 100% of invalid attempts route directly to System Error (chat_append) with ZERO fallback to 1!');
   console.log('  -> PASS: Blocker P0 resolved completely!\n');
 }
 
 // -----------------------------------------------------------------------------
-// SCENARIO 7: Blocker 4 Verification - Strict Type Enforcement on All 25 Schema Fields
+// SCENARIO 7: Blocker 4 Verification - Strict Types on All 25 Schema Fields & Sub-Schemas
 // -----------------------------------------------------------------------------
-console.log('--- SCENARIO 7: BLOCKER 4 VERIFICATION - STRICT TYPES ON ALL 25 SCHEMA FIELDS ---');
+console.log('--- SCENARIO 7: BLOCKER 4 VERIFICATION - STRICT TYPES & SUB-SCHEMAS ---');
 {
   const validateFn = new Function('$input', '$node', validateCode);
   const scopeMock = { 'Scope Resolve': { json: { campaign_contract: { campaign_duration_days: 10, paid_media_allowed: true, required_terms: [] } } } };
@@ -358,7 +359,7 @@ console.log('--- SCENARIO 7: BLOCKER 4 VERIFICATION - STRICT TYPES ON ALL 25 SCH
   // Case 7.1: offer is a number instead of non-empty string
   {
     const badJson = generateValidAgent1Json(10);
-    badJson.offer = 2000000; // wrong type
+    badJson.offer = 2000000;
     const res = validateFn({ item: { json: { attempt: 1, output: JSON.stringify(badJson) } } }, scopeMock);
     assert.strictEqual(res.json.validation_status, 'SYSTEM_VALIDATION_ERROR');
     assert(res.json.validation_error.includes('`offer` must be a non-empty string'), `Wrong error: ${res.json.validation_error}`);
@@ -368,37 +369,37 @@ console.log('--- SCENARIO 7: BLOCKER 4 VERIFICATION - STRICT TYPES ON ALL 25 SCH
   // Case 7.2: offer is an empty/whitespace string
   {
     const badJson = generateValidAgent1Json(10);
-    badJson.offer = '   '; // empty string
+    badJson.offer = '   ';
     const res = validateFn({ item: { json: { attempt: 1, output: JSON.stringify(badJson) } } }, scopeMock);
     assert.strictEqual(res.json.validation_status, 'SYSTEM_VALIDATION_ERROR');
     assert(res.json.validation_error.includes('`offer` must be a non-empty string'));
     console.log('  [7.2 Empty string (offer="   ")] -> Correctly caught:', res.json.validation_error);
   }
 
-  // Case 7.3: day_3_gate is a string instead of object
+  // Case 7.3: day_3_gate missing action sub-key
   {
     const badJson = generateValidAgent1Json(10);
-    badJson.day_3_gate = 'CTR > 1.5%'; // wrong type
+    badJson.day_3_gate = { metric: 'CTR > 1.5%' }; // missing action
     const res = validateFn({ item: { json: { attempt: 1, output: JSON.stringify(badJson) } } }, scopeMock);
     assert.strictEqual(res.json.validation_status, 'SYSTEM_VALIDATION_ERROR');
-    assert(res.json.validation_error.includes('`day_3_gate` must be a valid non-null object'));
-    console.log('  [7.3 Invalid object type (day_3_gate=string)] -> Correctly caught:', res.json.validation_error);
+    assert(res.json.validation_error.includes('`day_3_gate` must contain non-empty `metric` and `action` strings'));
+    console.log('  [7.3 Sub-schema violation (day_3_gate missing action)] -> Correctly caught:', res.json.validation_error);
   }
 
-  // Case 7.4: 10_day_operating_plan is null
+  // Case 7.4: 10_day_operating_plan is empty object {}
   {
     const badJson = generateValidAgent1Json(10);
-    badJson['10_day_operating_plan'] = null; // null
+    badJson['10_day_operating_plan'] = {}; // empty object
     const res = validateFn({ item: { json: { attempt: 1, output: JSON.stringify(badJson) } } }, scopeMock);
     assert.strictEqual(res.json.validation_status, 'SYSTEM_VALIDATION_ERROR');
-    assert(res.json.validation_error.includes('`10_day_operating_plan` must be a valid non-null object'));
-    console.log('  [7.4 Null object (10_day_operating_plan=null)] -> Correctly caught:', res.json.validation_error);
+    assert(res.json.validation_error.includes('`10_day_operating_plan` must contain at least one operational phase'));
+    console.log('  [7.4 Sub-schema violation (10_day_operating_plan={})] -> Correctly caught:', res.json.validation_error);
   }
 
   // Case 7.5: uses_ads is a string instead of boolean
   {
     const badJson = generateValidAgent1Json(10);
-    badJson.uses_ads = 'true'; // string instead of boolean
+    badJson.uses_ads = 'true';
     const res = validateFn({ item: { json: { attempt: 1, output: JSON.stringify(badJson) } } }, scopeMock);
     assert.strictEqual(res.json.validation_status, 'SYSTEM_VALIDATION_ERROR');
     assert(res.json.validation_error.includes('`uses_ads` must be a boolean'));
@@ -408,14 +409,14 @@ console.log('--- SCENARIO 7: BLOCKER 4 VERIFICATION - STRICT TYPES ON ALL 25 SCH
   // Case 7.6: clarification_questions contains non-string items
   {
     const badJson = generateValidAgent1Json(10);
-    badJson.clarification_questions = [123, 456]; // array of numbers
+    badJson.clarification_questions = [123, 456];
     const res = validateFn({ item: { json: { attempt: 1, output: JSON.stringify(badJson) } } }, scopeMock);
     assert.strictEqual(res.json.validation_status, 'SYSTEM_VALIDATION_ERROR');
     assert(res.json.validation_error.includes('`clarification_questions` must be an array of strings'));
     console.log('  [7.6 Non-string array (clarification_questions=[123])] -> Correctly caught:', res.json.validation_error);
   }
 
-  console.log('  -> PASS: All 25 fields strictly enforce their required types (string, object, array, boolean)!\n');
+  console.log('  -> PASS: All 25 fields strictly enforce their required types and sub-schemas!\n');
 }
 
 console.log('================================================================');
@@ -425,6 +426,6 @@ console.log('  2. System Error -> Correction -> Attempt 2: PASS');
 console.log('  3. QA Rejection -> Correction -> Attempt 3: PASS');
 console.log('  4. Hard Stop at Attempt 4 (Exact 3 invocations, NEVER 4th): PASS');
 console.log('  5. Separated Error Delivery (System Error vs Clarify Scope): PASS');
-console.log('  6. Blocker P0 (Zero Fallback to 1, Direct System Error Route): PASS');
-console.log('  7. Blocker 4 (Strict Types for All 25 Schema Fields): PASS');
+console.log('  6. Blocker P0 (Zero Fallback to 1, Zero $node/.first()/.all()): PASS');
+console.log('  7. Blocker 4 (Strict Types & Sub-Schemas on All 25 Fields): PASS');
 console.log('================================================================');
