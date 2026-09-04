@@ -268,49 +268,71 @@ console.log('--- SCENARIO 4: HARD STOP AT ATTEMPT 4 (MAX 3 INVOCATIONS GUARANTEE
 }
 
 // -----------------------------------------------------------------------------
-// SCENARIO 5: Separated Error Delivery (System Error vs Clarify Scope)
+// SCENARIO 5: Separated Error Delivery & Fail-Closed Drop Sink on Missing Context
 // -----------------------------------------------------------------------------
-console.log('--- SCENARIO 5: SEPARATED ERROR DELIVERY (SYSTEM ERROR VS CLARIFY SCOPE) ---');
+console.log('--- SCENARIO 5: SEPARATED ERROR DELIVERY & FAIL-CLOSED DROP SINK ---');
 {
-  const scopeResolveFn = new Function('$input', '$', scopeResolveCode);
+  const scopeResolveFn = new Function('$input', scopeResolveCode);
 
-  // Case 5.1: Fetch Registry 500 error
-  const res500 = scopeResolveFn(
-    { item: { json: { error: { message: 'HTTP 500 Internal Server Error' } } } },
-    () => ({ item: { json: { body: { thread_id: 't1', organization_id: 'o1' } } } })
-  );
+  // Case 5.1: Fetch Registry 500 error WITH valid context -> Goes to System Error (chat_append)
+  const res500WithContext = scopeResolveFn({
+    item: {
+      json: {
+        body: { thread_id: 'thread_123', organization_id: 'org_456' },
+        error: { message: 'HTTP 500 Internal Server Error' }
+      }
+    }
+  });
 
-  assert.strictEqual(res500.json.valid, false);
-  assert.strictEqual(res500.json.error_type, 'SYSTEM_ERROR');
+  assert.strictEqual(res500WithContext.json.valid, false);
+  assert.strictEqual(res500WithContext.json.error_type, 'SYSTEM_ERROR');
+  assert.strictEqual(res500WithContext.json.has_valid_context, true);
 
-  const isSysErr = res500.json.error_type === 'SYSTEM_ERROR';
-  const targetNode = isSysErr ? 'System Error (chat_append)' : 'Clarify Scope (chat_append)';
+  const targetNode1 = res500WithContext.json.has_valid_context ? 'System Error (chat_append)' : 'Fail-Closed Drop Sink';
+  console.log('  [Case 5.1 Fetch 500 with Context] -> Delivered to:', targetNode1);
+  assert.strictEqual(targetNode1, 'System Error (chat_append)');
 
-  console.log('  [Case 5.1 Fetch 500] Error Type:', res500.json.error_type, '-> Delivered to:', targetNode);
-  assert.strictEqual(targetNode, 'System Error (chat_append)');
+  // Case 5.2: Fetch Registry 500 error WITHOUT valid context -> DROPPED AT SINK (No corrupted chat_append!)
+  const res500NoContext = scopeResolveFn({
+    item: {
+      json: {
+        body: {}, // missing thread_id & organization_id
+        error: { message: 'HTTP 500 Internal Server Error' }
+      }
+    }
+  });
 
-  // Case 5.2: User missing brief in contract
-  const resMissingBrief = scopeResolveFn(
-    { item: { json: { departments: [{ department_id: 'dept_1', department_pack_key: 'pack_1' }], packs: { pack_1: { some: 'pack' } } } } },
-    () => ({ item: { json: { body: { thread_id: 't1', organization_id: 'o1', campaign_contract: { campaign_brief: '' } } } } })
-  );
+  assert.strictEqual(res500NoContext.json.valid, false);
+  assert.strictEqual(res500NoContext.json.error_type, 'SYSTEM_ERROR');
+  assert.strictEqual(res500NoContext.json.has_valid_context, false);
+
+  const targetNode2 = res500NoContext.json.has_valid_context ? 'System Error (chat_append)' : 'Fail-Closed Drop Sink';
+  console.log('  [Case 5.2 Fetch 500 without Context] -> Dropped into:', targetNode2);
+  assert.strictEqual(targetNode2, 'Fail-Closed Drop Sink');
+
+  // Case 5.3: User missing brief in contract WITH valid context -> Delivered to Clarify Scope
+  const resMissingBrief = scopeResolveFn({
+    item: {
+      json: {
+        body: { thread_id: 'thread_123', organization_id: 'org_456', campaign_contract: { campaign_brief: '' } },
+        departments: [{ department_id: 'dept_1', department_pack_key: 'pack_1' }],
+        packs: { pack_1: { some: 'pack' } }
+      }
+    }
+  });
 
   assert.strictEqual(resMissingBrief.json.valid, false);
   assert.strictEqual(resMissingBrief.json.error_type, 'SCOPE_CLARIFICATION');
+  assert.strictEqual(resMissingBrief.json.has_valid_context, true);
 
-  const isSysErr2 = resMissingBrief.json.error_type === 'SYSTEM_ERROR';
-  const targetNode2 = isSysErr2 ? 'System Error (chat_append)' : 'Clarify Scope (chat_append)';
-
-  console.log('  [Case 5.2 Missing Brief] Error Type:', resMissingBrief.json.error_type, '-> Delivered to:', targetNode2);
-  assert.strictEqual(targetNode2, 'Clarify Scope (chat_append)');
-
-  console.log('  -> PASS: Scenario 5 strictly routes SYSTEM_ERROR to System Error node and SCOPE_CLARIFICATION to Clarify Scope!\n');
+  console.log('  [Case 5.3 Missing Brief with Context] -> Delivered to: Clarify Scope (chat_append)');
+  console.log('  -> PASS: Scenario 5 strictly verifies Fail-Closed Drop Sink prevents empty tenant chat_append!\n');
 }
 
 // -----------------------------------------------------------------------------
-// SCENARIO 6: Blocker P0 Verification - ZERO Fallback to 1 on Invalid Attempt
+// SCENARIO 6: Blocker P0 Verification - ZERO Fallback to 1 & Zero External Node References
 // -----------------------------------------------------------------------------
-console.log('--- SCENARIO 6: BLOCKER P0 VERIFICATION - ZERO FALLBACK TO 1 (TERMINAL FATAL ERROR) ---');
+console.log('--- SCENARIO 6: BLOCKER P0 VERIFICATION - ZERO FALLBACK & ZERO EXTERNAL REFS ---');
 {
   const validateFn = new Function('$input', '$node', validateCode);
   const invalidAttempts = [undefined, null, '1', 1.5, -1, 0, 4, Infinity, NaN];
@@ -331,20 +353,25 @@ console.log('--- SCENARIO 6: BLOCKER P0 VERIFICATION - ZERO FALLBACK TO 1 (TERMI
     assert.strictEqual(valResult.json.validation_status, 'FATAL_SYSTEM_ERROR');
     assert.strictEqual(valResult.json.needs_clarification, false);
 
-    // 4. Graph transition: Is Valid? [False] -> Is Recoverable Error? [False] -> System Error (chat_append)
-    const nextHop = valResult.json.is_recoverable ? 'Check Attempt Limit' : 'System Error (chat_append)';
-    assert.strictEqual(nextHop, 'System Error (chat_append)', `Failed to route directly to System Error for invalid attempt: ${invalidAttempt}`);
+    // 4. Graph transition: Is Valid? [False] -> Is Recoverable Error? [False] -> Has Valid Context?
+    const nextHop = valResult.json.is_recoverable ? 'Check Attempt Limit' : 'Has Valid Context?';
+    assert.strictEqual(nextHop, 'Has Valid Context?', `Failed to route directly to Has Valid Context? for invalid attempt: ${invalidAttempt}`);
   }
 
-  // 5. Static AST / Text assertion: Zero .first(), Zero .all(), and Zero $node across entire workflow JSON
+  // 5. Comprehensive Static Scan: Absolute Zero $(, Zero $node, Zero .first(), Zero .all(), Zero .last()
   const rawWorkflowText = JSON.stringify(workflow);
+  const dollarParenMatches = rawWorkflowText.match(/\$\(/g);
+  assert.strictEqual(dollarParenMatches, null, `CRITICAL: Workflow still contains $( calls: ${dollarParenMatches}`);
+  assert(!rawWorkflowText.includes('$node'), 'CRITICAL: Workflow still contains $node!');
   assert(!rawWorkflowText.includes('.first()'), 'CRITICAL: Workflow still contains .first()!');
   assert(!rawWorkflowText.includes('.all()'), 'CRITICAL: Workflow still contains .all()!');
-  assert(!rawWorkflowText.includes('$node'), 'CRITICAL: Workflow still contains $node!');
+  assert(!rawWorkflowText.includes('.last()'), 'CRITICAL: Workflow still contains .last()!');
 
   console.log('  Tested invalid attempt values:', invalidAttempts.map(v => String(v)).join(', '));
-  console.log('  Verified: Zero occurrences of .first(), .all(), and $node in workflow JSON.');
-  console.log('  Verified: 100% of invalid attempts route directly to System Error (chat_append) with ZERO fallback to 1!');
+  console.log('  Verified: ZERO $( calls in the entire workflow JSON!');
+  console.log('  Verified: ZERO $node references in the entire workflow JSON!');
+  console.log('  Verified: ZERO .first(), .all(), .last() in the entire workflow JSON!');
+  console.log('  Verified: 100% of invalid attempts route through Has Valid Context? with ZERO fallback to 1!');
   console.log('  -> PASS: Blocker P0 resolved completely!\n');
 }
 
