@@ -15,7 +15,10 @@ if (!supabaseUrl || !anonKey || !serviceRoleKey) {
 const adminClient = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false },
 });
-const publicClient = createClient(supabaseUrl, anonKey, {
+const anonymousClient = createClient(supabaseUrl, anonKey, {
+  auth: { persistSession: false },
+});
+const authClient = createClient(supabaseUrl, anonKey, {
   auth: { persistSession: false },
 });
 
@@ -38,7 +41,7 @@ async function runTenantIsolationRegression() {
     throw new Error(`Failed to generate magiclink for test user: ${linkRes.error?.message}`);
   }
 
-  const { data: authData, error: authErr } = await publicClient.auth.verifyOtp({
+  const { data: authData, error: authErr } = await authClient.auth.verifyOtp({
     email: 'pnmediaplus@gmail.com',
     token: linkRes.data.properties.email_otp,
     type: 'email',
@@ -57,9 +60,9 @@ async function runTenantIsolationRegression() {
     auth: { persistSession: false },
   });
 
-  // Step 2: Anonymous Caller Regression Test
+  // Step 2: Anonymous Caller Regression Test (Clean anonymous client)
   console.log('\n[Step 2] Anonymous Caller Isolation Probe:');
-  const { data: anonOrgs, error: anonErr } = await publicClient
+  const { data: anonOrgs, error: anonErr } = await anonymousClient
     .from('portal_organizations')
     .select('organization_id, organization_key, organization_name, status');
 
@@ -117,10 +120,20 @@ async function runTenantIsolationRegression() {
   if (foreignMemberships && foreignMemberships.length > 0) {
     throw new Error(`CRITICAL SECURITY BREACH: User was able to view memberships of other users! Count: ${foreignMemberships.length}`);
   }
-  console.log(`  -> PASS: User sees exactly ${userMemberships?.length} own active membership(s), ZERO foreign memberships.`);
+  // Step 6: Trusted Service Role Admin Probe
+  console.log('\n[Step 6] Trusted service_role Admin Probe:');
+  const { data: adminOrgs, error: adminErr } = await adminClient
+    .from('portal_organizations')
+    .select('organization_id, organization_key, status');
+
+  if (adminErr) {
+    throw new Error(`service_role query failed: ${adminErr.message}`);
+  }
+  console.log(`  -> Organizations visible to service_role: ${adminOrgs?.length || 0}`);
+  console.log('  -> PASS: service_role can administratively inspect organizations without restriction.');
 
   console.log('\n================================================================');
-  console.log('ALL 5 TENANT ISOLATION REGRESSION TESTS PASSED 100%!');
+  console.log('ALL 6 TENANT ISOLATION REGRESSION TESTS PASSED 100%!');
   console.log('Status: TENANT-SAFE LEAST-PRIVILEGE VERIFIED');
   console.log('================================================================\n');
 }
