@@ -1,5 +1,5 @@
 # 075 N8N STAGING VERIFICATION RUNBOOK
-**Target Workflow:** `075_N8N_CAMPAIGN_PLANNER_STRICT.json` (Commit: `8116faf`)  
+**Target Workflow:** `075_N8N_CAMPAIGN_PLANNER_STRICT.json` (Commit: `5160034`)  
 **Mục tiêu:** Thu thập 5 Execution ID thực tế trên N8N Staging phục vụ **Full Production Sign-off**.
 
 ---
@@ -25,20 +25,18 @@
   curl -X POST https://n8n.pnmediaplus.com/webhook/075-campaign-planner \
     -H "Content-Type: application/json" \
     -d '{
-      "body": {
-        "campaign_contract": {
-          "campaign_brief": "Brief thiếu organization_id",
-          "campaign_duration_days": 10,
-          "paid_media_allowed": true,
-          "required_terms": ["crm"]
-        }
+      "campaign_contract": {
+        "campaign_brief": "Brief thiếu organization_id",
+        "campaign_duration_days": 10,
+        "paid_media_allowed": true,
+        "required_terms": ["crm"]
       }
     }'
   ```
 - **Tiêu chí nghiệm thu:**
   - Execution kết thúc tại node `Fail-Closed Drop Sink`.
   - Không có bất kỳ request HTTP nào được gửi tới `/api/n8n/publish-callback`.
-  - Ghi nhận: `Execution ID Ca 1`.
+  - Ghi nhận: `Execution ID Ca 1: #641174` (ĐÃ PASS).
 
 ---
 
@@ -49,17 +47,16 @@
   curl -X POST https://n8n.pnmediaplus.com/webhook/075-campaign-planner \
     -H "Content-Type: application/json" \
     -d '{
-      "body": {
-        "thread_id": "thread_staging_happy_01",
-        "organization_id": "org_staging_test",
-        "department_name": "Phòng Marketing",
-        "campaign_contract": {
-          "campaign_brief": "Chiến dịch 10 ngày ra mắt dịch vụ CRM tự động hóa cho agency thiết kế",
-          "campaign_goal": "Thu hút 30 agency đăng ký dùng thử",
-          "campaign_duration_days": 10,
-          "paid_media_allowed": true,
-          "required_terms": ["crm", "agency", "tự động hóa"]
-        }
+      "thread_id": "thread_staging_happy_01",
+      "organization_id": "8289488a-b255-4cb6-9bff-c9d2e71af160",
+      "department_id": "dept-marketing",
+      "department_name": "Marketing",
+      "campaign_contract": {
+        "campaign_brief": "Chiến dịch 10 ngày ra mắt dịch vụ CRM tự động hóa cho agency thiết kế",
+        "campaign_goal": "Thu hút 30 agency đăng ký dùng thử",
+        "campaign_duration_days": 10,
+        "paid_media_allowed": true,
+        "required_terms": ["crm", "agency", "tự động hóa"]
       }
     }'
   ```
@@ -78,17 +75,16 @@
   curl -X POST https://n8n.pnmediaplus.com/webhook/075-campaign-planner \
     -H "Content-Type: application/json" \
     -d '{
-      "body": {
-        "thread_id": "thread_staging_clarify_01",
-        "organization_id": "org_staging_test",
-        "department_name": "Phòng Marketing",
-        "campaign_contract": {
-          "campaign_brief": "Chạy quảng cáo bán nhà 50 tỷ nhưng ngân sách toàn chiến dịch là 500.000 VNĐ",
-          "campaign_goal": "Bán 10 căn biệt thự trong 10 ngày với ngân sách 500k",
-          "campaign_duration_days": 10,
-          "paid_media_allowed": true,
-          "required_terms": ["bất động sản"]
-        }
+      "thread_id": "thread_staging_clarify_01",
+      "organization_id": "8289488a-b255-4cb6-9bff-c9d2e71af160",
+      "department_id": "dept-marketing",
+      "department_name": "Marketing",
+      "campaign_contract": {
+        "campaign_brief": "Chạy quảng cáo bán nhà 50 tỷ nhưng ngân sách toàn chiến dịch là 500.000 VNĐ",
+        "campaign_goal": "Bán 10 căn biệt thự trong 10 ngày với ngân sách 500k",
+        "campaign_duration_days": 10,
+        "paid_media_allowed": true,
+        "required_terms": ["bất động sản"]
       }
     }'
   ```
