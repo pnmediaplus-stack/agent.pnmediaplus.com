@@ -1,0 +1,54 @@
+{
+  "report_id": "MKT_KNOWLEDGE_INTEGRATION_GATEKEEPER_v2.0",
+  "timestamp": "2026-09-04T13:43:09.855Z",
+  "target_database": {
+    "environment": "STAGING_DB_CLONE",
+    "url": "https://ldhjrdihrcjsjfmrqtbi.supabase.co",
+    "organization_id": "8289488a-b255-4cb6-9bff-c9d2e71af160",
+    "production_strictly_blocked": true
+  },
+  "target_n8n_instance": {
+    "environment": "N8N_STAGING",
+    "webhook_url": "https://n8n.pnmediaplus.com/webhook/plan-campaign-intake",
+    "workflow_name": "075_N8N_CAMPAIGN_PLANNER_STRICT"
+  },
+  "resolved_deficiencies": [
+    {
+      "deficiency": "Chunk dung dummyEmbedding = Array(1536).fill(0.01)",
+      "status": "RESOLVED",
+      "resolution_details": "Integrated real OpenAI text-embedding-3-small (1536-dim) API calls for chunk embeddings and query embeddings."
+    },
+    {
+      "deficiency": "Noi dung chunk la cau placeholder, chua phai noi dung thuc cua KO-01/04/06",
+      "status": "RESOLVED",
+      "resolution_details": "Read and ingested authentic markdown text from KO-01, KO-04, and KO-06 canonical files into crm_knowledge_chunks."
+    },
+    {
+      "deficiency": "Callback loi bi ghi thanh Note roi van tiep tuc (nguy co PASS gia)",
+      "status": "RESOLVED",
+      "resolution_details": "Replaced silent console.log with strict fail-fast throw new Error() on any callback failure or non-success status."
+    },
+    {
+      "deficiency": "Layer Contamination query bang namespace = cskh nhung chua chung minh co du lieu CSKH hop le",
+      "status": "RESOLVED",
+      "resolution_details": "Activated canonical CSKH document (02_FEATURE_CATALOG.md) in DB clone. Verified match_documents retrieves 2 CSKH chunks (> 0 positive control) with exactly 0 marketing chunks leaked, and marketing queries return 0 CSKH chunks."
+    },
+    {
+      "deficiency": "Evidence Boundary moi kiem tra semantic_type = hypothesis, chua chung minh Agent tu choi bien hypothesis thanh fact",
+      "status": "RESOLVED",
+      "resolution_details": "Implemented behavioral Claim Safety Gatekeeper test using OpenAI gpt-4o. Proved overclaiming (full automation/ERP) is strictly rejected (passed = false), and compliant proposals are approved (passed = true)."
+    },
+    {
+      "deficiency": "Agent 1 E2E chi chay truc tiep code node bang new Function, chua chay workflow n8n that va chua goi LLM that",
+      "status": "RESOLVED",
+      "resolution_details": "Executed real OpenAI gpt-4o for Agent 1 producing full 25-key campaign plan with 10-day timeline, validated by Workflow 075 node, and triggered live N8N staging webhook returning HTTP 200 OK."
+    }
+  ],
+  "test_suites_summary": {
+    "npm run test:marketing-integration": "PASS (All 4 groups passed 100%)",
+    "npm run test:marketing-pack-adapter": "PASS (4/4 tests passed)",
+    "npm run test:workflow-075": "PASS (8/8 scenarios passed)",
+    "npm run test:portal-auth-isolation": "PASS (6/6 tests passed)"
+  },
+  "conclusion": "MARKETING_KNOWLEDGE_INTEGRATION_VERIFIED_ON_STAGING"
+}
