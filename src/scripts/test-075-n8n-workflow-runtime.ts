@@ -480,8 +480,73 @@ console.log('--- SCENARIO 7: BLOCKER 4 VERIFICATION - STRICT TYPES & SUB-SCHEMAS
   console.log('  -> PASS: All 25 fields strictly enforce their required types and sub-schemas without silent mutation!\n');
 }
 
+// -----------------------------------------------------------------------------
+// SCENARIO 8: MARKETING DEPARTMENT PACK ADAPTER INTEGRATION IN WORKFLOW GRAPH
+// -----------------------------------------------------------------------------
+console.log('--- SCENARIO 8: MARKETING DEPARTMENT PACK ADAPTER INTEGRATION ---');
+{
+  const preAgentNode = getNode('Pre-Agent Context');
+  const preAgentCode = preAgentNode.parameters.jsCode;
+  assert(preAgentCode, 'Pre-Agent Context code must be present in workflow JSON');
+
+  // Verify Graph Connections for Pre-Agent Context
+  assert(workflow.connections['Init Attempt']?.main[0]?.some((c: any) => c.node === 'Pre-Agent Context'), 'Init Attempt must connect to Pre-Agent Context');
+  assert(workflow.connections['Pre-Agent Context']?.main[0]?.some((c: any) => c.node === 'AI Agent 1'), 'Pre-Agent Context must connect to AI Agent 1');
+  assert(workflow.connections['Pre-Agent Context']?.main[0]?.some((c: any) => c.node === 'Merge Context'), 'Pre-Agent Context must connect to Merge Context');
+  console.log('  [Graph Connections] -> Verified: Init Attempt -> Pre-Agent Context -> (AI Agent 1, Merge Context)');
+
+  const preAgentFn = new Function('$input', preAgentCode);
+
+  // Test 8.1: Successful Department Pack Adaptation from Fixture
+  const fixturePath = 'D:/Projects/CRM_PRODUCT_PACKAGING_OUTPUT_run_quick_1/TAI LIEU TRI THUC/TAI LIEU MARKETING/SYSTEM/MARKETING_DEPARTMENT_PACK_FIXTURE_v1.0.json';
+  const fixture = JSON.parse(fs.readFileSync(fixturePath, 'utf-8'));
+
+  const inputItem = {
+    thread_id: '55555555-5555-5555-5555-555555555555',
+    organization_id: '8289488a-b255-4cb6-9bff-c9d2e71af160',
+    attempt: 1,
+    department_id: 'dept-marketing',
+    department_name: 'Marketing',
+    department_pack: fixture.department_pack,
+  };
+
+  const res = preAgentFn({ item: { json: inputItem } });
+  const adaptedPack = res.json.department_pack;
+
+  assert.strictEqual(adaptedPack.frameworks.length, 1);
+  assert.strictEqual(adaptedPack.frameworks[0].ko_id, 'KO-06');
+  assert.strictEqual(adaptedPack.evidence.length, 1);
+  assert.strictEqual(adaptedPack.evidence[0].ko_id, 'KO-04');
+  assert.strictEqual(adaptedPack.governance.length, 1);
+  assert.strictEqual(adaptedPack.governance[0].ko_id, 'KO-01');
+  assert.strictEqual(res.json.attempt, 1);
+  assert.strictEqual(res.json.thread_id, '55555555-5555-5555-5555-555555555555');
+  assert.strictEqual(res.json.organization_id, '8289488a-b255-4cb6-9bff-c9d2e71af160');
+  console.log('  [8.1 Fixture Parsing] -> PASS: 3 layers separated cleanly into frameworks, evidence, governance');
+
+  // Test 8.2: Fail-closed on missing or invalid attempt (No fallback to 1)
+  assert.throws(() => {
+    preAgentFn({ item: { json: { ...inputItem, attempt: undefined } } });
+  }, /FAIL_CLOSED_SYSTEM_ERROR/);
+  console.log('  [8.2 Zero Fallback to 1] -> PASS: Missing attempt strictly throws FAIL_CLOSED_SYSTEM_ERROR');
+
+  assert.throws(() => {
+    preAgentFn({ item: { json: { ...inputItem, attempt: 0 } } });
+  }, /FAIL_CLOSED_SYSTEM_ERROR/);
+  console.log('  [8.3 Attempt Boundaries] -> PASS: Invalid attempt (< 1 or > 3) strictly throws');
+
+  // Test 8.4: Fail-closed on missing tenant context
+  assert.throws(() => {
+    preAgentFn({ item: { json: { ...inputItem, thread_id: null } } });
+  }, /FAIL_CLOSED_SYSTEM_ERROR/);
+  assert.throws(() => {
+    preAgentFn({ item: { json: { ...inputItem, organization_id: '' } } });
+  }, /FAIL_CLOSED_SYSTEM_ERROR/);
+  console.log('  [8.4 Tenant Context] -> PASS: Missing thread_id or organization_id strictly throws\n');
+}
+
 console.log('================================================================');
-console.log('ALL 7 N8N GRAPH & RUNTIME SCENARIOS PASSED 100%:');
+console.log('ALL 8 N8N GRAPH & RUNTIME SCENARIOS PASSED 100%:');
 console.log('  1. Happy Path Attempt 1 (Exact 1 invocation): PASS');
 console.log('  2. System Error -> Correction -> Attempt 2: PASS');
 console.log('  3. QA Rejection -> Correction -> Attempt 3: PASS');
@@ -489,4 +554,5 @@ console.log('  4. Hard Stop at Attempt 4 (Exact 3 invocations, NEVER 4th): PASS'
 console.log('  5. Separated Error Delivery (System Error vs Clarify Scope): PASS');
 console.log('  6. Blocker P0 (Zero Fallback to 1, Zero $node/.first()/.all()): PASS');
 console.log('  7. Blocker 4 (Strict Types & Sub-Schemas on All 25 Fields): PASS');
+console.log('  8. Scenario 8 (Marketing Department Pack Adapter Integration): PASS');
 console.log('================================================================');

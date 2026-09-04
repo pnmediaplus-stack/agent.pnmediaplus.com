@@ -21,6 +21,10 @@ function marketingDepartmentPackAdapter(inputItem: any) {
     throw new Error('FAIL_CLOSED_SYSTEM_ERROR: Missing thread_id or organization_id in Department Pack Adapter');
   }
 
+  if (!Number.isInteger(attempt) || attempt < 1 || attempt > 3) {
+    throw new Error(`FAIL_CLOSED_SYSTEM_ERROR: Missing or invalid business attempt in Department Pack Adapter. Expected integer 1..3, got: ${attempt}`);
+  }
+
   const rawPack = inputItem.department_pack || {};
   const knowledgeContext = rawPack.knowledge_context || {};
 
@@ -81,7 +85,7 @@ function marketingDepartmentPackAdapter(inputItem: any) {
       ...inputItem,
       thread_id: threadId,
       organization_id: organizationId,
-      attempt: attempt !== undefined ? attempt : 1,
+      attempt: attempt,
       department_pack: adaptedDepartmentPack,
     },
   };
@@ -132,6 +136,23 @@ assert.throws(() => {
 }, /FAIL_CLOSED_SYSTEM_ERROR/);
 console.log('  -> PASS: Fail-closed on missing organization_id.');
 
+// TEST 2.1: Fail-closed on missing or invalid attempt (Blocker P0: NO FALLBACK TO 1)
+console.log('\n[Test 2.1] Fail-closed assertion on missing or invalid attempt:');
+assert.throws(() => {
+  marketingDepartmentPackAdapter({ ...mockInput, attempt: undefined });
+}, /FAIL_CLOSED_SYSTEM_ERROR/);
+console.log('  -> PASS: Fail-closed on attempt = undefined (Zero fallback to 1).');
+
+assert.throws(() => {
+  marketingDepartmentPackAdapter({ ...mockInput, attempt: 0 });
+}, /FAIL_CLOSED_SYSTEM_ERROR/);
+console.log('  -> PASS: Fail-closed on attempt = 0.');
+
+assert.throws(() => {
+  marketingDepartmentPackAdapter({ ...mockInput, attempt: 4 });
+}, /FAIL_CLOSED_SYSTEM_ERROR/);
+console.log('  -> PASS: Fail-closed on attempt = 4.');
+
 // TEST 3: Output Contract Structure Verification
 console.log('\n[Test 3] Verifying complete output contract structure:');
 const contractKeys = Object.keys(outputPack);
@@ -143,5 +164,5 @@ assert(contractKeys.includes('summary'));
 console.log('  -> PASS: Output contract strictly adheres to requirements.');
 
 console.log('\n================================================================');
-console.log('ALL TESTS PASSED (3/3) - N8N_BOT ADAPTER CONTRACT VERIFIED');
+console.log('ALL TESTS PASSED (4/4) - N8N_BOT ADAPTER CONTRACT VERIFIED');
 console.log('================================================================');

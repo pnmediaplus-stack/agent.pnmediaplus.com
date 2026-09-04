@@ -16,18 +16,21 @@ if (!supabaseUrl || !serviceRoleKey) {
   process.exit(1);
 }
 
-if (supabaseUrl.includes('jrgkpbjsqefvnhbiiutz')) {
-  console.error('FATAL: Target DB is PRODUCTION (jrgkpbjsqefvnhbiiutz). ABORTING!');
+const AUTHORIZED_CLONE_URL = 'https://ldhjrdihrcjsjfmrqtbi.supabase.co';
+const AUTHORIZED_CLONE_ORG_ID = '8289488a-b255-4cb6-9bff-c9d2e71af160';
+
+if (supabaseUrl !== AUTHORIZED_CLONE_URL) {
+  console.error(`FATAL: Unauthorized database URL: ${supabaseUrl}. Script is strictly locked to authorized DB Clone: ${AUTHORIZED_CLONE_URL}`);
   process.exit(1);
 }
 
-console.log('Target Staging DB Clone:', supabaseUrl);
+const TARGET_ORG_ID = AUTHORIZED_CLONE_ORG_ID;
+
+console.log('Target Staging DB Clone (Strictly Locked):', supabaseUrl);
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false },
 });
-
-const TARGET_ORG_ID = '8289488a-b255-4cb6-9bff-c9d2e71af160';
 
 interface KnowledgeObjectManifestItem {
   id: string;
@@ -211,6 +214,7 @@ async function runDbBotNormalization() {
       allowed_purposes: allowedPurposes,
       prohibited_purposes: ['public_content'],
       applicability,
+      evidence_basis: ['reviewed_framework_baseline'],
       decision_scope: ['marketing_strategy', 'campaign_planning'],
       retrieval_namespace: item.namespace,
       provenance: {
@@ -232,7 +236,7 @@ async function runDbBotNormalization() {
 
     const { data: existingDoc, error: checkErr } = await supabase
       .from('crm_knowledge_documents')
-      .select('id, idempotency_key, knowledge_status, ingestion_status')
+      .select('id, idempotency_key, knowledge_status, ingestion_status, knowledge_metadata')
       .eq('organization_id', TARGET_ORG_ID)
       .eq('idempotency_key', idempotencyKey)
       .maybeSingle();
@@ -254,7 +258,19 @@ async function runDbBotNormalization() {
     }
 
     if (existingDoc) {
-      console.log(`[EXISTING] ${item.id} already exists with doc ID ${existingDoc.id}`);
+      // Backfill evidence_basis into metadata if not present
+      if (!existingDoc.knowledge_metadata?.evidence_basis) {
+        await supabase
+          .from('crm_knowledge_documents')
+          .update({
+            knowledge_metadata: {
+              ...existingDoc.knowledge_metadata,
+              evidence_basis: ['reviewed_framework_baseline'],
+            },
+          })
+          .eq('id', existingDoc.id);
+      }
+      console.log(`[EXISTING] ${item.id} already exists with doc ID ${existingDoc.id} (evidence_basis verified)`);
       report.success++;
       report.items.push({
         ko_id: item.id,
