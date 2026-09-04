@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        40512,
-        496
+        48944,
+        416
       ],
-      "id": "ea738264-049f-4937-a4b2-a1041e1f6fd8"
+      "id": "7ed7e929-0d74-470f-a5d1-105d0e21149d"
     },
     {
       "parameters": {
@@ -26,11 +26,11 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        40208,
-        976
+        48640,
+        896
       ],
       "webhookId": "plan-campaign-intake-webhook-id",
-      "id": "1cf30829-43d4-4baf-9f5d-62dc5199773f"
+      "id": "f08759f2-0d0e-4433-8a86-339b27bb8a83"
     },
     {
       "parameters": {
@@ -54,10 +54,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        40384,
-        1120
+        48816,
+        1040
       ],
-      "id": "bdd1fba5-68c8-44ae-9ffb-ae0506a70c83",
+      "id": "1e213f90-fe17-44ce-a211-c7320bc17cdd",
       "onError": "continueRegularOutput"
     },
     {
@@ -68,10 +68,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        40752,
-        992
+        49184,
+        912
       ],
-      "id": "5e03b626-04bb-47a7-b3db-f0d219750c32"
+      "id": "a4197b9b-89e1-4e9e-b6a2-65c73a8e5a2c"
     },
     {
       "parameters": {
@@ -88,10 +88,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        40960,
-        992
+        49392,
+        912
       ],
-      "id": "5180cc5a-c643-4221-b8a5-73320227a78d"
+      "id": "a1e4ef19-1e50-4e60-9dce-a3f0a475a024"
     },
     {
       "parameters": {
@@ -119,10 +119,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        40960,
-        1424
+        49392,
+        1344
       ],
-      "id": "ba0da97b-aaed-431c-92c9-91e803d836be"
+      "id": "4d3c4ba5-29a5-41c3-8a59-8b9cb101dba1"
     },
     {
       "parameters": {
@@ -150,10 +150,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        41232,
-        848
+        49616,
+        896
       ],
-      "id": "6439770e-a3c6-46ec-8581-cd9447100002"
+      "id": "9a3e760b-4389-4e3b-8034-09b0beb59470"
     },
     {
       "parameters": {
@@ -163,10 +163,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        41872,
-        848
+        50704,
+        672
       ],
-      "id": "50fb3c90-860c-415f-8ffc-e4d7e98e7b62"
+      "id": "556f2d07-9528-4fbf-86bc-f78c1c0e4f48"
     },
     {
       "parameters": {
@@ -183,10 +183,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        42048,
-        848
+        50944,
+        672
       ],
-      "id": "30833be1-ce34-4848-8e69-a11b4dc94e0a"
+      "id": "e97d5f36-1a5a-4825-9290-320543045c53"
     },
     {
       "parameters": {
@@ -212,10 +212,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        42480,
-        848
+        51392,
+        784
       ],
-      "id": "610bb868-02cb-4cc8-b599-83fba67c2be0",
+      "id": "3d7f1273-0d45-484c-8fd6-87caa998ee90",
       "credentials": {
         "httpQueryAuth": {
           "id": "qsZuqecdX6PM9qfX",
@@ -235,10 +235,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        42688,
-        848
+        51728,
+        688
       ],
-      "id": "2f9a1fb7-c957-4330-83b0-2e0e31705f06"
+      "id": "edb9d051-5d39-4373-9383-60a0b42b9d7a"
     },
     {
       "parameters": {
@@ -255,10 +255,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        42880,
-        848
+        51888,
+        688
       ],
-      "id": "060daf34-9eca-48be-8a2d-13b01d556bf6"
+      "id": "119a1daa-5903-4e0e-aa2d-dc4562871110"
     },
     {
       "parameters": {
@@ -286,10 +286,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        43296,
-        1056
+        52448,
+        1024
       ],
-      "id": "7ec4643d-b509-4b82-b098-41f209841b3e"
+      "id": "bfee6cdb-ce55-4fd1-b023-1b63f1d6f4b1"
     },
     {
       "parameters": {
@@ -315,10 +315,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        43104,
-        832
+        52080,
+        784
       ],
-      "id": "43b6577b-01c7-43a1-a06c-f1f50afd8434",
+      "id": "ab6af0f2-9ff8-4620-b34c-1e737d08e987",
       "credentials": {
         "httpHeaderAuth": {
           "id": "u1GGrgkWgG2z9d4K",
@@ -352,10 +352,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        43296,
-        832
+        52448,
+        688
       ],
-      "id": "6c5318ba-0e7a-4694-9b52-a0a6d52cb72a"
+      "id": "edee14cc-da8a-4e86-acd9-5c1bf54d3553"
     },
     {
       "parameters": {
@@ -368,10 +368,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3,
       "position": [
-        41584,
-        848
+        50192,
+        672
       ],
-      "id": "813e2d6d-35fc-4289-8d34-3ed06b12b55a",
+      "id": "9bfd4896-23ea-45af-977f-11688340aba0",
       "name": "AI Agent 1"
     },
     {
@@ -431,10 +431,10 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        41824,
-        1040
+        50432,
+        864
       ],
-      "id": "275f0b87-394a-40bc-b3a1-81603638ea5c",
+      "id": "208cc9fa-829a-4ce8-b8c4-957344bc6515",
       "name": "Market_Research_Subagent"
     },
     {
@@ -458,10 +458,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        41472,
-        1040
+        50112,
+        864
       ],
-      "id": "d49ccf62-17ce-4f2b-936a-1ca6a16ec460",
+      "id": "16b0248b-86e6-4168-8100-179f8968c324",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
@@ -478,10 +478,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        41408,
-        848
+        49760,
+        672
       ],
-      "id": "a877deb5-2dec-49dc-92a1-116b8069c249"
+      "id": "6be23598-4f5b-4de0-a436-0bbfb4168367"
     },
     {
       "parameters": {
@@ -491,10 +491,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        42896,
-        1072
+        51888,
+        1040
       ],
-      "id": "00835e57-2682-44f0-a624-5328e9f28962",
+      "id": "72d692dc-50b7-42e8-a233-e1e67a9f6318",
       "typeOptions": {
         "multipleOutputs": true
       },
@@ -527,10 +527,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        43104,
-        1072
+        52176,
+        1040
       ],
-      "id": "2a279bda-421f-4265-8b6b-74f1328aa59f",
+      "id": "43c0f4d2-07ed-4cc6-aa5d-0b82c7308892",
       "name": "If"
     },
     {
@@ -541,10 +541,10 @@
       "type": "@tavily/n8n-nodes-tavily.tavilyTool",
       "typeVersion": 1,
       "position": [
-        41632,
-        1040
+        50256,
+        864
       ],
-      "id": "42315f63-5153-4249-ab15-7fbd6e64bc5f",
+      "id": "142a178c-0b54-4d6a-90ac-9d05151e0667",
       "name": "Search in Tavily",
       "credentials": {
         "tavilyApi": {
@@ -568,10 +568,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        42272,
-        864
+        51184,
+        688
       ],
-      "id": "3f221f1c-6bbf-4b9d-8259-aa987f9416bf"
+      "id": "a17ed5e4-fb38-4d7d-a440-d246f90ea3f2"
     },
     {
       "parameters": {
@@ -588,10 +588,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        40960,
-        1216
+        49392,
+        1136
       ],
-      "id": "06a90909-2cb8-4fc0-8a09-a586f38a7b86"
+      "id": "d2d2f019-aa07-46c1-8776-b474503f6aa0"
     },
     {
       "parameters": {
@@ -619,10 +619,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        41408,
-        1184
+        49840,
+        1104
       ],
-      "id": "183b2d01-8f5b-4bab-bb37-2e39061689e2"
+      "id": "9dc21097-30f0-4cf5-af2e-bf9224267a91"
     },
     {
       "parameters": {
@@ -639,10 +639,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        42288,
-        1088
+        51168,
+        1056
       ],
-      "id": "61d3d705-ccde-4be5-9b85-6a0051003d1e"
+      "id": "537f3ebd-d9f0-4b00-b5cf-3552bbf4a727"
     },
     {
       "parameters": {
@@ -654,10 +654,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2.1,
       "position": [
-        40576,
-        992
+        49008,
+        912
       ],
-      "id": "fcac347a-0050-4963-a2c1-b759611b4950"
+      "id": "0ca4456a-3f7f-4e9c-af09-54378219bce1"
     },
     {
       "parameters": {
@@ -667,10 +667,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        41200,
-        1424
+        49632,
+        1344
       ],
-      "id": "2305c469-73bd-441b-95b1-2517d411875b"
+      "id": "610298c4-72b9-4aee-af0a-5964d0708f1a"
     },
     {
       "parameters": {
@@ -687,10 +687,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        41184,
-        1200
+        49616,
+        1120
       ],
-      "id": "c77fd948-e018-419c-9e64-7d97de095ea4"
+      "id": "ccbf6780-f066-4eae-9e5c-0939a5284dc3"
     },
     {
       "parameters": {
@@ -700,10 +700,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        41500,
-        848
+        49952,
+        672
       ],
-      "id": "7b891234-5678-4321-9abc-def012345678"
+      "id": "2980eca5-556f-44fd-974f-a90938f9e41c"
     },
     {
       "parameters": {
@@ -715,10 +715,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2.1,
       "position": [
-        41700,
-        848
+        50512,
+        672
       ],
-      "id": "8c901234-5678-4321-9abc-def012345679"
+      "id": "13921d1f-b733-4381-9d55-4215fad5eb7f"
     },
     {
       "parameters": {
@@ -730,10 +730,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2.1,
       "position": [
-        42600,
-        848
+        51568,
+        688
       ],
-      "id": "9d011234-5678-4321-9abc-def012345680"
+      "id": "7f49e61d-eee6-4ce9-8914-7ffcf7c79e4e"
     },
     {
       "parameters": {
@@ -745,10 +745,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2.1,
       "position": [
-        43200,
-        832
+        52256,
+        688
       ],
-      "id": "ae121234-5678-4321-9abc-def012345681"
+      "id": "53022f28-5c93-40fd-b095-0502a39919dc"
     },
     {
       "parameters": {
@@ -760,10 +760,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2.1,
       "position": [
-        41200,
-        848
+        49616,
+        672
       ],
-      "id": "6a781234-5678-4321-9abc-def012345677"
+      "id": "e4dba6bd-1e85-4168-939d-d0e02f26e5fd"
     }
   ],
   "pinData": {},
@@ -909,7 +909,13 @@
     },
     "Needs Clarification?": {
       "main": [
-        [],
+        [
+          {
+            "node": "Clarify Scope (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "Is Valid?",
@@ -1156,7 +1162,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "c1f36a54-4729-4460-9c0b-9f69064fb3b3",
+  "versionId": "f0391836-96e1-4083-b29f-64f3d301b0a4",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
