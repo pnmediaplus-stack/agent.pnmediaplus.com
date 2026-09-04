@@ -268,37 +268,104 @@ async function runMarketingKnowledgeIntegrationSuite() {
   // Step 3: Test Group 2 - Positive Control for Layer Contamination & Namespace Retrieval
   console.log('--- TEST GROUP 2: POSITIVE CONTROL FOR LAYER CONTAMINATION & ISOLATION ---');
   
-  // Ensure positive control: CSKH document (02_FEATURE_CATALOG.md) is ACTIVE in cskh namespace
-  const { data: cskhDoc, error: cskhFetchErr } = await adminClient
-    .from('crm_knowledge_documents')
-    .select('id, knowledge_status, ingestion_status')
-    .eq('organization_id', AUTHORIZED_CLONE_ORG_ID)
-    .eq('title', '02_FEATURE_CATALOG.md')
-    .single();
+  // Step 3: Test Group 2 - Positive Control for Layer Contamination & Namespace Retrieval
+  console.log('--- TEST GROUP 2: POSITIVE CONTROL FOR LAYER CONTAMINATION & ISOLATION ---');
+  
+  // Create isolated dynamic CSKH fixture (Zero permanent mutation of pre-existing documents)
+  const cskhFixtureId = crypto.randomUUID();
+  const cskhFixtureTitle = `[FIXTURE_CSKH_ISOLATION_CONTROL_${Date.now()}]`;
+  const cskhFixtureContent = 'Tài liệu CSKH mẫu phục vụ kiểm tra cách ly dữ liệu phòng ban, hỗ trợ khách hàng và tra cứu dịch vụ.';
 
-  if (cskhFetchErr || !cskhDoc) {
-    throw new Error(`CSKH positive control document not found: ${cskhFetchErr?.message}`);
-  }
-
-  assert.strictEqual(cskhDoc.knowledge_status, 'ACTIVE', 'CSKH positive control document must be ACTIVE');
-  assert.strictEqual(cskhDoc.ingestion_status, 'SUCCESS', 'CSKH positive control document must have ingestion_status SUCCESS');
-
-  // Subtest 2.1: Query CSKH Namespace with real query embedding
-  const cskhQueryText = 'Tính năng quản lý danh mục và hỗ trợ khách hàng CSKH';
-  const cskhQueryEmb = await getOpenAIEmbedding(cskhQueryText);
-
-  const { data: cskhResults, error: cskhQErr } = await adminClient.rpc('match_documents', {
-    query_embedding: cskhQueryEmb,
-    match_count: 10,
-    filter: {
-      organization_id: AUTHORIZED_CLONE_ORG_ID,
-      namespace: 'cskh',
+  console.log(`  -> Initializing isolated CSKH test fixture: ${cskhFixtureTitle} (${cskhFixtureId})...`);
+  const { error: fixInsErr } = await adminClient.from('crm_knowledge_documents').insert({
+    id: cskhFixtureId,
+    organization_id: AUTHORIZED_CLONE_ORG_ID,
+    title: cskhFixtureTitle,
+    file_url: 'https://storage.pnmediaplus.com/fixtures/cskh-isolation-test.md',
+    namespace: 'cskh',
+    knowledge_status: 'REVIEWED',
+    ingestion_status: 'PENDING',
+    idempotency_key: `idemp:${cskhFixtureId}`,
+    knowledge_metadata: {
+      object_class: 'knowledge',
+      semantic_type: 'fact',
+      governance_type: 'none',
+      usage_authority: 'cross_department',
+      sensitivity: 'internal',
+      allowed_purposes: ['customer_support', 'internal_reasoning'],
+      evidence_basis: ['fixture_test_baseline'],
+      applicability: { departments: ['cskh'] },
     },
   });
+  if (fixInsErr) throw new Error(`Failed to create CSKH test fixture: ${fixInsErr.message}`);
 
-  if (cskhQErr) throw new Error(`CSKH match_documents query failed: ${cskhQErr.message}`);
-  console.log(`  -> CSKH query returned: ${cskhResults?.length || 0} chunks (POSITIVE CONTROL VERIFIED)`);
-  assert(cskhResults && cskhResults.length > 0, 'CSKH query must return active CSKH chunks (positive control)');
+  const { error: fixAppErr } = await ownerClient.from('crm_knowledge_documents').update({
+    knowledge_status: 'APPROVED',
+    knowledge_metadata: {
+      object_class: 'knowledge',
+      semantic_type: 'fact',
+      governance_type: 'none',
+      usage_authority: 'cross_department',
+      sensitivity: 'internal',
+      allowed_purposes: ['customer_support', 'internal_reasoning'],
+      evidence_basis: ['fixture_test_baseline'],
+      applicability: { departments: ['cskh'] },
+      provenance: {
+        author_role: 'cskh_lead',
+        approved_by: ownerUserId,
+        approved_at: new Date().toISOString(),
+        approver_role: 'department_owner',
+      },
+    },
+  }).eq('id', cskhFixtureId);
+  if (fixAppErr) throw new Error(`Failed to approve CSKH test fixture: ${fixAppErr.message}`);
+
+  // Generate real OpenAI embedding for the CSKH fixture chunk
+  const cskhFixtureEmbedding = await getOpenAIEmbedding(cskhFixtureContent);
+  const { error: fixChunkErr } = await adminClient.from('crm_knowledge_chunks').insert({
+    document_id: cskhFixtureId,
+    organization_id: AUTHORIZED_CLONE_ORG_ID,
+    content: cskhFixtureContent,
+    metadata: {
+      namespace: 'cskh',
+      fixture: true,
+      fixture_id: cskhFixtureId,
+    },
+    embedding: cskhFixtureEmbedding,
+  });
+  if (fixChunkErr) throw new Error(`Failed to insert CSKH fixture chunk: ${fixChunkErr.message}`);
+
+  // Callback to transition fixture to ACTIVE
+  const cskhCorrId = `cskh-fixture-act-${Date.now()}`;
+  const cskhPayloadHash = crypto.createHash('sha256').update(cskhCorrId).digest('hex');
+  const { data: fixCbRes, error: fixCbErr } = await adminClient.rpc('apply_knowledge_ingestion_callback', {
+    p_document_id: cskhFixtureId,
+    p_organization_id: AUTHORIZED_CLONE_ORG_ID,
+    p_status: 'SUCCESS',
+    p_correlation_id: cskhCorrId,
+    p_payload_hash: cskhPayloadHash,
+    p_retry_attempt: 0,
+  });
+  if (fixCbErr || !fixCbRes?.success) throw new Error(`CSKH fixture callback failed: ${fixCbErr?.message || JSON.stringify(fixCbRes)}`);
+  console.log(`  -> CSKH test fixture successfully activated: ${fixCbRes.status}`);
+
+  try {
+    // Subtest 2.1: Query CSKH Namespace with real query embedding
+    const cskhQueryText = 'Tính năng quản lý danh mục và hỗ trợ khách hàng CSKH';
+    const cskhQueryEmb = await getOpenAIEmbedding(cskhQueryText);
+
+    const { data: cskhResults, error: cskhQErr } = await adminClient.rpc('match_documents', {
+      query_embedding: cskhQueryEmb,
+      match_count: 10,
+      filter: {
+        organization_id: AUTHORIZED_CLONE_ORG_ID,
+        namespace: 'cskh',
+      },
+    });
+
+    if (cskhQErr) throw new Error(`CSKH match_documents query failed: ${cskhQErr.message}`);
+    console.log(`  -> CSKH query returned: ${cskhResults?.length || 0} chunks (POSITIVE CONTROL VERIFIED)`);
+    assert(cskhResults && cskhResults.length > 0, 'CSKH query must return active CSKH chunks (positive control)');
   
   // Assert ZERO marketing chunks in CSKH results
   const leakedMarketingInCskh = (cskhResults || []).filter((c: any) => c.metadata?.namespace !== 'cskh');
@@ -580,9 +647,17 @@ Ground your plan strictly in the provided department_pack (KO-06 Capability Matr
   console.log('  2. REAL EMBEDDINGS: OpenAI text-embedding-3-small 1536-dim (PASS)');
   console.log('  3. FAIL-FAST CALLBACK: Zero silent fallback on callback error (PASS)');
   console.log('  4. POSITIVE CONTROL: CSKH active chunks retrieved & zero leak (PASS)');
-  console.log('  5. EVIDENCE BOUNDARY: Behavioral overclaim rejection & compliance (PASS)');
-  console.log('  6. LIVE AGENT 1 & N8N: Real gpt-4o reasoning & real N8N trigger (PASS)');
-  console.log('================================================================');
+  } finally {
+    console.log(`\n[Cleanup] Cleaning up and archiving isolated CSKH test fixture: ${cskhFixtureId}...`);
+    try {
+      await adminClient.from('crm_knowledge_documents').update({ knowledge_status: 'DEPRECATED' }).eq('id', cskhFixtureId);
+      await adminClient.from('crm_knowledge_documents').update({ knowledge_status: 'ARCHIVED' }).eq('id', cskhFixtureId);
+      await adminClient.from('crm_knowledge_chunks').delete().eq('document_id', cskhFixtureId);
+      console.log(`  -> CLEANUP SUCCESS: Fixture ${cskhFixtureId} transitioned ACTIVE -> DEPRECATED -> ARCHIVED and chunks deleted.`);
+    } catch (cleanErr: any) {
+      console.warn(`  -> Cleanup warning: ${cleanErr.message}`);
+    }
+  }
 }
 
 runMarketingKnowledgeIntegrationSuite().catch((err) => {
