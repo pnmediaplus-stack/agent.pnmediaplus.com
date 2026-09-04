@@ -2,8 +2,8 @@
 -- 20260904000003_tenant_safe_portal_organizations_view.sql
 -- Module: Portal Auth Tenant-Safe Least-Privilege Views
 -- Standard: Next.js Local Build Gatekeeper QA Approved Specification
--- Migration Version: 20260904000003 (Unique, strictly ordered after 20260904000002)
--- Preflight: Drop views if exists cascade to guarantee type/order compatibility
+-- Non-Destructive: ZERO CASCADE, Uses in-place CREATE OR REPLACE VIEW
+-- Security: Explicit metadata redaction ('{}'::jsonb), Strict auth.uid() filter
 -- ==============================================================================
 
 -- 1. Helper Function: Get Active Organizations for Authenticated User (SECURITY DEFINER)
@@ -26,15 +26,25 @@ as $$
     o.organization_key,
     o.organization_name,
     o.status,
-    coalesce(o.metadata, '{}'::jsonb) as metadata,
+    '{}'::jsonb as metadata,
     o.created_at,
     o.updated_at
   from portal_auth.organizations o
-  join portal_auth.organization_memberships m
-    on m.organization_id = o.id
-  where m.user_id = auth.uid()
-    and m.status = 'active'
-    and o.status = 'active';
+  where 
+    -- 1. If caller is service_role: permit administrative read of active organizations
+    (auth.role() = 'service_role' and o.status = 'active')
+    OR
+    -- 2. If caller is authenticated: strictly restrict to organizations where user has active membership
+    (
+      auth.role() = 'authenticated'
+      and o.status = 'active'
+      and exists (
+        select 1 from portal_auth.organization_memberships m
+        where m.organization_id = o.id
+          and m.user_id = auth.uid()
+          and m.status = 'active'
+      )
+    );
 $$;
 
 -- 2. Helper Function: Get Active Memberships for Authenticated User (SECURITY DEFINER)
@@ -69,17 +79,21 @@ as $$
   from portal_auth.organization_memberships m
   join portal_auth.organizations o
     on o.id = m.organization_id
-  where m.user_id = auth.uid()
-    and m.status = 'active'
-    and o.status = 'active';
+  where 
+    -- 1. If caller is service_role: permit administrative read of active memberships
+    (auth.role() = 'service_role' and m.status = 'active' and o.status = 'active')
+    OR
+    -- 2. If caller is authenticated: strictly restrict to memberships owned by auth.uid()
+    (
+      auth.role() = 'authenticated'
+      and m.user_id = auth.uid()
+      and m.status = 'active'
+      and o.status = 'active'
+    );
 $$;
 
--- 3. Preflight: Safely drop existing views to avoid column order/type conflicts
-drop view if exists public.portal_organization_memberships cascade;
-drop view if exists public.portal_organizations cascade;
-
--- 4. Re-create Public Read Surfaces with Secure Tenant-Filtered Barrier Views
-create view public.portal_organizations
+-- 3. Non-Destructive Update: In-place CREATE OR REPLACE VIEW (Zero CASCADE, preserving all dependencies)
+create or replace view public.portal_organizations
 with (security_barrier = true)
 as
 select
@@ -92,7 +106,7 @@ select
   updated_at
 from public.portal_auth_get_my_organizations();
 
-create view public.portal_organization_memberships
+create or replace view public.portal_organization_memberships
 with (security_barrier = true)
 as
 select
@@ -108,7 +122,7 @@ select
   updated_at
 from public.portal_auth_get_my_memberships();
 
--- 5. Enforce Strict Least-Privilege Access Controls
+-- 4. Enforce Strict Least-Privilege Access Controls
 -- Revoke all permissions from public and anon
 revoke all on function public.portal_auth_get_my_organizations() from public, anon;
 revoke all on function public.portal_auth_get_my_memberships() from public, anon;
