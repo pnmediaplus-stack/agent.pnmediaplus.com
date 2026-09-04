@@ -1,7 +1,9 @@
 -- ==============================================================================
--- 20260904000000_tenant_safe_portal_organizations_view.sql
+-- 20260904000003_tenant_safe_portal_organizations_view.sql
 -- Module: Portal Auth Tenant-Safe Least-Privilege Views
 -- Standard: Next.js Local Build Gatekeeper QA Approved Specification
+-- Migration Version: 20260904000003 (Unique, strictly ordered after 20260904000002)
+-- Preflight: Drop views if exists cascade to guarantee type/order compatibility
 -- ==============================================================================
 
 -- 1. Helper Function: Get Active Organizations for Authenticated User (SECURITY DEFINER)
@@ -24,7 +26,7 @@ as $$
     o.organization_key,
     o.organization_name,
     o.status,
-    o.metadata,
+    coalesce(o.metadata, '{}'::jsonb) as metadata,
     o.created_at,
     o.updated_at
   from portal_auth.organizations o
@@ -72,8 +74,12 @@ as $$
     and o.status = 'active';
 $$;
 
--- 3. Replace Public Read Surfaces with Secure Tenant-Filtered Views
-create or replace view public.portal_organizations
+-- 3. Preflight: Safely drop existing views to avoid column order/type conflicts
+drop view if exists public.portal_organization_memberships cascade;
+drop view if exists public.portal_organizations cascade;
+
+-- 4. Re-create Public Read Surfaces with Secure Tenant-Filtered Barrier Views
+create view public.portal_organizations
 with (security_barrier = true)
 as
 select
@@ -86,7 +92,7 @@ select
   updated_at
 from public.portal_auth_get_my_organizations();
 
-create or replace view public.portal_organization_memberships
+create view public.portal_organization_memberships
 with (security_barrier = true)
 as
 select
@@ -102,7 +108,7 @@ select
   updated_at
 from public.portal_auth_get_my_memberships();
 
--- 4. Enforce Strict Least-Privilege Access Controls
+-- 5. Enforce Strict Least-Privilege Access Controls
 -- Revoke all permissions from public and anon
 revoke all on function public.portal_auth_get_my_organizations() from public, anon;
 revoke all on function public.portal_auth_get_my_memberships() from public, anon;
