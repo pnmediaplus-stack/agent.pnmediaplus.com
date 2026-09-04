@@ -131,20 +131,41 @@ export async function POST(request: Request) {
         })
       ]);
 
-      if (!threadRes.ok || !orgRes.ok) {
-        return NextResponse.json({ ok: false, error: "Failed to verify thread or organization" }, { status: 500 });
+      if (!orgRes.ok) {
+        return NextResponse.json({ ok: false, error: "Failed to verify organization" }, { status: 500 });
       }
 
-      const [threadData, orgData] = await Promise.all([threadRes.json(), orgRes.json()]);
-
-      if (!threadData || threadData.length === 0 || threadData[0].departments?.organization_id !== organization_id) {
-        console.warn(`[N8N_CALLBACK:CHAT] Thread ownership mismatch or not found for thread ${thread_id}`);
-        return NextResponse.json({ ok: false, error: "Thread not found or ownership mismatch" }, { status: 403 });
-      }
-
+      const orgData = await orgRes.json();
       if (!orgData || orgData.length === 0 || String(orgData[0].status).toUpperCase() !== 'ACTIVE') {
         console.warn(`[N8N_CALLBACK:CHAT] Organization ${organization_id} is not active or not found. Status: ${orgData?.[0]?.status}`);
         return NextResponse.json({ ok: false, error: "Organization is not active or not found" }, { status: 403 });
+      }
+
+      if (threadRes.ok) {
+        const threadData = await threadRes.json();
+        if (!threadData || threadData.length === 0 || threadData[0].departments?.organization_id !== organization_id) {
+          console.warn(`[N8N_CALLBACK:CHAT] Thread ownership mismatch or not found for thread ${thread_id}`);
+          return NextResponse.json({ ok: false, error: "Thread not found or ownership mismatch" }, { status: 403 });
+        }
+      } else if (threadRes.status === 406) {
+        // Fallback for Clone/Staging environments where pn_os_ai_department schema is not exposed to PostgREST
+        const fallbackRes = await fetch(`${supabaseUrl}/rest/v1/phase1_chat_threads?id=eq.${thread_id}&select=id,status`, {
+          method: 'GET',
+          headers: {
+            'apikey': serviceKey,
+            'Authorization': `Bearer ${serviceKey}`
+          },
+          cache: 'no-store'
+        });
+        if (!fallbackRes.ok) {
+          return NextResponse.json({ ok: false, error: "Failed to verify thread via staging view" }, { status: 500 });
+        }
+        const fallbackData = await fallbackRes.json();
+        if (!fallbackData || fallbackData.length === 0 || String(fallbackData[0].status).toUpperCase() !== 'ACTIVE') {
+          return NextResponse.json({ ok: false, error: "Thread not found or not active in staging view" }, { status: 403 });
+        }
+      } else {
+        return NextResponse.json({ ok: false, error: "Failed to verify thread" }, { status: 500 });
       }
 
       // 2. Insert new message via Atomic RPC (prevents message_seq TOCTOU race condition)
