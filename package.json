@@ -12,6 +12,7 @@
     "test:handoff-e2e": "tsx src/scripts/test-marketing-cskh-handoff-e2e.ts",
     "test:workflow-075": "tsx src/scripts/test-075-n8n-workflow-runtime.ts",
     "test:portal-auth-isolation": "tsx src/scripts/test-portal-auth-tenant-isolation.ts",
+    "test:marketing-pack-adapter": "tsx src/scripts/test-marketing-department-pack-adapter.ts",
     "start": "next start"
   },
   "dependencies": {

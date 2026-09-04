@@ -1,0 +1,107 @@
+{
+  "total": 10,
+  "success": 10,
+  "failed": 0,
+  "items": [
+    {
+      "ko_id": "KO-01",
+      "title": "PN MEDIA PLUS — MARKETING KO-01",
+      "canonical_file": "KO-01/PN_MEDIA_PLUS_MARKETING_01_EPISTEMIC_EVIDENCE_GOVERNANCE_v1.0_LOCKED.md",
+      "content_sha256": "2d325cef77f0715de5576714603ba271daa90c287200c153c9df644854319c1b",
+      "idempotency_key": "f60eb3e5780c09fb769a58cebb53ec6786d8befe7455db592925302ffd5b76a6",
+      "semantic_type": "pattern",
+      "doc_id": "687078ba-1c75-4f69-aee8-d7b51ded4d33",
+      "status": "ALREADY_EXISTS_IDEMPOTENT"
+    },
+    {
+      "ko_id": "KO-02",
+      "title": "KO-02 — Market & Industry Research Framework v1.0",
+      "canonical_file": "KO-02/PN_MEDIA_PLUS_MARKETING_02_MARKET_INDUSTRY_RESEARCH_FRAMEWORK_v1.0.md",
+      "content_sha256": "6c1142123715e31a19ba5339364d4f44cec41d13a7e3cf796a4ad3432393a407",
+      "idempotency_key": "fec620dc14552b16f8de224eda7360113f7fe777d3569bf063e187adf36f48dd",
+      "semantic_type": "pattern",
+      "doc_id": "6189554a-b801-41f7-93a6-b60ec45183ea",
+      "status": "ALREADY_EXISTS_IDEMPOTENT"
+    },
+    {
+      "ko_id": "KO-03",
+      "title": "KO-03 — ICP Selection Framework v1.0",
+      "canonical_file": "KO-03/PN_MEDIA_PLUS_MARKETING_03_ICP_SELECTION_FRAMEWORK_v1.0.md",
+      "content_sha256": "0e24858b08308087b31ae10491afe22d87b27da41922fdb1739ae220e9ec4aee",
+      "idempotency_key": "2c77d0823708d2bf3fe911f1e2b46e170f57821243be145e267b6d32075d28ff",
+      "semantic_type": "pattern",
+      "doc_id": "819ae31a-7995-40e7-95d8-f7280ba215fb",
+      "status": "ALREADY_EXISTS_IDEMPOTENT"
+    },
+    {
+      "ko_id": "KO-04",
+      "title": "KO-04 — ICP & Customer Evidence Pack v1.0",
+      "canonical_file": "KO-04/PN_MEDIA_PLUS_MARKETING_04_ICP_CUSTOMER_EVIDENCE_PACK_v1.0.md",
+      "content_sha256": "c835ec452954aa606884f5e7397917463554175587440abcd2e7805a7fe30e06",
+      "idempotency_key": "211dfc8fa2490e4cbd78e55cf6b4569dc6c0048fedea7965f2211e07f98d88f6",
+      "semantic_type": "hypothesis",
+      "doc_id": "fa4f0a2d-8ab1-42c9-9396-171f149eaef2",
+      "status": "ALREADY_EXISTS_IDEMPOTENT"
+    },
+    {
+      "ko_id": "KO-05",
+      "title": "KO-05 — Pain Evidence & Pain Wedge Selection v1.0",
+      "canonical_file": "KO-05/PN_MEDIA_PLUS_MARKETING_05_PAIN_EVIDENCE_PAIN_WEDGE_SELECTION_v1.0.md",
+      "content_sha256": "549ccbb560b996d3864a50073b0e4d208568027f356d5d08809ad8e9bd3868cf",
+      "idempotency_key": "94bbd94667fc8c000252b834233591df78a40bbda676acefa1d76c2bb52cabff",
+      "semantic_type": "hypothesis",
+      "doc_id": "d24db743-fff0-478b-af8d-81dd7746bd96",
+      "status": "ALREADY_EXISTS_IDEMPOTENT"
+    },
+    {
+      "ko_id": "KO-06",
+      "title": "KO-06: PRODUCT GROUND TRUTH & CAPABILITY MATRIX v1.0",
+      "canonical_file": "KO-06/PN_MEDIA_PLUS_MARKETING_06_PRODUCT_GROUND_TRUTH_CAPABILITY_MATRIX_v1.0.md",
+      "content_sha256": "d3ad64902f3d27e9221c4001738e0e62ee07d6a03189cc5daaf97036379e076a",
+      "idempotency_key": "aa9e8b3d6c7446dea66c79b43b2ddae0d6743275439db1f560baffb4db9f8349",
+      "semantic_type": "pattern",
+      "doc_id": "c9ddcf65-8319-4e62-9857-7289198f1d0d",
+      "status": "ALREADY_EXISTS_IDEMPOTENT"
+    },
+    {
+      "ko_id": "KO-07",
+      "title": "KO-07: PRODUCT-TO-PAIN FIT MATRIX v1.0",
+      "canonical_file": "KO-07/PN_MEDIA_PLUS_MARKETING_07_PRODUCT_TO_PAIN_FIT_MATRIX_v1.0.md",
+      "content_sha256": "5165fc13d540f1d06067bd72cba2a9aab5a23037cb418a771475957c85a06aba",
+      "idempotency_key": "14acaf96eb11c21b4675006837e976783dc949ea8396c7d1bb3c9047725c7838",
+      "semantic_type": "recommendation",
+      "doc_id": "6f9abce5-6db5-4299-a188-37bddef7bebb",
+      "status": "ALREADY_EXISTS_IDEMPOTENT"
+    },
+    {
+      "ko_id": "KO-08",
+      "title": "KO-08 — Positioning & Message Decision System v1.0",
+      "canonical_file": "KO-08/PN_MEDIA_PLUS_MARKETING_08_POSITIONING_MESSAGE_DECISION_SYSTEM_v1.0.md",
+      "content_sha256": "4f2398871b67721421251f8c1ee42e6183ff89617fec79f488730a253640d418",
+      "idempotency_key": "a171a62576c26113b7dbfc18f03056065be041243d82372765519f048e472159",
+      "semantic_type": "pattern",
+      "doc_id": "657b4aff-cc43-46da-b32b-b2e8959de7e8",
+      "status": "ALREADY_EXISTS_IDEMPOTENT"
+    },
+    {
+      "ko_id": "KO-09",
+      "title": "KO-09 — Creative & Funnel Architecture v1.0",
+      "canonical_file": "KO-09/PN_MEDIA_PLUS_MARKETING_09_CREATIVE_FUNNEL_ARCHITECTURE_v1.0.md",
+      "content_sha256": "66bf3bcf7755723ddcc84cd2f644ae1cdb6506088841ed5f7de09aea6c066718",
+      "idempotency_key": "ce855a7a7f346f12c6c19f67516b1af1697410ae03fee2d22021158ce15b55ef",
+      "semantic_type": "pattern",
+      "doc_id": "4de862d8-0914-4bb3-97c5-8904dbcd978a",
+      "status": "ALREADY_EXISTS_IDEMPOTENT"
+    },
+    {
+      "ko_id": "KO-10",
+      "title": "KO-10 — Experiment & Learning Capture v1.0",
+      "canonical_file": "KO-10/PN_MEDIA_PLUS_MARKETING_10_EXPERIMENT_LEARNING_CAPTURE_v1.0.md",
+      "content_sha256": "cbe33f8a81b43fde36e3d8ae3afe6dc55b63b1a1711c9fb19675013a10d1d9d8",
+      "idempotency_key": "40a33120a6a33b706e76b725d50cd95f2a732316b3b24a89b636f7d663ea1a26",
+      "semantic_type": "pattern",
+      "doc_id": "6ffb180e-7cc9-420d-8760-ff0bc1dd6bff",
+      "status": "ALREADY_EXISTS_IDEMPOTENT"
+    }
+  ]
+}
