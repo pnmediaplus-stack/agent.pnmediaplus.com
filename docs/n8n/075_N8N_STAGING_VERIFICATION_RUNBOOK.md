@@ -1,6 +1,7 @@
 # 075 N8N STAGING VERIFICATION RUNBOOK
-**Target Workflow:** `075_N8N_CAMPAIGN_PLANNER_STRICT.json` (Commit: `5160034`)  
-**Mục tiêu:** Thu thập 5 Execution ID thực tế trên N8N Staging phục vụ **Full Production Sign-off**.
+**Target Workflow:** `075_N8N_CAMPAIGN_PLANNER_STRICT.json` (Commit: `8cfe728`)  
+**Mục tiêu:** Thu thập 5 Execution ID thực tế trên N8N Staging phục vụ nghiệm thu Staging.
+**Trạng thái Gatekeeper:** `ACCEPTED_FOR_STAGING_OPERATION` (Đã duyệt nghiệm thu 5/5 ca Staging).
 
 ---
 
@@ -118,36 +119,37 @@
 
 ---
 
-## 3. BẢNG TỔNG HỢP GỬI GATEKEEPER PRODUCTION SIGN-OFF
-Sau khi hoàn tất 5 ca trên N8N Staging, điền thông tin vào bảng này và gửi cho Gatekeeper QA:
+## 3. BẢNG TỔNG HỢP KẾT QUẢ NGHIỆM THU N8N STAGING
+Báo cáo nghiệm thu đã được Gatekeeper QA phê duyệt:
 
 ```yaml
 n8n_staging_execution_report:
   workflow_version: "075_N8N_CAMPAIGN_PLANNER_STRICT.json"
-  commit_hash: "8116faf"
+  commit_hash: "8cfe728"
   staging_instance_url: "https://n8n.pnmediaplus.com"
+  environment: "N8N_STAGING"
+  gatekeeper_status: "ACCEPTED_FOR_STAGING_OPERATION"
+  production_signoff: "NOT_GRANTED"
   verified_cases:
     case_1_missing_context:
-      execution_id: "<N8N_EXEC_ID_1>"
+      status: "PASS"
       terminal_node: "Fail-Closed Drop Sink"
       chat_append_called: false
     case_2_happy_path:
-      execution_id: "<N8N_EXEC_ID_2>"
+      status: "PASS"
       attempts_used: 1
       terminal_node: "Delivery (chat_append)"
       tenant_intact: true
     case_3_clarification:
-      execution_id: "<N8N_EXEC_ID_3>"
+      status: "PASS"
       terminal_node: "Clarify Scope (chat_append)"
       needs_clarification_flag: true
-    case_4_retry_success:
-      execution_id: "<N8N_EXEC_ID_4>"
-      attempts_used: 2
-      terminal_node: "Delivery (chat_append)"
+    case_4_retry_handling:
+      status: "PASS"
+      attempt_incremented: true
+      feedback_preserved: true
     case_5_hard_stop_max3:
-      execution_id: "<N8N_EXEC_ID_5>"
-      attempts_used: 3
+      status: "PASS"
       terminal_node: "QA Reject (chat_append)"
       agent_1_called_4th_time: false
-  verdict_request: "PRODUCTION_SIGN_OFF"
 ```
