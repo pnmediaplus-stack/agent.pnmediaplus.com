@@ -34,7 +34,7 @@
     },
     {
       "parameters": {
-        "url": "={{($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') + '/api/governance/bundle?organization_id=' + ($json.body?.organization_id || $json.body?.body?.organization_id || $json.organization_id) + '&department_id=' + ($json.body?.department_id || $json.body?.body?.department_id || $json.department_id || 'dept-marketing')}}",
+        "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev').replace(/\\/+$/, ''); if (raw !== 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Staging allowlist: ' + raw); } return raw; })()) + '/api/governance/bundle?organization_id=' + ($json.body?.organization_id || $json.body?.body?.organization_id || $json.organization_id) + '&department_id=' + ($json.body?.department_id || $json.body?.body?.department_id || $json.department_id || 'dept-marketing')}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -96,7 +96,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') + '/api/n8n/publish-callback'}}",
+        "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev').replace(/\\/+$/, ''); if (raw !== 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Staging allowlist: ' + raw); } return raw; })()) + '/api/n8n/publish-callback'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -127,7 +127,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') + '/api/n8n/publish-callback'}}",
+        "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev').replace(/\\/+$/, ''); if (raw !== 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Staging allowlist: ' + raw); } return raw; })()) + '/api/n8n/publish-callback'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -263,7 +263,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') + '/api/n8n/publish-callback'}}",
+        "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev').replace(/\\/+$/, ''); if (raw !== 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Staging allowlist: ' + raw); } return raw; })()) + '/api/n8n/publish-callback'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -329,7 +329,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') + '/api/n8n/publish-callback'}}",
+        "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev').replace(/\\/+$/, ''); if (raw !== 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Staging allowlist: ' + raw); } return raw; })()) + '/api/n8n/publish-callback'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -596,7 +596,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') + '/api/n8n/publish-callback'}}",
+        "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev').replace(/\\/+$/, ''); if (raw !== 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Staging allowlist: ' + raw); } return raw; })()) + '/api/n8n/publish-callback'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
