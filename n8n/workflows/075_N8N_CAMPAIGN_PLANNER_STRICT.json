@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        35104,
-        576
+        40512,
+        496
       ],
-      "id": "1c031fc6-75dc-4da6-9479-f5f25c0c641a"
+      "id": "ea738264-049f-4937-a4b2-a1041e1f6fd8"
     },
     {
       "parameters": {
@@ -26,11 +26,11 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
       "position": [
-        34944,
-        1072
+        40208,
+        976
       ],
       "webhookId": "plan-campaign-intake-webhook-id",
-      "id": "33d76785-dc23-4a6d-b9f5-652386947743"
+      "id": "1cf30829-43d4-4baf-9f5d-62dc5199773f"
     },
     {
       "parameters": {
@@ -54,10 +54,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        35152,
-        1072
+        40384,
+        1120
       ],
-      "id": "5fed080c-2859-429b-9797-8457d48cf222",
+      "id": "bdd1fba5-68c8-44ae-9ffb-ae0506a70c83",
       "onError": "continueRegularOutput"
     },
     {
@@ -68,10 +68,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        35344,
-        1072
+        40752,
+        992
       ],
-      "id": "56610864-03c3-4511-8a76-cb16db40078d"
+      "id": "5e03b626-04bb-47a7-b3db-f0d219750c32"
     },
     {
       "parameters": {
@@ -88,10 +88,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        35552,
-        1072
+        40960,
+        992
       ],
-      "id": "4fd088a5-ed8a-4529-b8a1-ea0beae89048"
+      "id": "5180cc5a-c643-4221-b8a5-73320227a78d"
     },
     {
       "parameters": {
@@ -112,17 +112,17 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id || '',\n  organization_id: $json.organization_id || '',\n  idempotency_key: $execution.id + '_scope_clarify',\n  sender: 'gatekeeper',\n  body: '⚠️ **YÊU CẦU LÀM RÕ PHẠM VI (SCOPE CLARIFICATION):**\\n' + ($json.reason || 'Thông tin brief chưa đầy đủ.') + (Array.isArray($json.clarification_questions) && $json.clarification_questions.length ? '\\n\\nCâu hỏi cần làm rõ:\\n- ' + $json.clarification_questions.join('\\n- ') : ''),\n  intent_type: 'clarify_missing_scope'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_scope_clarify',\n  sender: 'gatekeeper',\n  body: '⚠️ **YÊU CẦU LÀM RÕ PHẠM VI (SCOPE CLARIFICATION):**\\n' + ($json.reason || 'Thông tin brief chưa đầy đủ.') + (Array.isArray($json.clarification_questions) && $json.clarification_questions.length ? '\\n\\nCâu hỏi cần làm rõ:\\n- ' + $json.clarification_questions.join('\\n- ') : ''),\n  intent_type: 'clarify_missing_scope'\n} }}",
         "options": {}
       },
       "name": "Clarify Scope (chat_append)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        35824,
-        1248
+        40960,
+        1424
       ],
-      "id": "a62ba155-f638-42b6-ae3b-da3add4ff8da"
+      "id": "ba0da97b-aaed-431c-92c9-91e803d836be"
     },
     {
       "parameters": {
@@ -150,10 +150,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        35824,
-        928
+        41232,
+        848
       ],
-      "id": "6f54a0d7-f6eb-42b2-8e38-8c80477682dd"
+      "id": "6439770e-a3c6-46ec-8581-cd9447100002"
     },
     {
       "parameters": {
@@ -163,10 +163,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        36464,
-        928
+        41872,
+        848
       ],
-      "id": "1c3bdcd1-73ce-4699-a148-bf6837ed208f"
+      "id": "50fb3c90-860c-415f-8ffc-e4d7e98e7b62"
     },
     {
       "parameters": {
@@ -183,10 +183,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        36640,
-        928
+        42048,
+        848
       ],
-      "id": "ae51909e-54d6-4579-9658-5d49aa138dd9"
+      "id": "30833be1-ce34-4848-8e69-a11b4dc94e0a"
     },
     {
       "parameters": {
@@ -212,10 +212,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        36864,
-        928
+        42480,
+        848
       ],
-      "id": "5e09c282-a8bf-47e3-9318-0c7622ccf3a9",
+      "id": "610bb868-02cb-4cc8-b599-83fba67c2be0",
       "credentials": {
         "httpQueryAuth": {
           "id": "qsZuqecdX6PM9qfX",
@@ -235,10 +235,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        37072,
-        928
+        42688,
+        848
       ],
-      "id": "27809221-dc94-4767-81d0-518a6fb69c21"
+      "id": "2f9a1fb7-c957-4330-83b0-2e0e31705f06"
     },
     {
       "parameters": {
@@ -255,10 +255,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        37264,
-        928
+        42880,
+        848
       ],
-      "id": "612c4da6-fbb0-49c8-9964-f8d31bd84002"
+      "id": "060daf34-9eca-48be-8a2d-13b01d556bf6"
     },
     {
       "parameters": {
@@ -286,10 +286,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        37680,
-        1136
+        43296,
+        1056
       ],
-      "id": "706110ef-dd29-487b-aa71-64369026c66d"
+      "id": "7ec4643d-b509-4b82-b098-41f209841b3e"
     },
     {
       "parameters": {
@@ -315,10 +315,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        37472,
+        43104,
         832
       ],
-      "id": "1557f4b0-d8aa-46ef-b369-8ee675a760b1",
+      "id": "43b6577b-01c7-43a1-a06c-f1f50afd8434",
       "credentials": {
         "httpHeaderAuth": {
           "id": "u1GGrgkWgG2z9d4K",
@@ -352,10 +352,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        37664,
+        43296,
         832
       ],
-      "id": "db839621-0cf9-4c77-a919-408d35f3f72f"
+      "id": "6c5318ba-0e7a-4694-9b52-a0a6d52cb72a"
     },
     {
       "parameters": {
@@ -368,10 +368,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3,
       "position": [
-        36176,
-        928
+        41584,
+        848
       ],
-      "id": "f495d566-3a01-4c76-acdb-8f7f25f30095",
+      "id": "813e2d6d-35fc-4289-8d34-3ed06b12b55a",
       "name": "AI Agent 1"
     },
     {
@@ -431,10 +431,10 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        36416,
-        1120
+        41824,
+        1040
       ],
-      "id": "c4e1503e-8161-4b52-86dc-477611ccd0bf",
+      "id": "275f0b87-394a-40bc-b3a1-81603638ea5c",
       "name": "Market_Research_Subagent"
     },
     {
@@ -458,10 +458,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        36048,
-        1120
+        41472,
+        1040
       ],
-      "id": "59c03c76-b7fe-428d-aeaf-c564c492ddcd",
+      "id": "d49ccf62-17ce-4f2b-936a-1ca6a16ec460",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
@@ -478,10 +478,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        36000,
-        928
+        41408,
+        848
       ],
-      "id": "76820d31-096f-4c9e-a0ae-77db96b8859d"
+      "id": "a877deb5-2dec-49dc-92a1-116b8069c249"
     },
     {
       "parameters": {
@@ -491,10 +491,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        37280,
-        1152
+        42896,
+        1072
       ],
-      "id": "54fae670-ca85-4669-a26c-5b07a3dc222f",
+      "id": "00835e57-2682-44f0-a624-5328e9f28962",
       "typeOptions": {
         "multipleOutputs": true
       },
@@ -527,10 +527,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        37488,
-        1152
+        43104,
+        1072
       ],
-      "id": "5eba3297-1cc7-48a5-a7c1-52c31e788552",
+      "id": "2a279bda-421f-4265-8b6b-74f1328aa59f",
       "name": "If"
     },
     {
@@ -541,10 +541,10 @@
       "type": "@tavily/n8n-nodes-tavily.tavilyTool",
       "typeVersion": 1,
       "position": [
-        36224,
-        1120
+        41632,
+        1040
       ],
-      "id": "4e92a5a9-208e-4ac4-89e5-742c227eaa41",
+      "id": "42315f63-5153-4249-ab15-7fbd6e64bc5f",
       "name": "Search in Tavily",
       "credentials": {
         "tavilyApi": {
@@ -568,10 +568,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        36752,
-        928
+        42272,
+        864
       ],
-      "id": "e4b3c2a1-0987-4321-abcd-123456789abc"
+      "id": "3f221f1c-6bbf-4b9d-8259-aa987f9416bf"
     },
     {
       "parameters": {
@@ -588,10 +588,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        35552,
-        1264
+        40960,
+        1216
       ],
-      "id": "a1b2c3d4-e5f6-7890-1234-56789abcdef0"
+      "id": "06a90909-2cb8-4fc0-8a09-a586f38a7b86"
     },
     {
       "parameters": {
@@ -612,17 +612,17 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id || '',\n  organization_id: $json.organization_id || '',\n  idempotency_key: $execution.id + '_system_error',\n  sender: 'system_error',\n  body: '🚨 **LỖI HỆ THỐNG NỘI BỘ (SYSTEM ERROR):**\\n' + ($json.reason || 'Lỗi kết nối hạ tầng control plane.'),\n  intent_type: 'system_error'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_system_error',\n  sender: 'system_error',\n  body: '🚨 **LỖI HỆ THỐNG NỘI BỘ (SYSTEM ERROR):**\\n' + ($json.reason || 'Lỗi kết nối hạ tầng control plane.'),\n  intent_type: 'system_error'\n} }}",
         "options": {}
       },
       "name": "System Error (chat_append)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        35776,
-        1360
+        41408,
+        1184
       ],
-      "id": "f1e2d3c4-b5a6-7890-1234-56789abcdef1"
+      "id": "183b2d01-8f5b-4bab-bb37-2e39061689e2"
     },
     {
       "parameters": {
@@ -639,10 +639,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        36896,
-        1120
+        42288,
+        1088
       ],
-      "id": "b2c3d4e5-f6a7-8901-2345-6789abcdef01"
+      "id": "61d3d705-ccde-4be5-9b85-6a0051003d1e"
     },
     {
       "parameters": {
@@ -654,10 +654,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2.1,
       "position": [
-        35320,
-        928
+        40576,
+        992
       ],
-      "id": "c1d2e3f4-a5b6-7890-1234-56789abcdef2"
+      "id": "fcac347a-0050-4963-a2c1-b759611b4950"
     },
     {
       "parameters": {
@@ -667,10 +667,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        36000,
-        1472
+        41200,
+        1424
       ],
-      "id": "d1e2f3a4-b5c6-7890-1234-56789abcdef3"
+      "id": "2305c469-73bd-441b-95b1-2517d411875b"
     },
     {
       "parameters": {
@@ -687,10 +687,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        35680,
-        1472
+        41184,
+        1200
       ],
-      "id": "e1f2a3b4-c5d6-7890-1234-56789abcdef4"
+      "id": "c77fd948-e018-419c-9e64-7d97de095ea4"
     }
   ],
   "pinData": {},
@@ -744,7 +744,7 @@
         ],
         [
           {
-            "node": "Is System Error?",
+            "node": "Has Valid Context?",
             "type": "main",
             "index": 0
           }
@@ -826,13 +826,7 @@
     },
     "Needs Clarification?": {
       "main": [
-        [
-          {
-            "node": "Clarify Error (chat_append)",
-            "type": "main",
-            "index": 0
-          }
-        ],
+        [],
         [
           {
             "node": "Is Valid?",
@@ -948,7 +942,7 @@
       "main": [
         [
           {
-            "node": "Has Valid Context?",
+            "node": "System Error (chat_append)",
             "type": "main",
             "index": 0
           }
@@ -995,7 +989,7 @@
       "main": [
         [
           {
-            "node": "System Error (chat_append)",
+            "node": "Is System Error?",
             "type": "main",
             "index": 0
           }
@@ -1014,7 +1008,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "c9db1576-618c-4748-abfc-417e111edecc",
+  "versionId": "c1f36a54-4729-4460-9c0b-9f69064fb3b3",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"

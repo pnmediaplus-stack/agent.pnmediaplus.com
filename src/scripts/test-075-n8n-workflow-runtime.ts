@@ -367,11 +367,28 @@ console.log('--- SCENARIO 6: BLOCKER P0 VERIFICATION - ZERO FALLBACK & ZERO EXTE
   assert(!rawWorkflowText.includes('.all()'), 'CRITICAL: Workflow still contains .all()!');
   assert(!rawWorkflowText.includes('.last()'), 'CRITICAL: Workflow still contains .last()!');
 
+  // 6. Explicit Pattern Scan (Gatekeeper Blocker 3):
+  // Assert ZERO occurrences of empty string fallback on tenant identifiers in delivery nodes
+  assert(!rawWorkflowText.includes("thread_id: $json.thread_id || ''"), "CRITICAL: Found 'thread_id: $json.thread_id || '''!");
+  assert(!rawWorkflowText.includes("organization_id: $json.organization_id || ''"), "CRITICAL: Found 'organization_id: $json.organization_id || '''!");
+  assert(!rawWorkflowText.includes('thread_id: $json.thread_id || ""'), 'CRITICAL: Found double-quoted empty fallback!');
+  assert(!rawWorkflowText.includes('organization_id: $json.organization_id || ""'), 'CRITICAL: Found double-quoted empty fallback!');
+
+  // 7. Context Gate Topology Assertion:
+  // Assert Has Valid Context? strictly gates all error deliveries
+  const validScopeConnections = workflow.connections['Valid Scope?'].main[1];
+  assert.strictEqual(validScopeConnections[0].node, 'Has Valid Context?', 'Valid Scope? [False] must connect directly to Has Valid Context?');
+
+  const hasContextConnections = workflow.connections['Has Valid Context?'].main;
+  assert.strictEqual(hasContextConnections[1][0].node, 'Fail-Closed Drop Sink', 'Has Valid Context? [False] must terminate at Fail-Closed Drop Sink');
+  assert.strictEqual(hasContextConnections[0][0].node, 'Is System Error?', 'Has Valid Context? [True] must route to Is System Error?');
+
   console.log('  Tested invalid attempt values:', invalidAttempts.map(v => String(v)).join(', '));
   console.log('  Verified: ZERO $( calls in the entire workflow JSON!');
   console.log('  Verified: ZERO $node references in the entire workflow JSON!');
   console.log('  Verified: ZERO .first(), .all(), .last() in the entire workflow JSON!');
-  console.log('  Verified: 100% of invalid attempts route through Has Valid Context? with ZERO fallback to 1!');
+  console.log('  Verified: ZERO empty string fallbacks (|| \'\') on thread_id and organization_id!');
+  console.log('  Verified: Has Valid Context? strictly gates all error delivery nodes before execution!');
   console.log('  -> PASS: Blocker P0 resolved completely!\n');
 }
 
