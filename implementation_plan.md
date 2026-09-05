@@ -1,9 +1,9 @@
 # MASTER IMPLEMENTATION PLAN: MARKETING KNOWLEDGE INGESTION & CROSS-DEPARTMENT HANDOFF
 
-**Document ID:** `MKT-CSKH-MASTER-PLAN-v1.1`  
+**Document ID:** `MKT-CSKH-MASTER-PLAN-v1.2`  
 **Artifact Path:** `implementation_plan.md`  
 **Target Environment:** Staging Supabase Clone (`ldhjrdihrcjsjfmrqtbi.supabase.co`) $\rightarrow$ Production Supabase (`jrgkpbjsqefvnhbiiutz.supabase.co`)  
-**Status:** PHASE_1_AUTHORIZED_PENDING_PHASE_2_TO_6_GATE  
+**Status:** PHASE_1_AUTHORIZED_IN_PROGRESS  
 
 ---
 
@@ -15,7 +15,7 @@
 
 ---
 
-## 2. CHUẨN HÓA KHẾ ƯỚC CƠ SỞ DỮ LIỆU (DATABASE CONTRACT ALIGNMENT)
+## 2. CHUẨN HÓA KHẾ ƯỚC CƠ SỞ DỮ LIỆU & QUYỀN HẠN (CONTRACT & SECURITY ENVELOPE)
 
 Dựa trên migration thực tế `20260904000000_knowledge_architecture_v1_1.sql` và `20260824000008_crm_knowledge_schema.sql`:
 
@@ -24,13 +24,17 @@ Dựa trên migration thực tế `20260904000000_knowledge_architecture_v1_1.sq
    - `ingestion_status`: `VARCHAR(20)` CHECK (`'NOT_REQUIRED'`, `'PENDING'`, `'PROCESSING'`, `'SUCCESS'`, `'FAILED'`).
    - `is_active`: **KHÔNG TỒN TẠI DƯỚI DẠNG CỘT RIÊNG.** Vòng đời tài liệu được quản lý chuẩn xác qua điều kiện:  
      `WHERE knowledge_status = 'ACTIVE' AND ingestion_status = 'SUCCESS'`.
-2. **Cấu trúc Chunks (`public.crm_knowledge_chunks`):**
+2. **Cơ chế Phê duyệt Nhất quán (Human Authority Gate Invariant):**
+   - Mọi tài liệu mới được tạo ra ở trạng thái ban đầu `DRAFT` $\rightarrow$ `REVIEWED`.
+   - Để đạt trạng thái `APPROVED` $\rightarrow$ `ACTIVE`: Bắt buộc phải có bản ghi xác thực quyền Founder (`actor_id`, `actor_role = 'FOUNDER'`, `signature/approval_id`).
+   - Service Role Key chỉ là phương tiện truyền dẫn mạng (Transport Layer); Database RPC bắt buộc phải kiểm tra quyền phê duyệt của Founder trước khi cho phép chuyển sang `ACTIVE`. Tuyệt đối không để n8n tự kích hoạt tri thức mà không có căn cứ phê duyệt.
+3. **Cấu trúc Chunks (`public.crm_knowledge_chunks`):**
    - Trạng thái `ACTIVE` và `SUCCESS` thuộc về bảng cha `crm_knowledge_documents`.
    - Bảng con `crm_knowledge_chunks` liên kết qua khóa ngoại `document_id`.
-   - Metadata chuyên ngành (`department_id: "dept-cskh"`, `valid_from`, `valid_to`, `campaign_id`) được lưu trữ chuẩn hóa trong cột `JSONB`:
+   - Metadata chuyên ngành (`department_id`, `valid_from`, `valid_to`, `campaign_id`, `approval_id`) được lưu trữ chuẩn hóa trong cột `JSONB`:
      - Document: `crm_knowledge_documents.knowledge_metadata`
      - Chunks: `crm_knowledge_chunks.metadata`
-3. **Chiến lược Cleanup Append-Only:**
+4. **Chiến lược Cleanup Append-Only:**
    - Tuyệt đối **không dùng lệnh DELETE** để tránh phá vỡ tính toàn vẹn audit (`crm_knowledge_audit_logs`).
    - Khi dọn dẹp hoặc chiến dịch hết hạn: Update `crm_knowledge_documents.knowledge_status = 'ARCHIVED'` hoặc `'DEPRECATED'`. Trigger audit log sẽ tự động ghi nhận lịch sử thay đổi mà không làm mất dữ liệu kiểm toán.
 
@@ -40,7 +44,7 @@ Dựa trên migration thực tế `20260904000000_knowledge_architecture_v1_1.sq
 
 > [!IMPORTANT]
 > - **Production DB Zero Mutation Invariant:** Tuyệt đối không thực hiện bất kỳ thao tác ghi/xóa/migration nào lên Production Supabase (`jrgkpbjsqefvnhbiiutz.supabase.co`) trong suốt Phase 1 đến Phase 6.
-> - **Human Authority Boundary:** Chiến dịch do AI lập chỉ được chuyển trạng thái sang `APPROVED`/`ACTIVE` và handoff sang CSKH khi có chữ ký số/hành động bấm duyệt của Founder trên Web UI.
+> - **Human Authority Boundary:** Chiến dịch do AI lập chỉ được chuyển trạng thái sang `ACTIVE` và handoff sang CSKH khi có bản ghi Founder Approval hợp lệ trong DB.
 > - **Customer Handover Boundary:** Trạng thái bàn giao khách hàng ngoài giữ nguyên `BLOCKED`. Hệ thống chỉ phục vụ vận hành nội bộ của PN Media Plus.
 
 ---
@@ -50,18 +54,18 @@ Dựa trên migration thực tế `20260904000000_knowledge_architecture_v1_1.sq
 ```mermaid
 flowchart TD
     P1[Phase 1: Bóc tách Evidence Layer - AUTHORIZED] --> P2[Phase 2: Viết lại Behavioral Test Packs]
-    P2 --> P3[Phase 3: Hardening n8n Fail-Closed & Machine Claim Gate]
-    P3 --> P4[Phase 4: Staging Vector Ingestion & Test Probes]
-    P4 --> P5[Phase 5: Thiết kế Contract, Route & RPC Handoff]
-    P5 --> P6[Phase 6: Kiểm thử Vertical Slice Handoff trên Clone]
-    P6 --> P7[Phase 7: Founder Nghiệm Thu & Promote Production Có Kiểm Soát]
+    P2 --> P3[Phase 3: Hardening n8n Fail-Closed & Machine Claim Gate - STAGING ONLY]
+    P3 --> P4[Phase 4: Staging Vector Ingestion qua Approval Transition]
+    P4 --> P5[Phase 5: Thiết kế Contract, Route & RPC Handoff có Kiểm tra Quyền]
+    P5 --> P6[Phase 6: Kiểm thử Vertical Slice Handoff có Approval trên Clone]
+    P6 --> P7[Phase 7: Founder Nghiệm Thu & Promote Production Có Audit]
 ```
 
 ---
 
 ### PHASE 1: BÓC TÁCH EVIDENCE LAYER TỪ KHO TÀI LIỆU GỐC (AUTHORIZED)
 - **Owner:** Knowledge Engineer / Dev Bot
-- **Trạng thái:** **ĐƯỢC PHÉP THỰC THI (AUTHORIZED)**
+- **Trạng thái:** **ĐANG THỰC THI (AUTHORIZED TO EXECUTE)**
 - **Mục tiêu:** Tạo thư mục `TAI LIEU MARKETING/EVIDENCE_RECORDS/` độc lập để lưu trữ dữ liệu thực tế, giữ cho KO-01 $\rightarrow$ KO-10 thuần khiết là Framework.
 - **Entry Criteria:** 12 tài liệu gốc trong `TAI LIEU TRI THUC` sẵn sàng ở trạng thái đọc.
 - **Deliverables:**
@@ -85,7 +89,7 @@ flowchart TD
 
 ---
 
-### PHASE 3: HARDENING N8N FAIL-CLOSED & MACHINE CLAIM GATE
+### PHASE 3: HARDENING N8N FAIL-CLOSED & MACHINE CLAIM GATE (STAGING ONLY)
 - **Owner:** n8n Workflow Engineer
 - **Mục tiêu:** Loại bỏ lỗ hổng fallback và bổ sung rào chắn kiểm duyệt nội dung (Claim Gate) trong n8n Workflow 075 Staging.
 - **Entry Criteria:** File workflow `075_N8N_CAMPAIGN_PLANNER_STRICT.json` trên n8n Staging.
@@ -96,46 +100,47 @@ flowchart TD
 
 ---
 
-### PHASE 4: STAGING CLONE VECTOR INGESTION & TEST PROBES
+### PHASE 4: STAGING CLONE VECTOR INGESTION QUA QUY TRÌNH APPROVAL
 - **Owner:** Database Bot
-- **Mục tiêu:** Nạp toàn bộ 10 KO + 3 Evidence Records vào Supabase Clone và kiểm chứng độ chính xác khi Agent 1 truy vấn.
+- **Mục tiêu:** Nạp toàn bộ 10 KO + 3 Evidence Records vào Supabase Clone tuân thủ đúng quy trình phê duyệt (DRAFT $\rightarrow$ REVIEWED $\rightarrow$ APPROVED $\rightarrow$ ACTIVE).
 - **Entry Criteria:** Supabase Clone (`ldhjrdihrcjsjfmrqtbi.supabase.co`) kết nối thông suốt với Service Role Key.
-- **Deliverables:**
-  1. Script `scripts/ingest-marketing-knowledge-staging.ts`: Parse markdown, chunking ngữ nghĩa, tạo embedding qua `text-embedding-3-small`.
-  2. Nạp vào Supabase Clone tuân thủ đúng schema:  
-     - Bảng `crm_knowledge_documents`:  
-       `knowledge_status = 'ACTIVE'`, `ingestion_status = 'SUCCESS'`,  
-       `knowledge_metadata = { "organization_id": "8289488a-b255-4cb6-9bff-c9d2e71af160", "department_id": "dept-marketing", "version": "v1.0" }`.
-     - Bảng `crm_knowledge_chunks`: Gán embedding và liên kết `document_id`.
-  3. Bắn 3 Probe Tests từ n8n Staging:
-     - *Probe 1 (Happy Path):* Yêu cầu chiến dịch cho Agency 15 người $\rightarrow$ Agent 1 trích xuất đúng nỗi đau từ KO-04/05/07.
-     - *Probe 2 (Feature Trap):* Yêu cầu thêm module hóa đơn đỏ $\rightarrow$ Agent 1 từ chối theo KO-06.
-     - *Probe 3 (Price Trap):* Yêu cầu giảm 50% phí setup $\rightarrow$ Agent 1 từ chối theo KO-01/Price Matrix.
-- **Exit Criteria:** 100% tài liệu đạt `knowledge_status = 'ACTIVE'` và `ingestion_status = 'SUCCESS'`. Cả 3 Probes PASS với log chứng minh.
+- **Quy trình Ingestion 2 bước (Approval Enforcement):**
+  1. *Bước 1 (Nạp thô & Embedding):* Ingest tài liệu ở trạng thái `knowledge_status = 'REVIEWED'`, `ingestion_status = 'SUCCESS'`. Lúc này tài liệu chưa được kích hoạt cho truy vấn production/runtime.
+  2. *Bước 2 (Kích hoạt có kiểm soát):* Chạy script transition có kiểm tra quyền: Founder phê duyệt nghiệm thu nội dung $\rightarrow$ RPC chuyển `knowledge_status = 'ACTIVE'`, trigger ghi log vào `crm_knowledge_audit_logs`.
+  3. Bắn 3 Probe Tests từ n8n Staging (Happy path, bẫy tính năng, bẫy giá) kiểm chứng Agent 1 hoạt động đúng KO.
+- **Exit Criteria:** 100% tài liệu đạt `knowledge_status = 'ACTIVE'` và `ingestion_status = 'SUCCESS'` thông qua audit log ghi nhận actor Founder. Cả 3 Probes PASS.
 
 ---
 
-### PHASE 5: THIẾT KẾ CONTRACT, ROUTE & RPC HANDOFF (MARKETING $\rightarrow$ CSKH)
+### PHASE 5: THIẾT KẾ CONTRACT, ROUTE & RPC HANDOFF (TEST MATRIX HOÀN CHỈNH)
 - **Owner:** System Architect & Backend Bot
-- **Mục tiêu:** Xây dựng khế ước dữ liệu, API Route và RPC function cần thiết trước khi viết E2E test.
+- **Mục tiêu:** Xây dựng khế ước dữ liệu, API Route và RPC function với kiểm tra quyền hạn chặt chẽ.
 - **Entry Criteria:** Kế hoạch 25 sections của Marketing đã được kiểm chứng ở Phase 4.
 - **Deliverables:**
   1. **Contract Type:** File `src/types/campaign-handoff.ts` & JSON Schema.
-  2. **API Route:** Tạo endpoint `src/app/api/campaigns/handoff-to-cskh/route.ts` với xác thực Service Role Key hoặc Founder Session.
-  3. **Database RPC / Storage Map:** Bóc tách `cskh_battlecard` và `campaign_faq` lưu thành một document mới trong `crm_knowledge_documents` với metadata:  
-     `knowledge_metadata = { "department_id": "dept-cskh", "type": "active_campaign", "valid_from": "...", "valid_to": "..." }`.
-- **Exit Criteria:** Route trả về 200 OK khi nhận payload mẫu, có xác thực bảo mật.
+  2. **API Route & RPC:** Endpoint `/api/campaigns/handoff-to-cskh` nhận payload kèm `campaign_approval_id`. RPC kiểm tra:
+     - `actor_id` có quyền Founder/Admin.
+     - `campaign_approval_id` tồn tại và hợp lệ trong bảng phê duyệt.
+     - `organization_id` khớp với tenant của tài liệu.
+  3. **Ma trận Kiểm thử Toàn diện (Negative & Boundary Test Matrix):**
+     - Case 1: Thiếu Authorization Header $\rightarrow$ Trả về `401 Unauthorized`.
+     - Case 2: Sai Service Key $\rightarrow$ Trả về `403 Forbidden`.
+     - Case 3: Tenant mismatch (gửi org_id A nhưng approval thuộc org_id B) $\rightarrow$ Trả về `403 Tenant Mismatch`.
+     - Case 4: Idempotency test: Gửi trùng lặp `idempotency_key` $\rightarrow$ Trả về 200 idempotent, không nhân đôi bản ghi.
+     - Case 5: Hết hạn: Chiến dịch có `valid_to < now()` $\rightarrow$ Từ chối kích hoạt `400 Campaign Expired`.
+     - Case 6: Rollback audit trace: Mọi lỗi xảy ra đều ghi nhận audit log failed.
+- **Exit Criteria:** Toàn bộ 6 test cases trong ma trận kiểm thử đều đạt kết quả mong đợi.
 
 ---
 
 ### PHASE 6: KIỂM THỬ "VERTICAL SLICE HANDOFF" TRÊN STAGING CLONE
 - **Owner:** Fullstack Bot / QA Lead
 - **Mục tiêu:** Kiểm chứng thực tế toàn bộ luồng Handoff từ lúc Founder duyệt đến khi Chatbot CSKH trả lời được theo chiến dịch mới.
-- **Entry Criteria:** Phase 4 và Phase 5 đã hoàn tất trên Clone.
+- **Entry Criteria:** Phase 4 và Phase 5 đã hoàn tất trên Clone với test matrix PASS.
 - **Kịch bản thực thi 6 bước thực tế (Vertical Slice Test):**
-  1. Giả lập tạo 1 Campaign Synthetic trên Staging: `CAMP-SYNTHETIC-20260905`.
-  2. Giả lập sự kiện Founder bấm Duyệt $\rightarrow$ Gọi route `/api/campaigns/handoff-to-cskh`.
-  3. Route tự động tạo document và chunks trong Supabase Clone với `knowledge_status = 'ACTIVE'`, `ingestion_status = 'SUCCESS'`, `department_id = 'dept-cskh'`.
+  1. Tạo 1 Campaign Synthetic trên Staging: `CAMP-SYNTHETIC-20260905`.
+  2. Tạo bản ghi Founder Approval hợp lệ trong DB (`campaign_approvals`).
+  3. Gọi route `/api/campaigns/handoff-to-cskh` kèm `campaign_approval_id`. RPC xác thực approval thành công mới cho phép tạo document CSKH ở trạng thái `ACTIVE + SUCCESS`.
   4. **Bắn Retrieval Probe:** Giả lập khách hỏi Fanpage về ưu đãi chiến dịch $\rightarrow$ CSKH Chatbot trả lời chính xác thông tin từ Battlecard vừa nạp.
   5. **Kiểm thử Thu hồi (Append-Only Deprecation Test):** Gọi RPC cập nhật `knowledge_status = 'ARCHIVED'`. Trigger ghi log audit.
   6. **Re-probe:** Bắn lại câu hỏi $\rightarrow$ CSKH Chatbot tự động ngừng tư vấn ưu đãi đó và quay về bảng giá chuẩn (do câu query lọc `knowledge_status = 'ACTIVE'`).
@@ -149,9 +154,9 @@ flowchart TD
 - **Quy trình Promote có kiểm soát (Verifiable Artifact/Migration):**
   1. **Founder Review:** Anh Founder truy cập trực tiếp Web Chat UI (`agent.pnmediaplus.com`), gửi brief và kiểm tra chất lượng kế hoạch thực tế.
   2. **Preflight Check:** Đối soát hash checksum của các file tri thức, kiểm tra cấu trúc schema trên Production DB (`jrgkpbjsqefvnhbiiutz.supabase.co`).
-  3. **Controlled Ingestion:** Chạy script ingest trực tiếp trên Production từ nguồn artifact đã khóa, tuyệt đối không copy vector mù từ Clone sang Production.
+  3. **Controlled Ingestion & Activation:** Chạy script ingest trực tiếp trên Production từ nguồn artifact đã khóa, thực hiện activation mutation có chủ đích kèm chữ ký Founder, ghi nhận 100% vào `crm_knowledge_audit_logs`, đảm bảo không có side effect ngoài ý muốn.
   4. **Verification:** Chạy liveness check `/api/health` và 1 probe test an toàn trên Production.
-- **Exit Criteria:** Production DB ghi nhận đầy đủ tài liệu ở trạng thái `knowledge_status = 'ACTIVE'` và `ingestion_status = 'SUCCESS'`, không có side effect, chính thức cấp mốc bàn giao vận hành nội bộ.
+- **Exit Criteria:** Production DB ghi nhận đầy đủ tài liệu ở trạng thái `knowledge_status = 'ACTIVE'` và `ingestion_status = 'SUCCESS'`, có log audit Founder, chính thức cấp mốc bàn giao vận hành nội bộ.
 
 ---
 
@@ -174,12 +179,12 @@ flowchart TD
 ## 6. TỔNG KẾT TIÊU CHÍ NGHIỆM THU (EXIT CRITERIA GATE)
 
 ```yaml
-phase_1_evidence_extraction: AUTHORIZED_TO_EXECUTE
-phase_2_behavioral_tests: REQUIRED_PASS
-phase_3_n8n_claim_hardening: REQUIRED_PASS
-phase_4_staging_ingestion: REQUIRED_PASS
-phase_5_handoff_contract_and_route: REQUIRED_PASS
-phase_6_vertical_slice_clone: REQUIRED_PASS_WITH_LOGS
-phase_7_founder_approval: REQUIRED_PASS
+phase_1_evidence_extraction: IN_PROGRESS (AUTHORIZED)
+phase_2_behavioral_tests: PENDING_PHASE_1
+phase_3_n8n_claim_hardening: STAGING_ONLY
+phase_4_staging_ingestion: PENDING_APPROVAL_TRANSITION_DESIGN
+phase_5_handoff_contract_and_route: PENDING_TEST_MATRIX
+phase_6_vertical_slice_clone: PENDING_PHASE_5
+phase_7_founder_approval: PENDING_ALL_PHASES
 production_mutation_before_phase_7: STRICTLY_FORBIDDEN
 ```
