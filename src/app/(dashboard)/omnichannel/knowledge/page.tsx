@@ -69,6 +69,10 @@ export default function AIControlCenterPage() {
 function KnowledgeTab() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [uploadMode, setUploadMode] = useState<'single' | 'package'>('single');
+  const [packageId, setPackageId] = useState<string>('marketing_framework_v1');
+  const [packageVersion, setPackageVersion] = useState<string>('1.0.0');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [selectedNamespace, setSelectedNamespace] = useState<string>('cskh');
@@ -101,6 +105,37 @@ function KnowledgeTab() {
     if (selectedFiles.length === 0) return;
     setIsUploading(true);
     setUploadError(null);
+    setUploadSuccess(null);
+
+    if (uploadMode === 'package') {
+      const formData = new FormData();
+      formData.append("package_id", packageId);
+      formData.append("package_version", packageVersion);
+      formData.append("expected_count", selectedFiles.length.toString());
+      formData.append("namespace", selectedNamespace);
+      if (selectedChannelId) {
+        formData.append("channel_id", selectedChannelId);
+      }
+      for (const file of selectedFiles) {
+        formData.append("files[]", file);
+      }
+
+      try {
+        const res = await fetch("/api/crm/knowledge/package/upload", { method: "POST", body: formData });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          throw new Error(data?.message || data?.error || "Tải lên gói thất bại");
+        }
+        setUploadSuccess(data.message || `Đã tải lên trọn bộ gói ${packageId} thành công (READY_FOR_HUMAN_REVIEW).`);
+        setSelectedFiles([]);
+        mutateDocs();
+      } catch (err: any) {
+        setUploadError(err.message);
+      } finally {
+        setIsUploading(false);
+      }
+      return;
+    }
 
     const failedFiles: File[] = [];
     let errorMessage = "";
@@ -112,7 +147,7 @@ function KnowledgeTab() {
       if (selectedChannelId) {
         formData.append("channel_id", selectedChannelId);
       }
-        formData.append("namespace", selectedNamespace);
+      formData.append("namespace", selectedNamespace);
 
       try {
         const res = await fetch("/api/crm/knowledge/upload", { method: "POST", body: formData });
@@ -205,6 +240,52 @@ function KnowledgeTab() {
       {/* Upload Box */}
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center border-dashed shrink-0">
         
+        {/* Upload Mode Selector */}
+        <div className="flex rounded-lg bg-slate-100 dark:bg-slate-900 p-1 mb-4">
+          <button
+            type="button"
+            onClick={() => setUploadMode('single')}
+            className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${uploadMode === 'single' ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Tải tệp đơn lẻ
+          </button>
+          <button
+            type="button"
+            onClick={() => { setUploadMode('package'); setSelectedNamespace('marketing'); }}
+            className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${uploadMode === 'package' ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Tải gói trọn bộ (Batch Package Gate)
+          </button>
+        </div>
+
+        {uploadMode === 'package' && (
+          <div className="w-full max-w-lg mb-4 grid grid-cols-2 gap-4 bg-blue-50 dark:bg-blue-950/30 p-3.5 rounded-lg border border-blue-200 dark:border-blue-900">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Mã gói (Package ID)</label>
+              <input
+                type="text"
+                value={packageId}
+                onChange={(e) => setPackageId(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 rounded-lg text-xs py-2 px-3 border"
+                placeholder="vd: marketing_framework_v1"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Phiên bản (Version)</label>
+              <input
+                type="text"
+                value={packageVersion}
+                onChange={(e) => setPackageVersion(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 rounded-lg text-xs py-2 px-3 border"
+                placeholder="1.0.0"
+              />
+            </div>
+            <p className="col-span-2 text-[11px] text-blue-700 dark:text-blue-300">
+              * Gói tri thức Marketing Framework bắt buộc tải đầy đủ 10 Knowledge Objects (KO-01 đến KO-10). Gói sẽ được kiểm duyệt QA tự động và chờ Founder phê duyệt trước khi kích hoạt.
+            </p>
+          </div>
+        )}
+
         <div className="w-full max-w-lg mb-4 flex gap-4">
           <div className="flex-1">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Phân vùng (Namespace)</label>
@@ -212,6 +293,7 @@ function KnowledgeTab() {
               className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
               value={selectedNamespace}
               onChange={(e) => setSelectedNamespace(e.target.value)}
+              disabled={uploadMode === 'package'}
             >
               <option value="cskh">Kho CSKH (Mặc định)</option>
               <option value="marketing">Kho Marketing</option>
@@ -233,11 +315,15 @@ function KnowledgeTab() {
           </div>
         </div>
 
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Kéo thả file vào đây hoặc click để chọn file</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4">Hỗ trợ PDF, TXT, MD, DOC, DOCX. Tối đa 10MB.</p>
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          {uploadMode === 'package' ? 'Chọn toàn bộ các tệp trong gói tri thức (.md)' : 'Kéo thả file vào đây hoặc click để chọn file'}
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4">
+          {uploadMode === 'package' ? 'Hỗ trợ Markdown (.md). Tối đa 10 tệp.' : 'Hỗ trợ PDF, TXT, MD, DOC, DOCX. Tối đa 10MB.'}
+        </p>
         
         <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors relative shadow-sm">
-          Chọn file tải lên
+          {uploadMode === 'package' ? 'Chọn các tệp của gói' : 'Chọn file tải lên'}
           <input type="file" multiple className="hidden" accept=".pdf,.txt,.md,.doc,.docx" onChange={handleFileChange} disabled={isUploading}/>
         </label>
         
@@ -263,6 +349,7 @@ function KnowledgeTab() {
           </div>
         )}
         {uploadError && <p className="text-rose-500 dark:text-rose-400 text-sm mt-4 whitespace-pre-line text-center">{uploadError}</p>}
+        {uploadSuccess && <p className="text-emerald-600 dark:text-emerald-400 text-sm mt-4 whitespace-pre-line text-center font-medium bg-emerald-50 dark:bg-emerald-950/40 py-2 px-4 rounded-lg border border-emerald-200 dark:border-emerald-800">{uploadSuccess}</p>}
       </div>
 
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">

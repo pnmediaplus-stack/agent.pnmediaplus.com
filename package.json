@@ -18,6 +18,7 @@
     "test:document-qa": "tsx scripts/test-document-qa-prototype.ts",
     "test:acceptance-packs": "tsx scripts/validate-acceptance-packs.ts",
     "test:phase3-foundation": "tsx scripts/test-phase3-layering-foundation.ts",
+    "test:package-upload": "tsx scripts/test-package-upload-gate.ts",
     "start": "next start"
   },
   "dependencies": {
