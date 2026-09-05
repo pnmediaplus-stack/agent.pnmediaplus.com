@@ -1,0 +1,35 @@
+{
+  "manifest_version": "v1.0",
+  "generated_at": "2026-09-05T04:42:00.364Z",
+  "environment": "repository_tracked",
+  "total_files": 3,
+  "records": [
+    {
+      "file_name": "EV_CUST_CUSTOMER_VOICE_v1.0.yaml",
+      "sha256": "d7485767f1b5579f84c39058fec15a89dfdf1b7b8abe95e01cf0facf4a42d4c2",
+      "byte_size": 11472,
+      "lines_count": 196,
+      "epistemic_status": "DERIVED_FROM_SUPPORT_MANUAL_SYNTHESIS",
+      "source_authority": "CSKH_MASTER_KNOWLEDGE & AI_ADVISOR_RULES",
+      "record_id": "EV-CUST-20260905-001"
+    },
+    {
+      "file_name": "EV_COMM_COMMERCIAL_AUTHORITY_v1.0.yaml",
+      "sha256": "99f4700d3c6209836aa868ec1b75058177b1c5e73c91fc37f62b9007d91d4da6",
+      "byte_size": 2359,
+      "lines_count": 64,
+      "epistemic_status": "CANONICAL_INTERNAL_COMMERCIAL_POLICY",
+      "source_authority": "PN_AGENCY_CRM_PRICE_MATRIX_v1.0.md (HUMAN_APPROVED)",
+      "record_id": "EV-COMM-20260905-001"
+    },
+    {
+      "file_name": "EV_WORKFLOW_PAIN_RECORDS_v1.0.yaml",
+      "sha256": "c8137fae12847f199779c83919768f9aaf80b84999d80e6e37d600ef74a9d3e1",
+      "byte_size": 3709,
+      "lines_count": 83,
+      "epistemic_status": "DERIVED_FROM_WORKFLOW_SPEC_AND_LIMITATIONS",
+      "source_authority": "BUSINESS_WORKFLOW_GUIDE & KNOWN_LIMITATIONS",
+      "record_id": "EV-WORKFLOW-20260905-001"
+    }
+  ]
+}

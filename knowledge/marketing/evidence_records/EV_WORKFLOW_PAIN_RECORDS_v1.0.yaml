@@ -1,0 +1,82 @@
+# EVIDENCE RECORD: WORKFLOW FRICTION & PRODUCT LIMITATIONS v1.1
+# Epistemic Classification: DERIVED_FROM_WORKFLOW_SPEC_AND_LIMITATIONS
+# Phuc vu: Input kiem chung cho KO-05, KO-06, KO-07
+
+metadata:
+  record_id: "EV-WORKFLOW-20260905-001"
+  source_authority: "BUSINESS_WORKFLOW_GUIDE & KNOWN_LIMITATIONS"
+  extraction_date: "2026-09-05"
+  epistemic_status: "DERIVED_FROM_WORKFLOW_SPEC_AND_LIMITATIONS"
+  target_workflow: "Lead -> Deal -> Campaign/Job -> Task -> Deliverable"
+  provenance:
+    source_documents:
+      - "03_BUSINESS_WORKFLOW_GUIDE.md"
+      - "05_KNOWN_LIMITATIONS.md"
+
+core_workflow_friction_points:
+  - friction_id: "PAIN-01"
+    friction_name: "Sales-Delivery Handover Disconnect"
+    symptom: "Deal Won tren he thong neu khong co workspace dong bo se bi roi rot brief khi ban giao sang thuc thi."
+    impact: "Brief bi sot tren Zalo, Creative lam sai yeu cau khach, tre deadline ban giao."
+    solution_in_product: "Chuyen tiep Deal Won vao Campaign Workspace va Job board voi file brief dinh kem xuyen suot."
+    provenance:
+      source_document: "03_BUSINESS_WORKFLOW_GUIDE.md"
+      source_section: "Section A: Luong Tiền Kinh Doanh & Section B: Luong San Xuat"
+      source_lines: "1-21"
+
+  - friction_id: "PAIN-02"
+    friction_name: "Task Tracking Chaos via Zalo / Excel"
+    symptom: "Giao viec va bao cao tien do roi rac qua nhom chat va file spreadsheet phan manh."
+    impact: "Khong ro task nao dang review, task nao bi tre, khong co lich su sua doi ban deliverable."
+    solution_in_product: "Bang Task -> Deliverable theo 4 trang thai: To Do, In Progress, Review, Done."
+    provenance:
+      source_document: "03_BUSINESS_WORKFLOW_GUIDE.md"
+      source_section: "Section B: Luong San Xuat"
+      source_lines: "12-21"
+
+  - friction_id: "PAIN-03"
+    friction_name: "Workload and Capacity Blindness"
+    symptom: "Founder va PM khong biet ai dang qua tai (overloaded), ai dang ranh (underutilized)."
+    impact: "Nhan them du an gay chay deadline hoac phan bo cong viec lech gay bat man nhan su."
+    solution_in_product: "Dashboard Capacity Planning va Staff Schedule the hien truc quan tai cong viec."
+    provenance:
+      source_document: "05_KNOWN_LIMITATIONS.md"
+      source_section: "Section 5: Capacity Planning / Staff Schedule"
+      source_lines: "60-68"
+
+hard_product_boundaries:
+  - boundary_id: "BOUND-01"
+    feature: "Billing (Xuat hoa don do, cong no thue)"
+    status: "OUT_OF_SCOPE"
+    instruction: "Khong nam trong pham vi san pham. Huong khach ve nghiep vu van hanh."
+    provenance:
+      source_document: "05_KNOWN_LIMITATIONS.md"
+      source_section: "Section 7: Billing"
+      source_lines: "80-90"
+
+  - boundary_id: "BOUND-02"
+    feature: "Finance & Accounting (Quan tri tai chinh, tinh luong HRM)"
+    status: "DEFERRED"
+    instruction: "Chua dua vao thuong mai phien ban nay. Khong hua hen moc thoi gian ra mat."
+    provenance:
+      source_document: "05_KNOWN_LIMITATIONS.md"
+      source_section: "Section 8: Finance"
+      source_lines: "92-100"
+
+  - boundary_id: "BOUND-03"
+    feature: "Runtime Automation (Tu dong hoa 100%)"
+    status: "NOT_CONFIRMED"
+    instruction: "Khong claim 'tu dong hoa hoan toan'. Muc do tu dong hoa phu thuoc cau hinh trien khai."
+    provenance:
+      source_document: "05_KNOWN_LIMITATIONS.md"
+      source_section: "Section 4: Runtime Automation"
+      source_lines: "45-58"
+
+  - boundary_id: "BOUND-04"
+    feature: "AI Ad Campaign Launcher"
+    status: "DEFERRED"
+    instruction: "PN Agency CRM khong phai tool AI tu chay Ads Facebook/TikTok."
+    provenance:
+      source_document: "00_CSKH_MASTER_KNOWLEDGE_v1.0.md"
+      source_section: "Section 4: Product Boundary"
+      source_lines: "99-105"

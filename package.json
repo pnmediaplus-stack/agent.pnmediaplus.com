@@ -14,6 +14,7 @@
     "test:portal-auth-isolation": "tsx src/scripts/test-portal-auth-tenant-isolation.ts",
     "test:marketing-pack-adapter": "tsx src/scripts/test-marketing-department-pack-adapter.ts",
     "test:marketing-integration": "tsx src/scripts/test-marketing-knowledge-integration-e2e.ts",
+    "test:validate-evidence": "tsx scripts/generate-and-validate-evidence-records.ts",
     "start": "next start"
   },
   "dependencies": {

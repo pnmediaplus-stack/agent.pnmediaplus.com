@@ -1,0 +1,63 @@
+# EVIDENCE RECORD: CANONICAL COMMERCIAL AUTHORITY & PRICING RULES v1.1
+# Epistemic Classification: CANONICAL_INTERNAL_COMMERCIAL_POLICY
+# Authority Level: FOUNDER_LOCKED_PRICING (Single Source of Commercial Truth)
+
+metadata:
+  record_id: "EV-COMM-20260905-001"
+  source_authority: "PN_AGENCY_CRM_PRICE_MATRIX_v1.0.md (HUMAN_APPROVED)"
+  effective_version_date: "2026-08-27"
+  market: "Vietnam"
+  currency: "VND"
+  tax_status: "BEFORE_VAT"
+  epistemic_status: "CANONICAL_INTERNAL_COMMERCIAL_POLICY"
+  authority_owner: "HUMAN_FOUNDER_LOCKED"
+  provenance:
+    source_document: "PN_AGENCY_CRM_PRICE_MATRIX_v1.0.md"
+    approval_state: "HUMAN_APPROVED"
+    lines: "1-105"
+
+commercial_governance_rules:
+  model: "Setup_Fee + Recurring_Subscription + Standard_Support"
+  vat_rule: "Gia niem yet chua bao gom VAT. Thue GTGT ap dung theo quy dinh hien hanh."
+  discount_authority: "NONE. Agent/Bot tuyet doi khong co quyen tu y giam gia, chiet khau hoac tang thang mien phi."
+
+standard_price_matrix:
+  - package_name: "Agency Core 20"
+    user_band: "<= 20 users"
+    setup_fee_vnd: 12000000
+    annual_subscription_vnd: 30000000
+    quarterly_subscription_vnd: 9000000
+    year_1_total_annual_vnd: 42000000
+    year_1_total_quarterly_vnd: 48000000
+    onboarding_timeline: "7-14 ngay lam viec"
+    training_sessions: "2 buoi online"
+
+  - package_name: "Agency Core 35"
+    user_band: "21 - 35 users"
+    setup_fee_vnd: 15000000
+    annual_subscription_vnd: 39000000
+    quarterly_subscription_vnd: 12000000
+    year_1_total_annual_vnd: 54000000
+    year_1_total_quarterly_vnd: 63000000
+    onboarding_timeline: "7-14 ngay lam viec"
+    training_sessions: "2 buoi online"
+
+  - package_name: "Agency Core 50"
+    user_band: "36 - 50 users"
+    setup_fee_vnd: 18000000
+    annual_subscription_vnd: 48000000
+    quarterly_subscription_vnd: 15000000
+    year_1_total_annual_vnd: 66000000
+    year_1_total_quarterly_vnd: 78000000
+    onboarding_timeline: "7-14 ngay lam viec"
+    training_sessions: "2 buoi online"
+
+founding_partner_policy:
+  quota: "Gioi han 3 den 5 Agency dau tien"
+  approval_authority: "HUMAN_FOUNDER_ONLY"
+  agent_behavior: "Chi giai thich chinh sach, tiep nhan thong tin, khong tu dong phe duyet."
+
+customization_policy:
+  deep_custom: "SEPARATE_QUOTATION"
+  included_in_subscription: false
+  rule: "Support != Configuration != Custom Development."
