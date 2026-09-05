@@ -16,6 +16,7 @@
     "test:marketing-integration": "tsx src/scripts/test-marketing-knowledge-integration-e2e.ts",
     "test:validate-evidence": "tsx scripts/generate-and-validate-evidence-records.ts",
     "test:document-qa": "tsx scripts/test-document-qa-prototype.ts",
+    "test:acceptance-packs": "tsx scripts/validate-acceptance-packs.ts",
     "start": "next start"
   },
   "dependencies": {
