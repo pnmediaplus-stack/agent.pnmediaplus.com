@@ -1,18 +1,27 @@
-﻿-- Migration: 20260905000000_knowledge_qa_immutability.sql
--- Description: Enforce append-only immutability for QA inspection reports and create audit logging
+-- Migration: 20260905000000_knowledge_qa_immutability.sql
+-- Description: Enforce append-only immutability for QA inspection reports, protect against document deletion, and log audit events
 -- Target: Authorized DB Clone & Staging (Restricted to service_role and verified session)
 
 BEGIN;
 
 -- 1. Trigger Function: prevent_qa_report_tampering
--- Protects knowledge_metadata->'qa_inspection_report' against any subsequent mutation or deletion
+-- Protects knowledge_metadata->'qa_inspection_report' against any subsequent mutation or deletion,
+-- and prohibits physical DELETE on documents with recorded QA reports (append-only ledger principle)
 CREATE OR REPLACE FUNCTION public.prevent_qa_report_tampering()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = pg_catalog, public
+SET search_path = pg_catalog, public, auth
 AS $$
 BEGIN
+  -- Prevent physical deletion of documents that have QA reports recorded
+  IF TG_OP = 'DELETE' THEN
+    IF OLD.knowledge_metadata ? 'qa_inspection_report' THEN
+      RAISE EXCEPTION 'DOCUMENT_IMMUTABLE: Cannot delete knowledge documents with recorded QA inspection reports. Rows are append-only.';
+    END IF;
+    RETURN OLD;
+  END IF;
+
   -- If document previously had a qa_inspection_report, it cannot be modified or removed
   IF OLD.knowledge_metadata ? 'qa_inspection_report' THEN
     IF (NEW.knowledge_metadata ? 'qa_inspection_report') IS FALSE OR
@@ -27,7 +36,7 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_prevent_qa_tampering ON public.crm_knowledge_documents;
 CREATE TRIGGER trg_prevent_qa_tampering
-  BEFORE UPDATE ON public.crm_knowledge_documents
+  BEFORE UPDATE OR DELETE ON public.crm_knowledge_documents
   FOR EACH ROW
   EXECUTE FUNCTION public.prevent_qa_report_tampering();
 
@@ -37,7 +46,7 @@ CREATE OR REPLACE FUNCTION public.trg_crm_knowledge_qa_audit()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = pg_catalog, public
+SET search_path = pg_catalog, public, auth
 AS $$
 BEGIN
   IF (TG_OP = 'INSERT' AND NEW.knowledge_metadata ? 'qa_inspection_report') OR
@@ -84,7 +93,7 @@ CREATE OR REPLACE FUNCTION public.record_knowledge_document_qa(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = pg_catalog, public
+SET search_path = pg_catalog, public, auth
 AS $$
 DECLARE
   v_doc RECORD;

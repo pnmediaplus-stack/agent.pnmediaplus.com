@@ -504,8 +504,35 @@ async function runTestSuite() {
       'DB Clone Proof: QA inspection report recorded with verdict REVIEW_RECOMMENDED'
     );
 
-    // 6.8 Behavioral Proof: Append-Only Audit Log Immutability Enforcement
-    // Direct insertion of an audit log entry for this document
+    // 6.8 Behavioral Proof: DB Trigger Blocks Modification or Stripping of QA Report
+    console.log('--- Behavioral Proof: Testing trg_prevent_qa_tampering & Document Immutability ---');
+    const { error: tamperErr } = await adminClient
+      .from('crm_knowledge_documents')
+      .update({
+        knowledge_metadata: {
+          qa_inspection_report: { verdict: 'MALICIOUS_OVERRIDE_PASS' }
+        }
+      })
+      .eq('id', happyDocId);
+
+    assert(
+      tamperErr !== null && tamperErr.message.includes('IMMUTABILITY_VIOLATION'),
+      'DB Trigger Proof: Modifying/tampering with qa_inspection_report rejected with IMMUTABILITY_VIOLATION'
+    );
+
+    // 6.9 Behavioral Proof: DB Trigger Blocks Physical DELETE of Document Rows with QA Reports
+    const { error: docDeleteErr } = await adminClient
+      .from('crm_knowledge_documents')
+      .delete()
+      .eq('id', happyDocId);
+
+    assert(
+      docDeleteErr !== null && docDeleteErr.message.includes('DOCUMENT_IMMUTABLE'),
+      'DB Trigger Proof: Physical DELETE on document with QA report rejected with DOCUMENT_IMMUTABLE'
+    );
+
+    // 6.10 Behavioral Proof: Append-Only Audit Log Immutability Enforcement
+    // Seed an audit row for this document and attempt to delete it
     const { data: seededAudit, error: seedErr } = await adminClient
       .from('crm_knowledge_audit_logs')
       .insert({
@@ -517,7 +544,6 @@ async function runTestSuite() {
       .single();
 
     if (seededAudit?.id) {
-      // Attempting to delete from crm_knowledge_audit_logs MUST be rejected by trg_prevent_audit_mutation
       const { error: auditDeleteErr } = await adminClient
         .from('crm_knowledge_audit_logs')
         .delete()
@@ -525,34 +551,59 @@ async function runTestSuite() {
 
       assert(
         auditDeleteErr !== null && auditDeleteErr.message.includes('AUDIT_LOG_IMMUTABLE'),
-        'Behavioral Proof: Audit logs are append-only; DELETE rejected with AUDIT_LOG_IMMUTABLE'
+        'DB Trigger Proof: Audit logs are append-only; DELETE rejected with AUDIT_LOG_IMMUTABLE'
       );
     } else {
-      assert(false, 'Behavioral Proof: Failed to seed audit log fixture for immutability test', seedErr?.message);
+      assert(false, 'DB Trigger Proof: Failed to seed audit log fixture for immutability test', seedErr?.message);
     }
+
+    // 6.11 Behavioral Proof: Dedicated RPC record_knowledge_document_qa Rejects Overwrite
+    const { error: rpcErr } = await adminClient.rpc('record_knowledge_document_qa', {
+      p_document_id: happyDocId,
+      p_organization_id: userOrgId,
+      p_qa_report: { verdict: 'ATTEMPT_OVERWRITE' }
+    });
+
+    assert(
+      rpcErr !== null && rpcErr.message.includes('IMMUTABILITY_VIOLATION'),
+      'RPC Proof: record_knowledge_document_qa rejects overwriting existing QA report with IMMUTABILITY_VIOLATION'
+    );
 
   } finally {
     global.fetch = originalFetch;
 
-    // 6.9 Append-Only Test Fixture Lifecycle (ZERO physical DELETE on crm_knowledge_documents)
-    console.log('\n[Append-Only Lifecycle] Marking test fixtures as ARCHIVED_TEST_FIXTURE (No physical DELETE)...');
+    // 6.12 Safe Append-Only Fixture Preservation (Preserves QA Report & Fails on Error)
+    console.log('\n[Append-Only Lifecycle] Safely augmenting test fixtures (preserving QA report)...');
     for (const docId of createdDocIds) {
-      await adminClient
+      const { data: currentDoc, error: fetchErr } = await adminClient
         .from('crm_knowledge_documents')
-        .update({
-          knowledge_metadata: {
-            test_fixture: true,
-            fixture_disposition: 'ARCHIVED_TEST_FIXTURE',
-            retained_for_audit: true,
-          }
-        })
+        .select('knowledge_metadata')
+        .eq('id', docId)
+        .single();
+      if (fetchErr) throw new Error(`Cleanup fetch failed for doc ${docId}: ${fetchErr.message}`);
+
+      // Merge fixture metadata while STRICTLY PRESERVING qa_inspection_report
+      const updatedMetadata = {
+        ...(currentDoc?.knowledge_metadata || {}),
+        test_fixture: true,
+        fixture_disposition: 'ARCHIVED_TEST_FIXTURE',
+        retained_for_audit: true,
+      };
+
+      const { error: updateErr } = await adminClient
+        .from('crm_knowledge_documents')
+        .update({ knowledge_metadata: updatedMetadata })
         .eq('id', docId);
+
+      if (updateErr) {
+        throw new Error(`Cleanup archive update failed for doc ${docId}: ${updateErr.message}`);
+      }
     }
-    // Clean up only temporary storage file to avoid storage quota leakage
+    // Clean up temporary storage file to avoid storage quota leakage
     for (const storagePath of createdStoragePaths) {
       await adminClient.storage.from('crm_knowledge_files').remove([storagePath]);
     }
-    console.log(`  -> Preserved ${createdDocIds.length} append-only test records in DB with audit retention.`);
+    console.log(`  -> Verified & preserved ${createdDocIds.length} append-only test records in DB with audit retention.`);
     console.log(`  -> Cleaned up ${createdStoragePaths.length} storage blob(s).\n`);
   }
 
