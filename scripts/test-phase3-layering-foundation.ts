@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import path from 'path';
+import { createPackageApprovalSignature } from '../src/lib/knowledge/package-approval-signer';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
@@ -179,6 +180,15 @@ async function runPhase3FoundationTests() {
   });
   assert(errT2A !== null && errT2A.message.includes('HMAC_SIGNATURE_INVALID'), 'Test T2.1: Tampered signature rejected with HMAC_SIGNATURE_INVALID', errT2A?.message);
 
+  // 2A.2: Verify Nonce Burning Defense (Nonce was NOT consumed on invalid signature)
+  const { data: burnedNonceCheck } = await adminClient
+    .schema('private')
+    .from('knowledge_approval_nonces')
+    .select('nonce')
+    .eq('nonce', nonceT2A)
+    .maybeSingle();
+  assert(burnedNonceCheck === null, 'Test T2.1b: Anti-DoS Nonce Burning Defense verified (Nonce not consumed on bad signature)');
+
   // 2B: Expired Timestamp (> 5 mins)
   const expiredTimestamp = new Date(Date.now() - 10 * 60 * 1000).toISOString();
   const nonceT2B = crypto.randomUUID();
@@ -354,11 +364,15 @@ async function runPhase3FoundationTests() {
     if (fullDoc) fixtureDocIds.push(fullDoc.id);
   }
 
-  // Call 1: First approval via authenticated user client
-  const nonceT4A = crypto.randomUUID();
-  const nowT4A = new Date().toISOString();
-  const msgT4A = `${targetOrgId}:${fullPkgId}:${testVersion}:${testManifestHash}:10:${nonceT4A}:${nowT4A}:${realUserId}`;
-  const sigT4A = computeHmac(msgT4A, dynamicSecret);
+  // Call 1: First approval via authenticated user client with createPackageApprovalSignature helper
+  const signedPayload = createPackageApprovalSignature({
+    organizationId: targetOrgId,
+    packageId: fullPkgId,
+    packageVersion: testVersion,
+    expectedParts: 10,
+    expectedManifestSha256: testManifestHash,
+    callerId: realUserId
+  }, dynamicSecret);
 
   const { data: resT4A, error: errT4A } = await userClient.rpc('approve_knowledge_package', {
     p_organization_id: targetOrgId,
@@ -366,12 +380,12 @@ async function runPhase3FoundationTests() {
     p_package_version: testVersion,
     p_expected_parts: 10,
     p_expected_manifest_sha256: testManifestHash,
-    p_nonce: nonceT4A,
-    p_timestamp: nowT4A,
-    p_signature: sigT4A
+    p_nonce: signedPayload.nonce,
+    p_timestamp: signedPayload.timestamp,
+    p_signature: signedPayload.signature
   });
 
-  assert(errT4A === null && resT4A?.status === 'PACKAGE_APPROVED' && resT4A?.idempotent === false, 'Test T4.1: Initial approval of complete 10/10 package succeeds with PACKAGE_APPROVED via user JWT', errT4A?.message);
+  assert(errT4A === null && resT4A?.status === 'PACKAGE_APPROVED' && resT4A?.idempotent === false, 'Test T4.1: Initial approval of complete 10/10 package succeeds with PACKAGE_APPROVED via user JWT & signer helper', errT4A?.message);
 
   // Call 2: Repeated approval with new nonce (Idempotency check)
   const nonceT4B = crypto.randomUUID();
@@ -393,7 +407,7 @@ async function runPhase3FoundationTests() {
   assert(errT4B === null && resT4B?.idempotent === true && resT4B?.status === 'PACKAGE_APPROVED', 'Test T4.2: Repeated approval returns idempotent: true cleanly without re-execution', errT4B?.message);
 
   // --- T5: CSKH Dedicated RAG Isolation (T5) ---
-  console.log('\n--- TEST GROUP 5: CSKH Dedicated RAG Isolation (T5) ---');
+  console.log('\n--- TEST GROUP 5: CSKH Dedicated RAG Isolation & Legacy RPC Hardening (T5) ---');
   const dummyEmbedding = Array(1536).fill(0.01);
 
   // Calling via authenticated user client
@@ -408,6 +422,18 @@ async function runPhase3FoundationTests() {
   if (cskhResults) {
     const frameworkChunks = cskhResults.filter((r: any) => r.metadata?.is_framework === 'true' || r.metadata?.document_type === 'DECISION_FRAMEWORK');
     assert(frameworkChunks.length === 0, 'Test T5.2: CSKH query returns STRICTLY ZERO framework chunks (Total Isolation)');
+  }
+
+  // T5.3: Verify Legacy match_documents RPC also returns ZERO framework chunks (Backdoor Closed)
+  const { data: legacyResults, error: legacyErr } = await userClient.rpc('match_documents', {
+    query_embedding: dummyEmbedding,
+    match_count: 10,
+    filter: { organization_id: targetOrgId }
+  });
+  assert(legacyErr === null, 'Test T5.3: Legacy match_documents executes without error', legacyErr?.message);
+  if (legacyResults) {
+    const legacyFrameworkChunks = legacyResults.filter((r: any) => r.metadata?.is_framework === 'true' || r.metadata?.document_type === 'DECISION_FRAMEWORK');
+    assert(legacyFrameworkChunks.length === 0, 'Test T5.4: Legacy match_documents returns STRICTLY ZERO framework chunks (Backdoor Sealed)');
   }
 
   // --- T6: Marketing RAG & Partial Retrieval Hard Block (T6) ---

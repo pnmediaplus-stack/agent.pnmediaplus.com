@@ -1,6 +1,6 @@
 -- Migration: 20260906000000_phase3_knowledge_layering_foundation.sql
 -- Description: Phase 3 Foundation: Knowledge Layering, Replay-Protected Approval RPC, and Dual RAG Isolation
--- Security: Zero hardcoded secrets. Schema private strictly isolated. Metadata framework provenance enforced.
+-- Security: Zero hardcoded secrets. Legacy match_documents locked against framework leakage.
 -- Target: Authorized DB Clone & Staging (Restricted to service_role and verified session)
 
 BEGIN;
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS private.knowledge_approval_nonces (
   used_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 REVOKE ALL ON TABLE private.knowledge_approval_nonces FROM public, anon, authenticated;
-GRANT SELECT, INSERT ON TABLE private.knowledge_approval_nonces TO service_role;
+GRANT SELECT, INSERT, DELETE ON TABLE private.knowledge_approval_nonces TO service_role;
 
 CREATE TABLE IF NOT EXISTS private.knowledge_auth_secrets (
   secret_key TEXT PRIMARY KEY,
@@ -26,8 +26,27 @@ CREATE TABLE IF NOT EXISTS private.knowledge_auth_secrets (
 REVOKE ALL ON TABLE private.knowledge_auth_secrets FROM public, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE private.knowledge_auth_secrets TO service_role;
 
--- 2. DB Trigger: enforce_framework_provenance (Tamper-Resistant Metadata)
--- Prohibits regular authenticated sessions from forging is_framework = true or document_type = DECISION_FRAMEWORK
+-- 2. Nonce Retention & Cleanup Function (Purges nonces older than 24 hours)
+CREATE OR REPLACE FUNCTION private.cleanup_expired_nonces()
+RETURNS INT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, private
+AS $$
+DECLARE
+  v_deleted INT;
+BEGIN
+  DELETE FROM private.knowledge_approval_nonces
+  WHERE used_at < NOW() - INTERVAL '24 hours';
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+  RETURN v_deleted;
+END;
+$$;
+REVOKE ALL ON FUNCTION private.cleanup_expired_nonces FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION private.cleanup_expired_nonces TO service_role;
+
+-- 3. DB Trigger: enforce_framework_provenance (Hard Block on Client Forgery)
+-- Throws explicit exception if any non-service_role attempts to forge is_framework = true
 CREATE OR REPLACE FUNCTION public.enforce_framework_provenance()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -43,10 +62,7 @@ BEGIN
   IF (NEW.knowledge_metadata->>'is_framework' = 'true' OR NEW.knowledge_metadata->>'document_type' = 'DECISION_FRAMEWORK') THEN
     -- Only service_role can authoritatively assign framework status
     IF v_caller_role <> 'service_role' THEN
-      NEW.knowledge_metadata := jsonb_set(
-        jsonb_set(NEW.knowledge_metadata, '{is_framework}', '"false"'),
-        '{document_type}', '"OPERATIONAL_KNOWLEDGE"'
-      );
+      RAISE EXCEPTION 'FRAMEWORK_TAMPER_BLOCKED: Only service_role can create or mutate decision framework documents. Direct client assignment is prohibited.';
     END IF;
   END IF;
 
@@ -60,7 +76,7 @@ CREATE TRIGGER trg_enforce_framework_provenance
   FOR EACH ROW
   EXECUTE FUNCTION public.enforce_framework_provenance();
 
--- 3. RPC: approve_knowledge_package (Hardened with Nonce, HMAC, Exact Verification, and Row Locking)
+-- 4. RPC: approve_knowledge_package (Hardened: Signature Verified BEFORE Nonce Consumption)
 CREATE OR REPLACE FUNCTION public.approve_knowledge_package(
   p_organization_id UUID,
   p_package_id TEXT,
@@ -130,15 +146,7 @@ BEGIN
     RAISE EXCEPTION 'AUTHORIZATION_VIOLATION: Caller is not an active owner/admin/department_owner of organization %', p_organization_id;
   END IF;
 
-  -- 5. Enforce Nonce Uniqueness (Replay Prevention)
-  BEGIN
-    INSERT INTO private.knowledge_approval_nonces (nonce, organization_id, used_by, used_at)
-    VALUES (p_nonce, p_organization_id, v_caller_id, NOW());
-  EXCEPTION WHEN unique_violation THEN
-    RAISE EXCEPTION 'NONCE_REPLAYED: The provided nonce % has already been used.', p_nonce;
-  END;
-
-  -- 6. Retrieve Secret from Private Vault (Fail-Closed: strictly zero hardcoded fallbacks)
+  -- 5. Retrieve Secret from Private Vault (Fail-Closed)
   SELECT secret_val INTO v_secret 
   FROM private.knowledge_auth_secrets 
   WHERE secret_key = 'PACKAGE_APPROVAL_HMAC_SECRET';
@@ -147,6 +155,7 @@ BEGIN
     RAISE EXCEPTION 'SECRET_CONFIG_MISSING: PACKAGE_APPROVAL_HMAC_SECRET must be configured in private vault with minimum 32 characters.';
   END IF;
 
+  -- 6. VERIFY CRYPTOGRAPHIC HMAC SIGNATURE FIRST (Before consuming nonce to prevent DoS / nonce burning)
   v_msg := p_organization_id::text || ':' || p_package_id || ':' || p_package_version || ':' || 
            p_expected_manifest_sha256 || ':' || p_expected_parts::text || ':' || 
            p_nonce || ':' || to_char(p_timestamp AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') || ':' || v_caller_id::text;
@@ -156,14 +165,22 @@ BEGIN
     RAISE EXCEPTION 'HMAC_SIGNATURE_INVALID: Cryptographic approval signature mismatch.';
   END IF;
 
-  -- 7. Row-level Lock (FOR UPDATE) to prevent concurrency races
+  -- 7. CONSUME NONCE IN TRANSACTION ONLY AFTER SIGNATURE IS VALID
+  BEGIN
+    INSERT INTO private.knowledge_approval_nonces (nonce, organization_id, used_by, used_at)
+    VALUES (p_nonce, p_organization_id, v_caller_id, NOW());
+  EXCEPTION WHEN unique_violation THEN
+    RAISE EXCEPTION 'NONCE_REPLAYED: The provided nonce % has already been used.', p_nonce;
+  END;
+
+  -- 8. Row-level Lock (FOR UPDATE) to prevent concurrency races
   PERFORM id 
   FROM public.crm_knowledge_documents
   WHERE organization_id = p_organization_id
     AND knowledge_metadata->>'package_id' = p_package_id
   FOR UPDATE;
 
-  -- 8. Idempotency Check: Already fully approved with the same version & authority?
+  -- 9. Idempotency Check: Already fully approved with the same version & authority?
   SELECT COUNT(*) INTO v_already_approved
   FROM public.crm_knowledge_documents
   WHERE organization_id = p_organization_id
@@ -183,7 +200,7 @@ BEGIN
     );
   END IF;
 
-  -- 9. Strict Package Integrity Validation: Row count, Distinct KO count, Version, and Manifest
+  -- 10. Strict Package Integrity Validation: Row count, Distinct KO count, Version, and Manifest
   SELECT 
     COUNT(*),
     COUNT(DISTINCT knowledge_metadata->>'ko_index')
@@ -203,7 +220,7 @@ BEGIN
     RAISE EXCEPTION 'PACKAGE_INTEGRITY_VIOLATION: Expected % distinct KO parts, but found %.', p_expected_parts, v_distinct_kos;
   END IF;
 
-  -- 10. Check all ko_index values belong to canonical set
+  -- 11. Check all ko_index values belong to canonical set
   SELECT COUNT(*) INTO v_invalid_kos
   FROM public.crm_knowledge_documents
   WHERE organization_id = p_organization_id
@@ -214,7 +231,7 @@ BEGIN
     RAISE EXCEPTION 'PACKAGE_INTEGRITY_VIOLATION: Package contains unrecognized or malformed KO indices.';
   END IF;
 
-  -- 11. Atomic State Transition to APPROVED + PENDING
+  -- 12. Atomic State Transition to APPROVED + PENDING
   v_now_iso := to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
 
   UPDATE public.crm_knowledge_documents
@@ -245,7 +262,62 @@ BEGIN
 END;
 $$;
 
--- 4. Dedicated CSKH RAG RPC: match_cskh_knowledge (Fail-Closed, Zero Framework Leakage)
+-- 5. Hardened Legacy match_documents RPC (Closes the Framework Backdoor)
+-- Existing callers can continue calling match_documents, but framework chunks are strictly excluded.
+CREATE OR REPLACE FUNCTION public.match_documents(
+  query_embedding vector,
+  match_count int DEFAULT null,
+  filter jsonb DEFAULT '{}'
+) RETURNS TABLE (
+  id uuid,
+  content text,
+  metadata jsonb,
+  embedding jsonb,
+  similarity float
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public, auth
+AS $$
+#variable_conflict use_column
+DECLARE
+  v_org_id text;
+  v_channel_id text;
+BEGIN
+  v_org_id := filter->>'organization_id';
+  v_channel_id := filter->>'channel_id';
+
+  RETURN QUERY
+  SELECT
+    c.id,
+    c.content,
+    c.metadata,
+    (c.embedding::text)::jsonb AS embedding,
+    1 - (c.embedding <=> query_embedding) AS similarity
+  FROM public.crm_knowledge_chunks c
+  JOIN public.crm_knowledge_documents d ON c.document_id = d.id
+  WHERE 
+    -- 1. Tenant match
+    (v_org_id IS NULL OR d.organization_id = v_org_id::uuid)
+    AND 
+    -- 2. Hybrid Scope
+    (v_channel_id IS NULL OR d.channel_id IS NULL OR d.channel_id = v_channel_id::uuid)
+    AND
+    -- 3. Document must be ACTIVE and SUCCESS
+    (d.knowledge_status = 'ACTIVE' AND d.ingestion_status = 'SUCCESS')
+    AND
+    -- 4. HARDENED: ZERO FRAMEWORK CHUNKS VIA LEGACY RPC (Backdoor closed)
+    COALESCE(c.metadata->>'is_framework', 'false') <> 'true'
+    AND COALESCE(c.metadata->>'document_type', 'OPERATIONAL_KNOWLEDGE') = 'OPERATIONAL_KNOWLEDGE'
+    AND
+    -- 5. Generic filter match (excluding internal keys)
+    (c.metadata @> (filter - 'channel_id' - 'organization_id'))
+  ORDER BY c.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+
+-- 6. Dedicated CSKH RAG RPC: match_cskh_knowledge (Fail-Closed, Zero Framework Leakage)
 CREATE OR REPLACE FUNCTION public.match_cskh_knowledge(
   query_embedding vector,
   match_count int DEFAULT 5,
@@ -337,7 +409,7 @@ BEGIN
 END;
 $$;
 
--- 5. Dedicated Marketing Framework RAG RPC: match_marketing_framework (Requires Authorized Session & PACKAGE_ACTIVE)
+-- 7. Dedicated Marketing Framework RAG RPC: match_marketing_framework (Requires Authorized Session & PACKAGE_ACTIVE)
 CREATE OR REPLACE FUNCTION public.match_marketing_framework(
   query_embedding vector,
   match_count int DEFAULT 5,
@@ -413,6 +485,7 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.approve_knowledge_package TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.match_documents TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.match_cskh_knowledge TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.match_marketing_framework TO authenticated, service_role;
 
