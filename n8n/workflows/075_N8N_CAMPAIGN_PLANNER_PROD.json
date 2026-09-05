@@ -1,0 +1,1202 @@
+{
+  "name": "075_N8N_CAMPAIGN_PLANNER_PROD",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Phase 075 Campaign Planner Contract\n\n**1. Trigger + Enrich**\n- Phải có bước enrich tối thiểu để lấy đủ: thread_id, organization_id, brief/body.\n- Nếu thiếu organization_id hoặc không resolve được thread context, workflow phải fail-closed.\n\n**2. Scope Resolve Before LLM**\n- Trước khi gọi LLM, workflow phải resolve chính xác department scope.\n- Chỉ chấp nhận: department_id, department_name.\n- Nếu thiếu scope, phải trả về chat_append để hỏi lại người dùng.\n\n**3. Callback Output Must Preserve Markdown**\n- Kết quả từ LLM phải được giữ nguyên dạng raw Markdown string.\n- Không dùng JSON.stringify cho body callback.",
+        "height": 450,
+        "width": 450
+      },
+      "name": "Contract Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        56032,
+        -720
+      ],
+      "id": "adb231f1-060b-4354-9da7-4fa319aef64b"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "plan-campaign-intake-prod",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        55728,
+        -240
+      ],
+      "webhookId": "plan-campaign-intake-prod-webhook-id",
+      "id": "94092ec5-5c04-4d31-9b33-4d724f03f0c2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PROD_N8N_API_KEY_CREDENTIAL_ID",
+          "name": "x-n8n-api-key-prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com').replace(/\\/+$/, ''); if (raw !== 'https://agent.pnmediaplus.com') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Production allowlist: ' + raw); } const rawOrg = $json.body?.organization_id || $json.body?.body?.organization_id || $json.organization_id; const rawDept = $json.body?.department_id || $json.body?.body?.department_id || $json.department_id; if (!rawOrg || typeof rawOrg !== 'string' || !rawOrg.trim()) { throw new Error('FAIL_CLOSED: Missing or invalid organization_id. Default fallback is strictly prohibited.'); } if (!rawDept || typeof rawDept !== 'string' || !rawDept.trim()) { throw new Error('FAIL_CLOSED: Missing or invalid department_id. Default fallback is strictly prohibited.'); } return raw + '/api/governance/bundle?organization_id=' + encodeURIComponent(rawOrg.trim()) + '&department_id=' + encodeURIComponent(rawDept.trim()); })())}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Fetch Registry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        55904,
+        -96
+      ],
+      "id": "ab646cc5-79fd-41b3-953f-0ff19f48b311",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PROD_N8N_API_KEY_CREDENTIAL_ID",
+          "name": "x-n8n-api-key-prod"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// PURE BUSINESS STATE: Reads 100% from merged input, ZERO references to external nodes\nconst inputItem = $input.item.json || {};\nconst body = (inputItem.body && inputItem.body.body) ? inputItem.body.body : (inputItem.body || {});\nconst registryData = inputItem;\n\nconst threadId = typeof body.thread_id === 'string' && body.thread_id.trim() ? body.thread_id.trim() : (typeof inputItem.thread_id === 'string' && inputItem.thread_id.trim() ? inputItem.thread_id.trim() : null);\nconst organizationId = typeof body.organization_id === 'string' && body.organization_id.trim() ? body.organization_id.trim() : (typeof inputItem.organization_id === 'string' && inputItem.organization_id.trim() ? inputItem.organization_id.trim() : null);\nconst hasValidContext = Boolean(threadId && organizationId);\n\n// 1. Strict Fetch Registry validation (System Error vs Scope Clarification)\nif (!registryData || registryData.error || registryData.message === 'Internal Server Error' || !Array.isArray(registryData.departments)) {\n  return { \n    json: { \n      valid: false, \n      error_type: 'SYSTEM_ERROR',\n      has_valid_context: hasValidContext,\n      thread_id: threadId,\n      organization_id: organizationId,\n      reason: 'LỖI HỆ THỐNG (Fetch Registry failed): ' + (registryData?.error?.message || registryData?.message || 'Không thể kết nối máy chủ quản trị để lấy governance bundle.')\n    } \n  };\n}\n\nconst registry = registryData.departments || [];\nconst packs = registryData.packs || {};\n\nconst campaignContract = body.campaign_contract && typeof body.campaign_contract === 'object' ? body.campaign_contract : null;\n\nif (!campaignContract || typeof campaignContract.campaign_brief !== 'string' || !campaignContract.campaign_brief.trim() || campaignContract.campaign_duration_days === undefined || campaignContract.paid_media_allowed === undefined || !Array.isArray(campaignContract.required_terms)) {\n  return { \n    json: { \n      valid: false, \n      error_type: 'SCOPE_CLARIFICATION', \n      has_valid_context: hasValidContext,\n      thread_id: threadId,\n      organization_id: organizationId,\n      reason: 'Thiếu campaign_contract hoặc contract thiếu field bắt buộc (campaign_duration_days, paid_media_allowed, required_terms).' \n    } \n  };\n}\n\nconst campaignBrief = campaignContract.campaign_brief;\nconst campaignGoal = campaignContract.campaign_goal || '';\nconst campaignDurationDays = campaignContract.campaign_duration_days;\nconst paidMediaAllowed = campaignContract.paid_media_allowed;\nconst requiredTerms = campaignContract.required_terms;\nconst targetTerms = Array.isArray(campaignContract.target_terms) ? campaignContract.target_terms : requiredTerms;\nconst validationHints = Array.isArray(campaignContract.validation_hints) ? campaignContract.validation_hints : [];\n\nconst envelopeBrief = typeof body.campaign_brief === 'string' ? body.campaign_brief : (typeof body.body === 'string' ? body.body : '');\nconst envelopeGoal = typeof body.campaign_goal === 'string' ? body.campaign_goal : '';\nconst envelopeDurationDays = Number.isInteger(body.campaign_duration_days) ? body.campaign_duration_days : null;\nconst envelopePaidMediaAllowed = body.paid_media_allowed === true ? true : body.paid_media_allowed === false ? false : null;\n\nconst contractMismatch = (\n  (envelopeBrief !== '' && envelopeBrief !== campaignBrief) ||\n  (envelopeGoal !== '' && envelopeGoal !== campaignGoal) ||\n  (envelopeDurationDays !== null && envelopeDurationDays !== campaignDurationDays) ||\n  (envelopePaidMediaAllowed !== null && envelopePaidMediaAllowed !== paidMediaAllowed)\n);\n\nif (contractMismatch) {\n  return { \n    json: { \n      valid: false, \n      error_type: 'SCOPE_CLARIFICATION', \n      has_valid_context: hasValidContext,\n      thread_id: threadId,\n      organization_id: organizationId,\n      reason: 'Campaign contract mismatch between control plane envelope and resolved contract' \n    } \n  };\n}\n\nif (!hasValidContext) {\n  return { \n    json: { \n      valid: false, \n      error_type: 'SCOPE_CLARIFICATION', \n      has_valid_context: false,\n      thread_id: threadId,\n      organization_id: organizationId,\n      reason: 'Thiếu thông tin thread_id hoặc organization_id' \n    } \n  };\n}\n\nlet matchedDept = null;\nif (body.department_id) {\n  matchedDept = registry.find(d => d.department_id === body.department_id);\n} else if (body.department_name) {\n  matchedDept = registry.find(d => d.department_name === body.department_name);\n}\n\nif (!matchedDept) {\n  return { \n    json: { \n      valid: false, \n      error_type: 'SCOPE_CLARIFICATION', \n      has_valid_context: true,\n      thread_id: threadId,\n      organization_id: organizationId,\n      reason: 'Department not found in registry (Phòng ban chưa được cấp phép)' \n    } \n  };\n}\n\nconst packKey = matchedDept.department_pack_key;\nif (!packKey) {\n  return { \n    json: { \n      valid: false, \n      error_type: 'SYSTEM_ERROR', \n      has_valid_context: true,\n      thread_id: threadId,\n      organization_id: organizationId,\n      reason: 'Backend API did not resolve department_pack_key for this department' \n    } \n  };\n}\n\nconst departmentPack = packs[packKey] || {};\nif (Object.keys(departmentPack).length === 0) {\n  return { \n    json: { \n      valid: false, \n      error_type: 'SYSTEM_ERROR', \n      has_valid_context: true,\n      thread_id: threadId,\n      organization_id: organizationId,\n      reason: 'Department Pack payload is missing or empty' \n    } \n  };\n}\n\nreturn { \n  json: { \n    valid: true, \n    has_valid_context: true,\n    thread_id: threadId,\n    organization_id: organizationId,\n    body: campaignBrief,\n    campaign_brief: campaignBrief,\n    campaign_goal: campaignGoal || campaignBrief,\n    campaign_duration_days: campaignDurationDays,\n    paid_media_allowed: paidMediaAllowed,\n    target_terms: targetTerms,\n    required_terms: requiredTerms,\n    validation_hints: validationHints,\n    campaign_contract: campaignContract,\n    department_id: matchedDept.department_id, \n    department_name: matchedDept.department_name,\n    department_pack: departmentPack,\n    department_pack_key: packKey,\n    department_pack_label: matchedDept.department_pack || ''\n  } \n};"
+      },
+      "name": "Scope Resolve",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        56272,
+        -224
+      ],
+      "id": "f812490b-332a-48fd-b06f-6ea617bf6f68"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.valid}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Valid Scope?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        56480,
+        -224
+      ],
+      "id": "c89aa98b-9928-42cf-8b1c-ff9fe48e960d"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com').replace(/\\/+$/, ''); if (raw !== 'https://agent.pnmediaplus.com') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Production allowlist: ' + raw); } return raw; })()) + '/api/n8n/publish-callback'}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_scope_clarify',\n  sender: 'gatekeeper',\n  body: '⚠️ **YÊU CẦU LÀM RÕ PHẠM VI (SCOPE CLARIFICATION):**\\n' + ($json.reason || 'Thông tin brief chưa đầy đủ.') + (Array.isArray($json.clarification_questions) && $json.clarification_questions.length ? '\\n\\nCâu hỏi cần làm rõ:\\n- ' + $json.clarification_questions.join('\\n- ') : ''),\n  intent_type: 'clarify_missing_scope'\n} }}",
+        "options": {}
+      },
+      "name": "Clarify Scope (chat_append)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        56480,
+        208
+      ],
+      "id": "e7bced19-20eb-4171-baba-b4e24d2df054",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PROD_N8N_API_KEY_CREDENTIAL_ID",
+          "name": "x-n8n-api-key-prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com').replace(/\\/+$/, ''); if (raw !== 'https://agent.pnmediaplus.com') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Production allowlist: ' + raw); } return raw; })()) + '/api/n8n/publish-callback'}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_ack',\n  sender: 'agent_1_research',\n  body: 'Agent 1 (Research) thuộc phòng `' + ($json.department_name || $json.department_id) + '` đã nhận yêu cầu lập kế hoạch truyền thông. Đang bắt đầu nghiên cứu góc độ Viral...',\n  intent_type: 'agent_progress',\n  metadata: {\n    delivery_status: 'ACKNOWLEDGED',\n    qa_verdict: 'PENDING',\n    authority: 'HUMAN_REVIEW_REQUIRED',\n    trace_id: String($execution.id)\n  }\n} }}",
+        "options": {}
+      },
+      "name": "Acknowledge (chat_append)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        56704,
+        -240
+      ],
+      "id": "eb08c04b-0d8a-4a90-9042-2a5b2861b722",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PROD_N8N_API_KEY_CREDENTIAL_ID",
+          "name": "x-n8n-api-key-prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const incomingItem = $input.item.json || {};\nconst incomingAttempt = incomingItem.attempt;\n\ntry {\n  // 1. Strict Business State Attempt Validation (Blocker P0: NO FALLBACK TO 1)\n  if (!Number.isInteger(incomingAttempt) || incomingAttempt < 1 || incomingAttempt > 3) {\n    return {\n      json: {\n        ...incomingItem,\n        attempt: incomingAttempt !== undefined ? incomingAttempt : null, // PRESERVES RAW INVALID ATTEMPT, ZERO FALLBACK TO 1!\n        is_recoverable: false, // FATAL INFRASTRUCTURE ERROR -> CANNOT RETRY\n        is_valid: false,\n        validation_status: 'FATAL_SYSTEM_ERROR',\n        error_type: 'SYSTEM_ERROR',\n        needs_clarification: false,\n        validation_error: 'FAIL_CLOSED_SYSTEM_ERROR: Missing or invalid business attempt in payload. Expected integer between 1 and 3, got: ' + incomingAttempt,\n        reason: 'LỖI HẠ TẦNG (FATAL_SYSTEM_ERROR): Biến đếm lượt thử (attempt) bị thiếu hoặc không hợp lệ: ' + incomingAttempt\n      }\n    };\n  }\n\n  // --- UNIVERSAL ADAPTER (Supports HTTP Node & LangChain Agent) ---\n  const response = incomingItem.output || incomingItem.text || (incomingItem.choices && incomingItem.choices[0]?.message?.content) || incomingItem.message?.content;\n  if (!response) {\n    throw new Error('STRUCTURAL_ERROR: Không tìm thấy nội dung phản hồi từ AI. Output Node không đúng chuẩn.');\n  }\n  // ------------------------------------------------------------------\n  \n  let parsed;\n  try {\n    parsed = JSON.parse(response);\n  } catch (e) {\n    throw new Error('STRUCTURAL_ERROR: Agent 1 did not return valid JSON.');\n  }\n  \n  // Canonical 25 Required Schema Keys (Locked Standard)\n  const requiredSections = [\n    \"executive_decision\", \"icp_and_pain_wedge\", \"offer\", \"funnel_architecture\",\n    \"crm_role\", \"chatbot_role\", \"creative_architecture\", \"media_buying_structure\",\n    \"10_day_operating_plan\", \"lead_qualification\", \"sales_handoff\", \"organic_trust_layer\",\n    \"measurement_framework\", \"budget_allocation\", \"risks_policy\", \"day_3_gate\", \"day_6_gate\",\n    \"end_of_pilot_decision_framework\", \"assets_required_before_launch\", \"do_not_do\",\n    \"daily_timeline\", \"uses_ads\", \"needs_clarification\", \"clarification_questions\", \"assumptions_to_confirm\"\n  ];\n  \n  const missingSections = requiredSections.filter((key) => !(key in parsed));\n  if (missingSections.length > 0) {\n    throw new Error('STRUCTURAL_ERROR: Agent 1 output is missing required sections: ' + missingSections.join(', '));\n  }\n  \n  // Strict Type Enforcement for all 17 string fields\n  const stringFields = [\n    \"executive_decision\", \"icp_and_pain_wedge\", \"offer\", \"funnel_architecture\",\n    \"crm_role\", \"chatbot_role\", \"creative_architecture\", \"media_buying_structure\",\n    \"lead_qualification\", \"sales_handoff\", \"organic_trust_layer\",\n    \"measurement_framework\", \"budget_allocation\", \"risks_policy\",\n    \"end_of_pilot_decision_framework\", \"assets_required_before_launch\", \"do_not_do\"\n  ];\n  for (const field of stringFields) {\n    if (typeof parsed[field] !== 'string' || !parsed[field].trim()) {\n      throw new Error('STRUCTURAL_ERROR: `' + field + '` must be a non-empty string.');\n    }\n  }\n\n  // Strict Type & Sub-schema Enforcement for all 3 object fields\n  const objectFields = [\"10_day_operating_plan\", \"day_3_gate\", \"day_6_gate\"];\n  for (const field of objectFields) {\n    if (!parsed[field] || typeof parsed[field] !== 'object' || Array.isArray(parsed[field])) {\n      throw new Error('STRUCTURAL_ERROR: `' + field + '` must be a valid non-null object.');\n    }\n  }\n  // Sub-schema: day_3_gate requires non-empty metric and action\n  if (typeof parsed.day_3_gate.metric !== 'string' || !parsed.day_3_gate.metric.trim() ||\n      typeof parsed.day_3_gate.action !== 'string' || !parsed.day_3_gate.action.trim()) {\n    throw new Error('STRUCTURAL_ERROR: `day_3_gate` must contain non-empty `metric` and `action` strings.');\n  }\n\n  // Sub-schema: day_6_gate requires non-empty metric and action\n  if (typeof parsed.day_6_gate.metric !== 'string' || !parsed.day_6_gate.metric.trim() ||\n      typeof parsed.day_6_gate.action !== 'string' || !parsed.day_6_gate.action.trim()) {\n    throw new Error('STRUCTURAL_ERROR: `day_6_gate` must contain non-empty `metric` and `action` strings.');\n  }\n\n  // Sub-schema: 10_day_operating_plan requires at least one operational phase/key\n  const planKeys = Object.keys(parsed['10_day_operating_plan']);\n  if (planKeys.length === 0) {\n    throw new Error('STRUCTURAL_ERROR: `10_day_operating_plan` must contain at least one operational phase.');\n  }\n  \n  // Strict Type Enforcement for daily_timeline array\n  if (!Array.isArray(parsed.daily_timeline)) {\n    throw new Error('STRUCTURAL_ERROR: `daily_timeline` must be an array.');\n  }\n  \n  parsed.daily_timeline.forEach((dayPlan, index) => {\n    if (Array.isArray(dayPlan) || !dayPlan || typeof dayPlan !== 'object') {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}] must be an object.`);\n    }\n    const requiredDayKeys = ['day', 'objective', 'channel', 'creative', 'budget_vnd', 'metric', 'gate'];\n    const missingKeys = requiredDayKeys.filter((key) => !(key in dayPlan));\n    if (missingKeys.length > 0) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}] is missing keys: ${missingKeys.join(', ')}`);\n    }\n    for (const key of requiredDayKeys) {\n      const value = dayPlan[key];\n      if (value == null) {\n        throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].${key} is empty.`);\n      }\n      if (typeof value === 'string' && !value.trim()) {\n        throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].${key} is empty.`);\n      }\n    }\n    if (!Number.isInteger(dayPlan.day) || dayPlan.day < 1) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].day must be a positive integer.`);\n    }\n  \n    if (typeof dayPlan.budget_vnd !== 'number' || !Number.isFinite(dayPlan.budget_vnd) || dayPlan.budget_vnd < 0) {\n      throw new Error(`STRUCTURAL_ERROR: daily_timeline[${index}].budget_vnd must be a zero or positive number.`);\n    }\n  });\n  \n  // Strict Type Enforcement for boolean & array fields\n  if (typeof parsed.uses_ads !== 'boolean') {\n    throw new Error('STRUCTURAL_ERROR: `uses_ads` must be a boolean.');\n  }\n  if (typeof parsed.needs_clarification !== 'boolean') {\n    throw new Error('STRUCTURAL_ERROR: `needs_clarification` must be a boolean.');\n  }\n  \n  if (!Array.isArray(parsed.clarification_questions)) {\n    throw new Error('STRUCTURAL_ERROR: `clarification_questions` must be an array.');\n  }\n  if (!parsed.clarification_questions.every(q => typeof q === 'string')) {\n    throw new Error('STRUCTURAL_ERROR: `clarification_questions` must be an array of strings.');\n  }\n  \n  if (!Array.isArray(parsed.assumptions_to_confirm)) {\n    throw new Error('STRUCTURAL_ERROR: `assumptions_to_confirm` must be an array.');\n  }\n  if (!parsed.assumptions_to_confirm.every(a => typeof a === 'string')) {\n    throw new Error('STRUCTURAL_ERROR: `assumptions_to_confirm` must be an array of strings.');\n  }\n  \n  const needsClarification = parsed.needs_clarification === true;\n  const clarificationQuestions = parsed.clarification_questions.filter((question) => question.trim());\n  \n  if (needsClarification) {\n    return {\n      json: {\n        ...incomingItem,\n        attempt: incomingAttempt,\n        max_attempts: 3,\n        is_recoverable: false,\n        validation_status: 'NEEDS_CLARIFICATION',\n        needs_clarification: true,\n        is_valid: true,\n        clarification_questions: clarificationQuestions,\n        reason: typeof parsed.reason === 'string' && parsed.reason.trim() ? parsed.reason : 'NEEDS_CLARIFICATION'\n      }\n    };\n  }\n  \n  // Read contract directly from self-contained business payload\n  const contract = incomingItem.campaign_contract || {};\n  const paidMediaAllowed = contract.paid_media_allowed;\n  \n  if (Number.isInteger(contract.campaign_duration_days)) {\n    const expectedDays = contract.campaign_duration_days;\n    const timelineLength = parsed.daily_timeline.length;\n    if (timelineLength !== expectedDays) {\n      throw new Error('VALIDATION_ERROR: Expected exactly ' + expectedDays + ' days, got ' + timelineLength);\n    }\n  }\n  \n  if (paidMediaAllowed === false && parsed.uses_ads !== false) {\n    throw new Error('VALIDATION_ERROR: Strategy uses ads despite paid_media_allowed=false.');\n  }\n  \n  return {\n    json: {\n      ...incomingItem,\n      attempt: incomingAttempt,\n      max_attempts: 3,\n      is_recoverable: false,\n      validation_status: 'VALID',\n      needs_clarification: false,\n      is_valid: true,\n      clarification_questions: []\n    }\n  };\n  \n} catch (error) {\n  // CRITICAL: Recoverable structural error -> allows retry\n  return {\n    json: {\n      ...incomingItem,\n      attempt: incomingAttempt, // PRESERVES EXACT ATTEMPT, ZERO FALLBACK TO 1\n      max_attempts: 3,\n      is_recoverable: true,\n      validation_status: 'SYSTEM_VALIDATION_ERROR',\n      needs_clarification: false,\n      is_valid: false,\n      validation_error: error.message,\n      reason: 'SYSTEM_VALIDATION_ERROR'\n    }\n  };\n}"
+      },
+      "name": "Validate Agent 1 Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        57792,
+        -464
+      ],
+      "id": "b37c0e39-7584-4b26-a113-b132c738ba04"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.needs_clarification}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Needs Clarification?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        58032,
+        -464
+      ],
+      "id": "b797d4c7-5955-4451-a78c-89e0410e312d"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  response_format: { type: 'json_object' },\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 4 - Publish Readiness QA. You are a strict gatekeeper. You MUST evaluate if Agent 1\\'s research packet aligns with the user\\'s original brief. You MUST NOT rewrite the strategy or create prompts. You MUST output STRICTLY a JSON object with keys `passed` (boolean) and `reason` (string explaining why it passed or failed).  CRITICAL: YOU MUST WRITE YOUR `reason` IN THE EXACT SAME LANGUAGE AS THE Original User Brief.'\n    },\n    {\n      role: 'user',\n      content: 'Original User Brief: ' + ($json.campaign_brief || $json.body) + '\\n\\nAgent 1 Research Packet: ' + $json.output\n    }\n  ]\n} }}",
+        "options": {}
+      },
+      "name": "Agent 4 - QA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        58480,
+        -352
+      ],
+      "id": "b0980611-ee1c-4e51-8eaa-04c3ffd0f1b4",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "qsZuqecdX6PM9qfX",
+          "name": "imgbb"
+        },
+        "httpHeaderAuth": {
+          "id": "u1GGrgkWgG2z9d4K",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const qaResponse = $input.item.json.choices?.[0]?.message?.content;\nlet parsed;\ntry {\n  parsed = JSON.parse(qaResponse);\n} catch (e) {\n  parsed = { passed: false, reason: 'Invalid QA JSON output' };\n}\n\n// Strict QA validation (Blocker 6): Only strictly boolean true is accepted\nconst isPassed = typeof parsed.passed === 'boolean' && parsed.passed === true;\nconst reason = typeof parsed.reason === 'string' && parsed.reason.trim() \n  ? parsed.reason \n  : (isPassed ? 'QA Passed' : 'QA rejected proposal without detailed reason.');\n\n// Strict attempt validation (Blocker 2):\nconst upstreamItem = $input.item.json || {};\nconst attempt = upstreamItem.attempt;\nif (!Number.isInteger(attempt) || attempt < 1 || attempt > 3) {\n  throw new Error('FAIL_CLOSED_SYSTEM_ERROR: Missing or invalid business attempt in QA Verdict Parser. Expected integer between 1 and 3, got: ' + attempt);\n}\n\nreturn { \n  json: { \n    ...upstreamItem,\n    passed: isPassed, \n    reason: reason,\n    attempt: attempt\n  } \n};"
+      },
+      "name": "QA Verdict Parser",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        58816,
+        -448
+      ],
+      "id": "0ec19d1d-8a4c-4bd4-80ed-4656ab136af1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.passed}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "QA Passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        58976,
+        -448
+      ],
+      "id": "a5eb4454-0f89-4bf9-a771-c5e0950b9daf"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com').replace(/\\/+$/, ''); if (raw !== 'https://agent.pnmediaplus.com') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Production allowlist: ' + raw); } return raw; })()) + '/api/n8n/publish-callback'}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_qa_reject',\n  sender: 'agent_4_qa',\n  body: '⛔ **Hệ thống đã dừng sau ' + ($json.attempt - 1) + ' lượt thử (Tối đa 3 lượt) do không đạt tiêu chuẩn chất lượng:**\\n\\n' + ($json.qa_feedback || 'Lỗi không xác định'),\n  intent_type: 'agent_response',\n  metadata: {\n    delivery_status: 'QA_REJECTED',\n    qa_verdict: 'FAIL',\n    authority: 'HUMAN_REVIEW_REQUIRED',\n    trace_id: String($execution.id),\n    attempt: $json.attempt - 1,\n    max_attempts: 3\n  }\n} }}",
+        "options": {}
+      },
+      "name": "QA Reject (chat_append)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        59536,
+        -112
+      ],
+      "id": "20e6c2d6-91c9-4f02-978c-890b32ca597d",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PROD_N8N_API_KEY_CREDENTIAL_ID",
+          "name": "x-n8n-api-key-prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: 'You are Agent 7 - Documentation & Packaging. Your capability is strictly BOUNDED. You MUST convert the QA-passed strategic research packet into a final beautiful Markdown Proposal output for the user. You MUST NOT alter the core strategy. CRITICAL: DO NOT SUMMARIZE OR OMIT ANY DETAILS. You MUST translate EVERY SINGLE KEY, METRIC, AND DAY-BY-DAY PLAN from the JSON into the Markdown proposal. Keep all 20 sections (A to T) intact with full details. You MUST NOT write social captions. Output pure Markdown string (do not wrap in JSON). CRITICAL: YOU MUST WRITE YOUR ENTIRE RESPONSE IN THE SAME LANGUAGE AS THE RESEARCH PACKET. IF THE CONTEXT IS VIETNAMESE, ALL HEADINGS AND TEXT MUST BE IN VIETNAMESE. YOU MUST APPEND EXACTLY \"[[CAMPAIGN_PROPOSAL]]\" AT THE VERY END OF YOUR OUTPUT AS A MARKER.'\n    },\n    {\n      role: 'user',\n      content: 'QA-Passed Research Packet from Agent 1:\\n' + $json.output\n    }\n  ]\n} }}",
+        "options": {}
+      },
+      "name": "Agent 7 - Packaging",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        59168,
+        -352
+      ],
+      "id": "c5062f1c-a26a-431f-b7d4-3a86ffcee3a2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "u1GGrgkWgG2z9d4K",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com').replace(/\\/+$/, ''); if (raw !== 'https://agent.pnmediaplus.com') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Production allowlist: ' + raw); } return raw; })()) + '/api/n8n/publish-callback'}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_done',\n  sender: 'agent_7_packaging',\n  body: '📋 **Kế hoạch đã vượt qua Agent QA và sẵn sàng cho Human Review (Lượt ' + $json.attempt + '/3)**\\n\\n> ℹ️ *Bản kế hoạch này đã vượt qua khâu kiểm duyệt chất lượng tự động của AI (Agent 4 QA) và đang chờ Human Review / Phê duyệt chính thức.*\\n\\n' + $json.choices[0].message.content,\n  intent_type: 'campaign_proposal',\n  metadata: {\n    delivery_status: 'READY_FOR_HUMAN_REVIEW',\n    qa_verdict: 'QA_PASS',\n    authority: 'HUMAN_REVIEW_REQUIRED',\n    trace_id: String($execution.id),\n    attempt: $json.attempt,\n    max_attempts: 3\n  }\n} }}",
+        "options": {}
+      },
+      "name": "Delivery (chat_append)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        59536,
+        -448
+      ],
+      "id": "0203bf8f-df53-4d2e-99c7-5d85d9d0c1b3",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PROD_N8N_API_KEY_CREDENTIAL_ID",
+          "name": "x-n8n-api-key-prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'campaign_brief: ' + $json.campaign_brief + '\\ncampaign_goal: ' + $json.campaign_goal + '\\ncampaign_duration_days: ' + String($json.campaign_duration_days) + '\\npaid_media_allowed: ' + String($json.paid_media_allowed) + '\\nrequired_terms: ' + JSON.stringify($json.required_terms || []) + '\\nvalidation_hints: ' + JSON.stringify($json.validation_hints || []) + '\\ndepartment_context: ' + ($json.department_name || $json.department_id) + '\\ndepartment_pack: ' + JSON.stringify($json.department_pack || {}) + '\\n\\nUser Request (verbatim): ' + $json.campaign_brief + '\\n\\n' + ($json.qa_feedback ? '================\\nPREVIOUS QA FEEDBACK (YOU MUST FIX THIS IN YOUR NEW PLAN):\\n' + $json.qa_feedback + '\\n================' : '') }}",
+        "options": {
+          "systemMessage": "={{ 'You are Agent 1 - Viral Research & Angle. Your capability is strictly BOUNDED. You MUST treat campaign_brief as the SSOT and respect the deterministic contract fields provided by the control plane. You must output a strategic research packet in valid JSON format. Required top-level sections are: `executive_decision` (string), `icp_and_pain_wedge` (string), `offer` (string), `funnel_architecture` (string), `crm_role` (string), `chatbot_role` (string), `creative_architecture` (string), `media_buying_structure` (string), `10_day_operating_plan` (object), `lead_qualification` (string), `sales_handoff` (string), `organic_trust_layer` (string), `measurement_framework` (string), `budget_allocation` (string), `risks_policy` (string), `day_3_gate` (object with exact keys: `metric` and `action`), `day_6_gate` (object with exact keys: `metric` and `action`), `end_of_pilot_decision_framework` (string), `assets_required_before_launch` (string), `do_not_do` (string), `daily_timeline` (array of objects), `uses_ads` (boolean), `needs_clarification` (boolean), `clarification_questions` (array of strings), and `assumptions_to_confirm` (array of strings). Fill every required section; if something is underspecified, set `needs_clarification=true` and use concise placeholders instead of omitting keys. For each item in `daily_timeline`, include at minimum: `day`, `objective`, `channel`, `creative`, `budget_vnd`, `metric`, and `gate`. CRITICAL: The `daily_timeline` array MUST contain EXACTLY ' + String($json.campaign_duration_days) + ' items. Do NOT group days. Write a separate object for EACH day. RULES: 1. You MUST NOT write final social captions. You MUST NOT output final markdown proposals. Your output is an upstream source of truth for downstream agents. 2. DO NOT ask for clarification on fields that are ALREADY provided in the user message. 3. Do NOT invent missing facts, products, audiences, budgets. 4. CRITICAL: YOU MUST WRITE YOUR ENTIRE JSON RESPONSE IN THE SAME LANGUAGE AS THE `campaign_brief`. 5. TOOL IMPERATIVE: If the campaign_brief lacks specific market metrics, competitor benchmarks (CPC, CPL), or deep reasoning data, YOU MUST USE THE Tavily_Market_Search to gather real-time data BEFORE deciding on KPI and budget. Do not use Market_Research_Subagent for macro data (that is for Social Listening only). Return data according to contract: web_research_summary, sources, confidence, key_metrics. 6. LOGIC GATE: If your web research reveals that the provided budget is mathematically insufficient to achieve the goal (e.g., Total Budget < Average CPL), you MUST set needs_clarification=true, set executive_decision to explain the budget deficit, and list the exact calculation in clarification_questions. DO NOT hallucinate fake KPIs to make the math work.' }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        57280,
+        -464
+      ],
+      "id": "f42ee5a6-0af7-423c-a4c0-75733fac6f5b",
+      "name": "AI Agent 1"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool when you need real-time market research, competitor ads, and benchmarks (CPC, CTR) from Meta/TikTok to plan the campaign. The tool requires a search keyword and platforms.",
+        "workflowId": {
+          "__rl": true,
+          "value": "jvzslXAQyqyCoYZb",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/jvzslXAQyqyCoYZb",
+          "cachedResultName": "AGENT PNM - Ultimate_Social_Media_V1.1"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "How_many_items_to_scrape": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('How_many_items_to_scrape', ``, 'number') }}",
+            "Search_for__": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Search_for__', ``, 'string') }}",
+            "Which_platforms": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Which_platforms', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "How_many_items_to_scrape",
+              "displayName": "How_many_items_to_scrape",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "Search_for__",
+              "displayName": "Search_for__",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "Which_platforms",
+              "displayName": "Which_platforms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        57520,
+        -272
+      ],
+      "id": "ec6825c2-95e4-4970-8df3-6cf4eceb09ec",
+      "name": "Market_Research_Subagent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        57200,
+        -272
+      ],
+      "id": "ffb3bdff-ed53-4cea-803a-efb65a19cbdd",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "mXZSDqu2dCiXw8Au",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\ndata.attempt = 1;\ndata.qa_feedback = '';\nreturn { json: data };"
+      },
+      "name": "Init Attempt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        56848,
+        -464
+      ],
+      "id": "fa1c67d1-b7d9-4cfe-82fa-1f15672ffddc"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.item.json || {};\n\n// 1. Pure business state attempt counter: Read attempt directly from self-contained payload\nconst currentAttempt = inputData.attempt;\nif (!Number.isInteger(currentAttempt) || currentAttempt < 1 || currentAttempt > 3) {\n  throw new Error('FAIL_CLOSED_SYSTEM_ERROR: Missing or invalid business attempt in Check Attempt Limit. Expected integer between 1 and 3, got: ' + currentAttempt);\n}\n\nconst nextAttempt = currentAttempt + 1;\nconst maxAttempts = 3;\n\n// 2. Determine feedback source (Structural Error vs QA Rejection)\nlet feedback = '';\nif (inputData.validation_status === 'SYSTEM_VALIDATION_ERROR') {\n  feedback = 'LỖI CẤU TRÚC JSON (SYSTEM_VALIDATION_ERROR): ' + (inputData.validation_error || 'Output của Agent 1 không đúng định dạng JSON hoặc thiếu trường bắt buộc.') + ' Bạn BẮT BUỘC phải sửa lỗi này và trả về JSON hợp lệ đầy đủ 25 trường.';\n} else if (inputData.reason) {\n  feedback = inputData.reason;\n} else {\n  feedback = 'Bản kế hoạch bị từ chối do không đạt tiêu chuẩn chất lượng.';\n}\n\n// ZERO references to external nodes. Everything is preserved from inputData!\nreturn {\n  json: {\n    ...inputData,\n    attempt: nextAttempt,\n    max_attempts: maxAttempts,\n    is_blocked: nextAttempt > maxAttempts,\n    qa_feedback: feedback\n  }\n};"
+      },
+      "name": "Check Attempt Limit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        58976,
+        -96
+      ],
+      "id": "df57467b-0d1f-4570-b7d6-0fbe814f3111",
+      "typeOptions": {
+        "multipleOutputs": true
+      },
+      "outputs": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "32ada2b2-fec3-44ac-8eeb-ee1aa38bd43f",
+              "leftValue": "={{ $json.attempt }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        59264,
+        -96
+      ],
+      "id": "76644694-16a5-40bb-b6d1-0cf4ca657d7f",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        57344,
+        -272
+      ],
+      "id": "61ec4b4a-5beb-4f4d-9936-f8af4488610d",
+      "name": "Search in Tavily",
+      "credentials": {
+        "tavilyApi": {
+          "id": "HyrZdVo3mEVKYOP9",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.is_valid}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Is Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        58272,
+        -448
+      ],
+      "id": "3d567cbb-8bad-42a7-adb1-6996a9073e8e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.error_type === 'SYSTEM_ERROR' || $json.validation_status === 'FATAL_SYSTEM_ERROR'}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Is System Error?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        56480,
+        0
+      ],
+      "id": "3d364818-3e00-4c9b-9ac6-baf1fb71671c"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://agent.pnmediaplus.com').replace(/\\/+$/, ''); if (raw !== 'https://agent.pnmediaplus.com') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Production allowlist: ' + raw); } return raw; })()) + '/api/n8n/publish-callback'}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_system_error',\n  sender: 'system_error',\n  body: '🚨 **LỖI HỆ THỐNG NỘI BỘ (SYSTEM ERROR):**\\n' + ($json.reason || 'Lỗi kết nối hạ tầng control plane.'),\n  intent_type: 'system_error',\n  metadata: {\n    delivery_status: 'FATAL_SYSTEM_ERROR',\n    qa_verdict: 'FAIL_CLOSED',\n    authority: 'SYSTEM_ERROR',\n    trace_id: String($execution.id)\n  }\n} }}",
+        "options": {}
+      },
+      "name": "System Error (chat_append)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        56928,
+        -32
+      ],
+      "id": "6a157f11-5cb0-4491-a5a2-32f13f0aaa27",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PROD_N8N_API_KEY_CREDENTIAL_ID",
+          "name": "x-n8n-api-key-prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.is_recoverable}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Is Recoverable Error?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        58256,
+        -80
+      ],
+      "id": "7d59bfc8-6097-4ba8-9c6e-dc2ec8893259"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "name": "Merge Trigger & Registry Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        56096,
+        -224
+      ],
+      "id": "79ca7055-a4e6-4cb8-93fd-94ae6c5a187f"
+    },
+    {
+      "parameters": {
+        "jsCode": "// TERMINAL FAIL-CLOSED SINK:\n// Missing valid thread_id or organization_id.\n// MUST NOT call chat_append with empty/corrupted tenant identifiers.\n// Halts execution safely without cross-tenant or corrupted side-effects.\nreturn {\n  json: {\n    status: 'DROPPED_FAIL_CLOSED_NO_TENANT_CONTEXT',\n    reason: $input.item.json.reason || 'Missing required tenant or thread context',\n    dropped_at: new Date().toISOString()\n  }\n};"
+      },
+      "name": "Fail-Closed Drop Sink",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        56720,
+        208
+      ],
+      "id": "bee58913-0842-47c2-bb61-0b03344b834d"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.has_valid_context}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Has Valid Context?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        56704,
+        -16
+      ],
+      "id": "2ce0bf29-68e5-4cbb-bc8f-1f7060d95e8a"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputItem = $input.item.json || {};\nconst threadId = inputItem.thread_id;\nconst organizationId = inputItem.organization_id;\nconst attempt = inputItem.attempt;\n\n// 1. Strict Fail-Closed Context Validation\nif (!threadId || !organizationId) {\n  throw new Error('FAIL_CLOSED_SYSTEM_ERROR: Missing thread_id or organization_id in Pre-Agent Context');\n}\n\nif (!inputItem.department_id || typeof inputItem.department_id !== 'string' || !inputItem.department_id.trim()) {\n  throw new Error('FAIL_CLOSED_SYSTEM_ERROR: Missing or invalid department_id in Pre-Agent Context. Default fallback is strictly prohibited.');\n}\n\nif (!Number.isInteger(attempt) || attempt < 1 || attempt > 3) {\n  throw new Error('FAIL_CLOSED_SYSTEM_ERROR: Missing or invalid business attempt in Pre-Agent Context. Expected integer 1..3, got: ' + attempt);\n}\n\nconst rawPack = inputItem.department_pack || {};\nconst knowledgeContext = rawPack.knowledge_context || {};\n\n// 2. Separate 3 distinct layers per Gatekeeper specification:\n// Layer 1: Frameworks\nconst frameworks = Array.isArray(knowledgeContext.frameworks)\n  ? knowledgeContext.frameworks.map(item => ({\n      ko_id: item.ko_id,\n      namespace: item.namespace || 'marketing_runtime_reasoning',\n      semantic_type: item.semantic_type || 'pattern',\n      content_hash: item.content_hash,\n      decision_schema: item.decision_schema,\n      payload: item.payload,\n    }))\n  : (Array.isArray(rawPack.frameworks) ? rawPack.frameworks : []);\n\n// Layer 2: Evidence\nconst evidence = Array.isArray(knowledgeContext.evidence)\n  ? knowledgeContext.evidence.map(item => ({\n      ko_id: item.ko_id,\n      namespace: item.namespace || 'marketing_evidence',\n      semantic_type: item.semantic_type || 'hypothesis',\n      content_hash: item.content_hash,\n      decision_schema: item.decision_schema,\n      payload: item.payload,\n    }))\n  : (Array.isArray(rawPack.evidence) ? rawPack.evidence : []);\n\n// Layer 3: Governance\nconst governance = Array.isArray(knowledgeContext.governance)\n  ? knowledgeContext.governance.map(item => ({\n      ko_id: item.ko_id,\n      namespace: item.namespace || 'marketing_runtime_reasoning',\n      governance_type: item.governance_type || 'rule',\n      rule_name: item.rule_name,\n      payload: item.payload,\n    }))\n  : (Array.isArray(rawPack.governance) ? rawPack.governance : []);\n\n// 3. Map context into structured department_pack for Agent 1 (Strictly no fallback)\nconst adaptedDepartmentPack = {\n  version: rawPack.version || '1.0',\n  department_id: inputItem.department_id.trim(),\n  department_name: inputItem.department_name || inputItem.department_id.trim(),\n  organization_id: organizationId,\n  frameworks,\n  evidence,\n  governance,\n  summary: {\n    frameworks_count: frameworks.length,\n    evidence_count: evidence.length,\n    governance_rules_count: governance.length,\n  }\n};\n\nreturn {\n  json: {\n    ...inputItem,\n    thread_id: threadId,\n    organization_id: organizationId,\n    attempt: attempt,\n    department_pack: adaptedDepartmentPack\n  }\n};"
+      },
+      "name": "Pre-Agent Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        57040,
+        -464
+      ],
+      "id": "a43dff3a-452e-4820-94af-1578aa927583"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "name": "Merge Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        57600,
+        -464
+      ],
+      "id": "7b6812ea-3f10-4445-839f-77a306bd3ea2"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "name": "Merge QA Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        58656,
+        -448
+      ],
+      "id": "42585815-75d5-46a3-8fec-8eb7eaf80850"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "name": "Merge Packaging Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        59344,
+        -448
+      ],
+      "id": "7e1d539b-119b-4cd0-8486-137fc5c3c4b8"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "name": "Merge Acknowledge Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        56704,
+        -464
+      ],
+      "id": "f7f76bf5-a617-434f-9041-99390a8e855c"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Registry",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Trigger & Registry Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Registry": {
+      "main": [
+        [
+          {
+            "node": "Merge Trigger & Registry Context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Scope Resolve": {
+      "main": [
+        [
+          {
+            "node": "Valid Scope?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Scope?": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge (chat_append)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Acknowledge Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Has Valid Context?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge (chat_append)": {
+      "main": [
+        [
+          {
+            "node": "Merge Acknowledge Context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Validate Agent 1 Output": {
+      "main": [
+        [
+          {
+            "node": "Needs Clarification?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 4 - QA": {
+      "main": [
+        [
+          {
+            "node": "Merge QA Context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "QA Verdict Parser": {
+      "main": [
+        [
+          {
+            "node": "QA Passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QA Passed?": {
+      "main": [
+        [
+          {
+            "node": "Agent 7 - Packaging",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Packaging Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Attempt Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 7 - Packaging": {
+      "main": [
+        [
+          {
+            "node": "Merge Packaging Context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Needs Clarification?": {
+      "main": [
+        [
+          {
+            "node": "Clarify Scope (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Market_Research_Subagent": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent 1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent 1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent 1": {
+      "main": [
+        [
+          {
+            "node": "Merge Context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Init Attempt": {
+      "main": [
+        [
+          {
+            "node": "Pre-Agent Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Attempt Limit": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "QA Reject (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pre-Agent Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search in Tavily": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent 1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Agent 4 - QA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge QA Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Recoverable Error?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is System Error?": {
+      "main": [
+        [
+          {
+            "node": "System Error (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Clarify Scope (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Recoverable Error?": {
+      "main": [
+        [
+          {
+            "node": "Check Attempt Limit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Has Valid Context?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Trigger & Registry Context": {
+      "main": [
+        [
+          {
+            "node": "Scope Resolve",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Valid Context?": {
+      "main": [
+        [
+          {
+            "node": "Is System Error?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail-Closed Drop Sink",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pre-Agent Context": {
+      "main": [
+        [
+          {
+            "node": "AI Agent 1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Context": {
+      "main": [
+        [
+          {
+            "node": "Validate Agent 1 Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge QA Context": {
+      "main": [
+        [
+          {
+            "node": "QA Verdict Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Packaging Context": {
+      "main": [
+        [
+          {
+            "node": "Delivery (chat_append)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Acknowledge Context": {
+      "main": [
+        [
+          {
+            "node": "Init Attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "prod-v1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "327d790759f39ee1aac5d86312053f7e45d0c8455a2ff6fa570d145321ae8fcc"
+  },
+  "tags": []
+}

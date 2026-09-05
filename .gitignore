@@ -4,6 +4,7 @@ out
 dist
 .env
 .env.*
+!.env.production.example
 .env.local
 .env*.local
 *.log
