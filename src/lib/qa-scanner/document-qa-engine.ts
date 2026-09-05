@@ -5,7 +5,7 @@ export const CANONICAL_NAMESPACE_DEPARTMENT_MAP: Record<string, string> = {
   cskh: 'dept-cskh',
 };
 
-export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB (Enforced strictly)
 export const MAX_TOKEN_ESTIMATE = 50_000;
 
 export interface QAViolation {
@@ -40,7 +40,7 @@ export interface DocumentQAReport {
   security_scan: 'CLEAN' | 'ADVERSARIAL_HEURISTIC_FLAGGED';
 }
 
-function normalizeDiacritics(str: string): string {
+export function normalizeDiacritics(str: string): string {
   return (str || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -56,8 +56,6 @@ interface HeuristicRule {
   regexNormalized: RegExp;
   reason: string;
 }
-
-const PROHIBITION_LINE_MARKER = /(cam\s+(tuyet\s*doi|nghiat|tu\s*nhan|nguoi)|khong\s*(duoc|bao\s*gio\s*duoc|phep)|tuyet\s*doi\s*khong|nghiem\s*cam)/i;
 
 const HEURISTIC_RULES: HeuristicRule[] = [
   // 1. P0-01: False quantitative promises without audited proof (KO-01 Gate 02)
@@ -120,7 +118,7 @@ const HEURISTIC_RULES: HeuristicRule[] = [
 
 /**
  * Server-side Document QA Policy Linter & Heuristic Scanner (v1.0.0_LOCKED)
- * Operates purely on server-derived text and canonical namespace mappings.
+ * Strict Zero-Tolerance: No naive prohibition bypass that attackers could exploit.
  */
 export function runDocumentQA(
   rawText: string,
@@ -158,42 +156,48 @@ export function runDocumentQA(
     });
   }
 
-  // Split into lines for line-level provenance and rule-definition distinction
+  // Split into lines for line-level provenance
   const lines = (rawText || '').split('\n');
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
     const normalizedLine = normalizeDiacritics(rawLine);
 
-    // If a line is a governance rule definition (e.g. "CẤM: Tăng doanh thu 300%"), skip flagging as a violation
-    const isProhibitionRule = PROHIBITION_LINE_MARKER.test(normalizedLine);
+    // Check if line is an explicit boundary prohibition/denial statement
+    // (e.g. "CẤM NGHIẶT: Cấm tự nhận PN Agency CRM có chức năng Kế toán, HRM, hoặc AI tự động chạy Ads")
+    const isBoundaryDenial = /^\s*(-|\*|\d+\.)?\s*(\*\*.*(cam|trap|gioi\s*han|boundary).*\*\*:?\s*)?(cam\s+(tu\s*nhan|hua|tuyen\s*bo|quang\s*cao)|khong\s+(co|ho\s*tro|tich\s*hop|cung\s*cap)|tuyet\s*doi\s*khong\s*tu\s*nhan|luu\s*y:\s*he\s*thong\s*khong)/i.test(normalizedLine);
 
     for (const rule of HEURISTIC_RULES) {
       if (rule.regexNormalized.test(normalizedLine)) {
         const snippet = rawLine.trim().slice(0, 150);
 
+        // Capability exclusions (P0-02A/B/C) on lines that explicitly deny/prohibit the capability are valid boundaries, not violations.
+        // Quantitative revenue guarantees (P0-01) and unauthorized discounts (P0-03) are NEVER exempt.
+        const isExemptBoundaryStatement =
+          isBoundaryDenial && (rule.id === 'VIO-P0-02A' || rule.id === 'VIO-P0-02B' || rule.id === 'VIO-P0-02C');
+
+        if (isExemptBoundaryStatement) {
+          continue;
+        }
+
         if (rule.category === 'P0_HARD_BLOCK') {
-          if (!isProhibitionRule) {
-            p0Violations.push({
-              id: rule.id,
-              category: 'P0_HARD_BLOCK',
-              rule: rule.rule,
-              snippet,
-              reason: rule.reason,
-              line_number: i + 1,
-            });
-          }
+          p0Violations.push({
+            id: rule.id,
+            category: 'P0_HARD_BLOCK',
+            rule: rule.rule,
+            snippet,
+            reason: rule.reason,
+            line_number: i + 1,
+          });
         } else if (rule.category === 'DOMAIN_MISMATCH') {
-          if (!isProhibitionRule) {
-            domainClassification = 'OUT_OF_SCOPE_DOMAIN';
-            p1Warnings.push({
-              id: rule.id,
-              rule: rule.rule,
-              snippet,
-              suggestion: 'Ensure this document is routed to bespoke consulting, not core Agency CRM knowledge.',
-              line_number: i + 1,
-            });
-          }
+          domainClassification = 'OUT_OF_SCOPE_DOMAIN';
+          p1Warnings.push({
+            id: rule.id,
+            rule: rule.rule,
+            snippet,
+            suggestion: 'Ensure this document is routed to bespoke consulting, not core Agency CRM knowledge.',
+            line_number: i + 1,
+          });
         } else if (rule.category === 'SECURITY_HEURISTIC') {
           securityScan = 'ADVERSARIAL_HEURISTIC_FLAGGED';
           p0Violations.push({

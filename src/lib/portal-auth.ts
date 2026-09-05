@@ -100,7 +100,12 @@ function getCookieValue(cookieHeader: string | null, name: string) {
 }
 
 export function readPortalAccessToken(headers: HeadersInit | Headers) {
-  return getCookieValue(new Headers(headers).get("cookie"), PORTAL_ACCESS_COOKIE);
+  const h = new Headers(headers);
+  const authHeader = h.get("authorization");
+  if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
+    return authHeader.slice(7).trim();
+  }
+  return getCookieValue(h.get("cookie"), PORTAL_ACCESS_COOKIE);
 }
 
 export function readPortalRefreshToken(headers: HeadersInit | Headers) {

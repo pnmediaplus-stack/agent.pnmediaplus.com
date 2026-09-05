@@ -1,18 +1,25 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { verifyUiAuth } from '@/lib/ui-auth-guard';
 import { readPortalAccessToken, loadPortalOrganizationContext } from '@/lib/portal-auth';
+import {
+  runDocumentQA,
+  CANONICAL_NAMESPACE_DEPARTMENT_MAP,
+  MAX_FILE_SIZE_BYTES,
+} from '@/lib/qa-scanner/document-qa-engine';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
+    // 1. Authenticate session & strictly derive organization from server context (Never trust client org_id)
     const auth = await verifyUiAuth(req);
     if (!auth.ok) return auth.response;
 
     const token = readPortalAccessToken(req.headers);
     const orgContext = await loadPortalOrganizationContext(token || '', auth.user.id);
-    if (orgContext.state !== 'ready') {
-      return NextResponse.json({ error: 'FORBIDDEN', message: 'Org context not ready' }, { status: 403 });
+    if (orgContext.state !== 'ready' || !orgContext.active_membership?.organization_id) {
+      return NextResponse.json({ error: 'FORBIDDEN', message: 'Org context not ready or no active membership' }, { status: 403 });
     }
 
     const organizationId = orgContext.active_membership.organization_id;
@@ -24,30 +31,27 @@ export async function POST(req: Request) {
     const title = formData.get('title') as string;
     const channelIdStr = formData.get('channel_id') as string;
     const channelId = (channelIdStr && channelIdStr !== 'null' && channelIdStr !== 'undefined' && channelIdStr.trim() !== '') ? channelIdStr : null;
-    const namespace = formData.get('namespace') as string;
     
-    if (namespace && !['cskh', 'marketing'].includes(namespace)) {
-      return NextResponse.json({ error: 'INVALID_NAMESPACE', message: 'Namespace must be cskh or marketing' }, { status: 400 });
+    // 2. Strict Namespace Validation: FAIL-CLOSED (Zero Fallback)
+    const rawNamespace = (formData.get('namespace') as string || '').trim().toLowerCase();
+    const departmentId = CANONICAL_NAMESPACE_DEPARTMENT_MAP[rawNamespace];
+    if (!rawNamespace || !departmentId) {
+      return NextResponse.json({
+        error: 'FAIL_CLOSED_INVALID_NAMESPACE',
+        message: 'Namespace is mandatory and must be one of: ' + Object.keys(CANONICAL_NAMESPACE_DEPARTMENT_MAP).join(', '),
+      }, { status: 400 });
     }
 
     if (!file || !title) {
-      return NextResponse.json({ error: 'Missing file or title' }, { status: 400 });
+      return NextResponse.json({ error: 'BAD_REQUEST', message: 'Missing file or title' }, { status: 400 });
     }
 
-    if (channelId) {
-      const channelCheckRes = await fetch(`${supabaseUrl}/rest/v1/crm_channels?id=eq.${channelId}&organization_id=eq.${organizationId}&select=id`, {
-        headers: {
-          'apikey': serviceRoleKey,
-          'Authorization': `Bearer ${serviceRoleKey}`
-        }
-      });
-      if (!channelCheckRes.ok) {
-        return NextResponse.json({ error: 'DB_ERROR', message: 'Failed to verify channel ownership' }, { status: 502 });
-      }
-      const channelData = await channelCheckRes.json();
-      if (!channelData || channelData.length === 0) {
-        return NextResponse.json({ error: 'FORBIDDEN', message: 'Channel does not belong to your organization' }, { status: 403 });
-      }
+    // 3. Strict File Hygiene Enforcement (Size and MIME)
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json({
+        error: 'FILE_TOO_LARGE',
+        message: `File size (${file.size} bytes) exceeds maximum limit of ${MAX_FILE_SIZE_BYTES} bytes (10MB)`,
+      }, { status: 400 });
     }
 
     const allowedMimeTypes = new Set([
@@ -63,13 +67,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'UNSUPPORTED_FILE_TYPE', message: 'Only PDF, TXT, MD, and DOC/DOCX files are supported' }, { status: 400 });
     }
 
-    // 2. Upload File to Supabase Storage (crm_knowledge)
+    // 4. Extract Text & Execute Server-Side Document QA Scan
+    const arrayBuffer = await file.arrayBuffer();
+    let extractedText = '';
+    try {
+      const decoder = new TextDecoder('utf-8', { fatal: false });
+      extractedText = decoder.decode(arrayBuffer);
+    } catch (extractErr: any) {
+      return NextResponse.json({
+        error: 'EXTRACTION_FAILED',
+        message: 'Failed to extract text from uploaded document: ' + extractErr.message,
+      }, { status: 422 });
+    }
+
+    const qaReport = runDocumentQA(extractedText, rawNamespace);
+
+    // 5. Upload File to Supabase Storage (crm_knowledge_files)
     const fileExt = file.name.split('.').pop();
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const storagePath = `${organizationId}/${fileName}`;
-    
-    // Convert File to ArrayBuffer for fetch
-    const arrayBuffer = await file.arrayBuffer();
     
     const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/crm_knowledge_files/${storagePath}`, {
       method: 'POST',
@@ -88,7 +104,46 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'UPLOAD_FAILED' }, { status: 502 });
     }
 
-    // 3. Insert into crm_knowledge_documents
+    // 6. Enforce Gate: P0 HARD BLOCK vs REVIEW_RECOMMENDED
+    if (qaReport.verdict === 'HARD_BLOCKED') {
+      // Record blocked document in DB as DRAFT + NOT_REQUIRED for audit provenance
+      const insertRes = await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents`, {
+        method: 'POST',
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          organization_id: organizationId,
+          channel_id: channelId,
+          namespace: rawNamespace,
+          title: title,
+          file_url: storagePath,
+          status: 'failed',
+          knowledge_status: 'DRAFT',
+          ingestion_status: 'NOT_REQUIRED',
+          error_message: `QA_HARD_BLOCKED: ${qaReport.p0_violations.length} P0 violation(s) detected`,
+          knowledge_metadata: {
+            qa_inspection_report: qaReport,
+            department_id: departmentId,
+            actor_id: auth.user.id,
+            inspected_at: qaReport.inspected_at,
+          },
+          created_by: auth.user.id
+        })
+      });
+
+      // STRICT INVARIANT: N8N is NEVER called when blocked!
+      return NextResponse.json({
+        error: 'QA_HARD_BLOCKED',
+        message: 'Document contains prohibited P0 claim violations and cannot be ingested',
+        qa_report: qaReport,
+      }, { status: 422 });
+    }
+
+    // 7. Happy Path (QA Passed): Insert as REVIEWED + PENDING awaiting Founder Approval
     const insertRes = await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents`, {
       method: 'POST',
       headers: {
@@ -100,10 +155,18 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         organization_id: organizationId,
         channel_id: channelId,
-        namespace: namespace || 'cskh',
+        namespace: rawNamespace,
         title: title,
         file_url: storagePath,
         status: 'processing',
+        knowledge_status: 'REVIEWED',
+        ingestion_status: 'PENDING',
+        knowledge_metadata: {
+          qa_inspection_report: qaReport,
+          department_id: departmentId,
+          actor_id: auth.user.id,
+          inspected_at: qaReport.inspected_at,
+        },
         created_by: auth.user.id
       })
     });
@@ -117,62 +180,15 @@ export async function POST(req: Request) {
     const docs = await insertRes.json();
     const document = docs[0];
 
-    // 4. Trigger n8n Ingestion Webhook
-    const n8nUrl = process.env.N8N_KNOWLEDGE_INGESTION_WEBHOOK_URL;
-    if (n8nUrl) {
-      const webhookRes = await fetch(n8nUrl, {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.N8N_API_KEY || process.env.CONTROL_PLANE_SECRET || ''}`,
-            'x-n8n-api-key': process.env.N8N_API_KEY || process.env.CONTROL_PLANE_SECRET || ''
-          },
-        body: JSON.stringify({
-          document_id: document.id,
-          organization_id: organizationId,
-          channel_id: channelId,
-        namespace: namespace || 'cskh',
-          file_path: storagePath,
-          file_name: file.name,
-          mime_type: file.type || 'application/octet-stream'
-        })
-      });
+    // NOTE: Per Gatekeeper invariant, automatic N8N embedding is NOT triggered here.
+    // Document is securely queued as REVIEWED + PENDING until Founder clicks APPROVE on UI.
 
-      if (!webhookRes.ok) {
-        const webhookError = await webhookRes.text().catch(() => 'N8N_INGESTION_TRIGGER_FAILED');
-        await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents?id=eq.${document.id}`, {
-          method: 'PATCH',
-          headers: {
-            'apikey': serviceRoleKey,
-            'Authorization': `Bearer ${serviceRoleKey}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({
-            status: 'failed',
-            error_message: webhookError.slice(0, 500)
-          })
-        });
-        return NextResponse.json({ error: 'N8N_INGESTION_TRIGGER_FAILED', message: webhookError }, { status: 502 });
-      }
-    } else {
-      await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents?id=eq.${document.id}`, {
-        method: 'PATCH',
-        headers: {
-          'apikey': serviceRoleKey,
-          'Authorization': `Bearer ${serviceRoleKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          status: 'failed',
-          error_message: 'N8N_KNOWLEDGE_INGESTION_WEBHOOK_URL not configured'
-        })
-      });
-      return NextResponse.json({ error: 'CONFIG_MISSING', message: 'N8N ingestion webhook not configured' }, { status: 500 });
-    }
+    return NextResponse.json({
+      document,
+      qa_report: qaReport,
+      message: 'Document passed QA Gatekeeper inspection and is queued for Founder review',
+    }, { status: 201 });
 
-    return NextResponse.json(document);
   } catch (error: any) {
     console.error('Error uploading knowledge document:', error);
     return new NextResponse(error.message, { status: 500 });
