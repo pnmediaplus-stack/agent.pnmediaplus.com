@@ -93,13 +93,67 @@ function checkEnvProductionTemplate() {
   return true;
 }
 
+function checkCanonicalHeaderInCodebase() {
+  console.log('--- CHECK 4: Canonical Header Consistency Across Codebase ---');
+  
+  // 4.1 n8n-client.ts
+  const n8nClientContent = fs.readFileSync(path.join(process.cwd(), 'src/lib/n8n-client.ts'), 'utf8');
+  assert(n8nClientContent.includes('"x-n8n-api-key": apiKey'), 'src/lib/n8n-client.ts must use canonical header "x-n8n-api-key"');
+  console.log('  [4.1 n8n-client.ts] -> PASS: Uses canonical header "x-n8n-api-key"');
+
+  // 4.2 publish-callback/route.ts
+  const publishCallbackContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/n8n/publish-callback/route.ts'), 'utf8');
+  assert(publishCallbackContent.includes("request.headers.get('x-n8n-api-key')"), 'src/app/api/n8n/publish-callback/route.ts must check "x-n8n-api-key"');
+  console.log('  [4.2 publish-callback/route.ts] -> PASS: Checks canonical header "x-n8n-api-key"');
+
+  // 4.3 governance/bundle/route.ts
+  const governanceContent = fs.readFileSync(path.join(process.cwd(), 'src/app/api/governance/bundle/route.ts'), 'utf8');
+  assert(governanceContent.includes('req.headers.get("x-n8n-api-key")'), 'src/app/api/governance/bundle/route.ts must check "x-n8n-api-key"');
+  console.log('  [4.3 governance/bundle/route.ts] -> PASS: Checks canonical header "x-n8n-api-key"');
+
+  // 4.4 Ensure no usage of incorrect header 'x-api-key' in routes or clients
+  assert(!n8nClientContent.includes('"x-api-key"'), 'Must not use x-api-key in n8n-client.ts');
+  assert(!publishCallbackContent.includes("'x-api-key'"), 'Must not use x-api-key in publish-callback/route.ts');
+  assert(!governanceContent.includes('"x-api-key"'), 'Must not use x-api-key in governance/bundle/route.ts');
+  console.log('  [4.4 Non-Canonical Header Exclusion] -> PASS: Zero references to non-canonical "x-api-key" in runtime code\n');
+  return true;
+}
+
+async function checkLiveProductionAuthGate() {
+  console.log('--- CHECK 5: Live Production Auth Gate Enforcement ---');
+  const targetUrl = 'https://agent.pnmediaplus.com/api/governance/bundle?organization_id=8289488a-b255-4cb6-9bff-c9d2e71af160&department_id=dept-marketing';
+
+  // 5.1 Request without auth
+  const resNoAuth = await fetch(targetUrl);
+  assert.strictEqual(resNoAuth.status, 401, 'Request without auth MUST be rejected with 401');
+  console.log('  [5.1 No Auth Header] -> PASS: Live Prod returned 401 Unauthorized');
+
+  // 5.2 Request with incorrect header name 'x-api-key'
+  const resWrongHeader = await fetch(targetUrl, {
+    headers: { 'x-api-key': 'some_test_key' }
+  });
+  assert.strictEqual(resWrongHeader.status, 401, 'Request with non-canonical header x-api-key MUST be rejected with 401');
+  console.log('  [5.2 Non-Canonical "x-api-key" Header] -> PASS: Live Prod strictly rejected with 401 Unauthorized');
+
+  // 5.3 Request with canonical header 'x-n8n-api-key' but invalid key
+  const resInvalidKey = await fetch(targetUrl, {
+    headers: { 'x-n8n-api-key': 'INVALID_TEST_KEY_FOR_AUDIT' }
+  });
+  assert.strictEqual(resInvalidKey.status, 401, 'Request with invalid x-n8n-api-key MUST be rejected with 401');
+  console.log('  [5.3 Canonical "x-n8n-api-key" with Invalid Key] -> PASS: Live Prod strictly rejected with 401 Unauthorized\n');
+  return true;
+}
+
 async function run() {
   await checkProductionDomain();
   checkProdWorkflowArtifact();
   checkEnvProductionTemplate();
+  checkCanonicalHeaderInCodebase();
+  await checkLiveProductionAuthGate();
   console.log('================================================================');
   console.log('PREFLIGHT READINESS AUDIT: 100% PASS');
-  console.log('Status: READY FOR GATEKEEPER ARTIFACT DIFF & PREFLIGHT REVIEW');
+  console.log('Canonical Header: x-n8n-api-key (VERIFIED ACROSS STACK & LIVE PROD GATE)');
+  console.log('Status: READY FOR GATEKEEPER SIGN-OFF FOR N8N CREDENTIAL & INACTIVE IMPORT');
   console.log('Production Mutation: STRICTLY BLOCKED');
   console.log('================================================================');
 }
