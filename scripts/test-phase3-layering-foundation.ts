@@ -551,6 +551,28 @@ async function runPhase3FoundationTests() {
     JSON.stringify(nfBody)
   );
 
+  // --- T4.0b2: HTTP API Route - Invalid Hex Format Hash Rejection (Gatekeeper Blocker 2) ---
+  const invalidHexReq = new Request('http://localhost:3000/api/crm/knowledge/package/approve', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${userToken}`
+    },
+    body: JSON.stringify({
+      packageId: fullPkgId,
+      packageVersion: testVersion,
+      expectedParts: 10,
+      expectedManifestSha256: 'g'.repeat(64) // 64 non-hex chars
+    })
+  });
+  const invalidHexRes = await approvePackageRoute(invalidHexReq);
+  const invalidHexBody = await invalidHexRes.json();
+  assert(
+    invalidHexRes.status === 400 && invalidHexBody.error === 'BAD_REQUEST' && Boolean(invalidHexBody.details?.expectedManifestSha256),
+    'Test T4.0b2: HTTP API Route non-hex SHA-256 strictly returns HTTP 400 with hex validation error',
+    JSON.stringify(invalidHexBody)
+  );
+
   // --- T4.0c: HTTP API Route - Mismatched Manifest Hash Rejection (Gatekeeper Spec) ---
   const badHashRouteReq = new Request('http://localhost:3000/api/crm/knowledge/package/approve', {
     method: 'POST',
@@ -607,6 +629,113 @@ async function runPhase3FoundationTests() {
     auditCheckErr === null && Boolean(auditRows && auditRows.length > 0 && auditRows[0].details?.includes(fullPkgId)),
     'Test T4.1b: Authoritative audit log verified in phase1_audit_logs with COMPLETED action details',
     JSON.stringify({ auditRows, auditCheckErr })
+  );
+
+  // --- T4.1c: Approval Route - Compensating Rollback on Audit Failure (Gatekeeper Blocker 1 & 3) ---
+  const auditFailPkgId = `AUDIT_FAIL_PKG_${crypto.randomUUID().slice(0, 8)}`;
+  for (const koIdx of canonicalKOs) {
+    const { data: afDocs, error: afErr } = await adminClient.from('crm_knowledge_documents').insert({
+      organization_id: targetOrgId,
+      namespace: 'marketing',
+      title: `${auditFailPkgId} - ${koIdx}`,
+      file_url: `quarantine://test-af/${koIdx}`,
+      knowledge_status: 'REVIEWED',
+      ingestion_status: 'PENDING',
+      knowledge_metadata: buildValidFrameworkMetadata({
+        package_id: auditFailPkgId,
+        ko_index: koIdx,
+        package_version: testVersion,
+        is_framework: 'true',
+        document_type: 'DECISION_FRAMEWORK',
+        package_manifest_sha256: testManifestHash,
+        fixture_disposition: 'ARCHIVED_TEST_FIXTURE'
+      }),
+      created_by: realUserId
+    }).select('id');
+    if (afErr) console.error(`[AuditFailPkg Insert Err] ${koIdx}:`, afErr);
+    if (afDocs?.[0]?.id) fixtureDocIds.push(afDocs[0].id);
+  }
+
+  const auditFailReq = new Request('http://localhost:3000/api/crm/knowledge/package/approve', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${userToken}`,
+      'x-test-simulate-audit-failure': 'true'
+    },
+    body: JSON.stringify({
+      packageId: auditFailPkgId,
+      packageVersion: testVersion,
+      expectedParts: 10,
+      expectedManifestSha256: testManifestHash
+    })
+  });
+  const auditFailRes = await approvePackageRoute(auditFailReq);
+  const auditFailBody = await auditFailRes.json();
+  assert(
+    auditFailRes.status === 500 && auditFailBody.error === 'AUDIT_LOG_FAILED' && auditFailBody.audit_rollback_status === 'ROLLED_BACK',
+    'Test T4.1c: Approval audit failure triggers compensating rollback (audit_rollback_status = ROLLED_BACK)',
+    JSON.stringify(auditFailBody)
+  );
+
+  // Verify in DB that the package documents were retired to ARCHIVED (Append-Only preserved, 0 active records)
+  const { data: afDbDocs } = await adminClient
+    .from('crm_knowledge_documents')
+    .select('id, knowledge_status')
+    .eq('organization_id', targetOrgId)
+    .eq('knowledge_metadata->>package_id', auditFailPkgId);
+  const allAfArchived = afDbDocs && afDbDocs.length === 10 && afDbDocs.every((d: any) => d.knowledge_status === 'ARCHIVED');
+  assert(
+    Boolean(allAfArchived),
+    'Test T4.1c2: DB verification confirms all 10 package documents were retired to ARCHIVED after audit failure'
+  );
+
+  // --- T4.1d: Approval Route - Audit Failure + Rollback Failure Handling ---
+  const rbFailPkgId = `RB_FAIL_PKG_${crypto.randomUUID().slice(0, 8)}`;
+  for (const koIdx of canonicalKOs) {
+    const { data: rfDocs, error: rfErr } = await adminClient.from('crm_knowledge_documents').insert({
+      organization_id: targetOrgId,
+      namespace: 'marketing',
+      title: `${rbFailPkgId} - ${koIdx}`,
+      file_url: `quarantine://test-rf/${koIdx}`,
+      knowledge_status: 'REVIEWED',
+      ingestion_status: 'PENDING',
+      knowledge_metadata: buildValidFrameworkMetadata({
+        package_id: rbFailPkgId,
+        ko_index: koIdx,
+        package_version: testVersion,
+        is_framework: 'true',
+        document_type: 'DECISION_FRAMEWORK',
+        package_manifest_sha256: testManifestHash,
+        fixture_disposition: 'ARCHIVED_TEST_FIXTURE'
+      }),
+      created_by: realUserId
+    }).select('id');
+    if (rfErr) console.error(`[RbFailPkg Insert Err] ${koIdx}:`, rfErr);
+    if (rfDocs?.[0]?.id) fixtureDocIds.push(rfDocs[0].id);
+  }
+
+  const rbFailReq = new Request('http://localhost:3000/api/crm/knowledge/package/approve', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${userToken}`,
+      'x-test-simulate-audit-failure': 'true',
+      'x-test-simulate-rpc-failure': 'true'
+    },
+    body: JSON.stringify({
+      packageId: rbFailPkgId,
+      packageVersion: testVersion,
+      expectedParts: 10,
+      expectedManifestSha256: testManifestHash
+    })
+  });
+  const rbFailRes = await approvePackageRoute(rbFailReq);
+  const rbFailBody = await rbFailRes.json();
+  assert(
+    rbFailRes.status === 500 && rbFailBody.error === 'AUDIT_LOG_AND_ROLLBACK_FAILED' && rbFailBody.audit_rollback_status === 'ROLLBACK_FAILURE',
+    'Test T4.1d: Approval audit failure with failed RPC rollback returns AUDIT_LOG_AND_ROLLBACK_FAILED without error swallowing',
+    JSON.stringify(rbFailBody)
   );
 
   // --- T4.2: HTTP API Route - Idempotent Repeated Approval ---

@@ -737,7 +737,7 @@ function KnowledgeTab() {
                     className="bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center shadow-xs cursor-pointer"
                   >
                     <ShieldCheck className="w-4 h-4 mr-1.5" />
-                    Ký Phê Duyệt Gói Tri Thức
+                    Ký Phê Duyệt Gói (Founder/Owner Sign-Off)
                   </button>
                 </div>
               </div>
@@ -756,7 +756,7 @@ function KnowledgeTab() {
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="w-6 h-6 text-amber-600" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Xác Nhận Ký Duyệt Gói Tri Thức</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Xác Nhận Ký Duyệt Gói (Founder/Owner Sign-Off)</h3>
               </div>
               <button onClick={() => setConfirmApprovalPkg(null)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
@@ -794,7 +794,7 @@ function KnowledgeTab() {
                 className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center shadow-sm cursor-pointer"
               >
                 {isApproving ? <Loader2 className="animate-spin w-4 h-4 mr-1.5" /> : <ShieldCheck className="w-4 h-4 mr-1.5" />}
-                {isApproving ? "Đang ký số HMAC..." : "Xác Nhận Ký Duyệt (Founder Sign-Off)"}
+                {isApproving ? "Đang ký số HMAC..." : "Xác Nhận Ký Duyệt (Founder/Owner Sign-Off)"}
               </button>
             </div>
           </div>
@@ -946,7 +946,7 @@ function KnowledgeTab() {
                       <div className="flex flex-col space-y-1">
                         {doc.is_framework ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 w-fit">
-                            <ShieldCheck className="w-3 h-3 mr-1" /> FRAMEWORK (Đã duyệt Founder)
+                            <ShieldCheck className="w-3 h-3 mr-1" /> FRAMEWORK (Đã duyệt Founder/Owner)
                           </span>
                         ) : doc.knowledge_status === 'REVIEWED' && doc.ingestion_status === 'PENDING' ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 w-fit animate-pulse">
