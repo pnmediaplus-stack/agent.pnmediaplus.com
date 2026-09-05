@@ -441,6 +441,50 @@ async function runPhase3FoundationTests() {
   });
   assert(errT3C !== null && errT3C.message.includes('PACKAGE_INTEGRITY_VIOLATION'), 'Test T3.3: Package with mismatched version rejected with PACKAGE_INTEGRITY_VIOLATION', errT3C?.message);
 
+  // 3D: Package Approval with Wrong Manifest Hash Rejection (Gatekeeper Spec)
+  const wrongHashPkgId = `WRONG_HASH_PKG_${crypto.randomUUID().slice(0, 8)}`;
+  for (const koIdx of ['KO-01', 'KO-02', 'KO-03', 'KO-04', 'KO-05', 'KO-06', 'KO-07', 'KO-08', 'KO-09', 'KO-10']) {
+    const { data: whDocs, error: whErr } = await adminClient.from('crm_knowledge_documents').insert({
+      organization_id: targetOrgId,
+      namespace: 'marketing',
+      title: `${wrongHashPkgId} - ${koIdx}`,
+      file_url: `quarantine://test-wh/${koIdx}`,
+      knowledge_status: 'REVIEWED',
+      ingestion_status: 'PENDING',
+      knowledge_metadata: buildValidFrameworkMetadata({
+        package_id: wrongHashPkgId,
+        ko_index: koIdx,
+        package_version: testVersion,
+        is_framework: 'true',
+        document_type: 'DECISION_FRAMEWORK',
+        package_manifest_sha256: testManifestHash,
+        fixture_disposition: 'ARCHIVED_TEST_FIXTURE'
+      }),
+      created_by: realUserId
+    }).select('id');
+
+    if (whErr) console.error(`[WrongHash Insert Err] ${koIdx}:`, whErr);
+    if (whDocs?.[0]?.id) fixtureDocIds.push(whDocs[0].id);
+  }
+
+  const badManifestHash = '0000000000000000000000000000000000000000000000000000000000000000';
+  const nonceT3D = crypto.randomUUID();
+  const nowT3D = getCanonicalTimestamp();
+  const msgT3D = `${targetOrgId}:${wrongHashPkgId}:${testVersion}:${badManifestHash}:10:${nonceT3D}:${nowT3D}:${realUserId}`;
+  const sigT3D = computeHmac(msgT3D, dynamicSecret);
+
+  const { error: errT3D } = await userClient.rpc('approve_knowledge_package', {
+    p_organization_id: targetOrgId,
+    p_package_id: wrongHashPkgId,
+    p_package_version: testVersion,
+    p_expected_parts: 10,
+    p_expected_manifest_sha256: badManifestHash,
+    p_nonce: nonceT3D,
+    p_timestamp: nowT3D,
+    p_signature: sigT3D
+  });
+  assert(errT3D !== null && errT3D.message.includes('PACKAGE_INTEGRITY_VIOLATION'), 'Test T3.4: Package approval with mismatched manifest hash rejected with PACKAGE_INTEGRITY_VIOLATION', errT3D?.message);
+
   // --- T4: Concurrency & Idempotency Proof (T4) ---
   console.log('\n--- TEST GROUP 4: Full Package Assembly, Approval & Idempotency (T4) ---');
   const fullPkgId = `FULL_VALID_PKG_${crypto.randomUUID().slice(0, 8)}`;
@@ -505,6 +549,28 @@ async function runPhase3FoundationTests() {
     nfRes.status === 403 && nfBody.error === 'FORBIDDEN',
     'Test T4.0b: HTTP API Route non-founder caller returns HTTP 403 FORBIDDEN',
     JSON.stringify(nfBody)
+  );
+
+  // --- T4.0c: HTTP API Route - Mismatched Manifest Hash Rejection (Gatekeeper Spec) ---
+  const badHashRouteReq = new Request('http://localhost:3000/api/crm/knowledge/package/approve', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${userToken}`
+    },
+    body: JSON.stringify({
+      packageId: fullPkgId,
+      packageVersion: testVersion,
+      expectedParts: 10,
+      expectedManifestSha256: badManifestHash
+    })
+  });
+  const badHashRouteRes = await approvePackageRoute(badHashRouteReq);
+  const badHashRouteJson = await badHashRouteRes.json();
+  assert(
+    badHashRouteRes.status === 400 && badHashRouteJson.error === 'RPC_FAILED' && badHashRouteJson.message.includes('PACKAGE_INTEGRITY_VIOLATION'),
+    'Test T4.0c: HTTP API Route with mismatched expectedManifestSha256 strictly returns HTTP 400 RPC_FAILED',
+    JSON.stringify(badHashRouteJson)
   );
 
   // --- T4.1: HTTP API Route - Genuine Founder Approval Execution ---
