@@ -66,3 +66,31 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request) {
+  const auth = await requireCrmRouteContext(request);
+  if (!auth.ok) return auth.response;
+
+  try {
+    const { id, tag_name, color } = await request.json();
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+    const payload: Record<string, any> = {};
+    if (tag_name !== undefined) payload.tag_name = tag_name.trim();
+    if (color !== undefined) payload.color = color;
+
+    const res = await fetchSupabaseRest('crm_tenant_tags', {
+      method: 'PATCH',
+      searchParams: {
+        id: `eq.${id}`,
+        organization_id: `eq.${auth.context.organizationId}`
+      },
+      body: JSON.stringify(payload),
+      headers: { 'Prefer': 'return=representation' }
+    });
+
+    return NextResponse.json(await readRestJson(res));
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}

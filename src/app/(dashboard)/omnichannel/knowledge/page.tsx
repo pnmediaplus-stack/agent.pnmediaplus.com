@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
-import { UploadCloud, FileText, Loader2, CheckCircle2, XCircle, Trash2, Settings, MessageSquare, Bot, Tag, Plus, X, Shield, ShieldCheck, AlertTriangle, Eye, FileJson, Check, ExternalLink, RefreshCw, Layers } from "lucide-react";
+import { UploadCloud, FileText, Loader2, CheckCircle2, XCircle, Trash2, Settings, MessageSquare, Bot, Tag, Plus, X, Shield, ShieldCheck, AlertTriangle, Eye, FileJson, Check, ExternalLink, RefreshCw, Layers, Archive, Pencil } from "lucide-react";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -944,9 +944,17 @@ function KnowledgeTab() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col space-y-1">
-                        {doc.is_framework ? (
+                        {doc.knowledge_status === 'ARCHIVED' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 w-fit">
+                            <Archive className="w-3 h-3 mr-1" /> ĐÃ LƯU TRỮ (ARCHIVED)
+                          </span>
+                        ) : (doc.knowledge_metadata?.is_framework === 'true' || doc.is_framework) && doc.knowledge_status === 'ACTIVE' ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 w-fit">
-                            <ShieldCheck className="w-3 h-3 mr-1" /> FRAMEWORK (Đã duyệt Founder/Owner)
+                            <ShieldCheck className="w-3 h-3 mr-1" /> FRAMEWORK (Đã duyệt & ACTIVE)
+                          </span>
+                        ) : (doc.knowledge_status === 'APPROVED') ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 w-fit">
+                            <ShieldCheck className="w-3 h-3 mr-1" /> ĐÃ DUYỆT (Chờ kích hoạt ACTIVE)
                           </span>
                         ) : doc.knowledge_status === 'REVIEWED' && doc.ingestion_status === 'PENDING' ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 w-fit animate-pulse">
@@ -1324,18 +1332,65 @@ function CampaignsTab() {
 function TagsTab() {
   const { data: tags, error, mutate } = useSWR('/api/crm/tags', fetcher);
   const [tagName, setTagName] = useState('');
-  const [tagColor, setTagColor] = useState('#3B82F6');
-    const [tagBgColor, setTagBgColor] = useState('#ecfdf5'); // light green
+  const [tagBgColor, setTagBgColor] = useState('#ecfdf5'); // light green
   const [tagTextColor, setTagTextColor] = useState('#059669'); // dark green
   const [tagBorderColor, setTagBorderColor] = useState('#34d399'); // border green
-  
+
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editBgColor, setEditBgColor] = useState('#ecfdf5');
+  const [editTextColor, setEditTextColor] = useState('#059669');
+  const [editBorderColor, setEditBorderColor] = useState('#34d399');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+
   const parseColor = (colorStr: string) => {
     try {
       if (colorStr && colorStr.startsWith('{')) return JSON.parse(colorStr);
     } catch (e) {}
     return { bg: colorStr || '#3B82F6', text: '#ffffff', border: colorStr || '#3B82F6' };
   };
-const [isAdding, setIsAdding] = useState(false);
+
+  const handleStartEdit = (tag: any) => {
+    const colors = parseColor(tag.color);
+    setEditingTagId(tag.id);
+    setEditName(tag.tag_name);
+    setEditBgColor(colors.bg || '#ecfdf5');
+    setEditTextColor(colors.text || '#059669');
+    setEditBorderColor(colors.border || '#34d399');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTagId(null);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTagId || !editName.trim()) return;
+    setIsUpdating(true);
+    try {
+      const res = await fetch('/api/crm/tags', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingTagId,
+          tag_name: editName.trim(),
+          color: JSON.stringify({ bg: editBgColor, text: editTextColor, border: editBorderColor })
+        })
+      });
+      if (res.ok) {
+        setEditingTagId(null);
+        mutate();
+      } else {
+        const err = await res.json();
+        alert('Lỗi: ' + (err.error || err.message));
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1378,8 +1433,85 @@ const [isAdding, setIsAdding] = useState(false);
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-6">
         <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Danh Sách Thẻ Của AI</h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Đây là các thẻ (Tags) hợp lệ mà Trợ lý AI có thể tự động gán cho khách hàng trong quá trình trò chuyện (VD: VIP, Spam, Khách sỉ...).</p>
-        
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+          Đây là các thẻ (Tags) hợp lệ mà Trợ lý AI có thể tự động gán cho khách hàng trong quá trình trò chuyện (VD: VIP, Spam, Khách sỉ...). Bạn có thể bấm vào biểu tượng bút chì để đổi màu hoặc đổi tên thẻ trực tiếp mà không làm mất thông tin đã gán cho khách hàng.
+        </p>
+
+        {/* Form Chỉnh Sửa Thẻ Đang Chọn */}
+        {editingTagId && (
+          <form onSubmit={handleUpdate} className="mb-8 bg-amber-50/70 dark:bg-amber-950/30 p-4 rounded-xl border border-amber-300 dark:border-amber-700 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-amber-600" /> Chỉnh Sửa Thẻ
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 dark:text-slate-400">Xem trước:</span>
+                <span
+                  className="px-3 py-1 rounded-full border text-xs font-semibold shadow-xs"
+                  style={{ backgroundColor: editBgColor, color: editTextColor, borderColor: editBorderColor }}
+                >
+                  {editName || 'Tên Thẻ'}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-4 items-end flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Tên Thẻ (Tag Name)</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Màu nền</label>
+                <input
+                  type="color"
+                  value={editBgColor}
+                  onChange={e => setEditBgColor(e.target.value)}
+                  className="h-9 w-12 cursor-pointer bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-0.5"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Màu chữ</label>
+                <input
+                  type="color"
+                  value={editTextColor}
+                  onChange={e => setEditTextColor(e.target.value)}
+                  className="h-9 w-12 cursor-pointer bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-0.5"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Màu viền</label>
+                <input
+                  type="color"
+                  value={editBorderColor}
+                  onChange={e => setEditBorderColor(e.target.value)}
+                  className="h-9 w-12 cursor-pointer bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-0.5"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="submit"
+                  disabled={isUpdating || !editName.trim()}
+                  className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center h-9 shadow-sm"
+                >
+                  {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-1" /> Lưu Thay Đổi</>}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600 h-9"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
+
         <form onSubmit={handleAdd} className="flex gap-4 items-end mb-8 bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-700 flex-wrap">
           <div className="flex-1">
             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Tên Thẻ (Tag Name)</label>
