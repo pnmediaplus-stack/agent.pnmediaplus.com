@@ -1331,18 +1331,12 @@ function CampaignsTab() {
 // ----------------------------------------------------
 function TagsTab() {
   const { data: tags, error, mutate } = useSWR('/api/crm/tags', fetcher);
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [tagName, setTagName] = useState('');
   const [tagBgColor, setTagBgColor] = useState('#ecfdf5'); // light green
   const [tagTextColor, setTagTextColor] = useState('#059669'); // dark green
   const [tagBorderColor, setTagBorderColor] = useState('#34d399'); // border green
-
-  const [editingTagId, setEditingTagId] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editBgColor, setEditBgColor] = useState('#ecfdf5');
-  const [editTextColor, setEditTextColor] = useState('#059669');
-  const [editBorderColor, setEditBorderColor] = useState('#34d399');
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const parseColor = (colorStr: string) => {
     try {
@@ -1351,75 +1345,81 @@ function TagsTab() {
     return { bg: colorStr || '#3B82F6', text: '#ffffff', border: colorStr || '#3B82F6' };
   };
 
-  const handleStartEdit = (tag: any) => {
-    const colors = parseColor(tag.color);
-    setEditingTagId(tag.id);
-    setEditName(tag.tag_name);
-    setEditBgColor(colors.bg || '#ecfdf5');
-    setEditTextColor(colors.text || '#059669');
-    setEditBorderColor(colors.border || '#34d399');
-  };
-
-  const handleCancelEdit = () => {
-    setEditingTagId(null);
-  };
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingTagId || !editName.trim()) return;
-    setIsUpdating(true);
-    try {
-      const res = await fetch('/api/crm/tags', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editingTagId,
-          tag_name: editName.trim(),
-          color: JSON.stringify({ bg: editBgColor, text: editTextColor, border: editBorderColor })
-        })
-      });
-      if (res.ok) {
-        setEditingTagId(null);
-        mutate();
-      } else {
-        const err = await res.json();
-        alert('Lỗi: ' + (err.error || err.message));
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsUpdating(false);
+  const handleSelectTag = (tag: any) => {
+    if (selectedTagId === tag.id) {
+      resetForm();
+    } else {
+      const colors = parseColor(tag.color);
+      setSelectedTagId(tag.id);
+      setTagName(tag.tag_name);
+      setTagBgColor(colors.bg || '#ecfdf5');
+      setTagTextColor(colors.text || '#059669');
+      setTagBorderColor(colors.border || '#34d399');
     }
   };
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const resetForm = () => {
+    setSelectedTagId(null);
+    setTagName('');
+    setTagBgColor('#ecfdf5');
+    setTagTextColor('#059669');
+    setTagBorderColor('#34d399');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tagName.trim()) return;
-    setIsAdding(true);
+    setIsSubmitting(true);
     try {
-      const res = await fetch('/api/crm/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tag_name: tagName, color: JSON.stringify({ bg: tagBgColor, text: tagTextColor, border: tagBorderColor }) })
-      });
-      if (res.ok) {
-        setTagName('');
-        mutate();
+      if (selectedTagId) {
+        // UPDATE existing tag
+        const res = await fetch('/api/crm/tags', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: selectedTagId,
+            tag_name: tagName.trim(),
+            color: JSON.stringify({ bg: tagBgColor, text: tagTextColor, border: tagBorderColor })
+          })
+        });
+        if (res.ok) {
+          resetForm();
+          mutate();
+        } else {
+          const err = await res.json();
+          alert('Lỗi: ' + (err.error || err.message));
+        }
       } else {
-        const err = await res.json();
-        alert('Lỗi: ' + err.error);
+        // CREATE new tag
+        const res = await fetch('/api/crm/tags', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tag_name: tagName.trim(),
+            color: JSON.stringify({ bg: tagBgColor, text: tagTextColor, border: tagBorderColor })
+          })
+        });
+        if (res.ok) {
+          resetForm();
+          mutate();
+        } else {
+          const err = await res.json();
+          alert('Lỗi: ' + err.error);
+        }
       }
     } catch (error) {
       console.error(error);
     } finally {
-      setIsAdding(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     if (!confirm('Xóa thẻ này? AI sẽ không thể dùng thẻ này nữa.')) return;
     try {
       await fetch(`/api/crm/tags?id=${id}`, { method: 'DELETE' });
+      if (selectedTagId === id) resetForm();
       mutate();
     } catch (error) {
       console.error(error);
@@ -1434,88 +1434,34 @@ function TagsTab() {
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-6">
         <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Danh Sách Thẻ Của AI</h3>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-          Đây là các thẻ (Tags) hợp lệ mà Trợ lý AI có thể tự động gán cho khách hàng trong quá trình trò chuyện (VD: VIP, Spam, Khách sỉ...). Bạn có thể bấm vào biểu tượng bút chì để đổi màu hoặc đổi tên thẻ trực tiếp mà không làm mất thông tin đã gán cho khách hàng.
+          Đây là các thẻ (Tags) hợp lệ mà Trợ lý AI có thể tự động gán cho khách hàng trong quá trình trò chuyện (VD: VIP, Spam, Khách sỉ...). Bấm trực tiếp vào thẻ bất kỳ để chỉnh sửa tên & màu sắc.
         </p>
 
-        {/* Form Chỉnh Sửa Thẻ Đang Chọn */}
-        {editingTagId && (
-          <form onSubmit={handleUpdate} className="mb-8 bg-amber-50/70 dark:bg-amber-950/30 p-4 rounded-xl border border-amber-300 dark:border-amber-700 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-2">
-                <Pencil className="w-4 h-4 text-amber-600" /> Chỉnh Sửa Thẻ
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 dark:text-slate-400">Xem trước:</span>
-                <span
-                  className="px-3 py-1 rounded-full border text-xs font-semibold shadow-xs"
-                  style={{ backgroundColor: editBgColor, color: editTextColor, borderColor: editBorderColor }}
-                >
-                  {editName || 'Tên Thẻ'}
+        {/* Dynamic Form Bar: Adding or Editing based on selectedTagId */}
+        <form onSubmit={handleSubmit} className={`flex gap-4 items-end mb-8 p-4 rounded-xl border flex-wrap transition-colors ${
+          selectedTagId
+            ? 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700'
+            : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700'
+        }`}>
+          <div className="flex-1 min-w-[200px]">
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                {selectedTagId ? 'Đang chỉnh sửa Thẻ' : 'Tên Thẻ (Tag Name)'}
+              </label>
+              {selectedTagId && (
+                <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">
+                  (Bấm 'Lưu' để cập nhật)
                 </span>
-              </div>
+              )}
             </div>
-            <div className="flex gap-4 items-end flex-wrap">
-              <div className="flex-1 min-w-[200px]">
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Tên Thẻ (Tag Name)</label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={e => setEditName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Màu nền</label>
-                <input
-                  type="color"
-                  value={editBgColor}
-                  onChange={e => setEditBgColor(e.target.value)}
-                  className="h-9 w-12 cursor-pointer bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-0.5"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Màu chữ</label>
-                <input
-                  type="color"
-                  value={editTextColor}
-                  onChange={e => setEditTextColor(e.target.value)}
-                  className="h-9 w-12 cursor-pointer bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-0.5"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Màu viền</label>
-                <input
-                  type="color"
-                  value={editBorderColor}
-                  onChange={e => setEditBorderColor(e.target.value)}
-                  className="h-9 w-12 cursor-pointer bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-0.5"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="submit"
-                  disabled={isUpdating || !editName.trim()}
-                  className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center h-9 shadow-sm"
-                >
-                  {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-1" /> Lưu Thay Đổi</>}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600 h-9"
-                >
-                  Hủy
-                </button>
-              </div>
-            </div>
-          </form>
-        )}
-
-        <form onSubmit={handleAdd} className="flex gap-4 items-end mb-8 bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-700 flex-wrap">
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Tên Thẻ (Tag Name)</label>
-            <input type="text" value={tagName} onChange={e => setTagName(e.target.value)} placeholder="VD: Khách sỉ" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-slate-800" required />
+            <input
+              type="text"
+              value={tagName}
+              onChange={e => setTagName(e.target.value)}
+              placeholder="VD: Khách sỉ"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-slate-800"
+              required
+            />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Màu nền</label>
@@ -1529,24 +1475,67 @@ function TagsTab() {
             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Màu viền</label>
             <input type="color" value={tagBorderColor} onChange={e => setTagBorderColor(e.target.value)} className="h-9 w-12 cursor-pointer bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-0.5" />
           </div>
-          <button type="submit" disabled={isAdding || !tagName.trim()} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center h-9 shadow-sm">
-            {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> Thêm Thẻ</>}
-          </button>
+          <div className="flex items-center gap-2">
+            {selectedTagId ? (
+              <>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !tagName.trim()}
+                  className="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50 flex items-center h-9 shadow-sm"
+                >
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-1" /> Lưu</>}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600 h-9"
+                >
+                  Hủy
+                </button>
+              </>
+            ) : (
+              <button
+                type="submit"
+                disabled={isSubmitting || !tagName.trim()}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center h-9 shadow-sm"
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> Thêm Thẻ</>}
+              </button>
+            )}
+          </div>
         </form>
 
+        {/* Interactive Tag Badges */}
         <div className="flex flex-wrap gap-3">
           {tags.length === 0 ? (
             <div className="text-slate-500 dark:text-slate-400 text-sm italic w-full text-center py-6">Chưa có thẻ nào được tạo.</div>
           ) : (
-            tags.map((tag: any) => (
-              <div key={tag.id} className="group flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium shadow-sm transition-all bg-white hover:bg-slate-50 dark:hover:bg-slate-700" style={{ backgroundColor: parseColor(tag.color).bg, color: parseColor(tag.color).text, borderColor: parseColor(tag.color).border }}>
-                
-                {tag.tag_name}
-                <button onClick={() => handleDelete(tag.id)} className="ml-1 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))
+            tags.map((tag: any) => {
+              const colors = parseColor(tag.color);
+              const isSelected = selectedTagId === tag.id;
+              return (
+                <div
+                  key={tag.id}
+                  onClick={() => handleSelectTag(tag)}
+                  title="Bấm vào thẻ để chỉnh sửa màu sắc / tên thẻ"
+                  className={`group cursor-pointer flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-sm font-semibold shadow-sm transition-all select-none ${
+                    isSelected ? 'ring-2 ring-amber-500 ring-offset-2 scale-105 shadow-md' : 'hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }}
+                >
+                  <span>{tag.tag_name}</span>
+
+                  <button
+                    type="button"
+                    onClick={(e) => handleDelete(e, tag.id)}
+                    title="Xóa thẻ"
+                    className="ml-1 p-0.5 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-black/10 dark:hover:bg-white/20"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })
           )}
         </div>
       </div>
