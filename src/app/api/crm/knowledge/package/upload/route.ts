@@ -28,7 +28,7 @@ interface PackageManifest {
   package_name?: string;
   package_version: string;
   expected_parts: number;
-  package_manifest_sha256?: string;
+  package_manifest_sha256: string;
   is_org_wide?: boolean;
   canonical_documents: PackageManifestPart[];
 }
@@ -69,6 +69,7 @@ async function performStorageRollback(
 
 export async function POST(req: Request) {
   const uploadedStoragePaths: string[] = [];
+  let insertedDocIds: string[] = [];
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/$/, '');
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
@@ -136,106 +137,136 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // Gatekeeper Blocker 1 & 4: Full Manifest Parsing and Strict Schema Enforcement
-    let manifest: PackageManifest | null = null;
+    // Gatekeeper Requirement 1: Package Manifest is strictly MANDATORY for batch package uploads
     const rawManifestStr = formData.get('manifest') as string;
-    if (rawManifestStr) {
-      try {
-        manifest = JSON.parse(rawManifestStr);
-      } catch (parseErr: any) {
-        return NextResponse.json({ error: 'INVALID_ARGUMENT', message: 'Invalid manifest JSON: ' + parseErr.message }, { status: 400 });
-      }
+    if (!rawManifestStr || !rawManifestStr.trim()) {
+      return NextResponse.json({
+        error: 'MANIFEST_REQUIRED',
+        message: 'Package manifest is mandatory for batch package upload. Request must include a valid manifest.'
+      }, { status: 400 });
+    }
 
-      if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
-        return NextResponse.json({
-          error: 'MANIFEST_VERIFICATION_FAILED',
-          message: 'Manifest must be a valid non-null JSON object'
-        }, { status: 400 });
-      }
+    let manifest: PackageManifest;
+    try {
+      manifest = JSON.parse(rawManifestStr);
+    } catch (parseErr: any) {
+      return NextResponse.json({ error: 'INVALID_ARGUMENT', message: 'Invalid manifest JSON: ' + parseErr.message }, { status: 400 });
+    }
 
-      // 1. Mandatory top-level fields
-      if (typeof manifest.package_id !== 'string' || !manifest.package_id.trim()) {
-        return NextResponse.json({
-          error: 'MANIFEST_VERIFICATION_FAILED',
-          message: 'Manifest is missing required field: package_id'
-        }, { status: 400 });
-      }
-      if (typeof manifest.package_version !== 'string' || !manifest.package_version.trim()) {
-        return NextResponse.json({
-          error: 'MANIFEST_VERIFICATION_FAILED',
-          message: 'Manifest is missing required field: package_version'
-        }, { status: 400 });
-      }
-      if (typeof manifest.expected_parts !== 'number' || !Number.isInteger(manifest.expected_parts) || manifest.expected_parts < 1) {
-        return NextResponse.json({
-          error: 'MANIFEST_VERIFICATION_FAILED',
-          message: 'Manifest is missing or has invalid required field: expected_parts (must be a positive integer)'
-        }, { status: 400 });
-      }
-      if (!Array.isArray(manifest.canonical_documents)) {
-        return NextResponse.json({
-          error: 'MANIFEST_VERIFICATION_FAILED',
-          message: 'Manifest is missing required field: canonical_documents (must be an array)'
-        }, { status: 400 });
-      }
+    if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+      return NextResponse.json({
+        error: 'MANIFEST_VERIFICATION_FAILED',
+        message: 'Manifest must be a valid non-null JSON object'
+      }, { status: 400 });
+    }
 
-      // 2. Exact bound alignment with request parameters
-      if (manifest.package_id !== packageId) {
-        return NextResponse.json({
-          error: 'MANIFEST_VERIFICATION_FAILED',
-          message: `Manifest package_id '${manifest.package_id}' does not match request package_id '${packageId}'`
-        }, { status: 400 });
-      }
-      if (manifest.package_version !== packageVersion) {
-        return NextResponse.json({
-          error: 'MANIFEST_VERIFICATION_FAILED',
-          message: `Manifest package_version '${manifest.package_version}' does not match request package_version '${packageVersion}'`
-        }, { status: 400 });
-      }
-      if (manifest.expected_parts !== expectedCount) {
-        return NextResponse.json({
-          error: 'MANIFEST_VERIFICATION_FAILED',
-          message: `Manifest expected_parts (${manifest.expected_parts}) does not match expected_count (${expectedCount})`
-        }, { status: 400 });
-      }
-      if (manifest.canonical_documents.length !== expectedCount) {
-        return NextResponse.json({
-          error: 'MANIFEST_VERIFICATION_FAILED',
-          message: `Manifest canonical_documents count (${manifest.canonical_documents.length}) does not match expected_count (${expectedCount})`
-        }, { status: 400 });
-      }
+    // 1. Mandatory top-level fields
+    if (typeof manifest.package_id !== 'string' || !manifest.package_id.trim()) {
+      return NextResponse.json({
+        error: 'MANIFEST_VERIFICATION_FAILED',
+        message: 'Manifest is missing required field: package_id'
+      }, { status: 400 });
+    }
+    if (typeof manifest.package_version !== 'string' || !manifest.package_version.trim()) {
+      return NextResponse.json({
+        error: 'MANIFEST_VERIFICATION_FAILED',
+        message: 'Manifest is missing required field: package_version'
+      }, { status: 400 });
+    }
+    if (typeof manifest.expected_parts !== 'number' || !Number.isInteger(manifest.expected_parts) || manifest.expected_parts < 1) {
+      return NextResponse.json({
+        error: 'MANIFEST_VERIFICATION_FAILED',
+        message: 'Manifest is missing or has invalid required field: expected_parts (must be a positive integer)'
+      }, { status: 400 });
+    }
 
-      // 3. Strict schema validation for each canonical document
-      const sha256Regex = /^[a-fA-F0-9]{64}$/;
-      for (let idx = 0; idx < manifest.canonical_documents.length; idx++) {
-        const doc = manifest.canonical_documents[idx];
-        if (!doc || typeof doc !== 'object') {
-          return NextResponse.json({
-            error: 'MANIFEST_VERIFICATION_FAILED',
-            message: `Manifest canonical_documents[${idx}] is not a valid object`
-          }, { status: 400 });
-        }
-        if (typeof doc.ko_index !== 'string' || !doc.ko_index.trim()) {
-          return NextResponse.json({
-            error: 'MANIFEST_VERIFICATION_FAILED',
-            message: `Manifest canonical_documents[${idx}] is missing required field: ko_index`
-          }, { status: 400 });
-        }
-        const hasPathOrName = (typeof doc.relative_path === 'string' && doc.relative_path.trim() !== '') ||
-                              (typeof doc.document_name === 'string' && doc.document_name.trim() !== '');
-        if (!hasPathOrName) {
-          return NextResponse.json({
-            error: 'MANIFEST_VERIFICATION_FAILED',
-            message: `Manifest canonical document '${doc.ko_index}' is missing relative_path or document_name`
-          }, { status: 400 });
-        }
-        if (typeof doc.sha256 !== 'string' || !sha256Regex.test(doc.sha256.trim())) {
-          return NextResponse.json({
-            error: 'MANIFEST_VERIFICATION_FAILED',
-            message: `Manifest canonical document '${doc.ko_index}' is missing a valid 64-character hex sha256 checksum`
-          }, { status: 400 });
-        }
+    // Gatekeeper Requirement 2: Mandatory package_manifest_sha256 format & cryptographic verification
+    if (typeof manifest.package_manifest_sha256 !== 'string' || !manifest.package_manifest_sha256.trim()) {
+      return NextResponse.json({
+        error: 'MANIFEST_VERIFICATION_FAILED',
+        message: 'Manifest is missing required field: package_manifest_sha256'
+      }, { status: 400 });
+    }
+    const sha256Regex = /^[a-fA-F0-9]{64}$/;
+    if (!sha256Regex.test(manifest.package_manifest_sha256.trim())) {
+      return NextResponse.json({
+        error: 'MANIFEST_VERIFICATION_FAILED',
+        message: 'Manifest package_manifest_sha256 must be a valid 64-character hexadecimal SHA-256 string'
+      }, { status: 400 });
+    }
+
+    if (!Array.isArray(manifest.canonical_documents)) {
+      return NextResponse.json({
+        error: 'MANIFEST_VERIFICATION_FAILED',
+        message: 'Manifest is missing required field: canonical_documents (must be an array)'
+      }, { status: 400 });
+    }
+
+    // 2. Exact bound alignment with request parameters
+    if (manifest.package_id !== packageId) {
+      return NextResponse.json({
+        error: 'MANIFEST_VERIFICATION_FAILED',
+        message: `Manifest package_id '${manifest.package_id}' does not match request package_id '${packageId}'`
+      }, { status: 400 });
+    }
+    if (manifest.package_version !== packageVersion) {
+      return NextResponse.json({
+        error: 'MANIFEST_VERIFICATION_FAILED',
+        message: `Manifest package_version '${manifest.package_version}' does not match request package_version '${packageVersion}'`
+      }, { status: 400 });
+    }
+    if (manifest.expected_parts !== expectedCount) {
+      return NextResponse.json({
+        error: 'MANIFEST_VERIFICATION_FAILED',
+        message: `Manifest expected_parts (${manifest.expected_parts}) does not match expected_count (${expectedCount})`
+      }, { status: 400 });
+    }
+    if (manifest.canonical_documents.length !== expectedCount) {
+      return NextResponse.json({
+        error: 'MANIFEST_VERIFICATION_FAILED',
+        message: `Manifest canonical_documents count (${manifest.canonical_documents.length}) does not match expected_count (${expectedCount})`
+      }, { status: 400 });
+    }
+
+    // 3. Strict schema validation for each canonical document
+    for (let idx = 0; idx < manifest.canonical_documents.length; idx++) {
+      const doc = manifest.canonical_documents[idx];
+      if (!doc || typeof doc !== 'object') {
+        return NextResponse.json({
+          error: 'MANIFEST_VERIFICATION_FAILED',
+          message: `Manifest canonical_documents[${idx}] is not a valid object`
+        }, { status: 400 });
       }
+      if (typeof doc.ko_index !== 'string' || !doc.ko_index.trim()) {
+        return NextResponse.json({
+          error: 'MANIFEST_VERIFICATION_FAILED',
+          message: `Manifest canonical_documents[${idx}] is missing required field: ko_index`
+        }, { status: 400 });
+      }
+      const hasPathOrName = (typeof doc.relative_path === 'string' && doc.relative_path.trim() !== '') ||
+                            (typeof doc.document_name === 'string' && doc.document_name.trim() !== '');
+      if (!hasPathOrName) {
+        return NextResponse.json({
+          error: 'MANIFEST_VERIFICATION_FAILED',
+          message: `Manifest canonical document '${doc.ko_index}' is missing relative_path or document_name`
+        }, { status: 400 });
+      }
+      if (typeof doc.sha256 !== 'string' || !sha256Regex.test(doc.sha256.trim())) {
+        return NextResponse.json({
+          error: 'MANIFEST_VERIFICATION_FAILED',
+          message: `Manifest canonical document '${doc.ko_index}' is missing a valid 64-character hex sha256 checksum`
+        }, { status: 400 });
+      }
+    }
+
+    // Gatekeeper Requirement 2: Cross-verify overall package_manifest_sha256 matches cryptographic concatenation
+    const canonicalHashes = manifest.canonical_documents.map(d => d.sha256.trim().toLowerCase());
+    const computedManifestSha256 = crypto.createHash('sha256').update(canonicalHashes.join(':'), 'utf8').digest('hex');
+    if (computedManifestSha256.toLowerCase() !== manifest.package_manifest_sha256.trim().toLowerCase()) {
+      return NextResponse.json({
+        error: 'MANIFEST_VERIFICATION_FAILED',
+        message: `Manifest package_manifest_sha256 checksum mismatch: manifest expected '${manifest.package_manifest_sha256}', computed cryptographic concatenation is '${computedManifestSha256}'`
+      }, { status: 400 });
     }
 
     // Collect all uploaded files
@@ -477,6 +508,7 @@ export async function POST(req: Request) {
       knowledge_metadata: {
         package_id: packageId,
         package_version: packageVersion,
+        package_manifest_sha256: manifest.package_manifest_sha256.trim().toLowerCase(),
         ko_index: item.koIndex,
         is_org_wide: item.isOrgWide ? 'true' : 'false',
         content_sha256: item.sha256,
@@ -525,6 +557,12 @@ export async function POST(req: Request) {
     }
 
     const insertedDocs = await insertRes.json();
+    insertedDocIds = insertedDocs.map((d: any) => d.id);
+
+    // Gatekeeper Requirement 3 Test Hook: Simulate unhandled post-insert exception
+    if (process.env.NODE_ENV !== 'production' && req.headers.get('x-test-simulate-post-insert-exception') === 'true') {
+      throw new Error('Simulated unhandled exception occurring immediately after database insert');
+    }
 
     // 9. Audit Logging (Fail-Closed)
     try {
@@ -547,8 +585,6 @@ export async function POST(req: Request) {
       console.error('Audit log failed for package upload:', auditErr);
 
       // Gatekeeper Blocker 2: Rollback both DB and Storage without swallowing errors
-      const insertedDocIds = insertedDocs.map((d: any) => d.id);
-      
       let dbRollbackSuccess = false;
       let dbRollbackError: string | null = null;
       try {
@@ -617,24 +653,56 @@ export async function POST(req: Request) {
   } catch (err: any) {
     console.error('Unhandled error in package upload route:', err);
 
-    let cleanupStatus = 'CLEAN';
-    let cleanupErrors: string[] = [];
+    let dbCleanupStatus = 'CLEAN';
+    let storageCleanupStatus = 'CLEAN';
+    const cleanupErrors: string[] = [];
 
-    // Gatekeeper Blocker 1: Emergency cleanup MUST check errors and report CLEANUP_FAILURE (never swallow)
-    if (uploadedStoragePaths.length > 0) {
-      const cleanupResult = await performStorageRollback(supabaseUrl, serviceRoleKey, uploadedStoragePaths);
-      if (!cleanupResult.success) {
-        cleanupStatus = 'CLEANUP_FAILURE';
-        cleanupErrors = cleanupResult.errors;
-        console.error('CLEANUP_FAILURE in unhandled error handler:', cleanupErrors);
-      } else {
-        cleanupStatus = 'ROLLED_BACK';
+    // Gatekeeper Blocker 3: If an unhandled exception occurred AFTER DB insertion, immediately archive inserted documents
+    if (insertedDocIds.length > 0) {
+      try {
+        const retireRes = await fetch(`${supabaseUrl}/rest/v1/rpc/retire_knowledge_fixtures`, {
+          method: 'POST',
+          headers: {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ p_fixture_ids: insertedDocIds })
+        });
+        if (!retireRes.ok) {
+          const errText = await retireRes.text();
+          dbCleanupStatus = 'ROLLBACK_FAILURE';
+          cleanupErrors.push(`DB archival rollback failed (${retireRes.status}): ${errText}`);
+          console.error('DB archival rollback failed in unhandled catch:', errText);
+        } else {
+          dbCleanupStatus = 'ROLLED_BACK';
+        }
+      } catch (dbErr: any) {
+        dbCleanupStatus = 'ROLLBACK_FAILURE';
+        cleanupErrors.push(`DB archival rollback exception: ${dbErr.message}`);
+        console.error('DB archival rollback exception in unhandled catch:', dbErr);
       }
     }
 
+    // Emergency storage cleanup
+    if (uploadedStoragePaths.length > 0) {
+      const cleanupResult = await performStorageRollback(supabaseUrl, serviceRoleKey, uploadedStoragePaths);
+      if (!cleanupResult.success) {
+        storageCleanupStatus = 'CLEANUP_FAILURE';
+        cleanupErrors.push(...cleanupResult.errors);
+        console.error('CLEANUP_FAILURE in unhandled error handler:', cleanupResult.errors);
+      } else {
+        storageCleanupStatus = 'ROLLED_BACK';
+      }
+    }
+
+    const hasFailure = dbCleanupStatus === 'ROLLBACK_FAILURE' || storageCleanupStatus === 'CLEANUP_FAILURE';
+
     return NextResponse.json({
-      error: 'INTERNAL_SERVER_ERROR',
-      cleanup_status: cleanupStatus,
+      error: hasFailure ? 'INTERNAL_ERROR_AND_ROLLBACK_FAILED' : 'INTERNAL_SERVER_ERROR',
+      db_rollback_status: insertedDocIds.length > 0 ? dbCleanupStatus : undefined,
+      storage_rollback_status: uploadedStoragePaths.length > 0 ? storageCleanupStatus : undefined,
+      cleanup_status: hasFailure ? 'CLEANUP_FAILURE' : (insertedDocIds.length > 0 || uploadedStoragePaths.length > 0 ? 'ROLLED_BACK' : 'CLEAN'),
       cleanup_errors: cleanupErrors.length > 0 ? cleanupErrors : undefined,
       message: err.message || 'An unexpected error occurred during package upload'
     }, { status: 500 });

@@ -194,10 +194,25 @@ async function runPackageUploadGateTests() {
   );
 
   // Test 2.3: Mismatched count (Partial package: expected 10 but received 2)
+  const dummyHashes = Array.from({ length: 10 }, (_, i) => crypto.createHash('sha256').update(`doc_${i}`).digest('hex'));
+  const partialManifestHash = crypto.createHash('sha256').update(dummyHashes.join(':'), 'utf8').digest('hex');
+
   const partialForm = new FormData();
   partialForm.append('package_id', 'test_partial_pack');
+  partialForm.append('package_version', '1.0.0');
   partialForm.append('expected_count', '10');
   partialForm.append('namespace', 'marketing');
+  partialForm.append('manifest', JSON.stringify({
+    package_id: 'test_partial_pack',
+    package_version: '1.0.0',
+    expected_parts: 10,
+    package_manifest_sha256: partialManifestHash,
+    canonical_documents: Array.from({ length: 10 }, (_, i) => ({
+      ko_index: `KO-${(i + 1).toString().padStart(2, '0')}`,
+      relative_path: `doc_${i + 1}.md`,
+      sha256: dummyHashes[i]
+    }))
+  }));
   partialForm.append('files[]', new File(['# Part 1'], 'test_KO-01.md', { type: 'text/markdown' }));
   partialForm.append('files[]', new File(['# Part 2'], 'test_KO-02.md', { type: 'text/markdown' }));
 
@@ -213,10 +228,25 @@ async function runPackageUploadGateTests() {
   );
 
   // Test 2.4: Duplicate KO index in package
+  const dupSha1 = crypto.createHash('sha256').update('# Part 1').digest('hex');
+  const dupSha2 = crypto.createHash('sha256').update('# Part 2 Dup').digest('hex');
+  const dupManifestHash = crypto.createHash('sha256').update(`${dupSha1}:${dupSha2}`).digest('hex');
+
   const dupForm = new FormData();
   dupForm.append('package_id', 'test_dup_pack');
+  dupForm.append('package_version', '1.0.0');
   dupForm.append('expected_count', '2');
   dupForm.append('namespace', 'marketing');
+  dupForm.append('manifest', JSON.stringify({
+    package_id: 'test_dup_pack',
+    package_version: '1.0.0',
+    expected_parts: 2,
+    package_manifest_sha256: dupManifestHash,
+    canonical_documents: [
+      { ko_index: 'KO-02', relative_path: 'PN_MEDIA_PLUS_MARKETING_02_PARTA.md', sha256: dupSha1 },
+      { ko_index: 'KO-02', relative_path: 'PN_MEDIA_PLUS_MARKETING_02_PARTB.md', sha256: dupSha2 }
+    ]
+  }));
   dupForm.append('files[]', new File(['# Part 1'], 'PN_MEDIA_PLUS_MARKETING_02_PARTA.md', { type: 'text/markdown' }));
   dupForm.append('files[]', new File(['# Part 2 Dup'], 'PN_MEDIA_PLUS_MARKETING_02_PARTB.md', { type: 'text/markdown' }));
 
@@ -240,7 +270,13 @@ async function runPackageUploadGateTests() {
   manifestIdMismatchForm.append('manifest', JSON.stringify({
     package_id: 'pkg_different_id',
     package_version: '1.0.0',
-    expected_parts: 1
+    expected_parts: 1,
+    package_manifest_sha256: '0'.repeat(64),
+    canonical_documents: [{
+      ko_index: 'KO-01',
+      relative_path: 'PN_MARKETING_KO-01.md',
+      sha256: '0'.repeat(64)
+    }]
   }));
   manifestIdMismatchForm.append('files[]', file1);
 
@@ -263,7 +299,13 @@ async function runPackageUploadGateTests() {
   mPartsForm.append('manifest', JSON.stringify({
     package_id: 'pkg_parts_test',
     package_version: '1.0.0',
-    expected_parts: 10
+    expected_parts: 10,
+    package_manifest_sha256: '0'.repeat(64),
+    canonical_documents: Array.from({ length: 10 }, (_, i) => ({
+      ko_index: `KO-${(i + 1).toString().padStart(2, '0')}`,
+      relative_path: `doc_${i + 1}.md`,
+      sha256: '0'.repeat(64)
+    }))
   }));
   mPartsForm.append('files[]', file1);
 
@@ -283,13 +325,17 @@ async function runPackageUploadGateTests() {
   mShaForm.append('package_id', 'pkg_sha_test');
   mShaForm.append('expected_count', '1');
   mShaForm.append('namespace', 'marketing');
+  const fakeSha = '0'.repeat(64);
+  const fakeManifestHash = crypto.createHash('sha256').update(fakeSha).digest('hex');
   mShaForm.append('manifest', JSON.stringify({
     package_id: 'pkg_sha_test',
     package_version: '1.0.0',
     expected_parts: 1,
+    package_manifest_sha256: fakeManifestHash,
     canonical_documents: [{
       ko_index: 'KO-01',
-      sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+      relative_path: 'PN_MARKETING_KO-01.md',
+      sha256: fakeSha
     }]
   }));
   mShaForm.append('files[]', new File(['# Real Content'], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
@@ -358,10 +404,12 @@ async function runPackageUploadGateTests() {
   mSimilarNameForm.append('expected_count', '1');
   mSimilarNameForm.append('namespace', 'marketing');
   const validSha = crypto.createHash('sha256').update('# Content').digest('hex');
+  const simManifestHash = crypto.createHash('sha256').update(validSha).digest('hex');
   mSimilarNameForm.append('manifest', JSON.stringify({
     package_id: 'pkg_similar_name',
     package_version: '1.0.0',
     expected_parts: 1,
+    package_manifest_sha256: simManifestHash,
     canonical_documents: [{
       ko_index: 'KO-01',
       relative_path: 'documents/PN_MARKETING_KO-01.md',
@@ -382,17 +430,92 @@ async function runPackageUploadGateTests() {
     'Test 2.10: Filename nearly identical but not strictly matching canonical document strictly rejected with HTTP 400 MANIFEST_VERIFICATION_FAILED'
   );
 
+  // Test 2.11: Manifest missing package_manifest_sha256
+  const mMissingManifestShaForm = new FormData();
+  mMissingManifestShaForm.append('package_id', 'pkg_missing_msha');
+  mMissingManifestShaForm.append('expected_count', '1');
+  mMissingManifestShaForm.append('namespace', 'marketing');
+  mMissingManifestShaForm.append('manifest', JSON.stringify({
+    package_id: 'pkg_missing_msha',
+    package_version: '1.0.0',
+    expected_parts: 1,
+    // missing package_manifest_sha256
+    canonical_documents: [{
+      ko_index: 'KO-01',
+      relative_path: 'PN_MARKETING_KO-01.md',
+      sha256: validSha
+    }]
+  }));
+  mMissingManifestShaForm.append('files[]', new File(['# Content'], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
+
+  const mMissingMshaReq = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${founderToken}` },
+    body: mMissingManifestShaForm
+  });
+  const mMissingMshaRes = await uploadPackageRoute(mMissingMshaReq);
+  const mMissingMshaJson = await mMissingMshaRes.json();
+  assert(mMissingMshaRes.status === 400 && mMissingMshaJson.error === 'MANIFEST_VERIFICATION_FAILED',
+    'Test 2.11: Manifest missing package_manifest_sha256 strictly rejected with HTTP 400 MANIFEST_VERIFICATION_FAILED'
+  );
+
+  // Test 2.12: Manifest package_manifest_sha256 checksum mismatch
+  const mMismatchMshaForm = new FormData();
+  mMismatchMshaForm.append('package_id', 'pkg_mismatch_msha');
+  mMismatchMshaForm.append('expected_count', '1');
+  mMismatchMshaForm.append('namespace', 'marketing');
+  mMismatchMshaForm.append('manifest', JSON.stringify({
+    package_id: 'pkg_mismatch_msha',
+    package_version: '1.0.0',
+    expected_parts: 1,
+    package_manifest_sha256: 'f'.repeat(64), // deliberately wrong checksum
+    canonical_documents: [{
+      ko_index: 'KO-01',
+      relative_path: 'PN_MARKETING_KO-01.md',
+      sha256: validSha
+    }]
+  }));
+  mMismatchMshaForm.append('files[]', new File(['# Content'], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
+
+  const mMismatchMshaReq = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${founderToken}` },
+    body: mMismatchMshaForm
+  });
+  const mMismatchMshaRes = await uploadPackageRoute(mMismatchMshaReq);
+  const mMismatchMshaJson = await mMismatchMshaRes.json();
+  assert(mMismatchMshaRes.status === 400 && mMismatchMshaJson.error === 'MANIFEST_VERIFICATION_FAILED',
+    'Test 2.12: Manifest package_manifest_sha256 checksum mismatch strictly rejected with HTTP 400 MANIFEST_VERIFICATION_FAILED'
+  );
+
   // --- TEST GROUP 3: Server-Side QA Gate & Zero Storage Pollution Rollback ---
   console.log('\n--- TEST GROUP 3: Server-Side QA Gate & Zero Storage Pollution Rollback ---');
 
   // Test 3.1: Package contains a P0 Claim Violation (e.g. 300% revenue claim in part 2)
   const badPackageId = `test_qa_fail_${Date.now()}`;
+  const p0File1Content = '# Clean KO-01\nChiến lược tiếp thị số nội bộ.';
+  const p0File2Content = '# Toxic KO-02\nChung toi cam ket tang truong 300% doanh thu ngay thang dau tien!';
+  const p0Sha1 = crypto.createHash('sha256').update(p0File1Content).digest('hex');
+  const p0Sha2 = crypto.createHash('sha256').update(p0File2Content).digest('hex');
+  const p0ManifestHash = crypto.createHash('sha256').update(`${p0Sha1}:${p0Sha2}`).digest('hex');
+
   const p0Form = new FormData();
   p0Form.append('package_id', badPackageId);
+  p0Form.append('package_version', '1.0.0');
   p0Form.append('expected_count', '2');
   p0Form.append('namespace', 'marketing');
-  p0Form.append('files[]', new File(['# Clean KO-01\nChiến lược tiếp thị số nội bộ.'], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
-  p0Form.append('files[]', new File(['# Toxic KO-02\nChung toi cam ket tang truong 300% doanh thu ngay thang dau tien!'], 'PN_MARKETING_KO-02.md', { type: 'text/markdown' }));
+  p0Form.append('manifest', JSON.stringify({
+    package_id: badPackageId,
+    package_version: '1.0.0',
+    expected_parts: 2,
+    package_manifest_sha256: p0ManifestHash,
+    canonical_documents: [
+      { ko_index: 'KO-01', relative_path: 'PN_MARKETING_KO-01.md', sha256: p0Sha1 },
+      { ko_index: 'KO-02', relative_path: 'PN_MARKETING_KO-02.md', sha256: p0Sha2 }
+    ]
+  }));
+  p0Form.append('files[]', new File([p0File1Content], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
+  p0Form.append('files[]', new File([p0File2Content], 'PN_MARKETING_KO-02.md', { type: 'text/markdown' }));
 
   const p0Req = new Request('http://localhost/api/crm/knowledge/package/upload', {
     method: 'POST',
@@ -444,10 +567,14 @@ async function runPackageUploadGateTests() {
   cleanForm.append('namespace', 'marketing');
 
   // Manifest matching the 10 files with exact SHA-256 and is_org_wide: true
+  const canonicalHashes = cleanFiles.map(f => f.sha256);
+  const packageManifestSha256 = crypto.createHash('sha256').update(canonicalHashes.join(':'), 'utf8').digest('hex');
+
   const packageManifest = {
     package_id: cleanPackageId,
     package_version: cleanVersion,
     expected_parts: 10,
+    package_manifest_sha256: packageManifestSha256,
     is_org_wide: true,
     canonical_documents: cleanFiles.map(f => ({
       ko_index: f.koIndex,
@@ -506,20 +633,60 @@ async function runPackageUploadGateTests() {
       assert(doc.knowledge_metadata?.ready_for_human_review === true,
         `Test 4.8: Document metadata has ready_for_human_review = true`
       );
+      assert(doc.knowledge_metadata?.package_manifest_sha256 === packageManifestSha256,
+        `Test 4.9: Document metadata records package_manifest_sha256 accurately`
+      );
     }
   }
 
-  // --- TEST GROUP 5: Gatekeeper Condition 1 Invariant: No Automatic is_org_wide ---
-  console.log('\n--- TEST GROUP 5: Gatekeeper Condition 1 Invariant (is_org_wide only on manifest) ---');
+  // --- TEST GROUP 5: Manifest Mandatory Requirement & is_org_wide Guard ---
+  console.log('\n--- TEST GROUP 5: Manifest Mandatory Requirement & is_org_wide Guard ---');
 
-  const privatePackageId = `pkg_private_ops_${Date.now()}`;
+  // Test 5.1: Request missing manifest is strictly rejected with HTTP 400 MANIFEST_REQUIRED
+  const noManifestForm = new FormData();
+  noManifestForm.append('package_id', `pkg_no_manifest_${Date.now()}`);
+  noManifestForm.append('package_version', '1.0.0');
+  noManifestForm.append('expected_count', '1');
+  noManifestForm.append('namespace', 'marketing');
+  noManifestForm.append('files[]', file1);
+
+  const noManifestReq = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${founderToken}` },
+    body: noManifestForm
+  });
+  const noManifestRes = await uploadPackageRoute(noManifestReq);
+  const noManifestJson = await noManifestRes.json();
+
+  assert(noManifestRes.status === 400 && noManifestJson.error === 'MANIFEST_REQUIRED',
+    'Test 5.1: Request missing manifest is strictly rejected with HTTP 400 MANIFEST_REQUIRED'
+  );
+
+  // Test 5.2: Package with manifest that does NOT declare org_wide sets is_org_wide = false (NOT automatically true for channel_id=null)
+  const privatePackageId = `pkg_private_manifest_${Date.now()}`;
+  const privateContent = '# Private Marketing Document\nNội dung tiếp thị riêng cho channel.';
+  const privateSha = crypto.createHash('sha256').update(privateContent).digest('hex');
+  const privateManifestHash = crypto.createHash('sha256').update(privateSha).digest('hex');
+
   const privateForm = new FormData();
   privateForm.append('package_id', privatePackageId);
   privateForm.append('package_version', '1.0.0');
   privateForm.append('expected_count', '1');
-  privateForm.append('namespace', 'cskh');
-  // No manifest and channel_id is null: must NOT automatically set is_org_wide=true!
-  privateForm.append('files[]', new File(['# Private SOP\nTài liệu quy trình nội bộ.'], 'SOP_PRIVATE_KO-01.md', { type: 'text/markdown' }));
+  privateForm.append('namespace', 'marketing');
+  privateForm.append('manifest', JSON.stringify({
+    package_id: privatePackageId,
+    package_version: '1.0.0',
+    expected_parts: 1,
+    package_manifest_sha256: privateManifestHash,
+    is_org_wide: false,
+    canonical_documents: [{
+      ko_index: 'KO-01',
+      relative_path: 'PN_MARKETING_KO-01.md',
+      sha256: privateSha,
+      is_org_wide: false
+    }]
+  }));
+  privateForm.append('files[]', new File([privateContent], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
 
   const privateReq = new Request('http://localhost/api/crm/knowledge/package/upload', {
     method: 'POST',
@@ -529,7 +696,7 @@ async function runPackageUploadGateTests() {
   const privateRes = await uploadPackageRoute(privateReq);
   const privateJson = await privateRes.json();
 
-  assert(privateRes.status === 201, 'Test 5.1: Non-manifest package upload succeeds');
+  assert(privateRes.status === 201, 'Test 5.2: Valid package upload with non-org-wide manifest succeeds');
   const privateDocId = privateJson.documents?.[0]?.id;
   if (privateDocId) fixtureDocIds.push(privateDocId);
 
@@ -540,7 +707,7 @@ async function runPackageUploadGateTests() {
     .single();
 
   assert(privateDocRow?.knowledge_metadata?.is_org_wide === 'false',
-    'Test 5.2: Gatekeeper Condition 1: channel_id=null without manifest declaration sets is_org_wide = false (NOT automatically true)'
+    'Test 5.2b: Gatekeeper Condition 1: channel_id=null without manifest org_wide sets is_org_wide = false (NOT automatically true)'
   );
 
   // --- TEST GROUP 6: Audit Failure & Compensating Rollback Integrity ---
@@ -548,12 +715,27 @@ async function runPackageUploadGateTests() {
 
   // Test 6.1: Audit log failure triggers automatic compensating rollback (DB retired + Storage cleared)
   const auditFailPkgId = `pkg_audit_fail_${Date.now()}`;
+  const auditContent1 = '# Clean test content for audit failure';
+  const auditSha1 = crypto.createHash('sha256').update(auditContent1).digest('hex');
+  const auditManifestHash1 = crypto.createHash('sha256').update(auditSha1).digest('hex');
+
   const aForm1 = new FormData();
   aForm1.append('package_id', auditFailPkgId);
   aForm1.append('package_version', '1.0.0');
   aForm1.append('expected_count', '1');
   aForm1.append('namespace', 'marketing');
-  aForm1.append('files[]', new File(['# Clean test content for audit failure'], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
+  aForm1.append('manifest', JSON.stringify({
+    package_id: auditFailPkgId,
+    package_version: '1.0.0',
+    expected_parts: 1,
+    package_manifest_sha256: auditManifestHash1,
+    canonical_documents: [{
+      ko_index: 'KO-01',
+      relative_path: 'PN_MARKETING_KO-01.md',
+      sha256: auditSha1
+    }]
+  }));
+  aForm1.append('files[]', new File([auditContent1], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
 
   const aReq1 = new Request('http://localhost/api/crm/knowledge/package/upload', {
     method: 'POST',
@@ -578,12 +760,27 @@ async function runPackageUploadGateTests() {
 
   // Test 6.2: Audit failure AND RPC archive failure reports explicit ROLLBACK_FAILURE without swallowing errors
   const auditRpcFailPkgId = `pkg_audit_rpc_fail_${Date.now()}`;
+  const auditContent2 = '# Clean test content for rpc failure';
+  const auditSha2 = crypto.createHash('sha256').update(auditContent2).digest('hex');
+  const auditManifestHash2 = crypto.createHash('sha256').update(auditSha2).digest('hex');
+
   const aForm2 = new FormData();
   aForm2.append('package_id', auditRpcFailPkgId);
   aForm2.append('package_version', '1.0.0');
   aForm2.append('expected_count', '1');
   aForm2.append('namespace', 'marketing');
-  aForm2.append('files[]', new File(['# Clean test content for rpc failure'], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
+  aForm2.append('manifest', JSON.stringify({
+    package_id: auditRpcFailPkgId,
+    package_version: '1.0.0',
+    expected_parts: 1,
+    package_manifest_sha256: auditManifestHash2,
+    canonical_documents: [{
+      ko_index: 'KO-01',
+      relative_path: 'PN_MARKETING_KO-01.md',
+      sha256: auditSha2
+    }]
+  }));
+  aForm2.append('files[]', new File([auditContent2], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
 
   const aReq2 = new Request('http://localhost/api/crm/knowledge/package/upload', {
     method: 'POST',
@@ -616,6 +813,62 @@ async function runPackageUploadGateTests() {
   if (residualDocs && residualDocs.length > 0) {
     fixtureDocIds.push(...residualDocs.map(d => d.id));
   }
+
+  // Test 6.3: Unhandled exception occurring AFTER DB insert triggers emergency archival of inserted documents
+  const postInsertFailPkgId = `pkg_post_insert_fail_${Date.now()}`;
+  const postInsertContent = '# Clean test content for post-insert exception';
+  const postInsertSha = crypto.createHash('sha256').update(postInsertContent).digest('hex');
+  const postInsertManifestHash = crypto.createHash('sha256').update(postInsertSha).digest('hex');
+
+  const aForm3 = new FormData();
+  aForm3.append('package_id', postInsertFailPkgId);
+  aForm3.append('package_version', '1.0.0');
+  aForm3.append('expected_count', '1');
+  aForm3.append('namespace', 'marketing');
+  aForm3.append('manifest', JSON.stringify({
+    package_id: postInsertFailPkgId,
+    package_version: '1.0.0',
+    expected_parts: 1,
+    package_manifest_sha256: postInsertManifestHash,
+    canonical_documents: [{
+      ko_index: 'KO-01',
+      relative_path: 'PN_MARKETING_KO-01.md',
+      sha256: postInsertSha
+    }]
+  }));
+  aForm3.append('files[]', new File([postInsertContent], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
+
+  const aReq3 = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${founderToken}`,
+      'x-test-simulate-post-insert-exception': 'true'
+    },
+    body: aForm3
+  });
+  const aRes3 = await uploadPackageRoute(aReq3);
+  const aJson3 = await aRes3.json();
+
+  assert(aRes3.status === 500 && aJson3.error === 'INTERNAL_SERVER_ERROR',
+    'Test 6.3: Post-insert exception triggers HTTP 500 INTERNAL_SERVER_ERROR'
+  );
+  assert(aJson3.db_rollback_status === 'ROLLED_BACK',
+    'Test 6.3: DB documents successfully archived in outer catch (db_rollback_status = ROLLED_BACK)'
+  );
+  assert(aJson3.storage_rollback_status === 'ROLLED_BACK',
+    'Test 6.3: Storage blobs successfully rolled back in outer catch (storage_rollback_status = ROLLED_BACK)'
+  );
+
+  // Verify that any documents inserted for postInsertFailPkgId have knowledge_status = 'ARCHIVED'
+  const { data: postInsertDocs } = await adminClient
+    .from('crm_knowledge_documents')
+    .select('id, knowledge_status')
+    .eq('organization_id', targetOrgId)
+    .contains('knowledge_metadata', { package_id: postInsertFailPkgId });
+
+  assert(Boolean(postInsertDocs && postInsertDocs.length === 1 && postInsertDocs[0].knowledge_status === 'ARCHIVED'),
+    'Test 6.3b: Database verification confirms inserted document was transitioned to ARCHIVED (Append-Only preserved, 0 active records)'
+  );
 
   // --- APPEND-ONLY AUDIT RETENTION & FIXTURE ARCHIVAL (Policy Enforcement) ---
   console.log('\n--- APPEND-ONLY AUDIT RETENTION & FIXTURE ARCHIVAL (Policy Enforcement) ---');
@@ -654,7 +907,7 @@ async function runPackageUploadGateTests() {
   }
 
   console.log('\n================================================================');
-  console.log('ALL TESTS COMPLETE: 26/26 TESTS PASSED');
+  console.log('ALL TESTS COMPLETE: 30/30 TESTS PASSED');
   console.log('OVERALL RESULT: SUCCESS (100% PASS) - ALL GATEKEEPER P0S VERIFIED');
   console.log('================================================================\n');
 }
