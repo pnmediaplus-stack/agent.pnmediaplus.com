@@ -17,6 +17,7 @@
     "test:validate-evidence": "tsx scripts/generate-and-validate-evidence-records.ts",
     "test:document-qa": "tsx scripts/test-document-qa-prototype.ts",
     "test:acceptance-packs": "tsx scripts/validate-acceptance-packs.ts",
+    "test:phase3-foundation": "tsx scripts/test-phase3-layering-foundation.ts",
     "start": "next start"
   },
   "dependencies": {
