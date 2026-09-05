@@ -20,12 +20,14 @@ async function checkProductionDomain() {
     const res = await fetch(prodUrl, { method: 'HEAD' });
     console.log('  Target URL:', prodUrl);
     console.log('  HTTP Status:', res.status);
+    if (!res.ok && res.status >= 500) {
+      throw new Error(`Production domain returned server error: ${res.status}`);
+    }
     console.log('  ✅ PASS: Production domain https://agent.pnmediaplus.com resolves with valid TLS/HTTPS.\n');
     return true;
   } catch (err: any) {
-    console.warn('  ⚠️ WARNING: Could not connect to', prodUrl, ':', err.message);
-    console.warn('  Note: Server may be pending deployment or behind firewall/auth.\n');
-    return false;
+    console.error('  ❌ FAIL_CLOSED: Could not connect to', prodUrl, ':', err.message);
+    throw new Error(`FAIL_CLOSED: Production domain check failed for ${prodUrl}: ${err.message}`);
   }
 }
 
@@ -39,6 +41,10 @@ function checkProdWorkflowArtifact() {
 
   assert.strictEqual(wf.name, '075_N8N_CAMPAIGN_PLANNER_PROD', 'Workflow name must be 075_N8N_CAMPAIGN_PLANNER_PROD');
   console.log('  [2.1 Workflow Name] -> PASS:', wf.name);
+
+  // Assert active === false (Gatekeeper Blocker 2: MUST be inactive by default)
+  assert.strictEqual(wf.active, false, 'Production workflow MUST have active: false by default to prevent premature execution upon import');
+  console.log('  [2.2 Inactive by Default] -> PASS: active is strictly false');
 
   // Assert ZERO ngrok references
   assert(!rawContent.includes('ngrok'), 'Production workflow MUST NOT contain any ngrok references');
