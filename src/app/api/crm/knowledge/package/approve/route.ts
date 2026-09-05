@@ -93,52 +93,59 @@ export async function POST(req: Request) {
     } catch (auditErr: any) {
       console.error('[PackageApproval] Audit logging failed:', auditErr.message);
 
-      // Gatekeeper Blocker 1 & 2: Compensating Rollback to prevent inconsistent APPROVED state without audit
+      // Gatekeeper Blocker 1 & 2: Targeted Compensating Rollback
+      // If this request was an idempotent replay (transitioned_now is false),
+      // DO NOT roll back or archive already approved packages!
+      const transitionedNow = approvalResult?.transitioned_now === true;
+      const rawTransitionedDocIds = approvalResult?.transitioned_doc_ids || [];
+      const transitionedDocIds: string[] = Array.isArray(rawTransitionedDocIds) ? rawTransitionedDocIds : [];
+
+      if (!transitionedNow || transitionedDocIds.length === 0) {
+        // Idempotent replay where audit failed: No documents were transitioned in this request,
+        // so NO documents must be rolled back or archived. The previously approved package remains active.
+        return NextResponse.json({
+          error: 'AUDIT_LOG_FAILED',
+          message: 'Package was already approved in database, but writing authoritative audit log for this approval replay failed.',
+          audit_rollback_status: 'NOOP_ALREADY_APPROVED',
+          idempotent: true
+        }, { status: 500 });
+      }
+
+      // First-time approval where audit failed: Roll back ONLY the documents transitioned in this request
       let dbRollbackSuccess = false;
       let dbRollbackError: string | null = null;
+      let affectedRows = 0;
+
       try {
         if (process.env.NODE_ENV !== 'production' && req.headers.get('x-test-simulate-rpc-failure') === 'true') {
-          throw new Error('Simulated RPC retire_knowledge_fixtures failure during approval rollback');
+          throw new Error('Simulated RPC rollback_knowledge_package_approval failure for fault recovery testing');
         }
 
-        const docsRes = await fetch(
-          `${supabaseUrl}/rest/v1/crm_knowledge_documents?organization_id=eq.${organizationId}&knowledge_metadata->>package_id=eq.${encodeURIComponent(packageId)}&knowledge_metadata->>package_version=eq.${encodeURIComponent(packageVersion)}&select=id`,
-          {
-            headers: {
-              'apikey': serviceRoleKey,
-              'Authorization': `Bearer ${serviceRoleKey}`,
-            },
-            cache: 'no-store'
-          }
-        );
+        const rollbackRes = await fetch(`${supabaseUrl}/rest/v1/rpc/rollback_knowledge_package_approval`, {
+          method: 'POST',
+          headers: {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            p_organization_id: organizationId,
+            p_package_id: packageId,
+            p_package_version: packageVersion,
+            p_document_ids: transitionedDocIds,
+            p_expected_status: 'APPROVED',
+            p_target_status: 'ARCHIVED',
+            p_reason: 'AUDIT_LOG_FAILED'
+          })
+        });
 
-        if (!docsRes.ok) {
-          const errText = await docsRes.text();
-          throw new Error(`Failed to query package documents for rollback: HTTP ${docsRes.status} ${errText}`);
-        }
-
-        const pkgDocs = await docsRes.json();
-        const pkgDocIds = (pkgDocs || []).map((d: any) => d.id);
-
-        if (pkgDocIds.length > 0) {
-          const retireRes = await fetch(`${supabaseUrl}/rest/v1/rpc/retire_knowledge_fixtures`, {
-            method: 'POST',
-            headers: {
-              'apikey': serviceRoleKey,
-              'Authorization': `Bearer ${serviceRoleKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ p_fixture_ids: pkgDocIds })
-          });
-
-          if (!retireRes.ok) {
-            const errText = await retireRes.text();
-            dbRollbackError = `RPC retire_knowledge_fixtures failed with HTTP ${retireRes.status}: ${errText}`;
-            console.error('[PackageApproval Rollback]', dbRollbackError);
-          } else {
-            dbRollbackSuccess = true;
-          }
+        if (!rollbackRes.ok) {
+          const errText = await rollbackRes.text();
+          dbRollbackError = `RPC rollback_knowledge_package_approval failed with HTTP ${rollbackRes.status}: ${errText}`;
+          console.error('[PackageApproval Rollback]', dbRollbackError);
         } else {
+          const rbData = await rollbackRes.json();
+          affectedRows = rbData?.affected_rows || 0;
           dbRollbackSuccess = true;
         }
       } catch (dbErr: any) {
@@ -151,14 +158,17 @@ export async function POST(req: Request) {
           error: 'AUDIT_LOG_AND_ROLLBACK_FAILED',
           message: 'Package approval audit log failed AND compensating rollback also failed.',
           audit_rollback_status: 'ROLLBACK_FAILURE',
-          rollback_errors: dbRollbackError ? [dbRollbackError] : []
+          rollback_errors: dbRollbackError ? [dbRollbackError] : [],
+          transitioned_doc_ids: transitionedDocIds
         }, { status: 500 });
       }
 
       return NextResponse.json({
         error: 'AUDIT_LOG_FAILED',
-        message: 'Package was approved in database but writing authoritative audit log failed. Package documents have been retired to ARCHIVED (Append-Only).',
-        audit_rollback_status: 'ROLLED_BACK'
+        message: 'Package was approved in database but writing authoritative audit log failed. Transitioned documents have been retired to ARCHIVED (Append-Only).',
+        audit_rollback_status: 'ROLLED_BACK',
+        rolled_back_parts: affectedRows,
+        transitioned_doc_ids: transitionedDocIds
       }, { status: 500 });
     }
 

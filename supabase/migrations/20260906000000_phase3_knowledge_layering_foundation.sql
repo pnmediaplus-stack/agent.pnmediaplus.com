@@ -212,6 +212,7 @@ DECLARE
   v_invalid_kos INT;
   v_already_approved INT;
   v_now_iso TEXT;
+  v_transitioned_ids UUID[];
   c_canonical_kos CONSTANT TEXT[] := ARRAY[
     'KO-01', 'KO-02', 'KO-03', 'KO-04', 'KO-05',
     'KO-06', 'KO-07', 'KO-08', 'KO-09', 'KO-10'
@@ -302,6 +303,8 @@ BEGIN
       'status', 'PACKAGE_APPROVED',
       'idempotent', true,
       'approved_parts', v_already_approved,
+      'transitioned_now', false,
+      'transitioned_doc_ids', '[]'::jsonb,
       'package_id', p_package_id,
       'message', 'Package was already approved by this authority with the same version.'
     );
@@ -342,27 +345,34 @@ BEGIN
   v_now_iso := to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
   PERFORM set_config('app.in_knowledge_package_approval', 'true', true);
 
-  UPDATE public.crm_knowledge_documents
-  SET 
-    knowledge_status = 'APPROVED',
-    ingestion_status = 'PENDING',
-    knowledge_metadata = knowledge_metadata || jsonb_build_object(
-      'package_status', 'PACKAGE_APPROVED',
-      'provenance', COALESCE(knowledge_metadata->'provenance', '{}'::jsonb) || jsonb_build_object(
-        'approved_by', v_caller_id::text,
-        'approved_at', v_now_iso
-      )
-    ),
-    updated_at = NOW()
-  WHERE organization_id = p_organization_id
-    AND knowledge_metadata->>'package_id' = p_package_id
-    AND knowledge_metadata->>'package_version' = p_package_version;
+  WITH updated AS (
+    UPDATE public.crm_knowledge_documents
+    SET 
+      knowledge_status = 'APPROVED',
+      ingestion_status = 'PENDING',
+      knowledge_metadata = knowledge_metadata || jsonb_build_object(
+        'package_status', 'PACKAGE_APPROVED',
+        'provenance', COALESCE(knowledge_metadata->'provenance', '{}'::jsonb) || jsonb_build_object(
+          'approved_by', v_caller_id::text,
+          'approved_at', v_now_iso
+        )
+      ),
+      updated_at = NOW()
+    WHERE organization_id = p_organization_id
+      AND knowledge_metadata->>'package_id' = p_package_id
+      AND knowledge_metadata->>'package_version' = p_package_version
+      AND knowledge_status = 'REVIEWED'
+    RETURNING id
+  )
+  SELECT COALESCE(array_agg(id), ARRAY[]::UUID[]) INTO v_transitioned_ids FROM updated;
 
   RETURN jsonb_build_object(
     'success', true,
     'status', 'PACKAGE_APPROVED',
     'idempotent', false,
-    'approved_parts', v_total_rows,
+    'approved_parts', COALESCE(array_length(v_transitioned_ids, 1), 0),
+    'transitioned_now', true,
+    'transitioned_doc_ids', to_jsonb(v_transitioned_ids),
     'package_id', p_package_id,
     'approved_by', v_caller_id,
     'approved_at', v_now_iso
@@ -822,5 +832,77 @@ $$;
 
 REVOKE ALL ON FUNCTION public.retire_knowledge_fixtures(UUID[]) FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.retire_knowledge_fixtures(UUID[]) TO service_role;
+
+-- 8. Targeted Approval Rollback RPC (Gatekeeper Blocker Hardening)
+CREATE OR REPLACE FUNCTION public.rollback_knowledge_package_approval(
+  p_organization_id UUID,
+  p_package_id TEXT,
+  p_package_version TEXT,
+  p_document_ids UUID[],
+  p_expected_status TEXT DEFAULT 'APPROVED',
+  p_target_status TEXT DEFAULT 'ARCHIVED',
+  p_reason TEXT DEFAULT 'AUDIT_LOG_FAILED'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  v_caller_role TEXT;
+  v_count INTEGER;
+  v_now_iso TEXT;
+BEGIN
+  v_caller_role := COALESCE(
+    NULLIF(current_setting('request.jwt.claim.role', true), ''),
+    (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'),
+    NULLIF(auth.role(), '')
+  );
+
+  IF v_caller_role NOT IN ('service_role', 'postgres') THEN
+    RAISE EXCEPTION 'AUTHORIZATION_VIOLATION: Only service_role can execute package approval rollback.';
+  END IF;
+
+  IF p_document_ids IS NULL OR array_length(p_document_ids, 1) = 0 THEN
+    RETURN jsonb_build_object(
+      'success', true,
+      'affected_rows', 0,
+      'status', 'NOOP_EMPTY_IDS'
+    );
+  END IF;
+
+  v_now_iso := to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
+
+  -- Ensure correlation id for audit trigger
+  PERFORM set_config('app.correlation_id', 'approval-rollback-' || gen_random_uuid()::text, true);
+
+  UPDATE public.crm_knowledge_documents
+  SET knowledge_status = p_target_status,
+      knowledge_metadata = COALESCE(knowledge_metadata, '{}'::jsonb) || jsonb_build_object(
+        'approval_rollback_at', v_now_iso,
+        'approval_rollback_reason', p_reason,
+        'package_status', 'APPROVAL_ROLLED_BACK'
+      ),
+      updated_at = NOW()
+  WHERE organization_id = p_organization_id
+    AND id = ANY(p_document_ids)
+    AND knowledge_metadata->>'package_id' = p_package_id
+    AND knowledge_metadata->>'package_version' = p_package_version
+    AND knowledge_status = p_expected_status;
+
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'affected_rows', v_count,
+    'status', 'ROLLED_BACK',
+    'package_id', p_package_id,
+    'package_version', p_package_version
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.rollback_knowledge_package_approval(UUID, TEXT, TEXT, UUID[], TEXT, TEXT, TEXT) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.rollback_knowledge_package_approval(UUID, TEXT, TEXT, UUID[], TEXT, TEXT, TEXT) TO service_role;
 
 COMMIT;

@@ -760,6 +760,41 @@ async function runPhase3FoundationTests() {
     JSON.stringify(repeatBody)
   );
 
+  // --- T4.3: Approval Route - Replay Approval with Audit Failure (Gatekeeper Blocker Hardening) ---
+  const replayAuditFailReq = new Request('http://localhost:3000/api/crm/knowledge/package/approve', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${userToken}`,
+      'x-test-simulate-audit-failure': 'true'
+    },
+    body: JSON.stringify({
+      packageId: fullPkgId,
+      packageVersion: testVersion,
+      expectedParts: 10,
+      expectedManifestSha256: testManifestHash
+    })
+  });
+  const replayAuditFailRes = await approvePackageRoute(replayAuditFailReq);
+  const replayAuditFailBody = await replayAuditFailRes.json();
+  assert(
+    replayAuditFailRes.status === 500 && replayAuditFailBody.error === 'AUDIT_LOG_FAILED' && replayAuditFailBody.audit_rollback_status === 'NOOP_ALREADY_APPROVED',
+    'Test T4.3: Approval replay with audit failure triggers safe NOOP (audit_rollback_status = NOOP_ALREADY_APPROVED)',
+    JSON.stringify(replayAuditFailBody)
+  );
+
+  // --- T4.3b: Pre-Existing Approved Package Immunity Verification (Anti-Accidental Archival Guard) ---
+  const { data: fullPkgDbDocs } = await adminClient
+    .from('crm_knowledge_documents')
+    .select('id, knowledge_status')
+    .eq('organization_id', targetOrgId)
+    .eq('knowledge_metadata->>package_id', fullPkgId);
+  const allFullStillApproved = fullPkgDbDocs && fullPkgDbDocs.length === 10 && fullPkgDbDocs.every((d: any) => d.knowledge_status === 'APPROVED');
+  assert(
+    Boolean(allFullStillApproved),
+    'Test T4.3b: Gatekeeper Invariant: Previously approved package documents remain strictly APPROVED and are NEVER accidentally archived on replay failure'
+  );
+
   // --- T5: CSKH Dedicated RAG Isolation (T5) ---
   // --- T5: CSKH Dedicated RAG Isolation & Cross-Tenant Leakage Block (T5) ---
   console.log('\n--- TEST GROUP 5: CSKH Dedicated RAG Isolation & Cross-Tenant Operational Isolation (T5) ---');
