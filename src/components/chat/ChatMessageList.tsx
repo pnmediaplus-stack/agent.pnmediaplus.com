@@ -72,7 +72,18 @@ const getBadgeTheme = (intent: string) => {
   return { text: 'text-emerald-600 dark:text-emerald-300', icon: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-500/20' };
 };
 
-function formatFullTimestamp(dateStr: string) {
+function safeIsoString(dateStr?: string | null): string {
+  if (!dateStr || typeof dateStr !== 'string') return "";
+  try {
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? dateStr : `ISO: ${d.toISOString()}`;
+  } catch {
+    return dateStr;
+  }
+}
+
+function formatFullTimestamp(dateStr?: string | null): string {
+  if (!dateStr || typeof dateStr !== 'string') return "--:--:-- - --/--/----";
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
@@ -85,7 +96,7 @@ function formatFullTimestamp(dateStr: string) {
     const year = d.getFullYear();
     return `${hours}:${mins}:${secs} - ${day}/${month}/${year}`;
   } catch {
-    return dateStr;
+    return String(dateStr);
   }
 }
 
@@ -172,7 +183,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                   {loopText && <span className="px-1.5 py-0.5 bg-slate-200/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded text-[9px] uppercase tracking-wider font-bold">{loopText}</span>}
                   <div 
                     className="font-mono text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded border border-slate-200/60 dark:border-slate-700/60 flex items-center gap-1.5 shadow-sm" 
-                    title={`ISO: ${new Date(message.created_at).toISOString()}`}
+                    title={safeIsoString(message.created_at)}
                   >
                     <span>🕒</span>
                     <span>{formatFullTimestamp(message.created_at)}</span>
@@ -458,7 +469,7 @@ export const ChatMessageList = memo(function ChatMessageList({ messages, isTypin
                   {markdownPreview.createdAt && (
                     <span 
                       className="font-mono text-[10px] bg-slate-200/80 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-semibold tracking-normal normal-case flex items-center gap-1 border border-slate-300/50 dark:border-slate-700/50 shadow-sm"
-                      title={`ISO: ${new Date(markdownPreview.createdAt).toISOString()}`}
+                      title={safeIsoString(markdownPreview.createdAt)}
                     >
                       <span>🕒</span>
                       <span>{formatFullTimestamp(markdownPreview.createdAt)}</span>
