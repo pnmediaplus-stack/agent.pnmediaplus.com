@@ -176,6 +176,23 @@ async function runPackageUploadGateTests() {
   const missingPackIdRes = await uploadPackageRoute(missingPackIdReq);
   assert(missingPackIdRes.status === 400, 'Test 2.2: Missing package_id rejected with HTTP 400 INVALID_ARGUMENT');
 
+  // Gatekeeper Blocker 3 Test: Strict integer check on expected_count (rejects non-digit strings)
+  const malformedCountForm = new FormData();
+  malformedCountForm.append('package_id', 'test_malformed_count');
+  malformedCountForm.append('expected_count', '10abc');
+  malformedCountForm.append('namespace', 'marketing');
+  malformedCountForm.append('files[]', file1);
+  const malformedCountReq = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${founderToken}` },
+    body: malformedCountForm
+  });
+  const malformedCountRes = await uploadPackageRoute(malformedCountReq);
+  const malformedCountJson = await malformedCountRes.json();
+  assert(malformedCountRes.status === 400 && malformedCountJson.error === 'INVALID_ARGUMENT',
+    'Test 2.2b: Non-strict expected_count ("10abc") strictly rejected with HTTP 400 INVALID_ARGUMENT'
+  );
+
   // Test 2.3: Mismatched count (Partial package: expected 10 but received 2)
   const partialForm = new FormData();
   partialForm.append('package_id', 'test_partial_pack');
@@ -212,6 +229,80 @@ async function runPackageUploadGateTests() {
   const dupJson = await dupRes.json();
   assert(dupRes.status === 400 && dupJson.error === 'DUPLICATE_PACKAGE_PART',
     'Test 2.4: Duplicate KO part index in package strictly rejected with HTTP 400 DUPLICATE_PACKAGE_PART'
+  );
+
+  // Gatekeeper Blocker 4 Tests: Manifest Strict Verification
+  // Test 2.5: Manifest package_id mismatch
+  const manifestIdMismatchForm = new FormData();
+  manifestIdMismatchForm.append('package_id', 'pkg_request_id');
+  manifestIdMismatchForm.append('expected_count', '1');
+  manifestIdMismatchForm.append('namespace', 'marketing');
+  manifestIdMismatchForm.append('manifest', JSON.stringify({
+    package_id: 'pkg_different_id',
+    package_version: '1.0.0',
+    expected_parts: 1
+  }));
+  manifestIdMismatchForm.append('files[]', file1);
+
+  const mIdReq = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${founderToken}` },
+    body: manifestIdMismatchForm
+  });
+  const mIdRes = await uploadPackageRoute(mIdReq);
+  const mIdJson = await mIdRes.json();
+  assert(mIdRes.status === 400 && mIdJson.error === 'MANIFEST_VERIFICATION_FAILED',
+    'Test 2.5: Manifest package_id mismatch strictly rejected with HTTP 400 MANIFEST_VERIFICATION_FAILED'
+  );
+
+  // Test 2.6: Manifest expected_parts mismatch
+  const mPartsForm = new FormData();
+  mPartsForm.append('package_id', 'pkg_parts_test');
+  mPartsForm.append('expected_count', '1');
+  mPartsForm.append('namespace', 'marketing');
+  mPartsForm.append('manifest', JSON.stringify({
+    package_id: 'pkg_parts_test',
+    package_version: '1.0.0',
+    expected_parts: 10
+  }));
+  mPartsForm.append('files[]', file1);
+
+  const mPartsReq = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${founderToken}` },
+    body: mPartsForm
+  });
+  const mPartsRes = await uploadPackageRoute(mPartsReq);
+  const mPartsJson = await mPartsRes.json();
+  assert(mPartsRes.status === 400 && mPartsJson.error === 'MANIFEST_VERIFICATION_FAILED',
+    'Test 2.6: Manifest expected_parts mismatch strictly rejected with HTTP 400 MANIFEST_VERIFICATION_FAILED'
+  );
+
+  // Test 2.7: Manifest canonical document SHA-256 mismatch
+  const mShaForm = new FormData();
+  mShaForm.append('package_id', 'pkg_sha_test');
+  mShaForm.append('expected_count', '1');
+  mShaForm.append('namespace', 'marketing');
+  mShaForm.append('manifest', JSON.stringify({
+    package_id: 'pkg_sha_test',
+    package_version: '1.0.0',
+    expected_parts: 1,
+    canonical_documents: [{
+      ko_index: 'KO-01',
+      sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+    }]
+  }));
+  mShaForm.append('files[]', new File(['# Real Content'], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
+
+  const mShaReq = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${founderToken}` },
+    body: mShaForm
+  });
+  const mShaRes = await uploadPackageRoute(mShaReq);
+  const mShaJson = await mShaRes.json();
+  assert(mShaRes.status === 400 && mShaJson.error === 'MANIFEST_VERIFICATION_FAILED',
+    'Test 2.7: Manifest canonical document SHA-256 mismatch strictly rejected with HTTP 400 MANIFEST_VERIFICATION_FAILED'
   );
 
   // --- TEST GROUP 3: Server-Side QA Gate & Zero Storage Pollution Rollback ---
@@ -255,31 +346,43 @@ async function runPackageUploadGateTests() {
   const cleanPackageId = `pkg_marketing_framework_${Date.now()}`;
   const cleanVersion = '1.0.0';
 
+  // Prepare 10 files and compute exact SHA-256
+  const cleanFiles: { name: string; content: string; sha256: string; koIndex: string }[] = [];
+  for (let i = 1; i <= 10; i++) {
+    const koNum = i.toString().padStart(2, '0');
+    const content = `# Marketing Knowledge Object ${koNum}\n\n## Purpose\nInternal decision framework for marketing strategy.\n\n## Core Guidelines\nTuân thủ quy chuẩn nội bộ PN Media Plus. Không cam kết doanh thu định lượng, không tự động hóa ads không có kiểm soát human-in-the-loop.`;
+    const sha256 = crypto.createHash('sha256').update(content).digest('hex');
+    cleanFiles.push({
+      name: `PN_MEDIA_PLUS_MARKETING_${koNum}_FRAMEWORK.md`,
+      content,
+      sha256,
+      koIndex: `KO-${koNum}`
+    });
+  }
+
   const cleanForm = new FormData();
   cleanForm.append('package_id', cleanPackageId);
   cleanForm.append('package_version', cleanVersion);
   cleanForm.append('expected_count', '10');
   cleanForm.append('namespace', 'marketing');
 
-  // Package manifest explicitly declaring is_org_wide = true for this company-wide framework
+  // Manifest matching the 10 files with exact SHA-256 and is_org_wide: true
   const packageManifest = {
     package_id: cleanPackageId,
     package_version: cleanVersion,
     expected_parts: 10,
     is_org_wide: true,
-    canonical_documents: Array.from({ length: 10 }, (_, i) => ({
-      ko_index: `KO-${(i + 1).toString().padStart(2, '0')}`,
-      document_name: `PN_MEDIA_PLUS_MARKETING_${(i + 1).toString().padStart(2, '0')}_FRAMEWORK.md`,
-      is_org_wide: true
+    canonical_documents: cleanFiles.map(f => ({
+      ko_index: f.koIndex,
+      document_name: f.name,
+      is_org_wide: true,
+      sha256: f.sha256
     }))
   };
   cleanForm.append('manifest', JSON.stringify(packageManifest));
 
-  // Add 10 clean files
-  for (let i = 1; i <= 10; i++) {
-    const koNum = i.toString().padStart(2, '0');
-    const content = `# Marketing Knowledge Object ${koNum}\n\n## Purpose\nInternal decision framework for marketing strategy.\n\n## Core Guidelines\nTuân thủ quy chuẩn nội bộ PN Media Plus. Không cam kết doanh thu định lượng, không tự động hóa ads không có kiểm soát human-in-the-loop.`;
-    cleanForm.append('files[]', new File([content], `PN_MEDIA_PLUS_MARKETING_${koNum}_FRAMEWORK.md`, { type: 'text/markdown' }));
+  for (const f of cleanFiles) {
+    cleanForm.append('files[]', new File([f.content], f.name, { type: 'text/markdown' }));
   }
 
   const cleanReq = new Request('http://localhost/api/crm/knowledge/package/upload', {
@@ -400,8 +503,8 @@ async function runPackageUploadGateTests() {
   }
 
   console.log('\n================================================================');
-  console.log('ALL TESTS COMPLETE: 17/17 TESTS PASSED');
-  console.log('OVERALL RESULT: SUCCESS (100% PASS) - BATCH UPLOAD GATE VERIFIED');
+  console.log('ALL TESTS COMPLETE: 21/21 TESTS PASSED');
+  console.log('OVERALL RESULT: SUCCESS (100% PASS) - ALL GATEKEEPER P0S VERIFIED');
   console.log('================================================================\n');
 }
 
