@@ -1,0 +1,164 @@
+{
+  "package_id": "PN_MARKETING_KO_SYSTEM_v1.0",
+  "package_name": "PN Media Plus Marketing Decision Framework (KO-01 to KO-10)",
+  "package_version": "1.0.0",
+  "expected_parts": 10,
+  "package_manifest_sha256": "60604cf7f31411bbb172ac990d7a61e1b204bb0ecb2515d3a55b141ba554acf8",
+  "governing_document": "documents/PN_MEDIA_PLUS_MARKETING_01_EPISTEMIC_EVIDENCE_GOVERNANCE_v1.0_LOCKED.md",
+  "lifecycle_status": "PACKAGE_VERIFIED",
+  "ingest_exclusion_patterns": [
+    "**/acceptance_tests/**",
+    "*_AGENT_ACCEPTANCE_TEST_PACK_*",
+    "*_DECISION_SCHEMA_*",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "canonical_documents": [
+    {
+      "ko_index": "KO-01",
+      "title": "Epistemic Evidence Governance",
+      "relative_path": "documents/PN_MEDIA_PLUS_MARKETING_01_EPISTEMIC_EVIDENCE_GOVERNANCE_v1.0_LOCKED.md",
+      "document_type": "DECISION_FRAMEWORK",
+      "is_framework": true,
+      "epistemic_status": "LOCKED_GOVERNANCE",
+      "version": "1.0.0",
+      "sha256": "eff7b1f29f02f9ba6c1928909ca78014823b34caa0ad3258a71a4bbc01d6975a",
+      "byte_length": 3789,
+      "dependencies": []
+    },
+    {
+      "ko_index": "KO-02",
+      "title": "Market & Industry Research Framework",
+      "relative_path": "documents/PN_MEDIA_PLUS_MARKETING_02_MARKET_INDUSTRY_RESEARCH_FRAMEWORK_v1.0.md",
+      "document_type": "DECISION_FRAMEWORK",
+      "is_framework": true,
+      "epistemic_status": "LOCKED_GOVERNANCE",
+      "version": "1.0.0",
+      "sha256": "6c1142123715e31a19ba5339364d4f44cec41d13a7e3cf796a4ad3432393a407",
+      "byte_length": 2339,
+      "dependencies": [
+        "KO-01"
+      ]
+    },
+    {
+      "ko_index": "KO-03",
+      "title": "ICP Selection Framework",
+      "relative_path": "documents/PN_MEDIA_PLUS_MARKETING_03_ICP_SELECTION_FRAMEWORK_v1.0.md",
+      "document_type": "DECISION_FRAMEWORK",
+      "is_framework": true,
+      "epistemic_status": "LOCKED_GOVERNANCE",
+      "version": "1.0.0",
+      "sha256": "0e24858b08308087b31ae10491afe22d87b27da41922fdb1739ae220e9ec4aee",
+      "byte_length": 1155,
+      "dependencies": [
+        "KO-01",
+        "KO-02"
+      ]
+    },
+    {
+      "ko_index": "KO-04",
+      "title": "ICP Customer Evidence Pack",
+      "relative_path": "documents/PN_MEDIA_PLUS_MARKETING_04_ICP_CUSTOMER_EVIDENCE_PACK_v1.0.md",
+      "document_type": "DECISION_FRAMEWORK",
+      "is_framework": true,
+      "epistemic_status": "LOCKED_GOVERNANCE",
+      "version": "1.0.0",
+      "sha256": "c835ec452954aa606884f5e7397917463554175587440abcd2e7805a7fe30e06",
+      "byte_length": 1137,
+      "dependencies": [
+        "KO-01",
+        "KO-03"
+      ]
+    },
+    {
+      "ko_index": "KO-05",
+      "title": "Pain Evidence & Pain Wedge Selection",
+      "relative_path": "documents/PN_MEDIA_PLUS_MARKETING_05_PAIN_EVIDENCE_PAIN_WEDGE_SELECTION_v1.0.md",
+      "document_type": "DECISION_FRAMEWORK",
+      "is_framework": true,
+      "epistemic_status": "LOCKED_GOVERNANCE",
+      "version": "1.0.0",
+      "sha256": "549ccbb560b996d3864a50073b0e4d208568027f356d5d08809ad8e9bd3868cf",
+      "byte_length": 958,
+      "dependencies": [
+        "KO-01",
+        "KO-04"
+      ]
+    },
+    {
+      "ko_index": "KO-06",
+      "title": "Product Ground Truth & Capability Matrix",
+      "relative_path": "documents/PN_MEDIA_PLUS_MARKETING_06_PRODUCT_GROUND_TRUTH_CAPABILITY_MATRIX_v1.0.md",
+      "document_type": "DECISION_FRAMEWORK",
+      "is_framework": true,
+      "epistemic_status": "LOCKED_GOVERNANCE",
+      "version": "1.0.0",
+      "sha256": "d3ad64902f3d27e9221c4001738e0e62ee07d6a03189cc5daaf97036379e076a",
+      "byte_length": 4071,
+      "dependencies": [
+        "KO-01"
+      ]
+    },
+    {
+      "ko_index": "KO-07",
+      "title": "Product-to-Pain Fit Matrix",
+      "relative_path": "documents/PN_MEDIA_PLUS_MARKETING_07_PRODUCT_TO_PAIN_FIT_MATRIX_v1.0.md",
+      "document_type": "DECISION_FRAMEWORK",
+      "is_framework": true,
+      "epistemic_status": "LOCKED_GOVERNANCE",
+      "version": "1.0.0",
+      "sha256": "5165fc13d540f1d06067bd72cba2a9aab5a23037cb418a771475957c85a06aba",
+      "byte_length": 3891,
+      "dependencies": [
+        "KO-05",
+        "KO-06"
+      ]
+    },
+    {
+      "ko_index": "KO-08",
+      "title": "Positioning & Message Decision System",
+      "relative_path": "documents/PN_MEDIA_PLUS_MARKETING_08_POSITIONING_MESSAGE_DECISION_SYSTEM_v1.0.md",
+      "document_type": "DECISION_FRAMEWORK",
+      "is_framework": true,
+      "epistemic_status": "LOCKED_GOVERNANCE",
+      "version": "1.0.0",
+      "sha256": "4f2398871b67721421251f8c1ee42e6183ff89617fec79f488730a253640d418",
+      "byte_length": 1266,
+      "dependencies": [
+        "KO-03",
+        "KO-05",
+        "KO-06",
+        "KO-07"
+      ]
+    },
+    {
+      "ko_index": "KO-09",
+      "title": "Creative & Funnel Architecture",
+      "relative_path": "documents/PN_MEDIA_PLUS_MARKETING_09_CREATIVE_FUNNEL_ARCHITECTURE_v1.0.md",
+      "document_type": "DECISION_FRAMEWORK",
+      "is_framework": true,
+      "epistemic_status": "LOCKED_GOVERNANCE",
+      "version": "1.0.0",
+      "sha256": "66bf3bcf7755723ddcc84cd2f644ae1cdb6506088841ed5f7de09aea6c066718",
+      "byte_length": 1191,
+      "dependencies": [
+        "KO-08"
+      ]
+    },
+    {
+      "ko_index": "KO-10",
+      "title": "Experiment & Learning Capture",
+      "relative_path": "documents/PN_MEDIA_PLUS_MARKETING_10_EXPERIMENT_LEARNING_CAPTURE_v1.0.md",
+      "document_type": "DECISION_FRAMEWORK",
+      "is_framework": true,
+      "epistemic_status": "LOCKED_GOVERNANCE",
+      "version": "1.0.0",
+      "sha256": "cbe33f8a81b43fde36e3d8ae3afe6dc55b63b1a1711c9fb19675013a10d1d9d8",
+      "byte_length": 979,
+      "dependencies": [
+        "KO-01",
+        "KO-09"
+      ]
+    }
+  ]
+}
