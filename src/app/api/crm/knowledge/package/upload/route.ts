@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import path from 'path';
 import { verifyUiAuth } from '@/lib/ui-auth-guard';
 import { readPortalAccessToken, loadPortalOrganizationContext } from '@/lib/portal-auth';
 import {
@@ -14,22 +15,22 @@ const MAX_PACKAGE_FILES = 10;
 const MAX_PACKAGE_TOTAL_BYTES = 50 * 1024 * 1024; // 50MB
 
 interface PackageManifestPart {
-  ko_index?: string;
+  ko_index: string;
   document_name?: string;
   relative_path?: string;
   title?: string;
   is_org_wide?: boolean;
-  sha256?: string;
+  sha256: string;
 }
 
 interface PackageManifest {
-  package_id?: string;
+  package_id: string;
   package_name?: string;
-  package_version?: string;
-  expected_parts?: number;
+  package_version: string;
+  expected_parts: number;
   package_manifest_sha256?: string;
   is_org_wide?: boolean;
-  canonical_documents?: PackageManifestPart[];
+  canonical_documents: PackageManifestPart[];
 }
 
 /**
@@ -135,7 +136,7 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // Gatekeeper Blocker 4: Full Manifest Parsing and Strict Verification
+    // Gatekeeper Blocker 1 & 4: Full Manifest Parsing and Strict Schema Enforcement
     let manifest: PackageManifest | null = null;
     const rawManifestStr = formData.get('manifest') as string;
     if (rawManifestStr) {
@@ -144,32 +145,96 @@ export async function POST(req: Request) {
       } catch (parseErr: any) {
         return NextResponse.json({ error: 'INVALID_ARGUMENT', message: 'Invalid manifest JSON: ' + parseErr.message }, { status: 400 });
       }
-    }
 
-    if (manifest) {
-      if (manifest.package_id && manifest.package_id !== packageId) {
+      if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+        return NextResponse.json({
+          error: 'MANIFEST_VERIFICATION_FAILED',
+          message: 'Manifest must be a valid non-null JSON object'
+        }, { status: 400 });
+      }
+
+      // 1. Mandatory top-level fields
+      if (typeof manifest.package_id !== 'string' || !manifest.package_id.trim()) {
+        return NextResponse.json({
+          error: 'MANIFEST_VERIFICATION_FAILED',
+          message: 'Manifest is missing required field: package_id'
+        }, { status: 400 });
+      }
+      if (typeof manifest.package_version !== 'string' || !manifest.package_version.trim()) {
+        return NextResponse.json({
+          error: 'MANIFEST_VERIFICATION_FAILED',
+          message: 'Manifest is missing required field: package_version'
+        }, { status: 400 });
+      }
+      if (typeof manifest.expected_parts !== 'number' || !Number.isInteger(manifest.expected_parts) || manifest.expected_parts < 1) {
+        return NextResponse.json({
+          error: 'MANIFEST_VERIFICATION_FAILED',
+          message: 'Manifest is missing or has invalid required field: expected_parts (must be a positive integer)'
+        }, { status: 400 });
+      }
+      if (!Array.isArray(manifest.canonical_documents)) {
+        return NextResponse.json({
+          error: 'MANIFEST_VERIFICATION_FAILED',
+          message: 'Manifest is missing required field: canonical_documents (must be an array)'
+        }, { status: 400 });
+      }
+
+      // 2. Exact bound alignment with request parameters
+      if (manifest.package_id !== packageId) {
         return NextResponse.json({
           error: 'MANIFEST_VERIFICATION_FAILED',
           message: `Manifest package_id '${manifest.package_id}' does not match request package_id '${packageId}'`
         }, { status: 400 });
       }
-      if (manifest.package_version && manifest.package_version !== packageVersion) {
+      if (manifest.package_version !== packageVersion) {
         return NextResponse.json({
           error: 'MANIFEST_VERIFICATION_FAILED',
           message: `Manifest package_version '${manifest.package_version}' does not match request package_version '${packageVersion}'`
         }, { status: 400 });
       }
-      if (manifest.expected_parts !== undefined && manifest.expected_parts !== expectedCount) {
+      if (manifest.expected_parts !== expectedCount) {
         return NextResponse.json({
           error: 'MANIFEST_VERIFICATION_FAILED',
           message: `Manifest expected_parts (${manifest.expected_parts}) does not match expected_count (${expectedCount})`
         }, { status: 400 });
       }
-      if (manifest.canonical_documents && manifest.canonical_documents.length !== expectedCount) {
+      if (manifest.canonical_documents.length !== expectedCount) {
         return NextResponse.json({
           error: 'MANIFEST_VERIFICATION_FAILED',
           message: `Manifest canonical_documents count (${manifest.canonical_documents.length}) does not match expected_count (${expectedCount})`
         }, { status: 400 });
+      }
+
+      // 3. Strict schema validation for each canonical document
+      const sha256Regex = /^[a-fA-F0-9]{64}$/;
+      for (let idx = 0; idx < manifest.canonical_documents.length; idx++) {
+        const doc = manifest.canonical_documents[idx];
+        if (!doc || typeof doc !== 'object') {
+          return NextResponse.json({
+            error: 'MANIFEST_VERIFICATION_FAILED',
+            message: `Manifest canonical_documents[${idx}] is not a valid object`
+          }, { status: 400 });
+        }
+        if (typeof doc.ko_index !== 'string' || !doc.ko_index.trim()) {
+          return NextResponse.json({
+            error: 'MANIFEST_VERIFICATION_FAILED',
+            message: `Manifest canonical_documents[${idx}] is missing required field: ko_index`
+          }, { status: 400 });
+        }
+        const hasPathOrName = (typeof doc.relative_path === 'string' && doc.relative_path.trim() !== '') ||
+                              (typeof doc.document_name === 'string' && doc.document_name.trim() !== '');
+        if (!hasPathOrName) {
+          return NextResponse.json({
+            error: 'MANIFEST_VERIFICATION_FAILED',
+            message: `Manifest canonical document '${doc.ko_index}' is missing relative_path or document_name`
+          }, { status: 400 });
+        }
+        if (typeof doc.sha256 !== 'string' || !sha256Regex.test(doc.sha256.trim())) {
+          return NextResponse.json({
+            error: 'MANIFEST_VERIFICATION_FAILED',
+            message: `Manifest canonical document '${doc.ko_index}' is missing a valid 64-character hex sha256 checksum`
+          }, { status: 400 });
+        }
       }
     }
 
@@ -222,6 +287,7 @@ export async function POST(req: Request) {
     }[] = [];
 
     const seenKoIndices = new Set<string>();
+    const matchedCanonicalIndices = new Set<string>();
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -281,22 +347,34 @@ export async function POST(req: Request) {
       }
       seenKoIndices.add(koIndex);
 
-      // Gatekeeper Blocker 4: Cross-reference against manifest canonical_documents & SHA-256
+      // Gatekeeper Blocker 3: Exact normalized filename and ko_index matching (Zero substring/ends-with ambiguity)
+      let canonicalDoc: PackageManifestPart | undefined;
       if (manifest?.canonical_documents) {
-        const canonicalDoc = manifest.canonical_documents.find(
-          (doc) => doc.ko_index === koIndex ||
-                   (doc.document_name && (file.name.includes(doc.document_name) || doc.document_name.includes(file.name))) ||
-                   (doc.relative_path && doc.relative_path.endsWith(file.name))
-        );
+        const uploadedFileName = path.basename(file.name.replace(/\\/g, '/')).trim();
+
+        canonicalDoc = manifest.canonical_documents.find((doc) => {
+          const canonicalFile = (doc.relative_path ? path.basename(doc.relative_path.replace(/\\/g, '/')) : doc.document_name)?.trim();
+          const isIndexMatch = doc.ko_index && doc.ko_index.toUpperCase() === koIndex.toUpperCase();
+          const isNameMatch = canonicalFile === uploadedFileName || (doc.relative_path && doc.relative_path.trim() === file.name.trim());
+          return isIndexMatch && isNameMatch;
+        });
 
         if (!canonicalDoc) {
           return NextResponse.json({
             error: 'MANIFEST_VERIFICATION_FAILED',
-            message: `File '${file.name}' (${koIndex}) is not declared in manifest canonical_documents`
+            message: `File '${file.name}' (${koIndex}) does not strictly match any canonical document in manifest (expected exact match by ko_index and filename)`
           }, { status: 400 });
         }
 
-        if (canonicalDoc.sha256 && canonicalDoc.sha256.toLowerCase() !== sha256.toLowerCase()) {
+        if (matchedCanonicalIndices.has(canonicalDoc.ko_index)) {
+          return NextResponse.json({
+            error: 'MANIFEST_VERIFICATION_FAILED',
+            message: `Duplicate file mapping detected for canonical document '${canonicalDoc.ko_index}'`
+          }, { status: 400 });
+        }
+        matchedCanonicalIndices.add(canonicalDoc.ko_index);
+
+        if (canonicalDoc.sha256.toLowerCase() !== sha256.toLowerCase()) {
           return NextResponse.json({
             error: 'MANIFEST_VERIFICATION_FAILED',
             message: `File '${file.name}' (${koIndex}) SHA-256 checksum mismatch: manifest expected '${canonicalDoc.sha256}', computed '${sha256}'`
@@ -308,10 +386,7 @@ export async function POST(req: Request) {
       // Only set is_org_wide=true if manifest explicitly declares this part or package as org_wide!
       let isOrgWide = false;
       if (channelId === null) {
-        const manifestPart = manifest?.canonical_documents?.find(
-          (doc) => doc.ko_index === koIndex || (doc.document_name && file.name.includes(doc.document_name))
-        );
-        if (manifestPart?.is_org_wide === true || manifest?.is_org_wide === true) {
+        if (canonicalDoc?.is_org_wide === true || manifest?.is_org_wide === true) {
           isOrgWide = true;
         } else {
           isOrgWide = false;
@@ -453,6 +528,10 @@ export async function POST(req: Request) {
 
     // 9. Audit Logging (Fail-Closed)
     try {
+      if (process.env.NODE_ENV !== 'production' && req.headers.get('x-test-simulate-audit-failure') === 'true') {
+        throw new Error('Simulated audit logging failure for fault recovery testing');
+      }
+
       await auth.logAudit(
         'KNOWLEDGE_PACKAGE_BATCH_UPLOADED',
         `Package ${packageId} v${packageVersion} (${insertedDocs.length} parts) uploaded and queued for Founder review`,
@@ -467,30 +546,53 @@ export async function POST(req: Request) {
     } catch (auditErr: any) {
       console.error('Audit log failed for package upload:', auditErr);
 
-      // Gatekeeper Blocker 2: Rollback both DB and Storage so no package exists without audit
+      // Gatekeeper Blocker 2: Rollback both DB and Storage without swallowing errors
       const insertedDocIds = insertedDocs.map((d: any) => d.id);
       
-      // Rollback DB: retire inserted documents via service_role RPC
-      await fetch(`${supabaseUrl}/rest/v1/rpc/retire_knowledge_fixtures`, {
-        method: 'POST',
-        headers: {
-          'apikey': serviceRoleKey,
-          'Authorization': `Bearer ${serviceRoleKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ p_fixture_ids: insertedDocIds })
-      }).catch((dbErr) => {
-        console.error('Failed to retire documents after audit log failure:', dbErr);
-      });
+      let dbRollbackSuccess = false;
+      let dbRollbackError: string | null = null;
+      try {
+        if (process.env.NODE_ENV !== 'production' && req.headers.get('x-test-simulate-rpc-failure') === 'true') {
+          throw new Error('Simulated RPC retire_knowledge_fixtures failure for fault recovery testing');
+        }
+
+        const retireRes = await fetch(`${supabaseUrl}/rest/v1/rpc/retire_knowledge_fixtures`, {
+          method: 'POST',
+          headers: {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ p_fixture_ids: insertedDocIds })
+        });
+        if (!retireRes.ok) {
+          const errText = await retireRes.text();
+          dbRollbackError = `RPC retire_knowledge_fixtures failed with HTTP ${retireRes.status}: ${errText}`;
+          console.error(dbRollbackError);
+        } else {
+          dbRollbackSuccess = true;
+        }
+      } catch (dbErr: any) {
+        dbRollbackError = `RPC retire_knowledge_fixtures error: ${dbErr.message}`;
+        console.error(dbRollbackError);
+      }
 
       // Rollback Storage
       const storageCleanupResult = await performStorageRollback(supabaseUrl, serviceRoleKey, uploadedStoragePaths);
 
+      const hasRollbackFailure = !dbRollbackSuccess || !storageCleanupResult.success;
+      const rollbackErrors: string[] = [];
+      if (dbRollbackError) rollbackErrors.push(dbRollbackError);
+      if (storageCleanupResult.errors.length > 0) rollbackErrors.push(...storageCleanupResult.errors);
+
       return NextResponse.json({
-        error: 'AUDIT_LOG_FAILED',
-        cleanup_status: storageCleanupResult.success ? 'ROLLED_BACK' : 'CLEANUP_FAILURE',
-        cleanup_errors: storageCleanupResult.errors.length > 0 ? storageCleanupResult.errors : undefined,
-        message: 'Package upload aborted because audit logging failed. Inserted documents were retired and storage blobs rolled back.'
+        error: hasRollbackFailure ? 'AUDIT_LOG_AND_ROLLBACK_FAILED' : 'AUDIT_LOG_FAILED',
+        db_rollback_status: dbRollbackSuccess ? 'ROLLED_BACK' : 'ROLLBACK_FAILURE',
+        storage_rollback_status: storageCleanupResult.success ? 'ROLLED_BACK' : 'CLEANUP_FAILURE',
+        rollback_errors: rollbackErrors.length > 0 ? rollbackErrors : undefined,
+        message: hasRollbackFailure
+          ? 'Package upload aborted due to audit log failure AND rollback encountered failures. Inserted documents may still reside in database.'
+          : 'Package upload aborted because audit logging failed. Inserted documents were retired and storage blobs rolled back.'
       }, { status: 500 });
     }
 

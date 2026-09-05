@@ -305,6 +305,83 @@ async function runPackageUploadGateTests() {
     'Test 2.7: Manifest canonical document SHA-256 mismatch strictly rejected with HTTP 400 MANIFEST_VERIFICATION_FAILED'
   );
 
+  // Test 2.8: Manifest missing required fields (empty manifest {})
+  const mEmptyForm = new FormData();
+  mEmptyForm.append('package_id', 'pkg_empty_manifest');
+  mEmptyForm.append('expected_count', '1');
+  mEmptyForm.append('namespace', 'marketing');
+  mEmptyForm.append('manifest', JSON.stringify({}));
+  mEmptyForm.append('files[]', new File(['# Content'], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
+
+  const mEmptyReq = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${founderToken}` },
+    body: mEmptyForm
+  });
+  const mEmptyRes = await uploadPackageRoute(mEmptyReq);
+  const mEmptyJson = await mEmptyRes.json();
+  assert(mEmptyRes.status === 400 && mEmptyJson.error === 'MANIFEST_VERIFICATION_FAILED',
+    'Test 2.8: Manifest missing required fields (empty manifest {}) strictly rejected with HTTP 400 MANIFEST_VERIFICATION_FAILED'
+  );
+
+  // Test 2.9: Manifest canonical document missing sha256
+  const mMissingShaForm = new FormData();
+  mMissingShaForm.append('package_id', 'pkg_missing_sha');
+  mMissingShaForm.append('expected_count', '1');
+  mMissingShaForm.append('namespace', 'marketing');
+  mMissingShaForm.append('manifest', JSON.stringify({
+    package_id: 'pkg_missing_sha',
+    package_version: '1.0.0',
+    expected_parts: 1,
+    canonical_documents: [{
+      ko_index: 'KO-01',
+      relative_path: 'PN_MARKETING_KO-01.md'
+      // missing sha256
+    }]
+  }));
+  mMissingShaForm.append('files[]', new File(['# Content'], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
+
+  const mMissingShaReq = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${founderToken}` },
+    body: mMissingShaForm
+  });
+  const mMissingShaRes = await uploadPackageRoute(mMissingShaReq);
+  const mMissingShaJson = await mMissingShaRes.json();
+  assert(mMissingShaRes.status === 400 && mMissingShaJson.error === 'MANIFEST_VERIFICATION_FAILED',
+    'Test 2.9: Manifest canonical document missing sha256 strictly rejected with HTTP 400 MANIFEST_VERIFICATION_FAILED'
+  );
+
+  // Test 2.10: Filename nearly identical but not strictly matching canonical document (e.g. PN_MARKETING_KO-01_EXTRA.md)
+  const mSimilarNameForm = new FormData();
+  mSimilarNameForm.append('package_id', 'pkg_similar_name');
+  mSimilarNameForm.append('expected_count', '1');
+  mSimilarNameForm.append('namespace', 'marketing');
+  const validSha = crypto.createHash('sha256').update('# Content').digest('hex');
+  mSimilarNameForm.append('manifest', JSON.stringify({
+    package_id: 'pkg_similar_name',
+    package_version: '1.0.0',
+    expected_parts: 1,
+    canonical_documents: [{
+      ko_index: 'KO-01',
+      relative_path: 'documents/PN_MARKETING_KO-01.md',
+      sha256: validSha
+    }]
+  }));
+  // Upload file with name containing canonical name as substring, but not exact match
+  mSimilarNameForm.append('files[]', new File(['# Content'], 'PN_MARKETING_KO-01_EXTRA.md', { type: 'text/markdown' }));
+
+  const mSimilarNameReq = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${founderToken}` },
+    body: mSimilarNameForm
+  });
+  const mSimilarNameRes = await uploadPackageRoute(mSimilarNameReq);
+  const mSimilarNameJson = await mSimilarNameRes.json();
+  assert(mSimilarNameRes.status === 400 && mSimilarNameJson.error === 'MANIFEST_VERIFICATION_FAILED',
+    'Test 2.10: Filename nearly identical but not strictly matching canonical document strictly rejected with HTTP 400 MANIFEST_VERIFICATION_FAILED'
+  );
+
   // --- TEST GROUP 3: Server-Side QA Gate & Zero Storage Pollution Rollback ---
   console.log('\n--- TEST GROUP 3: Server-Side QA Gate & Zero Storage Pollution Rollback ---');
 
@@ -466,6 +543,80 @@ async function runPackageUploadGateTests() {
     'Test 5.2: Gatekeeper Condition 1: channel_id=null without manifest declaration sets is_org_wide = false (NOT automatically true)'
   );
 
+  // --- TEST GROUP 6: Audit Failure & Compensating Rollback Integrity ---
+  console.log('\n--- TEST GROUP 6: Audit Failure & Compensating Rollback Integrity ---');
+
+  // Test 6.1: Audit log failure triggers automatic compensating rollback (DB retired + Storage cleared)
+  const auditFailPkgId = `pkg_audit_fail_${Date.now()}`;
+  const aForm1 = new FormData();
+  aForm1.append('package_id', auditFailPkgId);
+  aForm1.append('package_version', '1.0.0');
+  aForm1.append('expected_count', '1');
+  aForm1.append('namespace', 'marketing');
+  aForm1.append('files[]', new File(['# Clean test content for audit failure'], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
+
+  const aReq1 = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${founderToken}`,
+      'x-test-simulate-audit-failure': 'true'
+    },
+    body: aForm1
+  });
+  const aRes1 = await uploadPackageRoute(aReq1);
+  const aJson1 = await aRes1.json();
+
+  assert(aRes1.status === 500 && aJson1.error === 'AUDIT_LOG_FAILED',
+    'Test 6.1: Audit log failure triggers HTTP 500 AUDIT_LOG_FAILED'
+  );
+  assert(aJson1.db_rollback_status === 'ROLLED_BACK',
+    'Test 6.1: DB documents successfully retired on audit log failure (db_rollback_status = ROLLED_BACK)'
+  );
+  assert(aJson1.storage_rollback_status === 'ROLLED_BACK',
+    'Test 6.1: Storage blobs successfully rolled back on audit log failure (storage_rollback_status = ROLLED_BACK)'
+  );
+
+  // Test 6.2: Audit failure AND RPC archive failure reports explicit ROLLBACK_FAILURE without swallowing errors
+  const auditRpcFailPkgId = `pkg_audit_rpc_fail_${Date.now()}`;
+  const aForm2 = new FormData();
+  aForm2.append('package_id', auditRpcFailPkgId);
+  aForm2.append('package_version', '1.0.0');
+  aForm2.append('expected_count', '1');
+  aForm2.append('namespace', 'marketing');
+  aForm2.append('files[]', new File(['# Clean test content for rpc failure'], 'PN_MARKETING_KO-01.md', { type: 'text/markdown' }));
+
+  const aReq2 = new Request('http://localhost/api/crm/knowledge/package/upload', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${founderToken}`,
+      'x-test-simulate-audit-failure': 'true',
+      'x-test-simulate-rpc-failure': 'true'
+    },
+    body: aForm2
+  });
+  const aRes2 = await uploadPackageRoute(aReq2);
+  const aJson2 = await aRes2.json();
+
+  assert(aRes2.status === 500 && aJson2.error === 'AUDIT_LOG_AND_ROLLBACK_FAILED',
+    'Test 6.2: RPC archive failure on audit error returns HTTP 500 AUDIT_LOG_AND_ROLLBACK_FAILED'
+  );
+  assert(aJson2.db_rollback_status === 'ROLLBACK_FAILURE',
+    'Test 6.2: Response explicitly reports db_rollback_status = ROLLBACK_FAILURE without swallowing errors'
+  );
+  assert(Array.isArray(aJson2.rollback_errors) && aJson2.rollback_errors.length > 0,
+    'Test 6.2: Detailed rollback error information included in response'
+  );
+
+  // Archive any residual documents from Test 6.2 to preserve clean state
+  const { data: residualDocs } = await adminClient
+    .from('crm_knowledge_documents')
+    .select('id')
+    .eq('organization_id', targetOrgId)
+    .contains('knowledge_metadata', { package_id: auditRpcFailPkgId });
+  if (residualDocs && residualDocs.length > 0) {
+    fixtureDocIds.push(...residualDocs.map(d => d.id));
+  }
+
   // --- APPEND-ONLY AUDIT RETENTION & FIXTURE ARCHIVAL (Policy Enforcement) ---
   console.log('\n--- APPEND-ONLY AUDIT RETENTION & FIXTURE ARCHIVAL (Policy Enforcement) ---');
   if (fixtureDocIds.length > 0) {
@@ -503,7 +654,7 @@ async function runPackageUploadGateTests() {
   }
 
   console.log('\n================================================================');
-  console.log('ALL TESTS COMPLETE: 21/21 TESTS PASSED');
+  console.log('ALL TESTS COMPLETE: 26/26 TESTS PASSED');
   console.log('OVERALL RESULT: SUCCESS (100% PASS) - ALL GATEKEEPER P0S VERIFIED');
   console.log('================================================================\n');
 }
