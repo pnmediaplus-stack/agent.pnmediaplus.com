@@ -62,6 +62,7 @@ function buildValidOperationalMetadata(overrides: Record<string, any> = {}) {
     sensitivity: 'internal',
     allowed_purposes: ['customer_support', 'operational_lookup'],
     evidence_basis: ['internal_audit'],
+    is_org_wide: 'true',
     applicability: {
       departments: ['cskh']
     },
@@ -661,6 +662,32 @@ async function runPhase3FoundationTests() {
       alienLegacyErr === null && (alienLegacyData?.length === 0 || !alienLegacyData),
       'Test T5.6: User Org A querying Org B via legacy match_documents returns STRICTLY ZERO rows (Cross-Tenant Fail-Closed)'
     );
+
+    // 3. T5.7: Service role executing match_documents WITHOUT organization_id in filter fails closed (Gatekeeper Point 2)
+    const { data: srNoOrgResults, error: srNoOrgErr } = await adminClient.rpc('match_documents', {
+      query_embedding: dummyEmbedding,
+      match_count: 10,
+      filter: {} // Missing organization_id!
+    });
+    assert(
+      srNoOrgErr === null && (srNoOrgResults?.length === 0 || !srNoOrgResults),
+      'Test T5.7: Service role calling match_documents without organization_id returns STRICTLY ZERO rows (Service Role Fail-Closed)'
+    );
+
+    // 4. T5.8: Channel Isolation: querying a specific channel does not leak other channels (Gatekeeper Point 1)
+    const specificChannelId = crypto.randomUUID();
+    const { data: channelResults, error: channelErr } = await userClient.rpc('match_documents', {
+      query_embedding: dummyEmbedding,
+      match_count: 10,
+      filter: { organization_id: targetOrgId, channel_id: specificChannelId }
+    });
+    if (channelResults) {
+      const invalidChannelLeak = channelResults.filter((r: any) => r.metadata?.channel_id && r.metadata?.channel_id !== specificChannelId);
+      assert(
+        channelErr === null && invalidChannelLeak.length === 0,
+        'Test T5.8: Query with specific channel does NOT leak documents of other channels (Airtight Channel Isolation)'
+      );
+    }
   }
 
   // --- T6: Marketing RAG & Partial Retrieval Hard Block (T6) ---
@@ -675,32 +702,39 @@ async function runPhase3FoundationTests() {
   assert(mktErr1 === null, 'Test T6.1: match_marketing_framework executes via authenticated user JWT without error', mktErr1?.message);
   assert(mktApprovedResults?.length === 0, 'Test T6.2: Query on PACKAGE_APPROVED returns 0 chunks (partial_ko_retrieval: FORBIDDEN)');
 
-  // --- LIFECYCLE CLEANUP & RETENTION POLICY (Gatekeeper Blocker 5) ---
-  console.log('\n--- LIFECYCLE CLEANUP & AUDIT RETENTION (Policy Enforcement) ---');
+  // --- APPEND-ONLY AUDIT RETENTION POLICY (Gatekeeper Point 3) ---
+  console.log('\n--- APPEND-ONLY AUDIT RETENTION & FIXTURE ARCHIVAL (Policy Enforcement) ---');
   if (fixtureDocIds.length > 0) {
-    console.log(`[Cleanup Policy] Removing ${fixtureDocIds.length} test fixtures and linked chunks...`);
-    // Delete chunks first
-    await adminClient.from('crm_knowledge_chunks').delete().in('document_id', fixtureDocIds);
-    // Delete documents
-    await adminClient.from('crm_knowledge_documents').delete().in('id', fixtureDocIds);
-    console.log('  -> Test fixture documents & chunks cleaned up successfully.');
+    console.log(`[Append-Only Lifecycle] Archiving ${fixtureDocIds.length} test fixtures with audit retention...`);
+    const { data: retiredCount, error: archErr } = await adminClient.rpc('retire_knowledge_fixtures', {
+      p_fixture_ids: fixtureDocIds
+    });
+
+    if (archErr) {
+      throw new Error(`Failed to archive test fixtures: ${archErr.message}`);
+    }
+    console.log(`  -> ${retiredCount} test fixture documents successfully transitioned to ARCHIVED (Append-Only preserved).`);
   }
 
   // Clean up nonces created during test run
   console.log('[Cleanup Policy] Purging nonces created for testing...');
-  await adminClient.rpc('purge_test_nonces', { p_org_id: targetOrgId });
+  const { error: noncePurgeErr } = await adminClient.rpc('purge_test_nonces', { p_org_id: targetOrgId });
+  if (noncePurgeErr) throw new Error(`Failed to purge test nonces: ${noncePurgeErr.message}`);
   console.log('  -> Test nonces cleared.');
 
   // Clean up test secret from private vault
   console.log('[Cleanup Policy] Purging test secret from private vault...');
-  await adminClient.rpc('purge_knowledge_auth_secret', { p_key: 'PACKAGE_APPROVAL_HMAC_SECRET' });
+  const { error: secretPurgeErr } = await adminClient.rpc('purge_knowledge_auth_secret', { p_key: 'PACKAGE_APPROVAL_HMAC_SECRET' });
+  if (secretPurgeErr) throw new Error(`Failed to purge test secret: ${secretPurgeErr.message}`);
   console.log('  -> Dynamic test secret wiped from vault.');
 
   // Clean up non-founder test user & membership
   if (nonFounderUserId) {
     console.log('[Cleanup Policy] Purging temporary non-founder test user & membership...');
-    await adminClient.rpc('delete_test_portal_membership', { p_user_id: nonFounderUserId });
-    await adminClient.auth.admin.deleteUser(nonFounderUserId);
+    const { error: memDelErr } = await adminClient.rpc('delete_test_portal_membership', { p_user_id: nonFounderUserId });
+    if (memDelErr) throw new Error(`Failed to delete test portal membership: ${memDelErr.message}`);
+    const { error: userDelErr } = await adminClient.auth.admin.deleteUser(nonFounderUserId);
+    if (userDelErr) throw new Error(`Failed to delete test user: ${userDelErr.message}`);
     console.log('  -> Temporary non-founder user and membership wiped.');
   }
 

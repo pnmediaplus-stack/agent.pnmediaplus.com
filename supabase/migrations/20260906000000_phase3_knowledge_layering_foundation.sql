@@ -404,9 +404,10 @@ BEGIN
 
   -- 1. Strict Tenant Boundary Enforcement:
   IF v_caller_role = 'service_role' THEN
-    IF v_filter_org IS NOT NULL THEN
-      v_effective_org := v_filter_org::uuid;
+    IF v_filter_org IS NULL THEN
+      RETURN; -- Fail closed: service_role MUST explicitly specify organization_id in filter
     END IF;
+    v_effective_org := v_filter_org::uuid;
   ELSE
     -- Authenticated user (or any non-service caller): MUST NEVER trust client filter blindly
     IF v_caller_id IS NULL THEN
@@ -465,17 +466,17 @@ BEGIN
   JOIN public.crm_knowledge_documents d ON c.document_id = d.id
   WHERE 
     -- 1. Tenant match (Authoritatively enforced, preventing cross-tenant leakage)
+    d.organization_id = v_effective_org
+    AND 
+    -- 2. Hybrid Scope & Airtight Channel Isolation
     (
       CASE 
-        WHEN v_caller_role = 'service_role' THEN
-          (v_effective_org IS NULL OR d.organization_id = v_effective_org)
+        WHEN v_filter_channel IS NOT NULL THEN
+          (d.channel_id = v_filter_channel::uuid OR (d.channel_id IS NULL AND COALESCE(d.knowledge_metadata->>'is_org_wide', 'false') = 'true'))
         ELSE
-          d.organization_id = v_effective_org
+          (d.channel_id IS NULL AND COALESCE(d.knowledge_metadata->>'is_org_wide', 'false') = 'true')
       END
     )
-    AND 
-    -- 2. Hybrid Scope
-    (v_filter_channel IS NULL OR d.channel_id IS NULL OR d.channel_id = v_filter_channel::uuid)
     AND
     -- 3. Document must be ACTIVE and SUCCESS
     (d.knowledge_status = 'ACTIVE' AND d.ingestion_status = 'SUCCESS')
@@ -483,6 +484,8 @@ BEGIN
     -- 4. HARDENED: ZERO FRAMEWORK CHUNKS VIA LEGACY RPC (Backdoor closed)
     COALESCE(c.metadata->>'is_framework', 'false') <> 'true'
     AND COALESCE(c.metadata->>'document_type', 'OPERATIONAL_KNOWLEDGE') = 'OPERATIONAL_KNOWLEDGE'
+    AND COALESCE(d.knowledge_metadata->>'is_framework', 'false') <> 'true'
+    AND COALESCE(d.knowledge_metadata->>'document_type', 'OPERATIONAL_KNOWLEDGE') = 'OPERATIONAL_KNOWLEDGE'
     AND
     -- 5. Generic filter match (excluding internal keys)
     (c.metadata @> (filter - 'channel_id' - 'organization_id'))
@@ -715,5 +718,109 @@ GRANT EXECUTE ON FUNCTION public.create_test_portal_membership TO service_role;
 
 REVOKE ALL ON FUNCTION public.delete_test_portal_membership FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.delete_test_portal_membership TO service_role;
+
+CREATE OR REPLACE FUNCTION public.crm_knowledge_state_machine() RETURNS TRIGGER AS $$
+DECLARE v_role VARCHAR; v_ts TIMESTAMPTZ;
+BEGIN
+  -- Strict Allowlist for Knowledge Lifecycle
+  IF OLD.knowledge_status IS DISTINCT FROM NEW.knowledge_status THEN
+    IF NOT (
+         (OLD.knowledge_status = 'DRAFT' AND NEW.knowledge_status IN ('REVIEWED', 'ARCHIVED', 'DEPRECATED'))
+      OR (OLD.knowledge_status = 'REVIEWED' AND NEW.knowledge_status IN ('APPROVED', 'DRAFT', 'ARCHIVED', 'DEPRECATED'))
+      OR (OLD.knowledge_status = 'APPROVED' AND NEW.knowledge_status IN ('ACTIVE', 'ARCHIVED', 'DEPRECATED'))
+      OR (OLD.knowledge_status = 'ACTIVE' AND NEW.knowledge_status IN ('SUPERSEDED', 'DEPRECATED', 'ARCHIVED'))
+      OR (OLD.knowledge_status IN ('SUPERSEDED', 'DEPRECATED') AND NEW.knowledge_status = 'ARCHIVED')
+    ) THEN
+      RAISE EXCEPTION 'STATE_MACHINE_VIOLATION: Invalid transition % -> %', OLD.knowledge_status, NEW.knowledge_status;
+    END IF;
+
+    -- Approval Auth & Logic
+    IF NEW.knowledge_status = 'APPROVED' THEN
+      IF NEW.knowledge_metadata->'provenance'->>'approved_by' IS NULL 
+         OR NEW.knowledge_metadata->'provenance'->>'approved_by' != auth.uid()::text THEN 
+        RAISE EXCEPTION 'AUTHORIZATION_VIOLATION: approved_by must strictly match auth.uid()'; 
+      END IF;
+      
+      IF NEW.knowledge_metadata->'provenance'->>'approved_at' IS NULL THEN 
+        RAISE EXCEPTION 'VALIDATION_ERROR: approved_at cannot be null'; 
+      END IF;
+
+      BEGIN 
+        v_ts := (NEW.knowledge_metadata->'provenance'->>'approved_at')::TIMESTAMPTZ; 
+      EXCEPTION WHEN OTHERS THEN 
+        RAISE EXCEPTION 'VALIDATION_ERROR: approved_at must be a valid ISO8601 timestamp'; 
+      END;
+
+      SELECT role INTO v_role FROM portal_auth.organization_memberships WHERE user_id = auth.uid() AND organization_id = NEW.organization_id;
+      IF v_role NOT IN ('owner', 'admin', 'department_owner') THEN RAISE EXCEPTION 'AUTHORIZATION_VIOLATION: Approver must be owner/admin/department_owner'; END IF;
+    END IF;
+
+    -- Activation Gate (Requires verified API context flag AND service_role)
+    IF NEW.knowledge_status = 'ACTIVE' THEN
+      v_role := COALESCE(
+        NULLIF(current_setting('request.jwt.claim.role', true), ''),
+        (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'),
+        NULLIF(auth.role(), '')
+      );
+      IF v_role <> 'service_role' 
+         OR COALESCE(current_setting('app.verified_webhook_callback', true), 'false') <> 'true' THEN 
+        RAISE EXCEPTION 'SECURITY_VIOLATION: Activation requires both service_role and verified webhook HMAC flag from API.'; 
+      END IF;
+      IF NEW.ingestion_status != 'SUCCESS' THEN RAISE EXCEPTION 'STATE_MACHINE_VIOLATION: ACTIVE requires ingestion SUCCESS'; END IF;
+    END IF;
+  END IF;
+
+  -- Lock provenance after approval
+  IF OLD.knowledge_status = 'APPROVED' AND NEW.knowledge_status != 'APPROVED' THEN
+    IF OLD.knowledge_metadata ? 'provenance' AND (OLD.knowledge_metadata->'provenance' IS DISTINCT FROM NEW.knowledge_metadata->'provenance') THEN
+      RAISE EXCEPTION 'IMMUTABILITY_VIOLATION: Approved provenance cannot be modified';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION public.retire_knowledge_fixtures(
+  p_fixture_ids UUID[]
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  v_caller_role TEXT;
+  v_count INTEGER;
+BEGIN
+  v_caller_role := COALESCE(
+    NULLIF(current_setting('request.jwt.claim.role', true), ''),
+    (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'),
+    NULLIF(auth.role(), '')
+  );
+
+  IF v_caller_role NOT IN ('service_role', 'postgres') THEN
+    RAISE EXCEPTION 'AUTHORIZATION_VIOLATION: Only service_role can retire test fixtures';
+  END IF;
+
+  -- Set correlation id for session so any audit triggers satisfy chk_audit_correlation
+  PERFORM set_config('app.correlation_id', 'retention-' || gen_random_uuid()::text, true);
+
+  UPDATE public.crm_knowledge_documents
+  SET knowledge_status = 'ARCHIVED',
+      knowledge_metadata = COALESCE(knowledge_metadata, '{}'::jsonb) || jsonb_build_object(
+        'fixture_disposition', 'ARCHIVED_TEST_FIXTURE',
+        'archived_at', now(),
+        'retention_policy', 'APPEND_ONLY_ARCHIVE'
+      )
+  WHERE id = ANY(p_fixture_ids);
+
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RETURN v_count;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.retire_knowledge_fixtures(UUID[]) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.retire_knowledge_fixtures(UUID[]) TO service_role;
 
 COMMIT;
