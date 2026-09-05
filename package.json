@@ -15,6 +15,7 @@
     "test:marketing-pack-adapter": "tsx src/scripts/test-marketing-department-pack-adapter.ts",
     "test:marketing-integration": "tsx src/scripts/test-marketing-knowledge-integration-e2e.ts",
     "test:validate-evidence": "tsx scripts/generate-and-validate-evidence-records.ts",
+    "test:document-qa": "tsx scripts/test-document-qa-prototype.ts",
     "start": "next start"
   },
   "dependencies": {
