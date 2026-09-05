@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     });
 
     // 4. Call authoritative Supabase RPC using user's access token
-    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(//$/, '');
+    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/$/, '');
     const userClient = createClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '', {
       global: { headers: { Authorization: `Bearer ${token}` } },
       auth: { persistSession: false }
@@ -68,18 +68,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'RPC_FAILED', message: rpcError.message }, { status: 400 });
     }
 
-    // 5. Audit Log successful approval
-    await auth.logAudit(
-      'KNOWLEDGE_PACKAGE_APPROVED',
-      `Approved package ${packageId} v${packageVersion} (${expectedParts} parts)`,
-      {
-        organizationId,
-        packageId,
-        packageVersion,
-        nonce: signed.nonce,
-        result: approvalResult
-      }
-    );
+    // 5. Audit Log successful approval (Fail-Closed: if audit fails, do NOT return success)
+    try {
+      await auth.logAudit(
+        'KNOWLEDGE_PACKAGE_APPROVED',
+        `Approved package ${packageId} v${packageVersion} (${expectedParts} parts)`,
+        {
+          organizationId,
+          packageId,
+          packageVersion,
+          nonce: signed.nonce,
+          result: approvalResult
+        }
+      );
+    } catch (auditErr: any) {
+      console.error('[PackageApproval] Audit logging failed:', auditErr.message);
+      return NextResponse.json({
+        error: 'AUDIT_LOG_FAILED',
+        message: 'Package was approved in database but writing authoritative audit log failed.'
+      }, { status: 500 });
+    }
 
     return NextResponse.json({
       success: true,

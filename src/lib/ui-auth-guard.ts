@@ -57,30 +57,32 @@ export async function verifyUiAuth<T>(
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
 
   const logAudit = async (action: string, reason: string, metadata: any = {}) => {
-    if (!supabaseUrl || !serviceKey) return;
-    try {
-      await fetch(`${supabaseUrl}/rest/v1/phase1_audit_logs`, {
-        method: 'POST',
-        headers: {
-          'apikey': serviceKey,
-          'Authorization': `Bearer ${serviceKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          actor_type: 'USER',
-          actor_external_ref: user.id,
-          action,
-          entity_type: 'UI_API',
-          reason,
-          after_state: 'COMPLETED',
-          metadata: { 
-            email: user.email,
-            ...metadata
-          }
-        })
-      });
-    } catch (e) {
-      console.error(`Failed to write audit log for user ${user.id}:`, e);
+    if (!supabaseUrl || !serviceKey) {
+      throw new Error('AUDIT_CONFIG_MISSING: Supabase URL or Service Role Key is missing for audit logging.');
+    }
+    const detailsPayload = metadata && Object.keys(metadata).length > 0
+      ? `${reason} | metadata: ${JSON.stringify({ actor_id: user.id, ...metadata })}`
+      : reason;
+
+    const auditRes = await fetch(`${supabaseUrl}/rest/v1/phase1_audit_logs`, {
+      method: 'POST',
+      headers: {
+        'apikey': serviceKey,
+        'Authorization': `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        entityType: 'chat',
+        entityId: metadata?.entityId || crypto.randomUUID(),
+        action,
+        actor: user.email || user.id,
+        details: detailsPayload
+      })
+    });
+
+    if (!auditRes.ok) {
+      const errBody = await auditRes.text().catch(() => '');
+      throw new Error(`AUDIT_LOG_WRITE_FAILED: HTTP ${auditRes.status} - ${errBody}`);
     }
   };
 

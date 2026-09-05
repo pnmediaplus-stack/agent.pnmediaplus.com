@@ -395,6 +395,7 @@ DECLARE
   v_filter_org text;
   v_filter_channel text;
   v_effective_org uuid;
+  v_jwt_org text;
 BEGIN
   v_caller_role := COALESCE(current_setting('request.jwt.claim.role', true), auth.role(), '');
   v_caller_id := auth.uid();
@@ -412,7 +413,21 @@ BEGIN
       RETURN; -- Fail closed: unauthenticated caller gets 0 rows
     END IF;
 
-    IF v_filter_org IS NOT NULL THEN
+    -- Extract tenant claim directly from JWT claims if present
+    v_jwt_org := COALESCE(
+      current_setting('request.jwt.claim.app_metadata.organization_id', true),
+      current_setting('request.jwt.claim.organization_id', true),
+      auth.jwt()->'app_metadata'->>'organization_id',
+      auth.jwt()->>'organization_id'
+    );
+
+    IF v_jwt_org IS NOT NULL THEN
+      -- If JWT contains an explicit tenant claim, caller CANNOT query outside it
+      IF v_filter_org IS NOT NULL AND v_filter_org <> v_jwt_org THEN
+        RETURN; -- Cross-tenant spoof attempt: fail closed immediately (0 rows)
+      END IF;
+      v_effective_org := v_jwt_org::uuid;
+    ELSIF v_filter_org IS NOT NULL THEN
       -- If caller explicitly passed organization_id, caller MUST be an active member of that tenant
       SELECT organization_id INTO v_effective_org
       FROM public.portal_organization_memberships
@@ -659,5 +674,46 @@ GRANT EXECUTE ON FUNCTION public.match_cskh_knowledge TO authenticated, service_
 REVOKE ALL ON FUNCTION public.match_marketing_framework FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.match_marketing_framework TO authenticated, service_role;
 
+-- 8. Test Membership Management Helpers (Strictly service_role only)
+CREATE OR REPLACE FUNCTION public.create_test_portal_membership(
+  p_user_id UUID,
+  p_org_id UUID,
+  p_role TEXT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public, portal_auth
+AS $$
+BEGIN
+  INSERT INTO portal_auth.organization_memberships (
+    id, organization_id, user_id, role, status
+  ) VALUES (
+    gen_random_uuid(), p_org_id, p_user_id, p_role, 'active'
+  )
+  ON CONFLICT (organization_id, user_id) 
+  DO UPDATE SET role = p_role, status = 'active';
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.delete_test_portal_membership(
+  p_user_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public, portal_auth
+AS $$
+BEGIN
+  DELETE FROM portal_auth.organization_memberships
+  WHERE user_id = p_user_id;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.create_test_portal_membership FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_test_portal_membership TO service_role;
+
+REVOKE ALL ON FUNCTION public.delete_test_portal_membership FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.delete_test_portal_membership TO service_role;
 
 COMMIT;

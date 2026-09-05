@@ -437,7 +437,7 @@ async function runTestSuite() {
       .limit(1);
 
     assert(
-      blockedDocs && blockedDocs.length > 0,
+      Boolean(blockedDocs && blockedDocs.length > 0),
       'DB Clone Proof: Blocked document record exists in crm_knowledge_documents'
     );
     if (blockedDocs && blockedDocs.length > 0) {

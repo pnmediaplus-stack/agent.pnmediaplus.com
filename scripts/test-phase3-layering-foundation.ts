@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import dotenv from 'dotenv';
 import path from 'path';
 import { createPackageApprovalSignature } from '../src/lib/knowledge/package-approval-signer';
+import { POST as approvePackageRoute } from '../src/app/api/crm/knowledge/package/approve/route';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
@@ -103,7 +104,8 @@ async function runPhase3FoundationTests() {
   if (secretErr) {
     throw new Error(`Failed to inject dynamic secret into private schema: ${secretErr.message}`);
   }
-  console.log('  -> Dynamic 64-char HMAC secret successfully seeded into private vault.\n');
+  process.env.KNOWLEDGE_APPROVAL_SECRET = dynamicSecret;
+  console.log('  -> Dynamic 64-char HMAC secret successfully seeded into private vault and process.env.\n');
 
   // 2. Authenticate real user session via OTP using isolated auth client (Preserving adminClient purity)
   console.log('[Setup 2] Authenticating genuine user session on DB Clone (pnmediaplus@gmail.com)...');
@@ -126,7 +128,7 @@ async function runPhase3FoundationTests() {
     type: 'email'
   });
 
-  if (verifyRes.error || !verifyRes.data.session?.access_token) {
+  if (verifyRes.error || !verifyRes.data.session?.access_token || !verifyRes.data.user) {
     throw new Error(`Failed to verify OTP: ${verifyRes.error?.message}`);
   }
 
@@ -152,6 +154,49 @@ async function runPhase3FoundationTests() {
 
   const targetOrgId = userMemberships[0].organization_id;
   console.log(`  -> User authenticated: id=${realUserId} | Org=${targetOrgId} | Role=${userMemberships[0].role}\n`);
+
+  // 3. Authenticate non-founder test user for HTTP route authorization testing
+  console.log('[Setup 3] Authenticating non-founder test user for HTTP Route Role Testing...');
+  const nonFounderEmail = `test.nonfounder.${crypto.randomUUID().slice(0, 8)}@pnmediaplus.com`;
+  const { data: nfCreateRes, error: nfCreateErr } = await adminClient.auth.admin.createUser({
+    email: nonFounderEmail,
+    email_confirm: true,
+    password: 'TempPassword123!'
+  });
+
+  if (nfCreateErr || !nfCreateRes.user) {
+    throw new Error(`Failed to create non-founder test user: ${nfCreateErr?.message}`);
+  }
+
+  const nonFounderUserId = nfCreateRes.user.id;
+
+  // Add non-founder membership (role: 'member') in portal_auth.organization_memberships
+  const { error: nfMemErr } = await adminClient.rpc('create_test_portal_membership', {
+    p_user_id: nonFounderUserId,
+    p_org_id: targetOrgId,
+    p_role: 'member'
+  });
+
+  if (nfMemErr) {
+    throw new Error(`Failed to assign non-founder role: ${nfMemErr.message}`);
+  }
+
+  const nfOtpRes = await adminClient.auth.admin.generateLink({
+    type: 'magiclink',
+    email: nonFounderEmail
+  });
+
+  const nfVerifyRes = await authSessionClient.auth.verifyOtp({
+    email: nonFounderEmail,
+    token: nfOtpRes.data!.properties!.email_otp!,
+    type: 'email'
+  });
+
+  const nonFounderToken = nfVerifyRes.data.session?.access_token;
+  if (!nonFounderToken) {
+    throw new Error('Failed to obtain access token for non-founder user');
+  }
+  console.log(`  -> Non-Founder user authenticated: id=${nonFounderUserId} | Org=${targetOrgId} | Role=member\n`);
 
   const fakeOrgId = '00000000-0000-0000-0000-000000000099';
   const testPackageId = `TEST_PACKAGE_${crypto.randomUUID().slice(0, 8)}`;
@@ -425,48 +470,99 @@ async function runPhase3FoundationTests() {
   }
 
 
-  // Call 1: First approval via authenticated user client with createPackageApprovalSignature helper
-  const signedPayload = createPackageApprovalSignature({
-    organizationId: targetOrgId,
-    packageId: fullPkgId,
-    packageVersion: testVersion,
-    expectedParts: 10,
-    expectedManifestSha256: testManifestHash,
-    callerId: realUserId
-  }, dynamicSecret);
-
-  const { data: resT4A, error: errT4A } = await userClient.rpc('approve_knowledge_package', {
-    p_organization_id: targetOrgId,
-    p_package_id: fullPkgId,
-    p_package_version: testVersion,
-    p_expected_parts: 10,
-    p_expected_manifest_sha256: testManifestHash,
-    p_nonce: signedPayload.nonce,
-    p_timestamp: signedPayload.timestamp,
-    p_signature: signedPayload.signature
+  // --- T4.0a: HTTP API Route - Unauthenticated Block ---
+  const unauthReq = new Request('http://localhost:3000/api/crm/knowledge/package/approve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      packageId: fullPkgId,
+      packageVersion: testVersion,
+      expectedParts: 10,
+      expectedManifestSha256: testManifestHash
+    })
   });
+  const unauthRes = await approvePackageRoute(unauthReq);
+  assert(unauthRes.status === 401, 'Test T4.0a: HTTP API Route unauthenticated caller returns HTTP 401 Unauthorized');
 
-  assert(errT4A === null && resT4A?.status === 'PACKAGE_APPROVED' && resT4A?.idempotent === false, 'Test T4.1: Initial approval of complete 10/10 package succeeds with PACKAGE_APPROVED via user JWT & signer helper', errT4A?.message);
-
-  // Call 2: Repeated approval with new nonce (Idempotency check)
-  const nonceT4B = crypto.randomUUID();
-  const nowT4B = getCanonicalTimestamp();
-  const msgT4B = `${targetOrgId}:${fullPkgId}:${testVersion}:${testManifestHash}:10:${nonceT4B}:${nowT4B}:${realUserId}`;
-  const sigT4B = computeHmac(msgT4B, dynamicSecret);
-
-  const { data: resT4B, error: errT4B } = await userClient.rpc('approve_knowledge_package', {
-    p_organization_id: targetOrgId,
-    p_package_id: fullPkgId,
-    p_package_version: testVersion,
-    p_expected_parts: 10,
-    p_expected_manifest_sha256: testManifestHash,
-    p_nonce: nonceT4B,
-    p_timestamp: nowT4B,
-    p_signature: sigT4B
+  // --- T4.0b: HTTP API Route - Non-Founder Forbidden Guard ---
+  const nfReq = new Request('http://localhost:3000/api/crm/knowledge/package/approve', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${nonFounderToken}`
+    },
+    body: JSON.stringify({
+      packageId: fullPkgId,
+      packageVersion: testVersion,
+      expectedParts: 10,
+      expectedManifestSha256: testManifestHash
+    })
   });
+  const nfRes = await approvePackageRoute(nfReq);
+  const nfBody = await nfRes.json();
+  assert(
+    nfRes.status === 403 && nfBody.error === 'FORBIDDEN',
+    'Test T4.0b: HTTP API Route non-founder caller returns HTTP 403 FORBIDDEN',
+    JSON.stringify(nfBody)
+  );
 
+  // --- T4.1: HTTP API Route - Genuine Founder Approval Execution ---
+  const founderReq = new Request('http://localhost:3000/api/crm/knowledge/package/approve', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${userToken}`
+    },
+    body: JSON.stringify({
+      packageId: fullPkgId,
+      packageVersion: testVersion,
+      expectedParts: 10,
+      expectedManifestSha256: testManifestHash
+    })
+  });
+  const founderRes = await approvePackageRoute(founderReq);
+  const founderBody = await founderRes.json();
+  assert(
+    founderRes.status === 200 && founderBody.success === true && founderBody.result?.status === 'PACKAGE_APPROVED' && founderBody.result?.idempotent === false,
+    'Test T4.1: HTTP API Route Founder caller approves complete 10/10 package returning HTTP 200 with PACKAGE_APPROVED',
+    JSON.stringify(founderBody)
+  );
 
-  assert(errT4B === null && resT4B?.idempotent === true && resT4B?.status === 'PACKAGE_APPROVED', 'Test T4.2: Repeated approval returns idempotent: true cleanly without re-execution', errT4B?.message);
+  // --- T4.1b: Authoritative Audit Log Verification ---
+  const { data: auditRows, error: auditCheckErr } = await adminClient
+    .from('phase1_audit_logs')
+    .select('*')
+    .eq('action', 'KNOWLEDGE_PACKAGE_APPROVED')
+    .order('createdAt', { ascending: false })
+    .limit(1);
+
+  assert(
+    auditCheckErr === null && Boolean(auditRows && auditRows.length > 0 && auditRows[0].details?.includes(fullPkgId)),
+    'Test T4.1b: Authoritative audit log verified in phase1_audit_logs with COMPLETED action details',
+    JSON.stringify({ auditRows, auditCheckErr })
+  );
+
+  // --- T4.2: HTTP API Route - Idempotent Repeated Approval ---
+  const repeatReq = new Request('http://localhost:3000/api/crm/knowledge/package/approve', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${userToken}`
+    },
+    body: JSON.stringify({
+      packageId: fullPkgId,
+      packageVersion: testVersion,
+      expectedParts: 10,
+      expectedManifestSha256: testManifestHash
+    })
+  });
+  const repeatRes = await approvePackageRoute(repeatReq);
+  const repeatBody = await repeatRes.json();
+  assert(
+    repeatRes.status === 200 && repeatBody.success === true && repeatBody.result?.idempotent === true && repeatBody.result?.status === 'PACKAGE_APPROVED',
+    'Test T4.2: Repeated HTTP API Route approval returns HTTP 200 with idempotent: true without re-execution',
+    JSON.stringify(repeatBody)
+  );
 
   // --- T5: CSKH Dedicated RAG Isolation (T5) ---
   // --- T5: CSKH Dedicated RAG Isolation & Cross-Tenant Leakage Block (T5) ---
@@ -599,6 +695,14 @@ async function runPhase3FoundationTests() {
   console.log('[Cleanup Policy] Purging test secret from private vault...');
   await adminClient.rpc('purge_knowledge_auth_secret', { p_key: 'PACKAGE_APPROVAL_HMAC_SECRET' });
   console.log('  -> Dynamic test secret wiped from vault.');
+
+  // Clean up non-founder test user & membership
+  if (nonFounderUserId) {
+    console.log('[Cleanup Policy] Purging temporary non-founder test user & membership...');
+    await adminClient.rpc('delete_test_portal_membership', { p_user_id: nonFounderUserId });
+    await adminClient.auth.admin.deleteUser(nonFounderUserId);
+    console.log('  -> Temporary non-founder user and membership wiped.');
+  }
 
   // Summary
   const total = results.length;
