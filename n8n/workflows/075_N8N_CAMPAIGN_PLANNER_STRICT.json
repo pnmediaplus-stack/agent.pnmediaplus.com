@@ -283,13 +283,11 @@
       "parameters": {
         "method": "POST",
         "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev').replace(/\\/+$/, ''); if (raw !== 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Staging allowlist: ' + raw); } return raw; })()) + '/api/n8n/publish-callback'}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "x-n8n-api-key",
-              "value": "={{$vars.N8N_CAMPAIGN_PLANNER_API_KEY || $env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
-            },
             {
               "name": "Content-Type",
               "value": "application/json"
@@ -298,7 +296,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_qa_reject',\n  sender: 'agent_4_qa',\n  body: '⛔ **Hệ thống đã dừng sau ' + ($json.attempt - 1) + ' lượt thử (Tối đa 3 lượt) do không đạt tiêu chuẩn chất lượng:**\\n\\n' + ($json.qa_feedback || 'Lỗi không xác định'),\n  intent_type: 'agent_response'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_qa_reject',\n  sender: 'agent_4_qa',\n  body: '⛔ **Hệ thống đã dừng sau ' + ($json.attempt - 1) + ' lượt thử (Tối đa 3 lượt) do không đạt tiêu chuẩn chất lượng:**\\n\\n' + ($json.qa_feedback || 'Lỗi không xác định'),\n  intent_type: 'agent_response',\n  metadata: {\n    delivery_status: 'QA_REJECTED',\n    qa_verdict: 'FAIL',\n    authority: 'HUMAN_REVIEW_REQUIRED',\n    trace_id: String($execution.id),\n    attempt: $json.attempt - 1,\n    max_attempts: 3\n  }\n} }}",
         "options": {}
       },
       "name": "QA Reject (chat_append)",
@@ -308,7 +306,13 @@
         59536,
         -112
       ],
-      "id": "20e6c2d6-91c9-4f02-978c-890b32ca597d"
+      "id": "20e6c2d6-91c9-4f02-978c-890b32ca597d",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "H1j3X0f0i1bQMfKF",
+          "name": "x-n8n-api-key"
+        }
+      }
     },
     {
       "parameters": {
@@ -620,13 +624,11 @@
       "parameters": {
         "method": "POST",
         "url": "={{((()=>{ const raw = ($vars.API_BASE_URL || $env[\"API_BASE_URL\"] || 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev').replace(/\\/+$/, ''); if (raw !== 'https://pseudoencephalitic-margarita-supernegligently.ngrok-free.dev') { throw new Error('FAIL_CLOSED: Destination URL is not in trusted Staging allowlist: ' + raw); } return raw; })()) + '/api/n8n/publish-callback'}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "x-n8n-api-key",
-              "value": "={{$vars.N8N_CAMPAIGN_PLANNER_API_KEY || $env[\"N8N_CAMPAIGN_PLANNER_API_KEY\"]}}"
-            },
             {
               "name": "Content-Type",
               "value": "application/json"
@@ -635,7 +637,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_system_error',\n  sender: 'system_error',\n  body: '🚨 **LỖI HỆ THỐNG NỘI BỘ (SYSTEM ERROR):**\\n' + ($json.reason || 'Lỗi kết nối hạ tầng control plane.'),\n  intent_type: 'system_error'\n} }}",
+        "jsonBody": "={{ {\n  action: 'chat_append',\n  thread_id: $json.thread_id,\n  organization_id: $json.organization_id,\n  idempotency_key: $execution.id + '_system_error',\n  sender: 'system_error',\n  body: '🚨 **LỖI HỆ THỐNG NỘI BỘ (SYSTEM ERROR):**\\n' + ($json.reason || 'Lỗi kết nối hạ tầng control plane.'),\n  intent_type: 'system_error',\n  metadata: {\n    delivery_status: 'FATAL_SYSTEM_ERROR',\n    qa_verdict: 'FAIL_CLOSED',\n    authority: 'SYSTEM_ERROR',\n    trace_id: String($execution.id)\n  }\n} }}",
         "options": {}
       },
       "name": "System Error (chat_append)",
@@ -645,7 +647,13 @@
         56928,
         -32
       ],
-      "id": "6a157f11-5cb0-4491-a5a2-32f13f0aaa27"
+      "id": "6a157f11-5cb0-4491-a5a2-32f13f0aaa27",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "H1j3X0f0i1bQMfKF",
+          "name": "x-n8n-api-key"
+        }
+      }
     },
     {
       "parameters": {
