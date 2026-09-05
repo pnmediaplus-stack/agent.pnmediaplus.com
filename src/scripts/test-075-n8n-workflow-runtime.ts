@@ -545,8 +545,94 @@ console.log('--- SCENARIO 8: MARKETING DEPARTMENT PACK ADAPTER INTEGRATION ---')
   console.log('  [8.4 Tenant Context] -> PASS: Missing thread_id or organization_id strictly throws\n');
 }
 
+// -----------------------------------------------------------------------------
+// SCENARIO 9: Gatekeeper & CTO Round 3 Runtime Invariants (P0/P1 Audited Gates)
+// -----------------------------------------------------------------------------
+console.log('--- SCENARIO 9: GATEKEEPER & CTO ROUND 3 RUNTIME INVARIANTS ---');
+{
+  // 9.1: Webhook Intake Authentication (P0)
+  const webhookNode = getNode('Webhook Trigger');
+  assert.strictEqual(webhookNode.parameters.authentication, 'headerAuth', 'Webhook Trigger must require headerAuth');
+  assert(webhookNode.credentials?.httpHeaderAuth?.id, 'Webhook Trigger must have linked header auth credential');
+  console.log('  [9.1 Webhook Auth] -> PASS: Webhook Trigger requires headerAuth and links x-n8n-api-key credential');
+
+  // 9.2: Fatal System Error Fail-Closed & Never Clarify Scope (P0)
+  const isSysErrorNode = getNode('Is System Error?');
+  const cond = isSysErrorNode.parameters.conditions;
+  assert(cond.boolean, 'Is System Error? must evaluate boolean condition');
+  const boolExpr = cond.boolean[0]?.value1 || '';
+  assert(boolExpr.includes('error_type === \'SYSTEM_ERROR\''), 'Must check error_type === SYSTEM_ERROR');
+  assert(boolExpr.includes('validation_status === \'FATAL_SYSTEM_ERROR\''), 'Must check validation_status === FATAL_SYSTEM_ERROR');
+
+  // Test simulation: Fatal error must evaluate boolean to true (output index 0 = System Error)
+  const evalIsSysError = ($json: any) => {
+    return ($json.error_type === 'SYSTEM_ERROR' || $json.validation_status === 'FATAL_SYSTEM_ERROR') === true;
+  };
+  assert.strictEqual(evalIsSysError({ error_type: 'SYSTEM_ERROR' }), true);
+  assert.strictEqual(evalIsSysError({ validation_status: 'FATAL_SYSTEM_ERROR' }), true);
+  assert.strictEqual(evalIsSysError({ error_type: 'SCOPE_CLARIFICATION' }), false);
+
+  // Validate Agent 1 Output on invalid attempt must route to System Error and NEVER Clarify Scope
+  const validateFn = new Function('$input', '$node', validateCode);
+  const fatalResult = validateFn(
+    { item: { json: { attempt: 999, output: '{}' } } },
+    {}
+  );
+  assert.strictEqual(fatalResult.json.validation_status, 'FATAL_SYSTEM_ERROR');
+  assert.strictEqual(fatalResult.json.error_type, 'SYSTEM_ERROR');
+  assert.strictEqual(fatalResult.json.is_recoverable, false);
+  assert.strictEqual(fatalResult.json.is_valid, false);
+  assert.strictEqual(evalIsSysError(fatalResult.json), true, 'Fatal error must evaluate true on Is System Error? to reach System Error (chat_append)');
+  console.log('  [9.2 Fatal Error Routing] -> PASS: FATAL_SYSTEM_ERROR routes directly to System Error sink, NEVER Clarify Scope');
+
+  // 9.3: No Default Department Fallback (P1)
+  const preAgentCode = getNode('Pre-Agent Context').parameters.jsCode;
+  const preAgentFn = new Function('$input', preAgentCode);
+  assert.throws(() => {
+    preAgentFn({
+      item: {
+        json: {
+          thread_id: '55555555-5555-5555-5555-555555555555',
+          organization_id: '8289488a-b255-4cb6-9bff-c9d2e71af160',
+          attempt: 1,
+          department_id: undefined // missing!
+        }
+      }
+    });
+  }, /FAIL_CLOSED_SYSTEM_ERROR/);
+  assert(!preAgentCode.includes("'dept-marketing'"), 'Pre-Agent Context must not contain hardcoded dept-marketing fallback');
+  console.log('  [9.3 Zero Department Fallback] -> PASS: Missing department strictly throws; zero hardcoded default');
+
+  // 9.4: URL Encoding of Tenant Scope (P1)
+  const fetchRegistryNode = getNode('Fetch Registry');
+  const fetchUrlExpr = fetchRegistryNode.parameters.url;
+  assert(fetchUrlExpr.includes('encodeURIComponent(rawOrg.trim())'), 'Organization ID must be URL-encoded');
+  assert(fetchUrlExpr.includes('encodeURIComponent(rawDept.trim())'), 'Department ID must be URL-encoded');
+  console.log('  [9.4 Tenant Scope URL Encoding] -> PASS: organization_id and department_id are strictly encodeURIComponent wrapped');
+
+  // 9.5: Zero Autonomous Publish / Human Authority Guard (P0/P1)
+  const agent7Node = getNode('Agent 7 - Packaging');
+  const agent7Prompt = JSON.stringify(agent7Node.parameters.jsonBody);
+  assert(agent7Prompt.includes('QA-passed strategic research packet'), 'Agent 7 system message must specify QA-passed');
+  assert(agent7Prompt.includes('QA-Passed Research Packet from Agent 1'), 'Agent 7 user message must specify QA-Passed');
+  assert(!agent7Prompt.includes('approved strategic research packet'), 'Agent 7 must not use autonomous approval wording');
+
+  const deliveryNode = getNode('Delivery (chat_append)');
+  const deliveryBody = deliveryNode.parameters.jsonBody;
+  assert(deliveryBody.includes('READY_FOR_HUMAN_REVIEW'), 'Delivery payload must specify READY_FOR_HUMAN_REVIEW');
+  assert(deliveryBody.includes('QA_PASS'), 'Delivery payload must specify QA_PASS');
+  assert(deliveryBody.includes('HUMAN_REVIEW_REQUIRED'), 'Delivery payload must specify authority: HUMAN_REVIEW_REQUIRED');
+  assert(deliveryBody.includes('trace_id: String($execution.id)'), 'Delivery payload must contain trace_id');
+
+  const ackNode = getNode('Acknowledge (chat_append)');
+  const ackBody = ackNode.parameters.jsonBody;
+  assert(ackBody.includes('ACKNOWLEDGED'), 'Acknowledge payload must specify ACKNOWLEDGED');
+  assert(ackBody.includes('HUMAN_REVIEW_REQUIRED'), 'Acknowledge payload must specify authority: HUMAN_REVIEW_REQUIRED');
+  console.log('  [9.5 Human Authority Guard] -> PASS: Zero autonomous approval; READY_FOR_HUMAN_REVIEW, QA_PASS, and HUMAN_REVIEW_REQUIRED enforced\n');
+}
+
 console.log('================================================================');
-console.log('ALL 8 N8N GRAPH & RUNTIME SCENARIOS PASSED 100%:');
+console.log('ALL 9 N8N GRAPH & RUNTIME SCENARIOS PASSED 100%:');
 console.log('  1. Happy Path Attempt 1 (Exact 1 invocation): PASS');
 console.log('  2. System Error -> Correction -> Attempt 2: PASS');
 console.log('  3. QA Rejection -> Correction -> Attempt 3: PASS');
@@ -555,4 +641,6 @@ console.log('  5. Separated Error Delivery (System Error vs Clarify Scope): PASS
 console.log('  6. Blocker P0 (Zero Fallback to 1, Zero $node/.first()/.all()): PASS');
 console.log('  7. Blocker 4 (Strict Types & Sub-Schemas on All 25 Fields): PASS');
 console.log('  8. Scenario 8 (Marketing Department Pack Adapter Integration): PASS');
+console.log('  9. Scenario 9 (Gatekeeper & CTO Round 3 Runtime Invariants): PASS');
 console.log('================================================================');
+

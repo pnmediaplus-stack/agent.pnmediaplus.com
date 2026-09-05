@@ -23,12 +23,15 @@ export async function postN8nWebhook(route: string, payload: unknown): Promise<N
     };
   }
 
+  const apiKey = process.env.N8N_CAMPAIGN_PLANNER_API_KEY || process.env.N8N_API_KEY;
   const url = `${baseUrl}/${route.replace(/^\//, "")}`;
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(secret ? { "x-webhook-secret": secret } : {})
+      ...(secret ? { "x-webhook-secret": secret } : {}),
+      ...(apiKey ? { "x-n8n-api-key": apiKey } : {})
     },
     body: JSON.stringify(payload)
   });
