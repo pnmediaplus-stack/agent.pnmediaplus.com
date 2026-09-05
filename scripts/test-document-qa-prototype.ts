@@ -378,7 +378,26 @@ async function runTestSuite() {
       'Upload Route: Enforces MAX_FILE_SIZE_BYTES (HTTP 400 FILE_TOO_LARGE)'
     );
 
-    // 6.5 Live Route Test: P0 Violation Document Hard Block & Zero N8N Trigger Proof
+    // 6.5 Negative Test: Binary PDF/DOCX Document Extraction Fail-Closed
+    const fakePdfFile = new File(['%PDF-1.4 binary stream data'], 'unverified_document.pdf', { type: 'application/pdf' });
+    const pdfForm = new FormData();
+    pdfForm.append('file', fakePdfFile);
+    pdfForm.append('title', 'Test Binary PDF Upload');
+    pdfForm.append('namespace', 'marketing');
+
+    const pdfReq = new Request('http://localhost:3000/api/crm/knowledge/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${realUserJwt}` },
+      body: pdfForm,
+    });
+    const pdfRes = await uploadRouteHandler(pdfReq);
+    const pdfJson = await pdfRes.json();
+    assert(
+      pdfRes.status === 422 && pdfJson.error === 'BINARY_EXTRACTION_UNAVAILABLE',
+      'Upload Route: Binary documents (.pdf/.docx) fail-closed with HTTP 422 BINARY_EXTRACTION_UNAVAILABLE'
+    );
+
+    // 6.6 Live Route Test: P0 Violation Document Hard Block, Zero N8N, Zero Storage Side Effect Proof
     n8nWebhookCallCount = 0;
     const p0ViolatingContent = `# Chien dich Flash Sale Marketing\nCam ket tang truong 300% doanh thu trong 30 ngay su dung phan mem.\nGiam gia 50% phi setup phan mem tron doi.\n`;
     const p0File = new File([p0ViolatingContent], 'p0_violation_test.md', { type: 'text/markdown' });
@@ -424,7 +443,6 @@ async function runTestSuite() {
     if (blockedDocs && blockedDocs.length > 0) {
       const bDoc = blockedDocs[0];
       createdDocIds.push(bDoc.id);
-      if (bDoc.file_url) createdStoragePaths.push(bDoc.file_url);
 
       assert(
         bDoc.knowledge_status === 'DRAFT' && bDoc.ingestion_status === 'NOT_REQUIRED',
@@ -434,9 +452,13 @@ async function runTestSuite() {
         bDoc.knowledge_metadata?.qa_inspection_report?.verdict === 'HARD_BLOCKED',
         'DB Clone Proof: QA inspection report is persisted in knowledge_metadata'
       );
+      assert(
+        bDoc.file_url.startsWith('quarantine://qa-hard-blocked/'),
+        'Zero Storage Pollution Proof: Blocked document assigned quarantine sentinel without writing to Storage bucket'
+      );
     }
 
-    // 6.6 Live Route Test: Clean Document -> REVIEWED + PENDING & Zero N8N Trigger Proof
+    // 6.7 Live Route Test: Clean Document -> REVIEWED + PENDING & Zero N8N Trigger Proof
     n8nWebhookCallCount = 0;
     const cleanContent = `# PN Agency CRM Standard Operations\nGiai phap ho tro ket noi luong cong viec Lead -> Deal -> Job -> Task cho Agency.\nQuan ly chat che thoi gian va phan cong dau viec giua cac phong ban.\n`;
     const cleanFile = new File([cleanContent], 'clean_test_document.md', { type: 'text/markdown' });
@@ -482,17 +504,56 @@ async function runTestSuite() {
       'DB Clone Proof: QA inspection report recorded with verdict REVIEW_RECOMMENDED'
     );
 
+    // 6.8 Behavioral Proof: Append-Only Audit Log Immutability Enforcement
+    // Direct insertion of an audit log entry for this document
+    const { data: seededAudit, error: seedErr } = await adminClient
+      .from('crm_knowledge_audit_logs')
+      .insert({
+        organization_id: userOrgId,
+        document_id: happyDocId,
+        action: 'QA_INSPECTION_RECORDED',
+      })
+      .select('id')
+      .single();
+
+    if (seededAudit?.id) {
+      // Attempting to delete from crm_knowledge_audit_logs MUST be rejected by trg_prevent_audit_mutation
+      const { error: auditDeleteErr } = await adminClient
+        .from('crm_knowledge_audit_logs')
+        .delete()
+        .eq('id', seededAudit.id);
+
+      assert(
+        auditDeleteErr !== null && auditDeleteErr.message.includes('AUDIT_LOG_IMMUTABLE'),
+        'Behavioral Proof: Audit logs are append-only; DELETE rejected with AUDIT_LOG_IMMUTABLE'
+      );
+    } else {
+      assert(false, 'Behavioral Proof: Failed to seed audit log fixture for immutability test', seedErr?.message);
+    }
+
   } finally {
     global.fetch = originalFetch;
 
-    console.log('\n[Cleanup] Cleaning up test fixture documents from DB Clone & Storage...');
+    // 6.9 Append-Only Test Fixture Lifecycle (ZERO physical DELETE on crm_knowledge_documents)
+    console.log('\n[Append-Only Lifecycle] Marking test fixtures as ARCHIVED_TEST_FIXTURE (No physical DELETE)...');
     for (const docId of createdDocIds) {
-      await adminClient.from('crm_knowledge_documents').delete().eq('id', docId);
+      await adminClient
+        .from('crm_knowledge_documents')
+        .update({
+          knowledge_metadata: {
+            test_fixture: true,
+            fixture_disposition: 'ARCHIVED_TEST_FIXTURE',
+            retained_for_audit: true,
+          }
+        })
+        .eq('id', docId);
     }
+    // Clean up only temporary storage file to avoid storage quota leakage
     for (const storagePath of createdStoragePaths) {
       await adminClient.storage.from('crm_knowledge_files').remove([storagePath]);
     }
-    console.log(`  -> Cleaned up ${createdDocIds.length} test documents and ${createdStoragePaths.length} storage files.\n`);
+    console.log(`  -> Preserved ${createdDocIds.length} append-only test records in DB with audit retention.`);
+    console.log(`  -> Cleaned up ${createdStoragePaths.length} storage blob(s).\n`);
   }
 
   console.log('================================================================');

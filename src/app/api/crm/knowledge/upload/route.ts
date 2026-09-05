@@ -54,24 +54,29 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    const allowedMimeTypes = new Set([
-      'application/pdf',
-      'text/plain',
-      'text/markdown',
-      'application/markdown',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    ]);
+    const isMarkdown = file.type === 'text/markdown' || file.type === 'application/markdown' || /\.md$/i.test(file.name);
+    const isPlainText = file.type === 'text/plain' || /\.txt$/i.test(file.name);
+    const isBinaryFormat = /\.(pdf|docx?|doc)$/i.test(file.name) || ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type);
 
-    if (!allowedMimeTypes.has(file.type) && !/\.(pdf|txt|md|docx?)$/i.test(file.name)) {
-      return NextResponse.json({ error: 'UNSUPPORTED_FILE_TYPE', message: 'Only PDF, TXT, MD, and DOC/DOCX files are supported' }, { status: 400 });
+    if (isBinaryFormat) {
+      return NextResponse.json({
+        error: 'BINARY_EXTRACTION_UNAVAILABLE',
+        message: 'Binary documents (.pdf, .doc, .docx) cannot be verified via direct TextDecoder. In Phase 1-2 prototype, please upload verified markdown (.md) or plaintext (.txt) documents to ensure 100% reliable QA inspection.',
+      }, { status: 422 });
+    }
+
+    if (!isMarkdown && !isPlainText) {
+      return NextResponse.json({
+        error: 'UNSUPPORTED_FILE_TYPE',
+        message: 'Only verified markdown (.md) and plaintext (.txt) files are supported for direct text QA scanning.',
+      }, { status: 400 });
     }
 
     // 4. Extract Text & Execute Server-Side Document QA Scan
     const arrayBuffer = await file.arrayBuffer();
     let extractedText = '';
     try {
-      const decoder = new TextDecoder('utf-8', { fatal: false });
+      const decoder = new TextDecoder('utf-8', { fatal: true });
       extractedText = decoder.decode(arrayBuffer);
     } catch (extractErr: any) {
       return NextResponse.json({
@@ -82,30 +87,11 @@ export async function POST(req: Request) {
 
     const qaReport = runDocumentQA(extractedText, rawNamespace);
 
-    // 5. Upload File to Supabase Storage (crm_knowledge_files)
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${crypto.randomUUID()}.${fileExt}`;
-    const storagePath = `${organizationId}/${fileName}`;
-    
-    const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/crm_knowledge_files/${storagePath}`, {
-      method: 'POST',
-      headers: {
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`,
-        'Content-Type': file.type || 'application/octet-stream',
-        'x-upsert': 'true'
-      },
-      body: arrayBuffer
-    });
-
-    if (!uploadRes.ok) {
-      const err = await uploadRes.text();
-      console.error('Storage upload failed:', err);
-      return NextResponse.json({ error: 'UPLOAD_FAILED' }, { status: 502 });
-    }
-
-    // 6. Enforce Gate: P0 HARD BLOCK vs REVIEW_RECOMMENDED
+    // 5. Enforce Gate: P0 HARD BLOCK vs REVIEW_RECOMMENDED
     if (qaReport.verdict === 'HARD_BLOCKED') {
+      // ZERO STORAGE POLLUTION: Blocked file is NEVER uploaded to Storage bucket!
+      const quarantineSentinel = `quarantine://qa-hard-blocked/${crypto.randomUUID()}`;
+
       // Record blocked document in DB as DRAFT + NOT_REQUIRED for audit provenance
       const insertRes = await fetch(`${supabaseUrl}/rest/v1/crm_knowledge_documents`, {
         method: 'POST',
@@ -120,7 +106,7 @@ export async function POST(req: Request) {
           channel_id: channelId,
           namespace: rawNamespace,
           title: title,
-          file_url: storagePath,
+          file_url: quarantineSentinel,
           status: 'failed',
           knowledge_status: 'DRAFT',
           ingestion_status: 'NOT_REQUIRED',
@@ -141,6 +127,28 @@ export async function POST(req: Request) {
         message: 'Document contains prohibited P0 claim violations and cannot be ingested',
         qa_report: qaReport,
       }, { status: 422 });
+    }
+
+    // 6. Happy Path (QA Passed): Upload clean file to Supabase Storage (crm_knowledge_files)
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+    const storagePath = `${organizationId}/${fileName}`;
+    
+    const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/crm_knowledge_files/${storagePath}`, {
+      method: 'POST',
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Content-Type': file.type || 'text/plain',
+        'x-upsert': 'true'
+      },
+      body: arrayBuffer
+    });
+
+    if (!uploadRes.ok) {
+      const err = await uploadRes.text();
+      console.error('Storage upload failed:', err);
+      return NextResponse.json({ error: 'UPLOAD_FAILED' }, { status: 502 });
     }
 
     // 7. Happy Path (QA Passed): Insert as REVIEWED + PENDING awaiting Founder Approval
