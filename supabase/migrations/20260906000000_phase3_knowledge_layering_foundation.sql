@@ -45,7 +45,107 @@ $$;
 REVOKE ALL ON FUNCTION private.cleanup_expired_nonces FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION private.cleanup_expired_nonces TO service_role;
 
--- 3. DB Trigger: enforce_framework_provenance (Hard Block on Client Forgery)
+-- 3. Service-Role Administration RPCs for Private Vault Management
+CREATE OR REPLACE FUNCTION public.set_knowledge_auth_secret(p_key TEXT, p_val TEXT)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, private, public
+AS $$
+DECLARE
+  v_caller_role TEXT := COALESCE(current_setting('request.jwt.claim.role', true), (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'), auth.role(), '');
+BEGIN
+  IF v_caller_role <> 'service_role' THEN
+    RAISE EXCEPTION 'UNAUTHORIZED: Only service_role can manage knowledge auth secrets.';
+  END IF;
+
+  INSERT INTO private.knowledge_auth_secrets (secret_key, secret_val)
+  VALUES (p_key, p_val)
+  ON CONFLICT (secret_key) DO UPDATE SET secret_val = EXCLUDED.secret_val;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.set_knowledge_auth_secret FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.set_knowledge_auth_secret TO service_role;
+
+CREATE OR REPLACE FUNCTION public.purge_knowledge_auth_secret(p_key TEXT)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, private, public
+AS $$
+DECLARE
+  v_caller_role TEXT := COALESCE(current_setting('request.jwt.claim.role', true), (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'), auth.role(), '');
+BEGIN
+  IF v_caller_role <> 'service_role' THEN
+    RAISE EXCEPTION 'UNAUTHORIZED: Only service_role can purge knowledge auth secrets.';
+  END IF;
+
+  DELETE FROM private.knowledge_auth_secrets WHERE secret_key = p_key;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.purge_knowledge_auth_secret FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.purge_knowledge_auth_secret TO service_role;
+
+CREATE OR REPLACE FUNCTION public.check_approval_nonce_exists(p_nonce TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, private, public
+AS $$
+DECLARE
+  v_caller_role TEXT := COALESCE(current_setting('request.jwt.claim.role', true), (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'), auth.role(), '');
+BEGIN
+  IF v_caller_role <> 'service_role' THEN
+    RAISE EXCEPTION 'UNAUTHORIZED: Only service_role can check nonces.';
+  END IF;
+
+  RETURN EXISTS (SELECT 1 FROM private.knowledge_approval_nonces WHERE nonce = p_nonce);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.check_approval_nonce_exists FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.check_approval_nonce_exists TO service_role;
+
+CREATE OR REPLACE FUNCTION public.record_approval_nonce(p_nonce TEXT, p_org_id UUID, p_user_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, private, public
+AS $$
+DECLARE
+  v_caller_role TEXT := COALESCE(current_setting('request.jwt.claim.role', true), (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'), auth.role(), '');
+BEGIN
+  IF v_caller_role <> 'service_role' THEN
+    RAISE EXCEPTION 'UNAUTHORIZED: Only service_role can record nonces.';
+  END IF;
+
+  INSERT INTO private.knowledge_approval_nonces (nonce, organization_id, used_by, used_at)
+  VALUES (p_nonce, p_org_id, p_user_id, NOW());
+END;
+$$;
+REVOKE ALL ON FUNCTION public.record_approval_nonce FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.record_approval_nonce TO service_role;
+
+CREATE OR REPLACE FUNCTION public.purge_test_nonces(p_org_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, private, public
+AS $$
+DECLARE
+  v_caller_role TEXT := COALESCE(current_setting('request.jwt.claim.role', true), (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'), auth.role(), '');
+BEGIN
+  IF v_caller_role <> 'service_role' THEN
+    RAISE EXCEPTION 'UNAUTHORIZED: Only service_role can purge test nonces.';
+  END IF;
+
+  DELETE FROM private.knowledge_approval_nonces WHERE organization_id = p_org_id;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.purge_test_nonces FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.purge_test_nonces TO service_role;
+
+
+-- 4. DB Trigger: enforce_framework_provenance (Hard Block on Client Forgery)
 -- Throws explicit exception if any non-service_role attempts to forge is_framework = true
 CREATE OR REPLACE FUNCTION public.enforce_framework_provenance()
 RETURNS TRIGGER
@@ -54,21 +154,28 @@ SECURITY DEFINER
 SET search_path = pg_catalog, public, auth
 AS $$
 DECLARE
-  v_caller_role TEXT;
+  v_jwt_role TEXT := COALESCE(
+    nullif(current_setting('request.jwt.claim.role', true), ''),
+    (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'),
+    nullif(auth.role(), ''),
+    ''
+  );
 BEGIN
-  v_caller_role := COALESCE(current_setting('request.jwt.claim.role', true), '');
-  
-  -- If payload attempts to assign framework metadata
+  -- Trusted System / Security Definer RPC contexts (e.g. approve_knowledge_package or service_role)
+  IF current_setting('app.in_knowledge_package_approval', true) = 'true' OR v_jwt_role = 'service_role' THEN
+    RETURN NEW;
+  END IF;
+
+  -- Direct authenticated client context: Strictly prohibit framework creation or mutation
   IF (NEW.knowledge_metadata->>'is_framework' = 'true' OR NEW.knowledge_metadata->>'document_type' = 'DECISION_FRAMEWORK') THEN
-    -- Only service_role can authoritatively assign framework status
-    IF v_caller_role <> 'service_role' THEN
-      RAISE EXCEPTION 'FRAMEWORK_TAMPER_BLOCKED: Only service_role can create or mutate decision framework documents. Direct client assignment is prohibited.';
-    END IF;
+    RAISE EXCEPTION 'FRAMEWORK_TAMPER_BLOCKED: Only service_role can create or mutate decision framework documents. Direct client assignment is prohibited.';
   END IF;
 
   RETURN NEW;
 END;
 $$;
+
+
 
 DROP TRIGGER IF EXISTS trg_enforce_framework_provenance ON public.crm_knowledge_documents;
 CREATE TRIGGER trg_enforce_framework_provenance
@@ -233,17 +340,18 @@ BEGIN
 
   -- 12. Atomic State Transition to APPROVED + PENDING
   v_now_iso := to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
+  PERFORM set_config('app.in_knowledge_package_approval', 'true', true);
 
   UPDATE public.crm_knowledge_documents
   SET 
     knowledge_status = 'APPROVED',
     ingestion_status = 'PENDING',
-    knowledge_metadata = jsonb_set(
-      jsonb_set(
-        jsonb_set(knowledge_metadata, '{package_status}', '"PACKAGE_APPROVED"'),
-        '{provenance,approved_by}', to_jsonb(v_caller_id::text)
-      ),
-      '{provenance,approved_at}', to_jsonb(v_now_iso)
+    knowledge_metadata = knowledge_metadata || jsonb_build_object(
+      'package_status', 'PACKAGE_APPROVED',
+      'provenance', COALESCE(knowledge_metadata->'provenance', '{}'::jsonb) || jsonb_build_object(
+        'approved_by', v_caller_id::text,
+        'approved_at', v_now_iso
+      )
     ),
     updated_at = NOW()
   WHERE organization_id = p_organization_id
@@ -262,8 +370,9 @@ BEGIN
 END;
 $$;
 
--- 5. Hardened Legacy match_documents RPC (Closes the Framework Backdoor)
--- Existing callers can continue calling match_documents, but framework chunks are strictly excluded.
+-- 5. Hardened Legacy match_documents RPC (Cross-Tenant Isolation & Zero Framework Backdoor)
+-- Enforces authoritative tenant derivation from auth.uid() for authenticated callers.
+-- Clients CANNOT spoof organization_id in filter. Cross-tenant queries fail closed (0 rows).
 CREATE OR REPLACE FUNCTION public.match_documents(
   query_embedding vector,
   match_count int DEFAULT null,
@@ -281,11 +390,54 @@ SET search_path = pg_catalog, public, auth
 AS $$
 #variable_conflict use_column
 DECLARE
-  v_org_id text;
-  v_channel_id text;
+  v_caller_role text;
+  v_caller_id uuid;
+  v_filter_org text;
+  v_filter_channel text;
+  v_effective_org uuid;
 BEGIN
-  v_org_id := filter->>'organization_id';
-  v_channel_id := filter->>'channel_id';
+  v_caller_role := COALESCE(current_setting('request.jwt.claim.role', true), auth.role(), '');
+  v_caller_id := auth.uid();
+  v_filter_org := filter->>'organization_id';
+  v_filter_channel := filter->>'channel_id';
+
+  -- 1. Strict Tenant Boundary Enforcement:
+  IF v_caller_role = 'service_role' THEN
+    IF v_filter_org IS NOT NULL THEN
+      v_effective_org := v_filter_org::uuid;
+    END IF;
+  ELSE
+    -- Authenticated user (or any non-service caller): MUST NEVER trust client filter blindly
+    IF v_caller_id IS NULL THEN
+      RETURN; -- Fail closed: unauthenticated caller gets 0 rows
+    END IF;
+
+    IF v_filter_org IS NOT NULL THEN
+      -- If caller explicitly passed organization_id, caller MUST be an active member of that tenant
+      SELECT organization_id INTO v_effective_org
+      FROM public.portal_organization_memberships
+      WHERE user_id = v_caller_id 
+        AND organization_id = v_filter_org::uuid 
+        AND status = 'active'
+      LIMIT 1;
+
+      IF v_effective_org IS NULL THEN
+        -- Cross-tenant attempt detected: fail closed immediately (0 rows)
+        RETURN;
+      END IF;
+    ELSE
+      -- Derive user's active membership organization
+      SELECT organization_id INTO v_effective_org
+      FROM public.portal_organization_memberships
+      WHERE user_id = v_caller_id 
+        AND status = 'active'
+      LIMIT 1;
+
+      IF v_effective_org IS NULL THEN
+        RETURN; -- Fail closed if user has no active organization
+      END IF;
+    END IF;
+  END IF;
 
   RETURN QUERY
   SELECT
@@ -297,11 +449,18 @@ BEGIN
   FROM public.crm_knowledge_chunks c
   JOIN public.crm_knowledge_documents d ON c.document_id = d.id
   WHERE 
-    -- 1. Tenant match
-    (v_org_id IS NULL OR d.organization_id = v_org_id::uuid)
+    -- 1. Tenant match (Authoritatively enforced, preventing cross-tenant leakage)
+    (
+      CASE 
+        WHEN v_caller_role = 'service_role' THEN
+          (v_effective_org IS NULL OR d.organization_id = v_effective_org)
+        ELSE
+          d.organization_id = v_effective_org
+      END
+    )
     AND 
     -- 2. Hybrid Scope
-    (v_channel_id IS NULL OR d.channel_id IS NULL OR d.channel_id = v_channel_id::uuid)
+    (v_filter_channel IS NULL OR d.channel_id IS NULL OR d.channel_id = v_filter_channel::uuid)
     AND
     -- 3. Document must be ACTIVE and SUCCESS
     (d.knowledge_status = 'ACTIVE' AND d.ingestion_status = 'SUCCESS')
@@ -317,7 +476,10 @@ BEGIN
 END;
 $$;
 
--- 6. Dedicated CSKH RAG RPC: match_cskh_knowledge (Fail-Closed, Zero Framework Leakage)
+REVOKE ALL ON FUNCTION public.match_documents FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.match_documents TO authenticated, service_role;
+
+-- 6. Dedicated CSKH RAG RPC: match_cskh_knowledge (Fail-Closed, Zero Framework Leakage & Strict Tenant Isolation)
 CREATE OR REPLACE FUNCTION public.match_cskh_knowledge(
   query_embedding vector,
   match_count int DEFAULT 5,
@@ -340,7 +502,7 @@ DECLARE
   v_caller_id UUID;
   v_verified_org_id UUID;
 BEGIN
-  v_caller_role := COALESCE(current_setting('request.jwt.claim.role', true), '');
+  v_caller_role := COALESCE(current_setting('request.jwt.claim.role', true), auth.role(), '');
 
   IF v_caller_role = 'service_role' THEN
     IF p_organization_id IS NULL THEN
@@ -350,7 +512,7 @@ BEGIN
   ELSE
     v_caller_id := auth.uid();
     IF v_caller_id IS NULL THEN
-      RAISE EXCEPTION 'UNAUTHENTICATED: Valid user session required.';
+      RETURN; -- Fail closed: unauthenticated caller gets 0 rows
     END IF;
 
     IF p_organization_id IS NOT NULL THEN
@@ -360,7 +522,8 @@ BEGIN
       LIMIT 1;
       
       IF v_verified_org_id IS NULL THEN
-        RAISE EXCEPTION 'FORBIDDEN: Caller does not belong to specified organization.';
+        -- Cross-tenant attempt detected: fail closed immediately (0 rows returned)
+        RETURN;
       END IF;
     ELSE
       SELECT organization_id INTO v_verified_org_id
@@ -369,7 +532,7 @@ BEGIN
       LIMIT 1;
       
       IF v_verified_org_id IS NULL THEN
-        RAISE EXCEPTION 'FORBIDDEN: No active organization membership found.';
+        RETURN; -- Fail closed: no active membership
       END IF;
     END IF;
   END IF;
@@ -484,9 +647,17 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.approve_knowledge_package FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.approve_knowledge_package TO authenticated, service_role;
+
+REVOKE ALL ON FUNCTION public.match_documents FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.match_documents TO authenticated, service_role;
+
+REVOKE ALL ON FUNCTION public.match_cskh_knowledge FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.match_cskh_knowledge TO authenticated, service_role;
+
+REVOKE ALL ON FUNCTION public.match_marketing_framework FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.match_marketing_framework TO authenticated, service_role;
+
 
 COMMIT;

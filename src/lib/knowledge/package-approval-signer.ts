@@ -30,7 +30,8 @@ export function createPackageApprovalSignature(
   }
 
   const nonce = crypto.randomUUID();
-  const timestamp = new Date().toISOString();
+  // Canonical ISO-8601 UTC timestamp format without milliseconds: YYYY-MM-DDTHH:MM:SSZ
+  const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 
   // Canonical message string: org_id:package_id:version:manifest_hash:parts:nonce:timestamp:caller_id
   const canonicalMessage = `${payload.organizationId}:${payload.packageId}:${payload.packageVersion}:${payload.expectedManifestSha256}:${payload.expectedParts}:${nonce}:${timestamp}:${payload.callerId}`;

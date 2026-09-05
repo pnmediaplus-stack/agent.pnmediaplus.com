@@ -21,15 +21,53 @@ if (!supabaseUrl.includes('ldhjrdihrcjsjfmrqtbi')) {
 }
 
 const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-  auth: { persistSession: false }
+  auth: { persistSession: false, autoRefreshToken: false },
+  global: { headers: { Authorization: `Bearer ${serviceRoleKey}` } }
 });
 
 // Dynamic In-Memory Secret: strictly zero hardcoded secrets!
 const dynamicSecret = crypto.randomBytes(32).toString('hex');
 
+function getCanonicalTimestamp(): string {
+  return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
 function computeHmac(msg: string, secret: string): string {
   return crypto.createHmac('sha256', secret).update(msg).digest('hex');
 }
+
+function buildValidFrameworkMetadata(overrides: Record<string, any> = {}) {
+  return {
+    object_class: 'governance',
+    semantic_type: 'recommendation',
+    governance_type: 'policy',
+    usage_authority: 'internal_reasoning_only',
+    sensitivity: 'internal',
+    allowed_purposes: ['marketing_strategy', 'campaign_planning'],
+    evidence_basis: ['internal_audit'],
+    applicability: {
+      departments: ['marketing']
+    },
+    ...overrides
+  };
+}
+
+function buildValidOperationalMetadata(overrides: Record<string, any> = {}) {
+  return {
+    object_class: 'knowledge',
+    semantic_type: 'fact',
+    governance_type: 'none',
+    usage_authority: 'cross_department',
+    sensitivity: 'internal',
+    allowed_purposes: ['customer_support', 'operational_lookup'],
+    evidence_basis: ['internal_audit'],
+    applicability: {
+      departments: ['cskh']
+    },
+    ...overrides
+  };
+}
+
 
 interface TestResult {
   passed: boolean;
@@ -55,22 +93,19 @@ async function runPhase3FoundationTests() {
   console.log('Secret Management: Dynamic In-Memory Injection (Zero Hardcoding)');
   console.log('================================================================\n');
 
-  // 1. Dynamic Secret Injection into private.knowledge_auth_secrets (Schema-Qualified)
-  console.log('[Setup 1] Injecting dynamic secret into private.knowledge_auth_secrets...');
-  const { error: secretErr } = await adminClient
-    .schema('private')
-    .from('knowledge_auth_secrets')
-    .upsert({
-      secret_key: 'PACKAGE_APPROVAL_HMAC_SECRET',
-      secret_val: dynamicSecret
-    });
+  // 1. Dynamic Secret Injection into private.knowledge_auth_secrets via service_role RPC
+  console.log('[Setup 1] Injecting dynamic secret into private.knowledge_auth_secrets via service_role RPC...');
+  const { error: secretErr } = await adminClient.rpc('set_knowledge_auth_secret', {
+    p_key: 'PACKAGE_APPROVAL_HMAC_SECRET',
+    p_val: dynamicSecret
+  });
 
   if (secretErr) {
     throw new Error(`Failed to inject dynamic secret into private schema: ${secretErr.message}`);
   }
   console.log('  -> Dynamic 64-char HMAC secret successfully seeded into private vault.\n');
 
-  // 2. Authenticate real user session via OTP
+  // 2. Authenticate real user session via OTP using isolated auth client (Preserving adminClient purity)
   console.log('[Setup 2] Authenticating genuine user session on DB Clone (pnmediaplus@gmail.com)...');
   const otpRes = await adminClient.auth.admin.generateLink({
     type: 'magiclink',
@@ -81,7 +116,11 @@ async function runPhase3FoundationTests() {
     throw new Error(`Failed to generate magic link: ${otpRes.error?.message}`);
   }
 
-  const verifyRes = await adminClient.auth.verifyOtp({
+  const authSessionClient = createClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+
+  const verifyRes = await authSessionClient.auth.verifyOtp({
     email: 'pnmediaplus@gmail.com',
     token: otpRes.data.properties.email_otp,
     type: 'email'
@@ -98,6 +137,7 @@ async function runPhase3FoundationTests() {
     global: { headers: { Authorization: `Bearer ${userToken}` } },
     auth: { persistSession: false }
   });
+
 
   // Verify real user organization membership
   const { data: userMemberships } = await adminClient
@@ -134,18 +174,37 @@ async function runPhase3FoundationTests() {
     }
   }).select('id, knowledge_metadata').single();
 
-  assert(tamperErr === null, 'Test T0.1: Authenticated insert executes without crash', tamperErr?.message);
-  if (tamperedDoc) {
-    fixtureDocIds.push(tamperedDoc.id);
-    const forcedIsFramework = tamperedDoc.knowledge_metadata?.is_framework;
-    const forcedDocType = tamperedDoc.knowledge_metadata?.document_type;
-    assert(forcedIsFramework === 'false' && forcedDocType === 'OPERATIONAL_KNOWLEDGE', 'Test T0.2: Trigger trg_enforce_framework_provenance strictly neutralizes forged client metadata to is_framework=false and OPERATIONAL_KNOWLEDGE');
+  assert(
+    tamperErr !== null && tamperErr.message.includes('FRAMEWORK_TAMPER_BLOCKED'),
+    'Test T0.1: Direct client attempt to set is_framework=true strictly blocked by trigger with FRAMEWORK_TAMPER_BLOCKED',
+    tamperErr?.message
+  );
+
+  // Normal non-framework document insert succeeds
+  const { data: validNormalDoc, error: normalErr } = await userClient.from('crm_knowledge_documents').insert({
+    organization_id: targetOrgId,
+    namespace: 'marketing',
+    title: 'Normal Operational Document',
+    file_url: 'quarantine://normal-test',
+    knowledge_status: 'DRAFT',
+    ingestion_status: 'NOT_REQUIRED',
+    knowledge_metadata: {
+      document_type: 'OPERATIONAL_KNOWLEDGE',
+      is_framework: 'false',
+      object_class: 'knowledge'
+    }
+  }).select('id').single();
+
+
+  assert(normalErr === null && validNormalDoc !== null, 'Test T0.2: Normal non-framework operational document insert succeeds without blockage', normalErr?.message);
+  if (validNormalDoc) {
+    fixtureDocIds.push(validNormalDoc.id);
   }
 
   // --- T1: Tenant-Scoped Cross-Tenant Block ---
   console.log('\n--- TEST GROUP 1: Tenant-Scoped Cross-Tenant Block (T1) ---');
   const nonceT1 = crypto.randomUUID();
-  const nowT1 = new Date().toISOString();
+  const nowT1 = getCanonicalTimestamp();
   const msgT1 = `${fakeOrgId}:${testPackageId}:${testVersion}:${testManifestHash}:10:${nonceT1}:${nowT1}:${realUserId}`;
   const sigT1 = computeHmac(msgT1, dynamicSecret);
 
@@ -167,7 +226,7 @@ async function runPhase3FoundationTests() {
   console.log('\n--- TEST GROUP 2: Cryptographic HMAC & Replay Prevention (T2) ---');
   // 2A: Invalid Signature
   const nonceT2A = crypto.randomUUID();
-  const nowT2A = new Date().toISOString();
+  const nowT2A = getCanonicalTimestamp();
   const { error: errT2A } = await userClient.rpc('approve_knowledge_package', {
     p_organization_id: targetOrgId,
     p_package_id: testPackageId,
@@ -181,16 +240,12 @@ async function runPhase3FoundationTests() {
   assert(errT2A !== null && errT2A.message.includes('HMAC_SIGNATURE_INVALID'), 'Test T2.1: Tampered signature rejected with HMAC_SIGNATURE_INVALID', errT2A?.message);
 
   // 2A.2: Verify Nonce Burning Defense (Nonce was NOT consumed on invalid signature)
-  const { data: burnedNonceCheck } = await adminClient
-    .schema('private')
-    .from('knowledge_approval_nonces')
-    .select('nonce')
-    .eq('nonce', nonceT2A)
-    .maybeSingle();
-  assert(burnedNonceCheck === null, 'Test T2.1b: Anti-DoS Nonce Burning Defense verified (Nonce not consumed on bad signature)');
+  const { data: nonceExists, error: errNonceCheck } = await adminClient.rpc('check_approval_nonce_exists', { p_nonce: nonceT2A });
+  if (errNonceCheck) console.error('errNonceCheck T2.1b:', errNonceCheck);
+  assert(errNonceCheck === null && nonceExists === false, 'Test T2.1b: Anti-DoS Nonce Burning Defense verified (Nonce not consumed on bad signature)', JSON.stringify({ nonceExists, errNonceCheck }));
 
   // 2B: Expired Timestamp (> 5 mins)
-  const expiredTimestamp = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const expiredTimestamp = new Date(Date.now() - 10 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
   const nonceT2B = crypto.randomUUID();
   const msgT2B = `${targetOrgId}:${testPackageId}:${testVersion}:${testManifestHash}:10:${nonceT2B}:${expiredTimestamp}:${realUserId}`;
   const sigT2B = computeHmac(msgT2B, dynamicSecret);
@@ -207,15 +262,16 @@ async function runPhase3FoundationTests() {
   });
   assert(errT2B !== null && errT2B.message.includes('TIMESTAMP_EXPIRED'), 'Test T2.2: Stale signature rejected with TIMESTAMP_EXPIRED', errT2B?.message);
 
-  // 2C: Replay Nonce Test (Schema-qualified private.knowledge_approval_nonces)
+  // 2C: Replay Nonce Test (Using service_role RPC record_approval_nonce)
   const replayedNonce = crypto.randomUUID();
-  const validTimestamp = new Date().toISOString();
-  await adminClient.schema('private').from('knowledge_approval_nonces').insert({
-    nonce: replayedNonce,
-    organization_id: targetOrgId,
-    used_by: realUserId,
-    used_at: new Date().toISOString()
+  const validTimestamp = getCanonicalTimestamp();
+  const { error: errRecNonce } = await adminClient.rpc('record_approval_nonce', {
+    p_nonce: replayedNonce,
+    p_org_id: targetOrgId,
+    p_user_id: realUserId
   });
+  if (errRecNonce) console.error('errRecNonce T2.3:', errRecNonce);
+
 
   const msgT2C = `${targetOrgId}:${testPackageId}:${testVersion}:${testManifestHash}:10:${replayedNonce}:${validTimestamp}:${realUserId}`;
   const sigT2C = computeHmac(msgT2C, dynamicSecret);
@@ -232,11 +288,12 @@ async function runPhase3FoundationTests() {
   });
   assert(errT2C !== null && errT2C.message.includes('NONCE_REPLAYED'), 'Test T2.3: Reused nonce rejected with NONCE_REPLAYED', errT2C?.message);
 
+
   // --- T3: Package Duplicate & Partial Part Block (T3) ---
   console.log('\n--- TEST GROUP 3: Package Bounds & Duplicate/Partial/Version Integrity Block (T3) ---');
   // 3A: Expected parts bounds checking
   const nonceT3A = crypto.randomUUID();
-  const nowT3A = new Date().toISOString();
+  const nowT3A = getCanonicalTimestamp();
   const msgT3A = `${targetOrgId}:${testPackageId}:${testVersion}:${testManifestHash}:15:${nonceT3A}:${nowT3A}:${realUserId}`;
   const sigT3A = computeHmac(msgT3A, dynamicSecret);
 
@@ -255,14 +312,14 @@ async function runPhase3FoundationTests() {
   // Seed an incomplete fixture package (Only 2 parts out of 10)
   const incompletePkgId = `INCOMPLETE_PKG_${crypto.randomUUID().slice(0, 8)}`;
   for (const koIdx of ['KO-01', 'KO-02']) {
-    const { data: insDoc } = await adminClient.from('crm_knowledge_documents').insert({
+    const { data: insDocs, error: insErr } = await adminClient.from('crm_knowledge_documents').insert({
       organization_id: targetOrgId,
       namespace: 'marketing',
       title: `${incompletePkgId} - ${koIdx}`,
       file_url: `quarantine://test-fixture/${koIdx}`,
       knowledge_status: 'REVIEWED',
       ingestion_status: 'PENDING',
-      knowledge_metadata: {
+      knowledge_metadata: buildValidFrameworkMetadata({
         package_id: incompletePkgId,
         ko_index: koIdx,
         package_version: testVersion,
@@ -270,15 +327,16 @@ async function runPhase3FoundationTests() {
         document_type: 'DECISION_FRAMEWORK',
         package_manifest_sha256: testManifestHash,
         fixture_disposition: 'ARCHIVED_TEST_FIXTURE'
-      },
+      }),
       created_by: realUserId
-    }).select('id').single();
+    }).select('id');
 
-    if (insDoc) fixtureDocIds.push(insDoc.id);
+    if (insErr) console.error(`[IncompletePkg Insert Err] ${koIdx}:`, insErr);
+    if (insDocs?.[0]?.id) fixtureDocIds.push(insDocs[0].id);
   }
 
   const nonceT3B = crypto.randomUUID();
-  const nowT3B = new Date().toISOString();
+  const nowT3B = getCanonicalTimestamp();
   const msgT3B = `${targetOrgId}:${incompletePkgId}:${testVersion}:${testManifestHash}:10:${nonceT3B}:${nowT3B}:${realUserId}`;
   const sigT3B = computeHmac(msgT3B, dynamicSecret);
 
@@ -297,14 +355,14 @@ async function runPhase3FoundationTests() {
   // 3C: Package with Wrong Version Rejection
   const wrongVersionPkgId = `WRONG_VER_PKG_${crypto.randomUUID().slice(0, 8)}`;
   for (const koIdx of ['KO-01', 'KO-02', 'KO-03', 'KO-04', 'KO-05', 'KO-06', 'KO-07', 'KO-08', 'KO-09', 'KO-10']) {
-    const { data: wvDoc } = await adminClient.from('crm_knowledge_documents').insert({
+    const { data: wvDocs, error: wvErr } = await adminClient.from('crm_knowledge_documents').insert({
       organization_id: targetOrgId,
       namespace: 'marketing',
       title: `${wrongVersionPkgId} - ${koIdx}`,
       file_url: `quarantine://test-wv/${koIdx}`,
       knowledge_status: 'REVIEWED',
       ingestion_status: 'PENDING',
-      knowledge_metadata: {
+      knowledge_metadata: buildValidFrameworkMetadata({
         package_id: wrongVersionPkgId,
         ko_index: koIdx,
         package_version: '2.0.0-unauthorized', // Mismatched version
@@ -312,15 +370,16 @@ async function runPhase3FoundationTests() {
         document_type: 'DECISION_FRAMEWORK',
         package_manifest_sha256: testManifestHash,
         fixture_disposition: 'ARCHIVED_TEST_FIXTURE'
-      },
+      }),
       created_by: realUserId
-    }).select('id').single();
+    }).select('id');
 
-    if (wvDoc) fixtureDocIds.push(wvDoc.id);
+    if (wvErr) console.error(`[WrongVer Insert Err] ${koIdx}:`, wvErr);
+    if (wvDocs?.[0]?.id) fixtureDocIds.push(wvDocs[0].id);
   }
 
   const nonceT3C = crypto.randomUUID();
-  const nowT3C = new Date().toISOString();
+  const nowT3C = getCanonicalTimestamp();
   const msgT3C = `${targetOrgId}:${wrongVersionPkgId}:${testVersion}:${testManifestHash}:10:${nonceT3C}:${nowT3C}:${realUserId}`;
   const sigT3C = computeHmac(msgT3C, dynamicSecret);
 
@@ -342,14 +401,14 @@ async function runPhase3FoundationTests() {
   const canonicalKOs = ['KO-01', 'KO-02', 'KO-03', 'KO-04', 'KO-05', 'KO-06', 'KO-07', 'KO-08', 'KO-09', 'KO-10'];
 
   for (const koIdx of canonicalKOs) {
-    const { data: fullDoc } = await adminClient.from('crm_knowledge_documents').insert({
+    const { data: fullDocs, error: fullErr } = await adminClient.from('crm_knowledge_documents').insert({
       organization_id: targetOrgId,
       namespace: 'marketing',
       title: `${fullPkgId} - ${koIdx}`,
       file_url: `quarantine://test-fixture-full/${koIdx}`,
       knowledge_status: 'REVIEWED',
       ingestion_status: 'PENDING',
-      knowledge_metadata: {
+      knowledge_metadata: buildValidFrameworkMetadata({
         package_id: fullPkgId,
         ko_index: koIdx,
         package_version: testVersion,
@@ -357,12 +416,14 @@ async function runPhase3FoundationTests() {
         document_type: 'DECISION_FRAMEWORK',
         package_manifest_sha256: testManifestHash,
         fixture_disposition: 'ARCHIVED_TEST_FIXTURE'
-      },
+      }),
       created_by: realUserId
-    }).select('id').single();
+    }).select('id');
 
-    if (fullDoc) fixtureDocIds.push(fullDoc.id);
+    if (fullErr) console.error(`[FullDoc Insert Err] ${koIdx}:`, fullErr);
+    if (fullDocs?.[0]?.id) fixtureDocIds.push(fullDocs[0].id);
   }
+
 
   // Call 1: First approval via authenticated user client with createPackageApprovalSignature helper
   const signedPayload = createPackageApprovalSignature({
@@ -389,7 +450,7 @@ async function runPhase3FoundationTests() {
 
   // Call 2: Repeated approval with new nonce (Idempotency check)
   const nonceT4B = crypto.randomUUID();
-  const nowT4B = new Date().toISOString();
+  const nowT4B = getCanonicalTimestamp();
   const msgT4B = `${targetOrgId}:${fullPkgId}:${testVersion}:${testManifestHash}:10:${nonceT4B}:${nowT4B}:${realUserId}`;
   const sigT4B = computeHmac(msgT4B, dynamicSecret);
 
@@ -404,10 +465,12 @@ async function runPhase3FoundationTests() {
     p_signature: sigT4B
   });
 
+
   assert(errT4B === null && resT4B?.idempotent === true && resT4B?.status === 'PACKAGE_APPROVED', 'Test T4.2: Repeated approval returns idempotent: true cleanly without re-execution', errT4B?.message);
 
   // --- T5: CSKH Dedicated RAG Isolation (T5) ---
-  console.log('\n--- TEST GROUP 5: CSKH Dedicated RAG Isolation & Legacy RPC Hardening (T5) ---');
+  // --- T5: CSKH Dedicated RAG Isolation & Cross-Tenant Leakage Block (T5) ---
+  console.log('\n--- TEST GROUP 5: CSKH Dedicated RAG Isolation & Cross-Tenant Operational Isolation (T5) ---');
   const dummyEmbedding = Array(1536).fill(0.01);
 
   // Calling via authenticated user client
@@ -436,6 +499,74 @@ async function runPhase3FoundationTests() {
     assert(legacyFrameworkChunks.length === 0, 'Test T5.4: Legacy match_documents returns STRICTLY ZERO framework chunks (Backdoor Sealed)');
   }
 
+  // T5.5 & T5.6: Cross-Tenant Operational Leakage Test (Gatekeeper Blocker 2)
+  console.log('\n[T5 Cross-Tenant] Seeding operational fixture for Alien Tenant Org B...');
+  const { data: alienOrgRows } = await adminClient
+    .from('portal_organizations')
+    .select('organization_id')
+    .neq('organization_id', targetOrgId)
+    .limit(1);
+
+  const alienOrgId = alienOrgRows?.[0]?.organization_id || 'aaaaaaaa-cccc-cccc-cccc-000000000002';
+  console.log(`  -> Selected Alien Tenant Org B ID: ${alienOrgId}`);
+
+  const { data: alienDoc, error: alienDocErr } = await adminClient.from('crm_knowledge_documents').insert({
+    organization_id: alienOrgId,
+    namespace: 'cskh',
+    title: 'Alien Org Confidential Operational SOP',
+    file_url: 'quarantine://test-alien/sop',
+    knowledge_status: 'ACTIVE',
+    ingestion_status: 'SUCCESS',
+    knowledge_metadata: buildValidOperationalMetadata({
+      document_type: 'OPERATIONAL_KNOWLEDGE',
+      is_framework: 'false',
+      fixture_disposition: 'ARCHIVED_TEST_FIXTURE'
+    }),
+    created_by: realUserId
+  }).select('id').single();
+
+  if (alienDocErr) {
+    console.error('[AlienDoc Insert Err]:', alienDocErr);
+  }
+
+  assert(alienDocErr === null && alienDoc !== null, 'Test T5.4b: Alien tenant document inserted successfully', alienDocErr?.message);
+
+  if (alienDoc) {
+    fixtureDocIds.push(alienDoc.id);
+    await adminClient.from('crm_knowledge_chunks').insert({
+      document_id: alienDoc.id,
+      chunk_index: 0,
+      content: 'Confidential SOP data belonging exclusively to Alien Tenant B.',
+      metadata: {
+        document_type: 'OPERATIONAL_KNOWLEDGE',
+        is_framework: 'false'
+      },
+      embedding: dummyEmbedding
+    });
+
+    // 1. Authenticated Org A user attempts to query Org B data via match_cskh_knowledge
+    const { data: alienCskhData, error: alienCskhErr } = await userClient.rpc('match_cskh_knowledge', {
+      query_embedding: dummyEmbedding,
+      match_count: 10,
+      p_organization_id: alienOrgId
+    });
+    assert(
+      alienCskhErr === null && (alienCskhData?.length === 0 || !alienCskhData),
+      'Test T5.5: User Org A querying Org B via match_cskh_knowledge returns STRICTLY ZERO rows (Cross-Tenant Fail-Closed)'
+    );
+
+    // 2. Authenticated Org A user attempts to query Org B data via legacy match_documents
+    const { data: alienLegacyData, error: alienLegacyErr } = await userClient.rpc('match_documents', {
+      query_embedding: dummyEmbedding,
+      match_count: 10,
+      filter: { organization_id: alienOrgId }
+    });
+    assert(
+      alienLegacyErr === null && (alienLegacyData?.length === 0 || !alienLegacyData),
+      'Test T5.6: User Org A querying Org B via legacy match_documents returns STRICTLY ZERO rows (Cross-Tenant Fail-Closed)'
+    );
+  }
+
   // --- T6: Marketing RAG & Partial Retrieval Hard Block (T6) ---
   console.log('\n--- TEST GROUP 6: Marketing Framework RAG & Partial Activation Block (T6) ---');
   // Package is currently only PACKAGE_APPROVED, not yet PACKAGE_ACTIVE
@@ -448,9 +579,26 @@ async function runPhase3FoundationTests() {
   assert(mktErr1 === null, 'Test T6.1: match_marketing_framework executes via authenticated user JWT without error', mktErr1?.message);
   assert(mktApprovedResults?.length === 0, 'Test T6.2: Query on PACKAGE_APPROVED returns 0 chunks (partial_ko_retrieval: FORBIDDEN)');
 
-  // Safely mark test fixtures as ARCHIVED_TEST_FIXTURE
-  console.log('\n[Append-Only Lifecycle] Preserving test fixtures in DB with audit retention...');
-  console.log(`  -> Preserved ${fixtureDocIds.length} test records in DB.`);
+  // --- LIFECYCLE CLEANUP & RETENTION POLICY (Gatekeeper Blocker 5) ---
+  console.log('\n--- LIFECYCLE CLEANUP & AUDIT RETENTION (Policy Enforcement) ---');
+  if (fixtureDocIds.length > 0) {
+    console.log(`[Cleanup Policy] Removing ${fixtureDocIds.length} test fixtures and linked chunks...`);
+    // Delete chunks first
+    await adminClient.from('crm_knowledge_chunks').delete().in('document_id', fixtureDocIds);
+    // Delete documents
+    await adminClient.from('crm_knowledge_documents').delete().in('id', fixtureDocIds);
+    console.log('  -> Test fixture documents & chunks cleaned up successfully.');
+  }
+
+  // Clean up nonces created during test run
+  console.log('[Cleanup Policy] Purging nonces created for testing...');
+  await adminClient.rpc('purge_test_nonces', { p_org_id: targetOrgId });
+  console.log('  -> Test nonces cleared.');
+
+  // Clean up test secret from private vault
+  console.log('[Cleanup Policy] Purging test secret from private vault...');
+  await adminClient.rpc('purge_knowledge_auth_secret', { p_key: 'PACKAGE_APPROVAL_HMAC_SECRET' });
+  console.log('  -> Dynamic test secret wiped from vault.');
 
   // Summary
   const total = results.length;
