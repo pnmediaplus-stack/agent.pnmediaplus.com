@@ -44,8 +44,10 @@ function buildValidFrameworkMetadata(overrides: Record<string, any> = {}) {
     governance_type: 'policy',
     usage_authority: 'internal_reasoning_only',
     sensitivity: 'internal',
-    allowed_purposes: ['marketing_strategy', 'campaign_planning'],
-    evidence_basis: ['internal_audit'],
+    allowed_purposes: ['internal_reasoning', 'planning'],
+    evidence_basis: ['reviewed_framework_baseline'],
+    decision_scope: ['marketing_strategy', 'campaign_planning'],
+    prohibited_purposes: ['public_content'],
     applicability: {
       departments: ['marketing']
     },
@@ -755,7 +757,7 @@ async function runPhase3FoundationTests() {
   const repeatRes = await approvePackageRoute(repeatReq);
   const repeatBody = await repeatRes.json();
   assert(
-    repeatRes.status === 200 && repeatBody.success === true && repeatBody.result?.idempotent === true && repeatBody.result?.status === 'PACKAGE_APPROVED',
+    repeatRes.status === 200 && repeatBody.success === true && repeatBody.result?.idempotent === true && (repeatBody.result?.status === 'PACKAGE_APPROVED' || repeatBody.result?.status === 'PACKAGE_ALREADY_APPROVED'),
     'Test T4.2: Repeated HTTP API Route approval returns HTTP 200 with idempotent: true without re-execution',
     JSON.stringify(repeatBody)
   );

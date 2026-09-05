@@ -19,6 +19,7 @@
     "test:acceptance-packs": "tsx scripts/validate-acceptance-packs.ts",
     "test:phase3-foundation": "tsx scripts/test-phase3-layering-foundation.ts",
     "test:package-upload": "tsx scripts/test-package-upload-gate.ts",
+    "test:vertical-slice": "tsx scripts/test-phase3-vertical-slice.ts",
     "start": "next start"
   },
   "dependencies": {

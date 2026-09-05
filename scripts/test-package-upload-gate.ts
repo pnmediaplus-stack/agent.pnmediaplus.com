@@ -636,6 +636,15 @@ async function runPackageUploadGateTests() {
       assert(doc.knowledge_metadata?.package_manifest_sha256 === packageManifestSha256,
         `Test 4.9: Document metadata records package_manifest_sha256 accurately`
       );
+      assert(JSON.stringify(doc.knowledge_metadata?.allowed_purposes) === JSON.stringify(['internal_reasoning', 'planning']),
+        `Test 4.10: Document ${doc.title} allowed_purposes matches canonical Marketing contract`
+      );
+      assert(JSON.stringify(doc.knowledge_metadata?.evidence_basis) === JSON.stringify(['reviewed_framework_baseline']),
+        `Test 4.11: Document ${doc.title} evidence_basis matches canonical Marketing contract`
+      );
+      assert(doc.knowledge_metadata?.usage_authority === 'internal_reasoning_only',
+        `Test 4.12: Document ${doc.title} usage_authority is internal_reasoning_only`
+      );
     }
   }
 

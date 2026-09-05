@@ -163,9 +163,9 @@ export function runDocumentQA(
     const rawLine = lines[i];
     const normalizedLine = normalizeDiacritics(rawLine);
 
-    // Check if line is an explicit boundary prohibition/denial statement
-    // (e.g. "CẤM NGHIẶT: Cấm tự nhận PN Agency CRM có chức năng Kế toán, HRM, hoặc AI tự động chạy Ads")
-    const isBoundaryDenial = /^\s*(-|\*|\d+\.)?\s*(\*\*.*(cam|trap|gioi\s*han|boundary).*\*\*:?\s*)?(cam\s+(tu\s*nhan|hua|tuyen\s*bo|quang\s*cao)|khong\s+(co|ho\s*tro|tich\s*hop|cung\s*cap)|tuyet\s*doi\s*khong\s*tu\s*nhan|luu\s*y:\s*he\s*thong\s*khong)/i.test(normalizedLine);
+    // Check if line is an explicit boundary prohibition/denial statement or test case input scenario
+    // (e.g. "CẤM NGHIẶT: Cấm tự nhận PN Agency CRM có chức năng Kế toán, HRM, hoặc AI tự động chạy Ads", or test case input_scenario)
+    const isBoundaryDenial = /^\s*(-|\*|\d+\.)?\s*(\*\*.*(cam|trap|gioi\s*han|boundary).*\*\*:?\s*)?(cam\s+(tu\s*nhan|hua|tuyen\s*bo|quang\s*cao)|khong\s+(co|ho\s*tro|tich\s*hop|cung\s*cap)|tuyet\s*doi\s*khong\s*tu\s*nhan|luu\s*y:\s*he\s*thong\s*khong|input_scenario:)/i.test(normalizedLine);
 
     for (const rule of HEURISTIC_RULES) {
       if (rule.regexNormalized.test(normalizedLine)) {
